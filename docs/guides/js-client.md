@@ -105,7 +105,9 @@ and the read-only `state`, `results`, `status`, `actions` and `index`.
 ### Changing state: the actions
 
 `search.actions` is the only sanctioned way to mutate state. Mutators are chainable and none of them
-searches; `search()` executes.
+searches; `search()` executes. (The `apply()` a *behaviour* hands a widget is the exception by design:
+it is the mutation **and** `search()`, because a control that is clicked should search. See
+[Custom widgets](custom-widgets.md#what-apply-does-and-when-render-runs).)
 
 ```js
 search.actions
@@ -189,7 +191,9 @@ search.off('render', handler);
 
 - `stateChange` — after every mutation that actually changes the state, before the response.
 - `render` — after every widget render pass: once per response, and once per state change with the
-  previous results (`null` before the first one).
+  previous results (`null` before the first one). A state change renders on a **microtask**, so
+  several mutations in one handler are one render, and the DOM is up to date one microtask after
+  `actions` returns rather than synchronously.
 - `error` — `phase` is `'init' | 'render' | 'dispose' | 'search' | 'contract'`, and `widget` names the
   widget when one is at fault. A throwing widget never takes the page down; see
   [Custom widgets](custom-widgets.md).

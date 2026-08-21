@@ -10,18 +10,19 @@ import type { SearchResponse } from '@yourco/xperience-search';
 
 import { dropdownFacet, registerDropdownFacet, WIDGET_TYPE } from '../src/dropdownFacet';
 
-/** The documented response shape (docs/search-api.md, "POST /api/xpsearch/query"). */
+/** The documented response shape (docs/guides/search-api.md, "POST /api/xpsearch/query"). */
 const response: SearchResponse = {
   results: [{ id: 'web-page-42-en', score: 8.42, attributes: { title: 'Espresso Basics' } }],
   facets: {
     contentType: [
       { value: 'Article', label: 'Article', count: 34 },
       { value: 'Product', label: 'Product', count: 12 },
+      { value: 'faq"s', label: 'FAQ "s" & <b>bold</b>', count: 1 },
     ],
   },
   page: 1,
   pageSize: 20,
-  total: 46,
+  total: 47,
   totalPages: 3,
   tookMs: 14,
   queryId: 'generated-guid',
@@ -35,9 +36,9 @@ const fetchFn = vi.fn<typeof fetch>(
     }),
 );
 
-function mount() {
+function mount(label = 'Content type') {
   const container = document.createElement('div');
-  container.id = 'facet-content-type';
+  container.setAttribute('data-xps-instance', 'search-1');
   document.body.append(container);
 
   const search = createSearch({
@@ -47,12 +48,7 @@ function mount() {
     routing: false,
   });
   search.addWidgets([
-    dropdownFacet({
-      container,
-      attribute: 'contentType',
-      label: 'Content type',
-      allLabel: 'Any type',
-    }),
+    dropdownFacet({ container, attribute: 'contentType', label, allLabel: 'Any type' }),
   ]);
   search.start();
   return { search, container };
@@ -72,25 +68,44 @@ const change = (select: HTMLSelectElement, value: string): void => {
 };
 
 describe('dropdownFacet', () => {
-  it('renders an "All" option plus one option per facet value', async () => {
+  it('renders an "All" option plus one option per facet value, on the documented classes', async () => {
     const { container } = mount();
 
-    await vi.waitFor(() => expect(selectOf(container).options.length).toBe(3));
+    await vi.waitFor(() => expect(selectOf(container).options.length).toBe(4));
 
     const select = selectOf(container);
     expect([...select.options].map((o) => o.text.trim())).toEqual([
       'Any type',
       'Article (34)',
       'Product (12)',
+      'FAQ "s" & <b>bold</b> (1)',
     ]);
-    expect([...select.options].map((o) => o.value)).toEqual(['', 'Article', 'Product']);
+    expect([...select.options].map((o) => o.value)).toEqual(['', 'Article', 'Product', 'faq"s']);
     expect(select.value).toBe('');
+
+    // Shell contract: xps on the root, the shared select block, the id pattern of MARKUP.md rule 4.
+    const root = container.querySelector('div');
+    expect([...(root?.classList ?? [])]).toEqual(['xps', 'xps-stack', 'xps-select']);
+    expect(select.className).toBe('xps-select__control');
+    expect(select.id).toBe('xps-search-1-dropdown-facet-control');
     expect(container.querySelector('label')?.getAttribute('for')).toBe(select.id);
+  });
+
+  it('escapes editor and taxonomy text instead of interpolating it into markup', async () => {
+    const { container } = mount('Type <img src=x onerror=alert(1)>');
+    await vi.waitFor(() => expect(selectOf(container).options.length).toBe(4));
+
+    expect(container.querySelector('img')).toBeNull();
+    expect(container.querySelector('label')?.textContent).toBe(
+      'Type <img src=x onerror=alert(1)>',
+    );
+    // A quote in a taxonomy code name stays inside the attribute.
+    expect([...selectOf(container).options][3]?.value).toBe('faq"s');
   });
 
   it('applies the chosen value and clears the previous one (single select)', async () => {
     const { search, container } = mount();
-    await vi.waitFor(() => expect(selectOf(container).options.length).toBe(3));
+    await vi.waitFor(() => expect(selectOf(container).options.length).toBe(4));
 
     change(selectOf(container), 'Article');
     expect(search.actions.getState().filters.facets).toEqual([
@@ -107,6 +122,19 @@ describe('dropdownFacet', () => {
     change(selectOf(container), '');
     expect(search.actions.getState().filters.facets.flatMap((f) => f.values)).toEqual([]);
   });
+
+  it('stays single-select when two changes happen without a render in between', async () => {
+    const { search, container } = mount();
+    await vi.waitFor(() => expect(selectOf(container).options.length).toBe(4));
+
+    const select = selectOf(container);
+    change(select, 'Article');
+    change(select, 'Product'); // no await: the re-render is still queued
+
+    expect(search.actions.getState().filters.facets).toEqual([
+      { attribute: 'contentType', values: ['Product'] },
+    ]);
+  });
 });
 
 describe('Page Builder mount', () => {
@@ -116,15 +144,30 @@ describe('Page Builder mount', () => {
 
     document.body.innerHTML = `<div class="xps-mount"
       data-xps-widget="${WIDGET_TYPE}"
-      data-xps-instance="search-1"
+      data-xps-instance="search-2"
       data-xps-instance-config='{"index":"site-content","searchOnInitialLoad":false}'
       data-xps-config='{"attribute":"brand","label":"Brand","allLabel":"Any brand"}'></div>`;
 
     const instances = mountAll(document);
 
     expect(instances).toHaveLength(1);
-    const select = document.querySelector('.xps-dropdown-facet__select');
-    expect(select).not.toBeNull();
-    expect(document.querySelector('.xps-dropdown-facet__label')?.textContent).toBe('Brand');
+    expect(document.querySelector('.xps-select__control')).not.toBeNull();
+    expect(document.querySelector('.xps-select__label')?.textContent).toBe('Brand');
+  });
+
+  it('skips the widget with one console.error when the editor left "attribute" empty', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    registerDropdownFacet();
+
+    document.body.innerHTML = `<div class="xps-mount"
+      data-xps-widget="${WIDGET_TYPE}"
+      data-xps-instance="search-3"
+      data-xps-instance-config='{"index":"site-content","searchOnInitialLoad":false}'
+      data-xps-config='{"label":"Brand"}'></div>`;
+
+    mountAll(document);
+
+    expect(consoleError.mock.calls.flat().join(' ')).toContain('failed to build');
+    consoleError.mockRestore();
   });
 });

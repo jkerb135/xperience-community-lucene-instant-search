@@ -1,97 +1,80 @@
 /**
- * `myCompany.dropdownFacet` — a single-select `<select>` facet control built on the published
- * `withFacetList` behaviour (docs/custom-widgets.md, "A dropdown facet in 40 lines").
+ * `myCompany.dropdownFacet` — a single-select `<select>` facet built on the published
+ * `withFacetList` behaviour. This file is the worked example in
+ * `docs/guides/custom-widgets.md`; the two are the same text and CI builds this one.
  */
-import { escapeHtml, registerWidgetType } from '@yourco/xperience-search';
+import { escapeHtml, readMountConfig, registerWidgetType, widgetId } from '@yourco/xperience-search';
 import type { MountConfig, Widget } from '@yourco/xperience-search';
 import { withFacetList } from '@yourco/xperience-search/behaviors';
-import type { FacetListBehaviorParams } from '@yourco/xperience-search/behaviors';
 
-/** Widget-specific parameters; `attribute`, `limit`, `sortBy`… come from the behaviour. */
-export interface DropdownFacetParams extends Record<string, unknown> {
-  /** The element the control renders into. */
-  container: HTMLElement;
-  /** Visible label of the select. */
-  label?: string;
-  /** Text of the "no filter" option. */
-  allLabel?: string;
-}
-
+/** The one identifier the JavaScript side uses, so the two registrations cannot drift. */
 export const WIDGET_TYPE = 'myCompany.dropdownFacet';
 
-/** Ids must be unique across the page; a Page Builder mount element carries no id of its own. */
-let sequence = 0;
+export interface DropdownFacetParams extends Record<string, unknown> {
+  /** The element to render into. In Page Builder this is the `.xps-mount` element itself. */
+  container: HTMLElement;
+  /** Visible label of the select. Defaults to "Filter". */
+  label?: string;
+  /** Text of the option that applies no filter. Defaults to "All". */
+  allLabel?: string;
+}
 
 const option = (value: string, text: string, selected: boolean): string =>
   `<option value="${escapeHtml(value)}"${selected ? ' selected' : ''}>${escapeHtml(text)}</option>`;
 
 export const dropdownFacet = withFacetList<DropdownFacetParams>((renderOptions, isFirstRender) => {
   const { items, apply, canApply, params } = renderOptions;
-  const { container } = params;
-  const label = params.label ?? 'Filter';
-  const allLabel = params.allLabel ?? 'All';
+  const { container, label = 'Filter', allLabel = 'All' } = params;
 
   if (isFirstRender) {
-    const instance = container.id || container.getAttribute('data-xps-instance') || 'default';
-    const selectId = `xps-${instance}-dropdown-facet-${++sequence}-select`;
-
-    container.innerHTML = `<div class="xps xps-dropdown-facet xps-stack">
-  <label class="xps-dropdown-facet__label" for="${selectId}">${escapeHtml(label)}</label>
-  <select class="xps-dropdown-facet__select" id="${selectId}"></select>
+    const id = widgetId(container, 'dropdown-facet', 'control');
+    container.innerHTML = `<div class="xps xps-stack xps-select">
+  <label class="xps-select__label" for="${id}">${escapeHtml(label)}</label>
+  <select class="xps-select__control" id="${id}"></select>
 </div>`;
 
     const control = container.querySelector('select');
     control?.addEventListener('change', () => {
-      // The active value is read back from the DOM rather than from `renderOptions`, which is
-      // rebuilt on every render and would be stale by the time this listener runs. It is written
-      // back here as well: a render does not necessarily happen between two changes.
-      const previous = control.dataset.xpsActive ?? '';
-      control.dataset.xpsActive = control.value;
-      if (previous !== '') {
-        apply(previous); // single select: clear what was selected before
-      }
-      if (control.value !== '') {
-        apply(control.value);
-      }
+      // The applied value is read back from the DOM, not from `renderOptions`: this listener is
+      // registered once and would otherwise close over the first render's items. It is written
+      // back here too, because a re-render is queued on a microtask — two changes in a row can
+      // both happen before one arrives.
+      const previous = control.dataset['xpsActive'] ?? '';
+      control.dataset['xpsActive'] = control.value;
+      if (previous !== '') apply(previous); // single select: clear what was chosen before
+      if (control.value !== '') apply(control.value);
     });
   }
 
   const select = container.querySelector('select');
-  const root = container.querySelector('.xps-dropdown-facet');
-  if (!select || !root) {
-    return;
-  }
+  const root = container.querySelector('.xps-select');
+  if (!select || !root) return;
 
   const active = items.find((item) => item.isActive);
   select.innerHTML =
     option('', allLabel, active === undefined) +
     items.map((item) => option(item.value, `${item.label} (${item.count})`, item.isActive)).join('');
+  // State is authoritative: routing or a clear-filters widget can change it behind our back.
   select.value = active?.value ?? '';
-  select.dataset.xpsActive = active?.value ?? '';
+  select.dataset['xpsActive'] = active?.value ?? '';
   select.disabled = !canApply;
-  root.classList.toggle('xps-dropdown-facet--disabled', !canApply);
+  root.classList.toggle('xps-select--disabled', !canApply);
 });
 
 /**
  * Makes the control resolvable from `data-xps-widget="myCompany.dropdownFacet"`.
- * Mount configuration is editor-supplied JSON, so every value is validated before use.
+ * The mount config is editor-supplied JSON, so `readMountConfig` narrows it; a missing
+ * `attribute` throws, which the bootstrap turns into one `console.error` and a skipped widget.
  */
 export function registerDropdownFacet(): void {
-  registerWidgetType(WIDGET_TYPE, (config: MountConfig): Widget => {
-    const attribute = text(config.attribute);
-    if (attribute === undefined) {
-      throw new Error(`${WIDGET_TYPE}: "attribute" is required in data-xps-config.`);
-    }
-
-    const params: DropdownFacetParams & FacetListBehaviorParams = {
+  registerWidgetType(WIDGET_TYPE, (config: MountConfig): Widget =>
+    dropdownFacet({
       container: config.container,
-      attribute,
-      label: text(config.label),
-      allLabel: text(config.allLabel),
-    };
-    return dropdownFacet(params);
-  });
+      ...readMountConfig(config, {
+        attribute: 'string',
+        label: 'string?',
+        allLabel: 'string?',
+      }),
+    })
+  );
 }
-
-const text = (value: unknown): string | undefined =>
-  typeof value === 'string' && value !== '' ? value : undefined;

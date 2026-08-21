@@ -1,21 +1,27 @@
 # myCompany.dropdownFacet
 
-A single-select drop-down facet for [Xperience Search](../docs/custom-widgets.md): a labelled
-`<select>` with an "All" option and one option per facet value, `label (count)`. Picking a value
-clears the previously picked one, so the control filters on at most one value at a time.
+A single-select drop-down facet for [Xperience Search](../../docs/guides/custom-widgets.md): a
+labelled `<select>` with an "All" option and one option per facet value, `label (count)`. Picking a
+value clears the previously picked one, so the control filters on at most one value at a time.
+
+`src/dropdownFacet.ts` **is** the worked example in
+[Custom widgets](../../docs/guides/custom-widgets.md) — the guide shows this file, and CI builds it
+against the packed packages, so the example cannot rot.
 
 Built entirely on the published packages — `@yourco/xperience-search` (`withFacetList`) and
 `YourCo.Xperience.Search.Widgets` (`XpSearchMountWidgetViewComponent<T>`). No forking, no internal
-imports.
+imports, no `any`, TypeScript strict.
 
 ```
 src/dropdownFacet.ts                          the JavaScript widget + registerWidgetType
 test/dropdownFacet.test.ts                    jsdom tests (vitest)
 dotnet/CustomWidget.Dropdown.Widget/          the Page Builder widget (net8.0)
 dotnet/CustomWidget.Dropdown.Tests/           NUnit tests over the emitted mount
-nuget.config                                  points at the local package feed
-FRICTION.md                                   what the docs made us guess
+nuget.config                                  points at ../.feed, the local package feed
 ```
+
+Build and test it with `node samples/pack-and-build.mjs` from the repository root — see
+[samples/README.md](../README.md) for why it packs first.
 
 ## JavaScript
 
@@ -65,23 +71,25 @@ mountAll();
 From the UMD bundle, `mountAll()` runs itself on `DOMContentLoaded`, so the registration script must
 execute before that event — load it synchronously in `<head>` or before the bundle's own script tag.
 
-`data-xps-config` is validated: `attribute` must be a non-empty string, `label` and `allLabel` are
-optional strings and anything else falls back to the widget's defaults (`Filter`, `All`).
+`data-xps-config` is editor input and is validated with `readMountConfig`: `attribute` must be a
+non-empty string, `label` and `allLabel` are optional strings. A missing `attribute` throws, which
+the bootstrap turns into one `console.error` and a skipped widget — the rest of the page still works.
 
 ### Markup and styling
 
 ```html
-<div class="xps xps-dropdown-facet xps-stack">
-  <label class="xps-dropdown-facet__label" for="xps-{instance}-dropdown-facet-{n}-select">Brand</label>
-  <select class="xps-dropdown-facet__select" id="xps-{instance}-dropdown-facet-{n}-select">…</select>
+<div class="xps xps-stack xps-select">
+  <label class="xps-select__label" for="xps-{instance}-dropdown-facet-control">Brand</label>
+  <select class="xps-select__control" id="xps-{instance}-dropdown-facet-control">…</select>
 </div>
 ```
 
-The root carries `xps`, so `shell.css`'s reset and focus ring apply, and `xps-stack` for the
-spacing rhythm. `xps-dropdown-facet*` is this widget's own block: neither `shell.css` nor
-`default.css` styles a `<select>` outside `xps-sort-select__select`, so give it your own rule if you
-want it to match the shipped sort selector (see FRICTION.md #3). The `<select>` gets the `disabled`
-attribute and a `--disabled` modifier whenever the behaviour reports `canApply: false`.
+Every class is a documented utility from
+[`themes/MARKUP.md`](../../themes/MARKUP.md): `xps` for the scoped reset and the focus ring,
+`xps-stack` for the spacing rhythm, and the shared `xps-select` block — the same one `sortSelect`
+renders — for a themed `<select>` with no CSS of your own. The id follows MARKUP.md rule 4 and comes
+from the exported `widgetId(container, widget, part)`. When the behaviour reports `canApply: false`
+the control gets the real `disabled` attribute *and* the `xps-select--disabled` modifier.
 
 ## C#
 
@@ -102,14 +110,19 @@ Editor properties: **Search index** and **Instance ID** (from the base class), t
 Without an attribute the widget renders an instruction block for editors and nothing at all on the
 live site.
 
+The identifiers must match, dot and all: `registerWidgetType('myCompany.dropdownFacet')` and
+`WidgetType => "myCompany.dropdownFacet"` are the same string in two languages, while
+`[RegisterWidget(identifier: "MyCompany.DropdownFacet")]` is the Xperience-side, Pascal-cased one.
+
 ## Tests
 
 ```bash
-npm install && npx tsc --noEmit && npx vitest run     # 3 tests
-cd dotnet && dotnet build && dotnet test               # 3 tests
+npm test                                              # 6 vitest tests
+cd dotnet && dotnet test                              # 3 NUnit tests
 ```
 
 The vitest suite stubs `fetch` with a documented-shape `SearchResponse`, asserts the rendered
-options and asserts through `search.actions.getState()` that changing the selection replaces the
-active facet value rather than adding to it. The NUnit suite calls the base class's public
+options, the markup contract and the escaping, and asserts through `search.actions.getState()` that
+changing the selection replaces the active facet value rather than adding to it — including two
+changes in a row with no render in between. The NUnit suite calls the base class's public
 `BuildModel(properties)` and asserts the emitted mount element.

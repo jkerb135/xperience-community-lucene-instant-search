@@ -7,7 +7,7 @@
  * Run from anywhere: `node samples/pack-and-build.mjs` (or `samples/pack-and-build.ps1`).
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, rmSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync, mkdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -28,6 +28,20 @@ const run = (command, args, cwd) => {
     process.exit(result.status ?? 1);
   }
 };
+
+// custom-widgets.md claims the worked example *is* dropdownFacet.ts. Hold it to that: a guide that
+// drifts from the file it says it shows is how the previous example came to ship four bugs.
+const read = (file) => readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
+const guide = read(join(repoRoot, 'docs/guides/custom-widgets.md'));
+const widget = read(join(sample, 'src/dropdownFacet.ts'));
+if (!guide.includes(`\`\`\`ts\n${widget.trimEnd()}\n\`\`\``)) {
+  console.error(
+    'docs/guides/custom-widgets.md no longer reproduces samples/CustomWidget.Dropdown/src/' +
+      'dropdownFacet.ts verbatim. Paste the file into the guide, or stop claiming it is the file.'
+  );
+  process.exit(1);
+}
+console.log('ok: custom-widgets.md reproduces dropdownFacet.ts verbatim');
 
 // A stale feed is worse than no feed: NuGet would happily restore yesterday's package.
 rmSync(feed, { recursive: true, force: true });

@@ -58,6 +58,49 @@ dotnet add package Kentico.Xperience.Lucene.Admin
 turn needs `Kentico.Xperience.Core` 31.0.0 or later. The admin package is what puts the **Search**
 application in the administration interface, where indexes are defined.
 
+#### Installing from a private feed
+
+Building from source, or consuming the packages from an internal Azure Artifacts / GitHub Packages
+feed? Add a `nuget.config` next to your solution. Adding the `<packageSource>` alone is **not enough**
+on any machine that enables [package source mapping](https://learn.microsoft.com/en-us/nuget/consume-packages/package-source-mapping)
+globally — restore fails with `NU1101: Unable to find package YourCo.Xperience.Search.Core …
+PackageSourceMapping is enabled, the following source(s) were not considered: xps-local`, because a
+mapped configuration only searches the sources a pattern names:
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+  <packageSources>
+    <clear />
+    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
+    <add key="xps-local" value="..\.feed" />        <!-- a folder, a UNC path or a feed URL -->
+  </packageSources>
+  <packageSourceMapping>
+    <clear />
+    <packageSource key="xps-local">
+      <package pattern="YourCo.Xperience.Search.*" />
+    </packageSource>
+    <packageSource key="nuget.org">
+      <package pattern="*" />
+    </packageSource>
+  </packageSourceMapping>
+</configuration>
+```
+
+The `<clear />` elements drop whatever the machine-wide config contributed, so the file describes the
+whole resolution and behaves the same on a developer machine and a build agent. A relative source path
+is relative to the `nuget.config` that declares it. The package version never changes while you are
+iterating on a local build, so the machine-wide package cache will happily serve the previous copy —
+`dotnet restore --packages <a throwaway folder>` (or `dotnet nuget locals global-packages --clear`)
+when a rebuilt package appears not to take effect. `samples/CustomWidget.Dropdown` in this repository
+is set up exactly this way; `samples/pack-and-build.mjs` runs it.
+
+The npm client is not on a public registry yet (see
+[KNOWN-LIMITATIONS](../internal/KNOWN-LIMITATIONS.md)). Install the tarball by path:
+`npm install ./yourco-xperience-search-0.1.0.tgz`. Every documented entry point — the root, the
+`/behaviors` subpath, `/themes/*.css` and `/mock/server.mjs` — resolves the same way it will from a
+registry.
+
 ### 2. Register the services
 
 Add the two calls from the sample above to `Program.cs`. Order matters:
