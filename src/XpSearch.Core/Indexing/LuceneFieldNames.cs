@@ -11,6 +11,16 @@ public static class LuceneFieldNames
     /// <summary>Suffix of the doc-values field that makes a text or keyword attribute sortable.</summary>
     public const string SortSuffix = "_sort";
 
+    /// <summary>
+    /// Reserved field carrying a document's provenance (spec §10.2). Every document written by this
+    /// library has one, so a rebuild of Xperience content and a scoped clear of one external source
+    /// can tell each other's documents apart.
+    /// </summary>
+    public const string SourceField = "_source";
+
+    /// <summary>Value of <see cref="SourceField"/> on documents the Lucene integration indexes from Xperience content.</summary>
+    public const string XperienceSource = "xperience";
+
     /// <summary>Suffix of the analyzed field that makes taxonomy tag titles free-text searchable.</summary>
     public const string TextSuffix = "_text";
 

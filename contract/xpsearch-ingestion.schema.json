@@ -1,0 +1,366 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/your-org/your-monorepo/libraries/xperience-search/contract/xpsearch-ingestion.schema.json",
+  "title": "XpSearchIngestionContract",
+  "description": "Wire contract for the Xperience Search ingestion API (spec 10.1 - 10.4, 10.6, as amended by ADR-0010: documents are addressed by id, timings are tookMs). This schema is the single source of truth: the C# DTOs (XpSearch.Ingestion.Contract) and the TypeScript types are generated from it and must never be hand-edited. Endpoints, all under /api/xpsearch/admin/ and all authenticated with a Bearer API key (spec 10.4): POST indexes/{index}/documents (UpsertRequest -> UpsertResponse), PATCH indexes/{index}/documents/{id} (PatchRequest -> UpsertResponse), DELETE indexes/{index}/documents/{id} (-> DeleteResponse), POST indexes/{index}/documents/delete (BatchDeleteRequest -> DeleteResponse), POST indexes/{index}/clear (-> DeleteResponse), POST indexes/{index}/rebuild (-> UpsertResponse with taskId), GET indexes/{index}/status (-> IndexStatus), GET indexes (-> IndexListResponse). Every response carries the header X-XpSearch-Api-Version: 1. Errors are RFC 9457 Problem Details as produced by ASP.NET Core and are deliberately not redefined here; per-document failures are not errors of the request and come back in UpsertResponse.errors.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "upsertRequest": {
+      "description": "Placeholder property so the code generator emits UpsertRequest. Never sent on the wire.",
+      "$ref": "#/$defs/UpsertRequest"
+    },
+    "patchRequest": {
+      "description": "Placeholder property so the code generator emits PatchRequest. Never sent on the wire.",
+      "$ref": "#/$defs/PatchRequest"
+    },
+    "upsertResponse": {
+      "description": "Placeholder property so the code generator emits UpsertResponse. Never sent on the wire.",
+      "$ref": "#/$defs/UpsertResponse"
+    },
+    "batchDeleteRequest": {
+      "description": "Placeholder property so the code generator emits BatchDeleteRequest. Never sent on the wire.",
+      "$ref": "#/$defs/BatchDeleteRequest"
+    },
+    "deleteResponse": {
+      "description": "Placeholder property so the code generator emits DeleteResponse. Never sent on the wire.",
+      "$ref": "#/$defs/DeleteResponse"
+    },
+    "indexStatus": {
+      "description": "Placeholder property so the code generator emits IndexStatus. Never sent on the wire.",
+      "$ref": "#/$defs/IndexStatus"
+    },
+    "indexListResponse": {
+      "description": "Placeholder property so the code generator emits IndexListResponse. Never sent on the wire.",
+      "$ref": "#/$defs/IndexListResponse"
+    }
+  },
+  "$defs": {
+    "UpsertRequest": {
+      "type": "object",
+      "title": "UpsertRequest",
+      "description": "Body of POST /api/xpsearch/admin/indexes/{index}/documents. Upsert, not insert: a document whose id already exists is replaced. Capped at 1000 documents or 10 MB per request; a larger request is answered with 413 rather than truncated.",
+      "required": [
+        "documents"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "documents": {
+          "type": "array",
+          "description": "The documents to write. Must contain at least one document.",
+          "items": {
+            "$ref": "#/$defs/PushDocument"
+          }
+        },
+        "waitForIndex": {
+          "type": "boolean",
+          "default": false,
+          "description": "When true the response is not sent until the write is searchable. Defaults to false, which queues the write on a background thread. A foot-gun for bulk imports: it serializes the caller against index writes."
+        }
+      }
+    },
+    "PushDocument": {
+      "type": "object",
+      "title": "PushDocument",
+      "description": "One document to write. Open by design: every property other than id and _source is an attribute, validated against the index schema (spec 10.3).",
+      "required": [
+        "id"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Required, caller-owned and stable. Re-pushing the same id replaces the document."
+        },
+        "_source": {
+          "type": "string",
+          "description": "Reserved: the document's provenance. Defaults to the source of the API key, or to \"external\". Never \"xperience\", which is reserved for content the Lucene integration indexes."
+        }
+      }
+    },
+    "PatchRequest": {
+      "type": "object",
+      "title": "PatchRequest",
+      "description": "Body of PATCH /api/xpsearch/admin/indexes/{index}/documents/{id}: the attributes to change and nothing else. Applied as read-modify-rewrite over the stored document, because Lucene has no in-place update.",
+      "additionalProperties": true,
+      "properties": {
+        "_source": {
+          "type": "string",
+          "description": "Reserved: the document's provenance. Present only to keep the reserved name out of the attributes; changing it is rejected."
+        }
+      }
+    },
+    "UpsertResponse": {
+      "type": "object",
+      "title": "UpsertResponse",
+      "description": "Answer to a write. A partially failed batch is still a 200: the documents that validated are written and the rest are reported in errors.",
+      "required": [
+        "indexed",
+        "failed",
+        "errors",
+        "tookMs"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "indexed": {
+          "type": "integer",
+          "description": "Number of documents accepted and persisted."
+        },
+        "failed": {
+          "type": "integer",
+          "description": "Number of documents rejected by schema validation."
+        },
+        "errors": {
+          "type": "array",
+          "description": "One entry per rejected document, keyed by its id and the offending field.",
+          "items": {
+            "$ref": "#/$defs/IngestionError"
+          }
+        },
+        "taskId": {
+          "type": "string",
+          "description": "Identifier of the queued write, present when the write was not awaited. Poll GET indexes/{index}/status to see it land."
+        },
+        "tookMs": {
+          "type": "integer",
+          "description": "Server-side processing time in milliseconds."
+        }
+      }
+    },
+    "IngestionError": {
+      "type": "object",
+      "title": "IngestionError",
+      "description": "Why one document was rejected.",
+      "required": [
+        "message"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The document's id, absent only when the document had none."
+        },
+        "field": {
+          "type": "string",
+          "description": "The attribute the error belongs to, absent for document-level errors."
+        },
+        "message": {
+          "type": "string",
+          "description": "Human-readable description of the problem."
+        }
+      }
+    },
+    "BatchDeleteRequest": {
+      "type": "object",
+      "title": "BatchDeleteRequest",
+      "description": "Body of POST /api/xpsearch/admin/indexes/{index}/documents/delete. Exactly one of ids and filter must be present.",
+      "additionalProperties": false,
+      "properties": {
+        "ids": {
+          "type": "array",
+          "description": "The document ids to delete.",
+          "items": {
+            "type": "string",
+            "description": "A document id."
+          }
+        },
+        "filter": {
+          "$ref": "#/$defs/DeleteFilter",
+          "description": "Delete every document matching the filter instead of naming ids."
+        }
+      }
+    },
+    "DeleteFilter": {
+      "type": "object",
+      "title": "DeleteFilter",
+      "description": "Which documents a filtered delete removes. Only provenance is filterable: a delete that could match Xperience content would be a way to lose it.",
+      "required": [
+        "source"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "type": "string",
+          "description": "Delete every document pushed under this source. \"xperience\" is rejected."
+        }
+      }
+    },
+    "DeleteResponse": {
+      "type": "object",
+      "title": "DeleteResponse",
+      "description": "Answer to a delete or a clear.",
+      "required": [
+        "deleted",
+        "tookMs"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "deleted": {
+          "type": "integer",
+          "description": "Number of stored documents the operation removed."
+        },
+        "taskId": {
+          "type": "string",
+          "description": "Identifier of the queued write, present when the delete was not awaited."
+        },
+        "tookMs": {
+          "type": "integer",
+          "description": "Server-side processing time in milliseconds."
+        }
+      }
+    },
+    "IndexStatus": {
+      "type": "object",
+      "title": "IndexStatus",
+      "description": "Answer to GET /api/xpsearch/admin/indexes/{index}/status.",
+      "required": [
+        "index",
+        "documents",
+        "health"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "index": {
+          "type": "string",
+          "description": "Code name of the index."
+        },
+        "documents": {
+          "$ref": "#/$defs/DocumentCounts",
+          "description": "How many documents the index holds, and where they came from."
+        },
+        "lastWrite": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When an external document was last written to this index, absent when none ever was."
+        },
+        "health": {
+          "type": "string",
+          "enum": [
+            "healthy",
+            "degraded",
+            "unavailable"
+          ],
+          "description": "\"healthy\" when the index is readable and nothing is stuck, \"degraded\" when queued writes are waiting or replaying, \"unavailable\" when the index cannot be read."
+        }
+      }
+    },
+    "DocumentCounts": {
+      "type": "object",
+      "title": "DocumentCounts",
+      "description": "Document counts of one index.",
+      "required": [
+        "total",
+        "bySource"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "total": {
+          "type": "integer",
+          "description": "Number of documents in the Lucene index, whatever their provenance."
+        },
+        "bySource": {
+          "type": "object",
+          "description": "Number of documents per _source value, including \"xperience\".",
+          "additionalProperties": {
+            "type": "integer",
+            "description": "Number of documents carrying the source."
+          }
+        }
+      }
+    },
+    "IndexListResponse": {
+      "type": "object",
+      "title": "IndexListResponse",
+      "description": "Answer to GET /api/xpsearch/admin/indexes.",
+      "required": [
+        "indexes"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "indexes": {
+          "type": "array",
+          "description": "Every registered index and the schema pushed documents are validated against.",
+          "items": {
+            "$ref": "#/$defs/IndexSummary"
+          }
+        }
+      }
+    },
+    "IndexSummary": {
+      "type": "object",
+      "title": "IndexSummary",
+      "description": "One index and its schema.",
+      "required": [
+        "name",
+        "schema",
+        "allowDynamicFields"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Code name of the index."
+        },
+        "schema": {
+          "type": "array",
+          "description": "The fields the index accepts, detected from Xperience content types and declared in code.",
+          "items": {
+            "$ref": "#/$defs/SchemaField"
+          }
+        },
+        "allowDynamicFields": {
+          "type": "boolean",
+          "description": "Whether a pushed document may carry attributes the schema does not declare. False by default."
+        }
+      }
+    },
+    "SchemaField": {
+      "type": "object",
+      "title": "SchemaField",
+      "description": "One field of an index schema (spec 10.3).",
+      "required": [
+        "name",
+        "type",
+        "searchable",
+        "facetable",
+        "sortable",
+        "retrievable"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Attribute name, as it appears on a pushed document and in a query."
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "string",
+            "text",
+            "number",
+            "date",
+            "boolean",
+            "string[]"
+          ],
+          "description": "What the field holds: \"string\" is matched verbatim, \"text\" is analyzed free text, \"date\" is Unix epoch seconds, \"string[]\" is a multi-valued facet dimension (an Xperience taxonomy)."
+        },
+        "searchable": {
+          "type": "boolean",
+          "description": "Whether free-text queries match against the field."
+        },
+        "facetable": {
+          "type": "boolean",
+          "description": "Whether the field can be filtered on with filters.facets."
+        },
+        "sortable": {
+          "type": "boolean",
+          "description": "Whether the field can be used as a sort key."
+        },
+        "retrievable": {
+          "type": "boolean",
+          "description": "Whether the field is stored and can be returned in a result's attributes."
+        }
+      }
+    }
+  }
+}

@@ -19,6 +19,12 @@ public enum SearchFieldKind
     /// <summary>A date, indexed as Unix epoch seconds and filterable with <c>filters.numeric</c>.</summary>
     Date,
 
+    /// <summary>
+    /// A boolean, indexed verbatim as <c>true</c> or <c>false</c>. Only externally pushed documents
+    /// declare one (spec §10.3); no Xperience field type maps to it.
+    /// </summary>
+    Boolean,
+
     /// <summary>An Xperience taxonomy field, indexed as a multi-valued facet dimension.</summary>
     Taxonomy
 }

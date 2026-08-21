@@ -36,6 +36,28 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
   what the Page Builder stats widget's **Text template** property emits.
 - **Added:** `docs/guides/page-builder-widgets.md`, the C# half of `docs/guides/custom-widgets.md`, and
   ADR-0012.
+- **Added:** `XpSearch.Ingestion` (spec §10) — push arbitrary documents into a Lucene index and search
+  them alongside Xperience content. HTTP endpoints under `/api/xpsearch/admin/` (upsert, patch, delete,
+  batch delete, scoped clear, rebuild, status, index list), the in-process `IXpSearchIndexer`, code-declared
+  schemas (`[XpSearchSchema]` / `[XpSearchField]`) with narrow, explicit coercion and field-type-change
+  detection, bearer API keys scoped per index and per operation (PBKDF2-hashed, shown once) with a
+  per-key rate limit, and an ingestion audit log. Register with `AddXpSearchIngestion()` after
+  `AddXpSearch()` and map with `MapXpSearchIngestion()`.
+- **Added:** durable ingestion (ADR-0005, accepted). Pushed documents are persisted in the
+  `XpSearch.ExternalDocument` custom module class before they are queued to Lucene through a
+  `ThreadQueueWorker`; unprocessed rows are re-queued on startup, and a rebuild of Xperience content
+  replays them instead of losing them. `waitForIndex: true` writes inline and is documented as a
+  foot-gun for bulk imports.
+- **Added:** provenance isolation. Every document carries the reserved `_source` attribute
+  (`"xperience"` for content the Lucene integration indexes, the caller's own value for pushed
+  documents); `clear` is scopeable to one source and can never reach Xperience content, and
+  `GET .../status` reports document counts per source.
+- **Added:** a second wire contract, `contract/xpsearch-ingestion.schema.json`, generated the same way
+  as the query contract into `XpSearch.Ingestion.Contract` and
+  `@yourco/xperience-search`'s `contract/ingestion-generated.ts`; `npm run contract:check` covers both.
+- **Added:** `SearchFieldKind.Boolean` and the reserved `_source` schema field in `XpSearch.Core`, and
+  `IServiceCollection.DecorateLuceneClient<TDecorator>(…)`, which the core package now uses for its own
+  cache-evicting decorator and ingestion uses for the rebuild replay.
 
 - **Changed (breaking):** the wire contract and the JavaScript API are owned by this product rather
   than modelled on Algolia and InstantSearch (ADR-0010). `SearchRequest` takes a one-based `page`,

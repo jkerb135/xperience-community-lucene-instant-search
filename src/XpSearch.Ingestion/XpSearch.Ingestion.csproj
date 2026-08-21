@@ -11,4 +11,20 @@
     <ProjectReference Include="..\XpSearch.Core\XpSearch.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Kentico.Xperience.Core" />
+    <PackageReference Include="Lucene.Net" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Xperience discovers the module class that installs the ingestion object types only in an
+         assembly marked discoverable:
+         https://docs.kentico.com/documentation/developers-and-admins/customization/integrate-custom-code -->
+    <AssemblyAttribute Include="CMS.AssemblyDiscoverableAttribute" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="XpSearch.Ingestion.Tests" />
+  </ItemGroup>
+
 </Project>
