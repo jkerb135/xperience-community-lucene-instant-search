@@ -5,10 +5,12 @@ observable state (`SearchState`), and independent widgets that subscribe to it. 
 anywhere in the DOM — search box in the header, facets in a left rail, results in `<main>` — with no
 shared parent and no order requirement.
 
-> **Status:** the core ships today: state, transport, the widget lifecycle, the
-> [connectors](custom-widgets.md), routing, the event bus and the `.xps-mount` bootstrap. The six
-> default widget renderers (`searchBox`, `hits`, `refinementList`, `pagination`, `stats`, `sortBy`)
-> land next; until then you render with the connectors, exactly as the built-ins will.
+> **Status:** the core and the default widgets ship today: state, transport, the widget lifecycle,
+> the [connectors](custom-widgets.md), routing, the event bus, the `.xps-mount` bootstrap, and the
+> nine renderers documented in the [widget reference](widget-reference.md) — `searchBox`, `hits`,
+> `refinementList`, `pagination`, `stats`, `sortBy`, `clearRefinements`, `currentRefinements`,
+> `toggleRefinement`. `autocomplete`, `rangeSlider`, `hierarchicalMenu` and `infiniteHits` do not
+> have renderers yet; build them on the connectors, exactly as the built-ins are built.
 
 ### A working search page
 
@@ -24,52 +26,51 @@ shared parent and no order requirement.
     routing: true,
     searchOnInitialLoad: false,
     debounceMs: 150,
+    highlight: { fields: ['title', 'content'] },
   });
 
-  // Two widgets built from connectors: behaviour is supplied, rendering is yours.
-  const searchBox = xpsearch.connectSearchBox(({ query, refine, widgetParams }, isFirstRender) => {
-    if (isFirstRender) {
-      widgetParams.container.innerHTML = '<input type="search" aria-label="Search">';
-      widgetParams.container.querySelector('input')
-        .addEventListener('input', (event) => refine(event.target.value));
-    }
-    widgetParams.container.querySelector('input').value = query;
-  });
-
-  const hits = xpsearch.connectHits(({ hits, results, sendEvent, widgetParams }) => {
-    widgetParams.container.innerHTML = results === null
-      ? ''
-      : hits.map((hit) => `<article><a href="${hit.url}" data-id="${hit.objectID}">${hit.title}</a></article>`).join('')
-        || '<p>No results.</p>';
-
-    widgetParams.container.querySelectorAll('a').forEach((link, position) => {
-      link.addEventListener('click', () => sendEvent('click', hits[position], position + 1));
-    });
-  });
-
+  // The default widgets: a connector plus a renderer, nothing you have to write.
   search.addWidgets([
-    searchBox({ container: document.querySelector('#search-box') }),
-    hits({ container: document.querySelector('#search-results') }),
+    xpsearch.searchBox({ container: '#search-box', placeholder: 'Search…' }),
+    xpsearch.hits({ container: '#search-results' }),
   ]);
 
   search.start();
 </script>
 ```
 
+Every option, template signature and piece of markup is in the
+[widget reference](widget-reference.md). When no widget fits, drop to a connector and render it
+yourself — the built-ins have nothing else available to them either:
+
+```js
+const myHits = xpsearch.connectHits(({ hits, sendEvent, widgetParams }) => {
+  widgetParams.container.innerHTML = hits
+    .map((hit) => `<article><a href="${hit.url}" data-id="${hit.objectID}">${hit.title}</a></article>`)
+    .join('');
+
+  widgetParams.container.querySelectorAll('a').forEach((link, position) => {
+    link.addEventListener('click', () => sendEvent('click', hits[position], position + 1));
+  });
+});
+```
+
 The same thing through a bundler:
 
 ```js
-import xpsearch from '@yourco/xperience-search';
-import { connectSearchBox, connectHits } from '@yourco/xperience-search/connectors';
+import xpsearch, { searchBox, hits } from '@yourco/xperience-search';
 
 const search = xpsearch({ index: 'site-content', routing: true });
-search.addWidgets([/* … */]);
+search.addWidgets([
+  searchBox({ container: '#search-box' }),
+  hits({ container: '#search-results' }),
+]);
 search.start();
 ```
 
 `dist/xpsearch.umd.js` defines the global `xpsearch`: the factory function itself, with every named
-export and every connector hanging off it (`xpsearch.connectHits`, `xpsearch.registerWidgetType`,
-`xpsearch.QUERY_ROUTE`, …). The ESM build is `dist/xpsearch.mjs` plus `dist/connectors.mjs`, and the
+export, every widget and every connector hanging off it (`xpsearch.searchBox`, `xpsearch.html`,
+`xpsearch.connectHits`, `xpsearch.registerWidgetType`, `xpsearch.QUERY_ROUTE`, …). The ESM build is `dist/xpsearch.mjs` plus `dist/connectors.mjs`, and the
 package `exports` map points `.` and `./connectors` at them, with TypeScript declarations for both.
 
 ### Options
@@ -217,7 +218,12 @@ a numeric `price` and a `publishedAt`.
 cd libraries/xperience-search/src/XpSearch.Client
 npm ci
 npm run mock            # xpsearch mock server on http://127.0.0.1:3131/api/xpsearch/query (54 documents)
+npm run demo            # the same corpus behind a full demo page on http://127.0.0.1:3131/
 ```
+
+`npm run demo` builds the bundles and serves `src/XpSearch.Client/demo/index.html` with the theme
+stylesheets — a complete search page assembled from every default widget, plus a second, independent
+instance built from `.xps-mount` markup.
 
 ```bash
 curl -s -X POST http://127.0.0.1:3131/api/xpsearch/query \

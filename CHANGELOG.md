@@ -8,6 +8,11 @@ Breaking changes to the public connector API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- Added: the nine default widgets (spec §5.3) — `searchBox`, `hits`, `refinementList`, `pagination`,
+  `stats`, `sortBy`, `clearRefinements`, `currentRefinements`, `toggleRefinement` — each a connector
+  plus a renderer over the public API, the escaping-by-default `html`/`highlight`/`formatNumber`
+  template helpers, click tracking in `hits`, an axe-core gate in CI, and a demo page on
+  `npm run demo`; core plus all nine is 12.3 KB gzip against the 20 KB budget (ADR-0009).
 - Added: the theme layer (spec §6) — `themes/src/shell.css` (structure only) and
   `themes/src/default.css` (opt-in, CSS-variable driven), the frozen `xps-` markup contract in
   `themes/MARKUP.md` with a fixture per widget, the three-way verification page in `themes/test/`,

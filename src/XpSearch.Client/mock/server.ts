@@ -277,35 +277,38 @@ function send(res: ServerResponse, status: number, body?: unknown): void {
   res.end(body === undefined ? '' : JSON.stringify(body));
 }
 
-export function createMockServer(): Server {
-  return createServer((req, res) => {
-    const path = (req.url ?? '').split('?')[0];
-    if (req.method !== 'POST') {
-      send(res, 405);
-      return;
-    }
-    void readBody(req).then(
-      (body) => {
-        if (path === QUERY_ROUTE) {
-          const request = body as SearchRequest;
-          if (!request?.index) {
-            send(res, 400, { title: 'index is required', status: 400 });
-            return;
-          }
-          send(res, 200, query(request));
-        } else if (path === SUGGEST_ROUTE) {
-          send(res, 200, suggest(body as SuggestRequest));
-        } else if (path === EVENTS_ROUTE) {
-          const event = body as EventRequest;
-          if (!event?.objectID || !event?.queryId) send(res, 400, { title: 'objectID and queryId are required', status: 400 });
-          else send(res, 202);
-        } else {
-          send(res, 404, { title: 'Not found', status: 404 });
+/** The API half of the mock, so the demo server can serve files alongside it. */
+export function handleApiRequest(req: IncomingMessage, res: ServerResponse): void {
+  const path = (req.url ?? '').split('?')[0];
+  if (req.method !== 'POST') {
+    send(res, 405);
+    return;
+  }
+  void readBody(req).then(
+    (body) => {
+      if (path === QUERY_ROUTE) {
+        const request = body as SearchRequest;
+        if (!request?.index) {
+          send(res, 400, { title: 'index is required', status: 400 });
+          return;
         }
-      },
-      () => send(res, 400, { title: 'Malformed JSON body', status: 400 })
-    );
-  });
+        send(res, 200, query(request));
+      } else if (path === SUGGEST_ROUTE) {
+        send(res, 200, suggest(body as SuggestRequest));
+      } else if (path === EVENTS_ROUTE) {
+        const event = body as EventRequest;
+        if (!event?.objectID || !event?.queryId) send(res, 400, { title: 'objectID and queryId are required', status: 400 });
+        else send(res, 202);
+      } else {
+        send(res, 404, { title: 'Not found', status: 404 });
+      }
+    },
+    () => send(res, 400, { title: 'Malformed JSON body', status: 400 })
+  );
+}
+
+export function createMockServer(): Server {
+  return createServer(handleApiRequest);
 }
 
 /** Starts the mock on `port` (0 = an ephemeral one) and resolves its base URL. */

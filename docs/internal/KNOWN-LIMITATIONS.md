@@ -16,6 +16,44 @@ and how to lift it.
 - **Upgrade path:** add the two connector files once those decisions land; both are additive, so neither
   is a breaking change.
 
+## `searchable` in `XpSearch.Client/src/widgets/refinementList.ts`
+
+- **Simplified:** `searchable: true` renders a facet-search input that filters the values **already
+  rendered**, in the browser, by case-insensitive substring. There is no facet-search endpoint in the
+  JSON contract (spec §4.2 has no equivalent of Algolia's `searchForFacetValues`), so there is nothing
+  server-side to call.
+- **Ceiling:** a visitor cannot find a value that falls outside `limit`/`showMoreLimit`, or one the
+  current query returned no documents for. On an attribute with hundreds of values the control looks
+  like it is broken.
+- **Upgrade path:** add a facet-search route to the contract (a coordinated contract change), give
+  `connectRefinementList` a `searchForFacetValues` render-state member, and have the widget call it
+  instead of filtering locally; the markup and the option name do not change.
+
+## The loading template in `XpSearch.Client/src/widgets/hits.ts`
+
+- **Simplified:** `templates.loading` (and the default skeleton rows) render only while a **first**
+  search is in flight *and* a render happens during it — in practice, once the instance's stall
+  threshold (`stalledSearchDelayMs`, default 200 ms) has elapsed. Later searches keep the previous
+  results on screen with `aria-busy="true"` and the `--loading` modifier instead of blanking them.
+- **Ceiling:** a fast first response never shows the skeletons at all (deliberate — no flash), and a
+  page configured with `searchOnInitialLoad: false` renders an empty results area rather than a
+  placeholder until the visitor searches.
+- **Upgrade path:** if a project wants a placeholder before the first search, pass a
+  `templates.empty` that reads well as an idle state, or give the instance a `status` render pass on
+  `start()` so the widget can distinguish "about to search" from "idle".
+
+## Widget renderers not shipped, in `XpSearch.Client/src/widgets/index.ts`
+
+- **Simplified:** `autocomplete`, `rangeSlider`, `hierarchicalMenu` and `infiniteHits` have a markup
+  contract in `themes/MARKUP.md` and a fixture, but no default renderer. Three of them have no
+  connector either (see the entry above); `rangeSlider` has `connectRange` but inherits its
+  hand-configured bounds.
+- **Ceiling:** a project needing any of the four writes the renderer itself against the connector, or
+  waits. `FIRST_PARTY_WIDGET_TYPES` still reserves the four names, so a `.xps-mount` naming one is a
+  console error and a skipped widget, not a silent no-op.
+- **Upgrade path:** add the renderer next to the others and put it in `DEFAULT_WIDGETS`; the markup,
+  the CSS and the fixtures are already in place, so each is additive.
+
 ## `connectRange` in `XpSearch.Client/src/connectors/range.ts`
 
 - **Simplified:** the control's bounds come from `widgetParams.min`/`max`, and `canRefine` is false
