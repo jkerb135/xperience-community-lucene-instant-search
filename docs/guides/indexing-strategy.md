@@ -73,6 +73,30 @@ as text; use an override if you want one of them anyway.
 Rich text is stripped with `CMS.Helpers.HTMLHelper.StripTags` before it is indexed, so markup and HTML
 entities never reach the analyzer or a highlighted snippet.
 
+### Reusable field schema fields
+
+Fields a content type gets from a
+[reusable field schema](https://docs.kentico.com/documentation/developers-and-admins/development/content-types/reusable-field-schemas)
+are detected and mapped exactly like the type's own — which matters, because on Dancing Goat the
+`ProductFieldTags` and `ProductFieldCategory` taxonomies reach `DancingGoat.ProductCoffee` and
+`DancingGoat.ProductBrewer` only that way.
+
+They are not in the content type's own `ClassFormDefinition`: it holds one `<schema guid="…"/>`
+reference per schema, and the schema's fields live on the `CMS.ContentItemCommonData` class, each
+carrying a `kxp_schema_identifier` property naming the schema it belongs to. So `IContentTypeFieldSource`
+reads both class definitions, takes the referenced schema GUIDs from the content type
+(`FormInfo.GetFields<FormSchemaInfo>()`) and merges in every `CMS.ContentItemCommonData` field whose
+`kxp_schema_identifier` matches one of them.
+
+A name defined by both the content type and one of its schemas is a configuration error — the Kentico
+docs tell you to prefix schema fields with the schema name to avoid exactly that. When it happens the
+content type's own field is the one indexed and the schema field is dropped, with an `ILogger` warning
+naming the field and the content type.
+
+Nothing about this is specific to web pages: a reusable content item is mapped through the same
+`IContentTypeFieldSource.GetFields(item.ContentTypeName)` call, so its schema fields are indexed the
+same way.
+
 ### How taxonomies become facets
 
 An Xperience taxonomy field holds tag references (GUIDs). For each one the strategy resolves the tags

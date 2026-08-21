@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <None Update="Contract\Fixtures\*.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Fixtures\ClassFormDefinitions\*.xml" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

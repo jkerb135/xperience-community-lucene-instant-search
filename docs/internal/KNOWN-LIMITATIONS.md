@@ -165,15 +165,24 @@ and how to lift it.
 
 - **Simplified:** fields are detected from `DataClassInfo.ClassFormDefinition` via `FormInfo.GetFields`, and
   mapped by their field data type. Data types with no obvious search meaning (assets, references, booleans,
-  GUIDs, XML) are dropped. Whether fields contributed by a reusable field schema appear in a content type's
-  own class form definition was not confirmed against a live database, only assumed.
-- **Ceiling:** if reusable field schema fields are *not* materialized into the class form definition, a
-  content type that gets its taxonomy field from a schema — `IProductFields` in Dancing Goat — would have
-  that field missing from the schema and therefore unfacetable, which is exactly the failure spec §4.5
-  forbids. The mapping is also fixed: a project that wants a boolean indexed must override it by hand.
-- **Upgrade path:** verify on a live instance; if schema fields are absent, additionally read each
-  `FormInfo.GetFormSchema(...)` entry's definition and merge its fields. The
-  `IContentTypeFieldSource` interface is the seam, so the fix is one implementation.
+  GUIDs, XML) are dropped. Reusable field schema fields are **not** in a content type's own class form
+  definition — verified against a Dancing Goat database, where `DancingGoat.ProductCoffee` holds only
+  `<schema guid="fe13f703-…"/>` — so the source reads a second class, `CMS.ContentItemCommonData`, and
+  merges in every field whose `kxp_schema_identifier` property matches one of the GUIDs the content type
+  references. Kentico's own helper for this (`ReusableFieldSchemasHelper.CopySchemas`) is `internal`, and
+  `IReusableFieldSchemaManager` lives in a `.Internal` namespace, so the merge is done here over the two
+  public `FormInfo` objects instead.
+- **Ceiling:** two class queries per content type instead of one, and the merge re-implements a rule that
+  belongs to the platform: if Xperience ever stores schema fields somewhere other than
+  `CMS.ContentItemCommonData`, or renames the `kxp_schema_identifier` property, detection silently loses
+  every schema field again. A name defined by both a content type and one of its schemas is a configuration
+  error: the content type's field is kept and the schema field dropped with an `ILogger` warning, rather
+  than being merged or erroring out. The data type mapping is still fixed — a project that wants a boolean
+  indexed must override it by hand. Reusable items indexed through `FindItemsToReindex` need nothing extra:
+  `XpSearchIndexingStrategy` does not override it, and every item resolves its fields through the same
+  `IContentTypeFieldSource.GetFields(item.ContentTypeName)` call, so it takes exactly this path.
+- **Upgrade path:** drop the merge and call the platform helper if Kentico makes
+  `ReusableFieldSchemasHelper` (or an equivalent) public. `IContentTypeFieldSource` remains the seam.
 
 ## Schema resolution per uncached request, in `XpSearch.Core/Pipeline/SearchPipeline.cs`
 

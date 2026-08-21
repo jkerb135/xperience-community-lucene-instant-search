@@ -8,6 +8,11 @@ Breaking changes to the public connector API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- Fixed: fields a content type inherits from a reusable field schema are detected, so a taxonomy that
+  reaches a type only through a schema (`ProductFieldTags` and `ProductFieldCategory` on Dancing Goat's
+  products) becomes a facet like any other. A name defined by both the content type and one of its
+  schemas keeps the content type's field and logs a warning.
+
 - Added: the nine default widgets (spec §5.3) — `searchBox`, `hits`, `refinementList`, `pagination`,
   `stats`, `sortBy`, `clearRefinements`, `currentRefinements`, `toggleRefinement` — each a connector
   plus a renderer over the public API, the escaping-by-default `html`/`highlight`/`formatNumber`
