@@ -21,20 +21,64 @@ const banner = (comment) => [
   `${comment} </auto-generated>`,
 ].join('\n');
 
+// XpSearch.Core is a published package, so its public API must be the contract types and nothing
+// else. `--features attributes-only` drops quicktype's FromJson/ToJson plumbing; these three edits
+// deal with what it still emits as public. Each one throws if its anchor is gone, so a quicktype
+// upgrade that changes the output fails the build instead of quietly widening the public surface.
+const csharpEdits = [
+  {
+    why: 'the placeholder top-level type is never sent on the wire',
+    from: 'public partial class XpSearchContract',
+    to: 'internal partial class XpSearchContract',
+  },
+  {
+    why: 'unused date converter, emitted for every C# target',
+    from: 'public class DateOnlyConverter',
+    to: 'internal class DateOnlyConverter',
+  },
+  {
+    why: 'unused time converter, emitted for every C# target',
+    from: 'public class TimeOnlyConverter',
+    to: 'internal class TimeOnlyConverter',
+  },
+  {
+    // attributes-only emits EventTypeConverter (which maps "click"/"conversion") but attaches it to
+    // nothing, so a default JsonSerializer would write the enum as 0/1. Attaching it to the enum
+    // itself makes every use of EventType round-trip the wire strings, options or no options.
+    // The pragma is scoped to the enum, not the file: CS1591 (missing XML doc) is otherwise a real
+    // signal here, and every other emitted member carries its schema description. JSON Schema has
+    // nowhere to describe an individual enum value, so these two members cannot be documented.
+    why: 'attributes-only leaves the enum converter unattached',
+    from: '    public enum EventType { Click, Conversion };',
+    to: [
+      '#pragma warning disable CS1591 // no way to document an individual enum member from JSON Schema',
+      '    [JsonConverter(typeof(EventTypeConverter))]',
+      '    public enum EventType { Click, Conversion };',
+      '#pragma warning restore CS1591',
+    ].join('\n'),
+  },
+];
+
 const targets = [
   {
     name: 'C#',
     out: resolve(clientDir, '../XpSearch.Core/Contract/Generated/XpSearchContract.g.cs'),
-    args: ['--lang', 'cs', '--framework', 'SystemTextJson', '--csharp-version', '8', '--namespace', 'XpSearch.Core.Contract'],
-    // CS1591: quicktype's serializer plumbing (Converter, Serialize, ...) carries no XML docs and
-    // the library builds with GenerateDocumentationFile + TreatWarningsAsErrors.
-    header: `${banner('//')}\n#pragma warning disable CS1591\n`,
+    args: [
+      '--lang', 'cs', '--framework', 'SystemTextJson', '--csharp-version', '8',
+      '--features', 'attributes-only', '--namespace', 'XpSearch.Core.Contract',
+    ],
+    // attributes-only emits no file-level directives of its own, so the header supplies them:
+    // #nullable enable because the properties carry nullable annotations (CS8669), and CS8618
+    // because a required wire field is left uninitialized until the deserializer sets it.
+    header: `${banner('//')}\n#nullable enable\n#pragma warning disable CS8618\n`,
+    edits: csharpEdits,
   },
   {
     name: 'TypeScript',
     out: resolve(clientDir, 'src/contract/generated.ts'),
     args: ['--lang', 'ts', '--just-types', '--acronym-style', 'original'],
     header: `${banner('//')}\n`,
+    edits: [],
   },
 ];
 
@@ -44,7 +88,14 @@ function generate(target, outFile) {
     '--src-lang', 'schema', '--src', schemaPath,
     '--top-level', 'XpSearchContract', ...target.args, '-o', outFile,
   ], { cwd: clientDir, stdio: ['ignore', 'inherit', 'inherit'] });
-  return target.header + readFileSync(outFile, 'utf8').replace(/\r\n/g, '\n');
+  let text = readFileSync(outFile, 'utf8').replace(/\r\n/g, '\n');
+  for (const edit of target.edits) {
+    if (!text.includes(edit.from)) {
+      throw new Error(`${target.name}: quicktype no longer emits \`${edit.from}\` (edit reason: ${edit.why}). Review the generated output before removing this edit.`);
+    }
+    text = text.replace(edit.from, edit.to);
+  }
+  return target.header + text;
 }
 
 // The contract's Hit is an open object (spec 4.2): reserved members plus any retrieved attribute.
@@ -53,13 +104,16 @@ function generate(target, outFile) {
 function assertHitStaysOpen(lang, text) {
   const schema = JSON.parse(readFileSync(schemaPath, 'utf8'));
   const names = Object.keys(schema.$defs.Hit.properties);
-  // The TypeScript `Hit` body: everything between `export interface Hit {` and the closing brace.
-  const tsHit = text.slice(text.indexOf('export interface Hit {')).split('\n}')[0];
-  const missing = names.filter((n) => (lang === 'C#'
-    ? !text.includes(`[JsonPropertyName("${n}")]`)
-    : !new RegExp(`^\\s*${n}\\??:`, 'm').test(tsHit)));
-  if (missing.length) {
-    throw new Error(`${lang}: generated Hit is missing schema properties: ${missing.join(', ')}`);
+  // The generated `Hit` body only: everything from the declaration to its closing brace. Scoped,
+  // so that a property removed from Hit but still present on another type is still caught.
+  const anchor = lang === 'C#' ? 'public partial class Hit\n' : 'export interface Hit {';
+  const hitBody = text.slice(text.indexOf(anchor)).split('\n    }')[0].split('\n}')[0];
+  const declared = lang === 'C#'
+    ? [...hitBody.matchAll(/\[JsonPropertyName\("([^"]+)"\)]/g)].map((m) => m[1])
+    : [...hitBody.matchAll(/^\s{4}(\w+)\??:/gm)].map((m) => m[1]);
+  const expected = [...names].sort().join(', ');
+  if (declared.sort().join(', ') !== expected) {
+    throw new Error(`${lang}: generated Hit declares [${declared.join(', ')}] but the schema's Hit.properties are [${expected}].`);
   }
   if (lang === 'C#') {
     if (!/public partial class Hit\b/.test(text)) {
@@ -69,7 +123,7 @@ function assertHitStaysOpen(lang, text) {
     if (!handWritten.includes('[JsonExtensionData]')) {
       throw new Error('C#: Contract/Hit.cs no longer carries [JsonExtensionData]; Hit would be a closed object.');
     }
-  } else if (!tsHit.includes('[property: string]: unknown;')) {
+  } else if (!hitBody.includes('[property: string]: unknown;')) {
     throw new Error('TypeScript: generated Hit lost its index signature; it would be a closed object.');
   }
 }

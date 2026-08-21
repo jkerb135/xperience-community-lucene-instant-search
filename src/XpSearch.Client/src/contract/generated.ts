@@ -226,7 +226,12 @@ export interface SearchResponse {
  * One search result. Deliberately an open object: objectID and the underscore-prefixed
  * members are reserved by the contract, and every other property is a retrieved document
  * attribute (title, url, summary, image, ...) whose set is decided by
- * SearchRequest.attributesToRetrieve and the index configuration.
+ * SearchRequest.attributesToRetrieve and the index configuration. Any attribute holding a
+ * link - url is the conventional name - is always root-relative
+ * ("/articles/espresso-basics") or absolute
+ * ("https://example.com/articles/espresso-basics"); never the app-relative "~/..." form
+ * Xperience URL retrievers return, because the server resolves that before the hit reaches
+ * the wire.
  */
 export interface Hit {
     /**
@@ -249,13 +254,6 @@ export interface Hit {
      * conversion events.
      */
     objectID: string;
-    /**
-     * Canonical link to the document, when the index projects one. Always root-relative
-     * ("/articles/espresso-basics") or absolute
-     * ("https://example.com/articles/espresso-basics"); never the app-relative "~/..." form
-     * Xperience's URL retriever returns - the server resolves that before it reaches the wire.
-     */
-    url?: string;
     [property: string]: unknown;
 }
 

@@ -39,7 +39,7 @@ public class ContractRoundTripTests
     [Test]
     public void SearchResponse_Spec_Sample_Round_Trips() => AssertRoundTrips<SearchResponse>("search-response.json");
 
-    /// <summary>A hit keeps its non-reserved attributes (title, summary) through the open-object extension data.</summary>
+    /// <summary>A hit keeps its non-reserved attributes (title, url, summary) through the open-object extension data.</summary>
     [Test]
     public void Hit_Keeps_Non_Reserved_Attributes()
     {
@@ -52,10 +52,11 @@ public class ContractRoundTripTests
             Assert.That(hit.Score, Is.EqualTo(8.42d));
             Assert.That(hit.Highlights!["title"], Is.EqualTo("<mark>Espresso</mark> Basics"));
             Assert.That(hit.RankingInfo!.Position, Is.EqualTo(1));
-            // url is a reserved member; title and summary are not, so they arrive as extension data.
-            Assert.That(hit.Url, Is.EqualTo("/articles/espresso-basics"));
-            Assert.That(hit.Attributes.Keys, Is.EquivalentTo(new[] { "title", "summary" }));
+            // objectID and the underscore members are the only reserved ones: url is as much a
+            // retrieved attribute as title and summary, so all three arrive as extension data.
+            Assert.That(hit.Attributes.Keys, Is.EquivalentTo(new[] { "title", "url", "summary" }));
             Assert.That(hit.Attributes["title"].GetString(), Is.EqualTo("Espresso Basics"));
+            Assert.That(hit.Attributes["url"].GetString(), Is.EqualTo("/articles/espresso-basics"));
             Assert.That(hit.Attributes["summary"].GetString(), Is.EqualTo("..."));
         }
     }
@@ -74,6 +75,47 @@ public class ContractRoundTripTests
             Assert.That(hit.Score, Is.Null);
             Assert.That(JsonSerializer.Serialize(hit), Does.Not.Contain("_rankingInfo"));
         }
+    }
+
+    /// <summary>
+    /// An event round-trips with its wire strings: <c>"click"</c> and <c>"conversion"</c>, never the
+    /// enum member names or their ordinals, with no serializer options needed at the call site.
+    /// </summary>
+    [Test]
+    public void EventRequest_Round_Trips_With_Lower_Case_Event_Type()
+    {
+        AssertRoundTrips<EventRequest>("event-request.json");
+
+        var request = JsonSerializer.Deserialize<EventRequest>(ReadFixture("event-request.json"))!;
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(request.EventType, Is.EqualTo(EventType.Click));
+            Assert.That(request.Position, Is.EqualTo(1));
+            Assert.That(JsonSerializer.Serialize(request), Does.Contain("\"eventType\":\"click\""));
+            Assert.That(
+                JsonSerializer.Serialize(new EventRequest { EventType = EventType.Conversion, QueryId = "q", ObjectId = "o" }),
+                Does.Contain("\"eventType\":\"conversion\""));
+        }
+    }
+
+    /// <summary>
+    /// The published API surface of the contract namespace is exactly the wire types plus the
+    /// constants - no serializer plumbing leaks out of the generated file into the NuGet package.
+    /// </summary>
+    [Test]
+    public void Contract_Namespace_Exports_Only_The_Contract_Types()
+    {
+        var exported = typeof(ContractConstants).Assembly.GetExportedTypes()
+            .Where(t => t.Namespace == "XpSearch.Core.Contract")
+            .Select(t => t.Name)
+            .OrderBy(n => n, StringComparer.Ordinal);
+
+        Assert.That(exported, Is.EqualTo(new[]
+        {
+            "ContractConstants", "EventRequest", "EventType", "HighlightOptions", "Hit",
+            "RankingInfo", "SearchRequest", "SearchResponse", "SuggestRequest", "SuggestResponse", "Suggestion",
+        }));
     }
 
     /// <summary>The routes and the version header are the frozen values from spec §4.2 and §4.3.</summary>

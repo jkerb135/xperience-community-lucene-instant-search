@@ -133,19 +133,20 @@ coming back as `0`.
 
 #### A hit is an open object
 
-Only `objectID` (required) and the underscore-prefixed members are reserved by the contract, plus `url`
-when the index projects one. Everything else on a hit — `title`, `summary`, `image` — is a retrieved
-document attribute, decided by `attributesToRetrieve` and the index configuration.
+Only `objectID` (required) and the underscore-prefixed members `_score`, `_highlights` and `_rankingInfo`
+are reserved by the contract. Everything else on a hit — `title`, `url`, `summary`, `image` — is a
+retrieved document attribute, decided by `attributesToRetrieve` and the index configuration. `url` is a
+convention, not a contract member: an index that projects no link simply has no `url` on its hits.
 
-- TypeScript: `Hit` has an index signature, so `hit.title` is `unknown` and needs narrowing, while
-  `hit.objectID` is `string`.
-- C#: `Hit` exposes the non-reserved attributes through `[JsonExtensionData]`, as
-  `Dictionary<string, JsonElement> Attributes` — `hit.Attributes["title"].GetString()`.
+- TypeScript: `Hit` has an index signature, so `hit.title` and `hit.url` are `unknown` and need narrowing,
+  while `hit.objectID` is `string`.
+- C#: `Hit` exposes the attributes through `[JsonExtensionData]`, as
+  `Dictionary<string, JsonElement> Attributes` — `hit.Attributes["url"].GetString()`.
 
-`url` is always root-relative (`/articles/espresso-basics`) or absolute
+Any attribute holding a link is always root-relative (`/articles/espresso-basics`) or absolute
 (`https://example.com/articles/espresso-basics`). It is never the app-relative `~/…` form Xperience's URL
 retriever returns: the server resolves that before the hit reaches the wire, so a JS client can use the
-value as-is.
+value as-is. The same rule holds for `Suggestion.url`, which *is* a contract member.
 
 #### Filter grammars
 

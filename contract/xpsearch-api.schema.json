@@ -32,7 +32,9 @@
       "type": "object",
       "title": "SearchRequest",
       "description": "Body of POST /api/xpsearch/query.",
-      "required": ["index"],
+      "required": [
+        "index"
+      ],
       "additionalProperties": false,
       "properties": {
         "index": {
@@ -59,7 +61,10 @@
         },
         "facets": {
           "type": "array",
-          "items": { "type": "string", "description": "Facetable attribute name." },
+          "items": {
+            "type": "string",
+            "description": "Facetable attribute name."
+          },
           "description": "Attributes to compute facet counts for. Counts come back in SearchResponse.facets."
         },
         "facetFilters": {
@@ -95,7 +100,10 @@
         },
         "attributesToRetrieve": {
           "type": "array",
-          "items": { "type": "string", "description": "Attribute name to include on each hit." },
+          "items": {
+            "type": "string",
+            "description": "Attribute name to include on each hit."
+          },
           "description": "Attributes to project onto each hit. Omit to return the index's configured default projection. objectID is always returned."
         },
         "language": {
@@ -121,7 +129,10 @@
       "properties": {
         "fields": {
           "type": "array",
-          "items": { "type": "string", "description": "Field name to highlight." },
+          "items": {
+            "type": "string",
+            "description": "Field name to highlight."
+          },
           "description": "Fields to produce highlighted snippets for. Results land in Hit._highlights."
         },
         "preTag": {
@@ -146,12 +157,21 @@
       "type": "object",
       "title": "SearchResponse",
       "description": "Body of a 200 response from POST /api/xpsearch/query.",
-      "required": ["hits", "page", "hitsPerPage", "nbHits", "nbPages", "processingTimeMs"],
+      "required": [
+        "hits",
+        "page",
+        "hitsPerPage",
+        "nbHits",
+        "nbPages",
+        "processingTimeMs"
+      ],
       "additionalProperties": false,
       "properties": {
         "hits": {
           "type": "array",
-          "items": { "$ref": "#/$defs/Hit" },
+          "items": {
+            "$ref": "#/$defs/Hit"
+          },
           "description": "The hits on the requested page, in ranked order."
         },
         "facets": {
@@ -195,8 +215,10 @@
     "Hit": {
       "type": "object",
       "title": "Hit",
-      "description": "One search result. Deliberately an open object: objectID and the underscore-prefixed members are reserved by the contract, and every other property is a retrieved document attribute (title, url, summary, image, ...) whose set is decided by SearchRequest.attributesToRetrieve and the index configuration.",
-      "required": ["objectID"],
+      "description": "One search result. Deliberately an open object: objectID and the underscore-prefixed members are reserved by the contract, and every other property is a retrieved document attribute (title, url, summary, image, ...) whose set is decided by SearchRequest.attributesToRetrieve and the index configuration. Any attribute holding a link - url is the conventional name - is always root-relative (\"/articles/espresso-basics\") or absolute (\"https://example.com/articles/espresso-basics\"); never the app-relative \"~/...\" form Xperience URL retrievers return, because the server resolves that before the hit reaches the wire.",
+      "required": [
+        "objectID"
+      ],
       "additionalProperties": true,
       "properties": {
         "objectID": {
@@ -218,10 +240,6 @@
         "_rankingInfo": {
           "$ref": "#/$defs/RankingInfo",
           "description": "Score explanation. Present only when SearchRequest.explain is true; absent otherwise."
-        },
-        "url": {
-          "type": "string",
-          "description": "Canonical link to the document, when the index projects one. Always root-relative (\"/articles/espresso-basics\") or absolute (\"https://example.com/articles/espresso-basics\"); never the app-relative \"~/...\" form Xperience's URL retriever returns - the server resolves that before it reaches the wire."
         }
       }
     },
@@ -254,7 +272,10 @@
       "type": "object",
       "title": "SuggestRequest",
       "description": "Body of POST /api/xpsearch/suggest. Whether an index answers with query suggestions or with federated hits is server-side per-index configuration, not a request field.",
-      "required": ["index", "query"],
+      "required": [
+        "index",
+        "query"
+      ],
       "additionalProperties": false,
       "properties": {
         "index": {
@@ -282,12 +303,16 @@
       "type": "object",
       "title": "SuggestResponse",
       "description": "Body of a 200 response from POST /api/xpsearch/suggest.",
-      "required": ["suggestions"],
+      "required": [
+        "suggestions"
+      ],
       "additionalProperties": false,
       "properties": {
         "suggestions": {
           "type": "array",
-          "items": { "$ref": "#/$defs/Suggestion" },
+          "items": {
+            "$ref": "#/$defs/Suggestion"
+          },
           "description": "Suggestions in display order, at most SuggestRequest.maxItems of them."
         }
       }
@@ -296,7 +321,9 @@
       "type": "object",
       "title": "Suggestion",
       "description": "One autocomplete entry.",
-      "required": ["text"],
+      "required": [
+        "text"
+      ],
       "additionalProperties": false,
       "properties": {
         "text": {
@@ -305,7 +332,9 @@
         },
         "hits": {
           "type": "array",
-          "items": { "$ref": "#/$defs/Hit" },
+          "items": {
+            "$ref": "#/$defs/Hit"
+          },
           "description": "Documents behind this suggestion, present only for indexes configured in federated-hits mode."
         },
         "url": {
@@ -318,12 +347,19 @@
       "type": "object",
       "title": "EventRequest",
       "description": "Body of POST /api/xpsearch/events (spec 4.3, 9.1). The endpoint answers 202 Accepted with an empty body, so there is no response type. Logging is consent-gated and best-effort: a 202 means the event was accepted, not that an activity was written.",
-      "required": ["eventType", "queryId", "objectID"],
+      "required": [
+        "eventType",
+        "queryId",
+        "objectID"
+      ],
       "additionalProperties": false,
       "properties": {
         "eventType": {
           "type": "string",
-          "enum": ["click", "conversion"],
+          "enum": [
+            "click",
+            "conversion"
+          ],
           "description": "Required. \"click\" when the user opens a result, \"conversion\" when the developer signals a goal reached after a search."
         },
         "queryId": {

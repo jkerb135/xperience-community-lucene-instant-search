@@ -33,7 +33,8 @@ export const specSearchResponse: SearchResponse = {
   hits: [
     {
       objectID: 'web-page-42-en',
-      // title and summary are not reserved members: they type-check only because Hit is open.
+      // title, url and summary are retrieved attributes, not reserved members: they type-check
+      // only because Hit is an open object.
       title: 'Espresso Basics',
       url: '/articles/espresso-basics',
       summary: '...',

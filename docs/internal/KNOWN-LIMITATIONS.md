@@ -29,3 +29,19 @@ and how to lift it.
   lookup and a `JsonElement` unwrap.
 - **Upgrade path:** delete `Contract/Hit.cs` and its assertions in `scripts/contract.mjs` if quicktype
   learns to emit `[JsonExtensionData]` for `additionalProperties`; otherwise leave it.
+
+## `csharpEdits` in `XpSearch.Client/scripts/contract.mjs`
+
+- **Simplified:** even with `--features attributes-only`, quicktype's C# output publishes types that are
+  not part of the contract (the placeholder `XpSearchContract`, `DateOnlyConverter`, `TimeOnlyConverter`)
+  and leaves the generated `EventTypeConverter` attached to nothing, so `EventType` would serialize as
+  `0`/`1` instead of `"click"`/`"conversion"`. Rather than owning a C# emitter, the generator rewrites four
+  anchor strings in the output: three `public` → `internal`, and one `[JsonConverter]` attribute plus a
+  scoped `#pragma warning disable CS1591` on the enum.
+- **Ceiling:** string surgery on generated code. A quicktype release that renames or reformats any of the
+  four anchors breaks the edit — loudly, because each edit throws when its anchor is absent, and
+  `Contract_Namespace_Exports_Only_The_Contract_Types` fails if a non-contract type reaches the public API.
+  It also means the checked-in C# is not byte-identical to raw quicktype output.
+- **Upgrade path:** drop an edit as soon as quicktype offers the behaviour directly (an option to suppress
+  the helper converters, or `--features types-only`); or, if the list ever grows past a handful, generate
+  the C# from the schema with a small emitter of our own instead.

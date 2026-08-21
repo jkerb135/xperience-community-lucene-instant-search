@@ -37,9 +37,7 @@ member needs an XML doc.
 2. **Both outputs are generated and checked in.** `npm run contract:gen` writes
    `XpSearch.Core/Contract/Generated/XpSearchContract.g.cs` and `XpSearch.Client/src/contract/generated.ts`;
    `npm run contract:check` regenerates into a temp directory and fails on any drift. The check is a Node
-   script, not a shell `diff`, so it runs on Windows agents. The generated C# opens with
-   `#pragma warning disable CS1591`: quicktype's serializer plumbing carries no XML docs and the build
-   treats warnings as errors.
+   script, not a shell `diff`, so it runs on Windows agents.
 3. **The API version travels as a response header, `X-XpSearch-Api-Version: 1`.** Routes stay exactly as
    §4.2 and §4.3 write them. The contract version is the semver major of `YourCo.Xperience.Search.Core`
    and of `@yourco/xperience-search`, which are released together. The value and the three routes are
@@ -52,13 +50,29 @@ member needs an XML doc.
    with "the `explain=true` flag on the search endpoint", but the request sample never lists it. This is
    spec-implied, not an invention: without it the documented response member is unreachable.
 6. **`Hit` stays an open object** in both languages (see below).
-7. **`Hit.url` is root-relative or absolute, never `~/…`.** Xperience's URL retriever returns the
-   app-relative form, which a browser cannot resolve and a JSON consumer has no way to expand. Resolving it
-   is the server's job, once, before it reaches the wire.
+7. **`url` is an attribute of a hit, not a member of it.** §4.2 lists `url` inside
+   `attributesToRetrieve` next to `title`, `summary` and `image`, so it is retrieved exactly like them and
+   is absent from a hit whose index projects no link. Naming it in `Hit.properties` would have made
+   `hit.url` typed while `hit.title` stayed `unknown`, an exception with no rule behind it — and the freeze
+   would have made it permanent. Whatever attribute carries a link is root-relative or absolute, never the
+   app-relative `~/…` form Xperience's URL retrievers return: that form is one a browser cannot resolve and
+   a JSON consumer has no way to expand, so resolving it is the server's job, once, before it reaches the
+   wire. The rule lives in the `Hit` description, and on `Suggestion.url`, which *is* a contract member.
+   Typed access to individual attributes belongs to the client's `Hit<TItem>` wrapper, not to the contract.
 8. **No validation keywords that generate throwing converters.** `minLength` on `index` made quicktype
    emit a converter that throws a bare `Exception` mid-deserialization, which would surface as a 500
    instead of a 400. Required-ness and non-emptiness are enforced by the endpoint and answered as Problem
    Details; the schema documents them in prose.
+9. **The package's public API is the contract types and nothing else.** `XpSearch.Core` is published to
+   agencies, so `--features attributes-only` drops quicktype's `FromJson`/`ToJson`/`Converter.Settings`
+   plumbing, and four asserted edits in `scripts/contract.mjs` handle what it still emits as public: the
+   placeholder top-level type and the unused `DateOnlyConverter`/`TimeOnlyConverter` become `internal`,
+   and `[JsonConverter(typeof(EventTypeConverter))]` is attached to the `EventType` enum. Each edit throws
+   if quicktype stops emitting its anchor, and `Contract_Namespace_Exports_Only_The_Contract_Types`
+   asserts the resulting exported-type set mechanically. With the plumbing gone there is no file-level
+   `#pragma warning disable CS1591`: every emitted member carries its schema description, except the two
+   `EventType` members, which JSON Schema cannot describe individually and which are covered by a pragma
+   scoped to the enum alone.
 
 ## Evidence
 
@@ -71,7 +85,6 @@ export interface Hit {
     _rankingInfo?: RankingInfo;
     _score?: number;
     objectID: string;
-    url?: string;
     [property: string]: unknown;      // <- the open half
 }
 ```
@@ -83,14 +96,13 @@ public partial class Hit
     [JsonPropertyName("_rankingInfo")] public RankingInfo? RankingInfo { get; set; }
     [JsonPropertyName("_score")] public double? Score { get; set; }
     [JsonPropertyName("objectID")] public string ObjectId { get; set; }
-    [JsonPropertyName("url")] public string? Url { get; set; }
     // no [JsonExtensionData] - the open half is missing
 }
 ```
 
 So the fallback the brief describes was needed on the C# side only, and in its cheapest form: quicktype
 emits `partial` classes, so the open half is hand-written next to the generated file in
-`Contract/Hit.cs` and nothing is post-processed or excluded from generation:
+`Contract/Hit.cs`, and no type has to be excluded from generation:
 
 ```csharp
 public partial class Hit
@@ -102,9 +114,25 @@ public partial class Hit
 
 `contract:check` fails if the generated `Hit` stops being `partial`, if `Contract/Hit.cs` loses
 `[JsonExtensionData]`, if the TypeScript `Hit` loses its index signature, or if either generated `Hit`
-stops carrying every property name in the schema's `Hit.properties`. The round-trip tests then prove the
-result on the spec's own payload: `title` and `summary` survive C# deserialize/serialize through the
-extension data, and the TypeScript fixture only type-checks because the interface is open.
+declares a property set different from the schema's `Hit.properties`. The round-trip tests then prove the
+result on the spec's own payload: `title`, `url` and `summary` survive C# deserialize/serialize through
+the extension data, and the TypeScript fixture only type-checks because the interface is open.
+
+On the public surface, `--features attributes-only` removes `FromJson`, the `Serialize` extension class
+and `Converter.Settings`, but still emits `public partial class XpSearchContract` (the placeholder),
+`public class DateOnlyConverter` and `public class TimeOnlyConverter`, and it emits `EventTypeConverter` —
+which maps `Click`/`Conversion` to `"click"`/`"conversion"` — without attaching it to anything, so a
+default `JsonSerializer` would have written the enum as `0`/`1`. Hence decision 9's four edits. The
+resulting exported types are exactly:
+
+```
+ContractConstants, EventRequest, EventType, HighlightOptions, Hit,
+RankingInfo, SearchRequest, SearchResponse, SuggestRequest, SuggestResponse, Suggestion
+```
+
+asserted by `Contract_Namespace_Exports_Only_The_Contract_Types`, with
+`EventRequest_Round_Trips_With_Lower_Case_Event_Type` proving `{"eventType":"click"}` survives a round
+trip through `EventType.Click` with no serializer options at the call site.
 
 ## Consequences
 
@@ -116,7 +144,10 @@ extension data, and the TypeScript fixture only type-checks because the interfac
 - The generator needs Node in the toolchain of anyone changing the contract. Consumers of either package
   need nothing.
 - quicktype emits one placeholder top-level type (`XpSearchContract`) whose only job is to pull the five
-  wire types into the output. It is never sent on the wire; its properties say so in their docs.
+  wire types into the output. It is never sent on the wire, and it is rewritten to `internal` in C# so it
+  does not appear in the package's API.
+- The generated C# is not byte-for-byte quicktype output: four small, asserted edits run over it. Anyone
+  reading the generated file sees the result, and `contract:check` reproduces it exactly.
 - C# hits pay a `Dictionary<string, JsonElement>` per hit for the open attributes, and callers read them
   as `JsonElement` rather than as typed members. That is the price of a contract whose attribute set is
   chosen per index at query time.
