@@ -1,0 +1,65 @@
+<!-- refinementList — states: selected, unselected, disabled (canRefine=false), searchable variant, show-more -->
+
+<div class="xps xps-refinement-list">
+  <h3 class="xps-refinement-list__title" id="xps-search-1-content-type-title">Content type</h3>
+  <ul class="xps-refinement-list__list" aria-labelledby="xps-search-1-content-type-title">
+    <li class="xps-refinement-list__item xps-refinement-list__item--selected">
+      <label class="xps-refinement-list__label">
+        <input class="xps-refinement-list__checkbox" type="checkbox" name="contentType" value="Article" checked>
+        <span class="xps-refinement-list__value">Article</span>
+        <span class="xps-refinement-list__count">24</span>
+      </label>
+    </li>
+    <li class="xps-refinement-list__item">
+      <label class="xps-refinement-list__label">
+        <input class="xps-refinement-list__checkbox" type="checkbox" name="contentType" value="Product">
+        <span class="xps-refinement-list__value">Product</span>
+        <span class="xps-refinement-list__count">11</span>
+      </label>
+    </li>
+    <li class="xps-refinement-list__item xps-refinement-list__item--disabled">
+      <label class="xps-refinement-list__label">
+        <input class="xps-refinement-list__checkbox" type="checkbox" name="contentType" value="Event" disabled>
+        <span class="xps-refinement-list__value">Event</span>
+        <span class="xps-refinement-list__count">0</span>
+      </label>
+    </li>
+  </ul>
+  <button class="xps-button xps-refinement-list__show-more" type="button" aria-expanded="false">Show more</button>
+</div>
+
+<!-- searchable variant, show-more expanded and exhausted -->
+<div class="xps xps-refinement-list xps-refinement-list--searchable">
+  <h3 class="xps-refinement-list__title" id="xps-search-2-tags-title">Tags</h3>
+  <div class="xps-refinement-list__search">
+    <label class="xps-sr-only" for="xps-search-2-tags-search">Search in Tags</label>
+    <input class="xps-refinement-list__search-input" id="xps-search-2-tags-search" type="search" value="es" placeholder="Search in Tags" autocomplete="off">
+  </div>
+  <ul class="xps-refinement-list__list" aria-labelledby="xps-search-2-tags-title">
+    <li class="xps-refinement-list__item xps-refinement-list__item--selected">
+      <label class="xps-refinement-list__label">
+        <input class="xps-refinement-list__checkbox" type="checkbox" name="tags" value="espresso" checked>
+        <span class="xps-refinement-list__value"><mark class="xps-highlight">es</mark>presso</span>
+        <span class="xps-refinement-list__count">18</span>
+      </label>
+    </li>
+    <li class="xps-refinement-list__item">
+      <label class="xps-refinement-list__label">
+        <input class="xps-refinement-list__checkbox" type="checkbox" name="tags" value="descaling">
+        <span class="xps-refinement-list__value">d<mark class="xps-highlight">es</mark>caling</span>
+        <span class="xps-refinement-list__count">4</span>
+      </label>
+    </li>
+  </ul>
+  <button class="xps-button xps-refinement-list__show-more xps-refinement-list__show-more--disabled" type="button" aria-expanded="true" disabled>Show less</button>
+</div>
+
+<!-- searchable variant with no matches -->
+<div class="xps xps-refinement-list xps-refinement-list--searchable">
+  <h3 class="xps-refinement-list__title" id="xps-search-3-tags-title">Tags</h3>
+  <div class="xps-refinement-list__search">
+    <label class="xps-sr-only" for="xps-search-3-tags-search">Search in Tags</label>
+    <input class="xps-refinement-list__search-input" id="xps-search-3-tags-search" type="search" value="zzz" placeholder="Search in Tags" autocomplete="off">
+  </div>
+  <p class="xps-refinement-list__no-results" role="status">No matching filters.</p>
+</div>

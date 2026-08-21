@@ -1,0 +1,31 @@
+<Project>
+
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <ItemGroup Label="Xperience by Kentico">
+    <PackageVersion Include="Kentico.Xperience.Core" Version="31.8.0" />
+    <PackageVersion Include="Kentico.Xperience.WebApp" Version="31.8.0" />
+    <PackageVersion Include="Kentico.Xperience.Admin" Version="31.8.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="Lucene">
+    <PackageVersion Include="Kentico.Xperience.Lucene.Core" Version="15.0.5" />
+    <PackageVersion Include="Kentico.Xperience.Lucene.Admin" Version="15.0.5" />
+    <PackageVersion Include="Lucene.Net" Version="4.8.0-beta00017" />
+    <PackageVersion Include="Lucene.Net.Analysis.Common" Version="4.8.0-beta00017" />
+    <PackageVersion Include="Lucene.Net.Facet" Version="4.8.0-beta00017" />
+    <PackageVersion Include="Lucene.Net.Highlighter" Version="4.8.0-beta00017" />
+    <PackageVersion Include="Lucene.Net.QueryParser" Version="4.8.0-beta00017" />
+  </ItemGroup>
+
+  <ItemGroup Label="Testing">
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
+    <PackageVersion Include="NUnit" Version="4.6.1" />
+    <PackageVersion Include="NUnit3TestAdapter" Version="6.2.0" />
+    <PackageVersion Include="NUnit.Analyzers" Version="4.14.0" />
+    <PackageVersion Include="NSubstitute" Version="6.2.0" />
+  </ItemGroup>
+
+</Project>

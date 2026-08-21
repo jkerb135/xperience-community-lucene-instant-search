@@ -9,3 +9,6 @@ appsettings.Development.json
 *.snk
 licensing/private-key.pem
 tests/performance/corpora/*.json
+
+# Claude Code agent worktrees
+.claude/worktrees/

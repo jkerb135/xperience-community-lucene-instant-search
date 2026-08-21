@@ -1,0 +1,60 @@
+<!-- searchBox — states: default (filled, reset + submit shown), empty (reset hidden), no-submit, stalled -->
+
+<form class="xps xps-search-box" role="search" action="/search" method="get" novalidate>
+  <label class="xps-search-box__label xps-sr-only" for="xps-search-1-search-box-input">Search this site</label>
+  <div class="xps-search-box__field">
+    <input class="xps-search-box__input"
+           id="xps-search-1-search-box-input"
+           type="search"
+           name="q"
+           value="espresso machine"
+           placeholder="Search…"
+           autocomplete="off"
+           autocapitalize="off"
+           autocorrect="off"
+           spellcheck="false">
+    <span class="xps-search-box__loading xps-skeleton" aria-hidden="true"></span>
+    <button class="xps-button xps-search-box__reset" type="reset" aria-label="Clear the search query">
+      <span aria-hidden="true">&times;</span>
+    </button>
+    <button class="xps-button xps-search-box__submit" type="submit" aria-label="Submit the search query">
+      <span aria-hidden="true">&rarr;</span>
+    </button>
+  </div>
+</form>
+
+<!-- empty query: the reset button is present but hidden, no submit button, visible label -->
+<form class="xps xps-search-box" role="search" action="/search" method="get" novalidate>
+  <label class="xps-search-box__label" for="xps-search-2-search-box-input">Search this site</label>
+  <div class="xps-search-box__field">
+    <input class="xps-search-box__input"
+           id="xps-search-2-search-box-input"
+           type="search"
+           name="q"
+           value=""
+           placeholder="Search…"
+           autocomplete="off">
+    <span class="xps-search-box__loading xps-skeleton" aria-hidden="true"></span>
+    <button class="xps-button xps-search-box__reset" type="reset" aria-label="Clear the search query" hidden>
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+</form>
+
+<!-- stalled: a search has been in flight longer than the stall threshold -->
+<form class="xps xps-search-box xps-search-box--stalled" role="search" action="/search" method="get" novalidate>
+  <label class="xps-search-box__label xps-sr-only" for="xps-search-3-search-box-input">Search this site</label>
+  <div class="xps-search-box__field">
+    <input class="xps-search-box__input"
+           id="xps-search-3-search-box-input"
+           type="search"
+           name="q"
+           value="cold brew"
+           placeholder="Search…"
+           autocomplete="off">
+    <span class="xps-search-box__loading xps-skeleton" aria-hidden="true"></span>
+    <button class="xps-button xps-search-box__reset" type="reset" aria-label="Clear the search query">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+</form>

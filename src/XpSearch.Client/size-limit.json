@@ -1,0 +1,10 @@
+{
+  "note": "Gzip budgets for spec 5.9: <20 KB for core + the six default widgets. Since js-widgets, the default entry carries the core, the html helper and all nine widgets (the three Phase 2.5 ones included), so both budgets below measure core + widgets against the same 20 KB ceiling.",
+  "budgets": {
+    "widgets-esm": {
+      "pattern": "^(xpsearch|connectors|shared-[^.]+)\\.mjs$",
+      "limitBytes": 20480
+    },
+    "widgets-umd": { "pattern": "^xpsearch\\.umd\\.js$", "limitBytes": 20480 }
+  }
+}

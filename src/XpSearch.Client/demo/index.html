@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Xperience Search — widget demo</title>
+
+<!-- Structure only, then the opt-in visual theme (spec §6). -->
+<link rel="stylesheet" href="../themes/src/shell.css">
+<link rel="stylesheet" href="../themes/src/default.css">
+<style>
+  /* Page furniture only — nothing here is part of the library. */
+  body { margin: 0; font: 16px/1.5 system-ui, sans-serif; color: #111; background: #fff; }
+  header, main, footer { max-width: 60rem; margin: 0 auto; padding: 1rem; }
+  header { border-bottom: 1px solid #e2e2e2; }
+  .layout { display: grid; grid-template-columns: 16rem 1fr; gap: 2rem; align-items: start; }
+  .rail { display: grid; gap: 1.5rem; }
+  .bar { display: flex; gap: 1rem; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+  footer { border-top: 1px solid #e2e2e2; margin-top: 3rem; }
+  h2 { font-size: 1rem; text-transform: uppercase; letter-spacing: .04em; color: #666; }
+  @media (max-width: 45rem) { .layout { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+  <!-- Instance 1: the search box lives in the header, the results in <main>, the counter in
+       the footer — separate widgets, no shared parent (spec §5.1). -->
+  <div id="search-input"></div>
+</header>
+
+<main>
+  <div class="layout">
+    <div class="rail">
+      <div id="search-sort"></div>
+      <div id="facet-content-type"></div>
+      <div id="facet-tags"></div>
+      <div id="toggle-english"></div>
+      <div id="search-clear"></div>
+    </div>
+
+    <div>
+      <div class="bar">
+        <div id="search-stats"></div>
+        <div id="search-current"></div>
+      </div>
+      <div id="search-results"></div>
+      <div id="search-pagination"></div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <h2>A second, independent instance</h2>
+  <!-- Instance 2: assembled from Page Builder-style mounts (spec §7.1). The UMD bundle boots
+       itself and mounts these with no author code — proving two instances coexist (spec §12). -->
+  <div class="xps-mount"
+       data-xps-widget="searchBox"
+       data-xps-instance="footer-search"
+       data-xps-instance-config='{"index":"site-content","searchOnInitialLoad":true,"debounceMs":150}'
+       data-xps-config='{"placeholder":"Search the archive…","label":"Search the archive","showLabel":true}'></div>
+  <div class="xps-mount"
+       data-xps-widget="stats"
+       data-xps-instance="footer-search"
+       data-xps-config='{}'></div>
+</footer>
+
+<script src="../dist/xpsearch.umd.js"></script>
+<script>
+  const {
+    searchBox, hits, refinementList, pagination, stats, sortBy,
+    clearRefinements, currentRefinements, toggleRefinement, html, highlight, formatNumber,
+  } = xpsearch;
+
+  const search = xpsearch({
+    endpoint: '/api/xpsearch/query',
+    index: 'site-content',
+    routing: true,
+    searchOnInitialLoad: true,
+    debounceMs: 150,
+    initialState: { hitsPerPage: 6 },
+    highlight: { fields: ['title', 'content'], snippetLength: 160 },
+  });
+
+  search.addWidgets([
+    searchBox({
+      container: '#search-input',
+      placeholder: 'Search the coffee library…',
+      label: 'Search the coffee library',
+      showReset: true,
+      showSubmit: true,
+      autofocus: true,
+    }),
+
+    sortBy({
+      container: '#search-sort',
+      items: [
+        { label: 'Relevance', value: 'relevance' },
+        { label: 'Newest first', value: 'date_desc' },
+        { label: 'Price, low to high', value: 'price_asc' },
+      ],
+    }),
+
+    refinementList({
+      container: '#facet-content-type',
+      attribute: 'contentType',
+      label: 'Content type',
+      operator: 'or',
+      limit: 10,
+      sortBy: ['count:desc', 'name:asc'],
+    }),
+
+    refinementList({
+      container: '#facet-tags',
+      attribute: 'tags',
+      label: 'Tags',
+      searchable: true,
+      showMore: true,
+      limit: 4,
+    }),
+
+    toggleRefinement({
+      container: '#toggle-english',
+      attribute: 'language',
+      value: 'en',
+      label: 'English only',
+    }),
+
+    currentRefinements({
+      container: '#search-current',
+      attributeLabels: { contentType: 'Content type', tags: 'Tag', language: 'Language' },
+    }),
+
+    clearRefinements({ container: '#search-clear' }),
+
+    hits({
+      container: '#search-results',
+      // A custom item template, using only the documented helpers (spec §5.4).
+      templates: {
+        item: (hit, { html, highlight, formatNumber }) => html`
+          <article class="xps-hit">
+            <div class="xps-hit__body">
+              <h3 class="xps-hit__title">
+                <a class="xps-hit__link" href="${hit.url}">${highlight('title', hit)}</a>
+              </h3>
+              <p class="xps-hit__snippet">${highlight('content', hit)}</p>
+              <ul class="xps-hit__meta">
+                <li class="xps-hit__meta-item">${hit.contentType}</li>
+                <li class="xps-hit__meta-item">${formatNumber(hit.price)} EUR</li>
+              </ul>
+            </div>
+          </article>`,
+        empty: ({ query }, { html }) => html`
+          <p>Nothing matches <strong>${query}</strong>.</p>
+          <p>Try “espresso”, “grinder” or clear the filters.</p>`,
+      },
+    }),
+
+    pagination({ container: '#search-pagination', padding: 2, showFirst: true, showLast: true }),
+  ]);
+
+  search.start();
+
+  // The lifecycle bus (spec §5.7): handy while poking at the demo.
+  search.on('error', ({ error, phase }) => console.error('[demo]', phase, error));
+  window.demoSearch = search;
+</script>
+</body>
+</html>

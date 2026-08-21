@@ -1,0 +1,72 @@
+<!-- pagination — states: first/prev disabled on page 1, current page, ellipsis padding, last page -->
+
+<nav class="xps xps-pagination" aria-label="Search results pages">
+  <ul class="xps-pagination__list">
+    <li class="xps-pagination__item xps-pagination__item--first xps-pagination__item--disabled">
+      <span class="xps-pagination__link" aria-disabled="true"><span aria-hidden="true">&laquo;</span><span class="xps-sr-only">First page</span></span>
+    </li>
+    <li class="xps-pagination__item xps-pagination__item--previous xps-pagination__item--disabled">
+      <span class="xps-pagination__link" aria-disabled="true"><span aria-hidden="true">&lsaquo;</span><span class="xps-sr-only">Previous page</span></span>
+    </li>
+    <li class="xps-pagination__item xps-pagination__item--page xps-pagination__item--current">
+      <a class="xps-pagination__link" href="?q=espresso&amp;page=1" aria-current="page"><span class="xps-sr-only">Page </span>1</a>
+    </li>
+    <li class="xps-pagination__item xps-pagination__item--page">
+      <a class="xps-pagination__link" href="?q=espresso&amp;page=2"><span class="xps-sr-only">Page </span>2</a>
+    </li>
+    <li class="xps-pagination__item xps-pagination__item--page">
+      <a class="xps-pagination__link" href="?q=espresso&amp;page=3"><span class="xps-sr-only">Page </span>3</a>
+    </li>
+    <li class="xps-pagination__item xps-pagination__item--ellipsis">
+      <span class="xps-pagination__ellipsis" aria-hidden="true">&hellip;</span>
+    </li>
+    <li class="xps-pagination__item xps-pagination__item--page">
+      <a class="xps-pagination__link" href="?q=espresso&amp;page=9"><span class="xps-sr-only">Page </span>9</a>
+    </li>
+    <li class="xps-pagination__item xps-pagination__item--next">
+      <a class="xps-pagination__link" href="?q=espresso&amp;page=2"><span aria-hidden="true">&rsaquo;</span><span class="xps-sr-only">Next page</span></a>
+    </li>
+    <li class="xps-pagination__item xps-pagination__item--last">
+      <a class="xps-pagination__link" href="?q=espresso&amp;page=9"><span aria-hidden="true">&raquo;</span><span class="xps-sr-only">Last page</span></a>
+    </li>
+  </ul>
+</nav>
+
+<!-- middle of the range: every control enabled, ellipsis on both sides, padding=1 -->
+<nav class="xps xps-pagination" aria-label="Search results pages">
+  <ul class="xps-pagination__list">
+    <li class="xps-pagination__item xps-pagination__item--first">
+      <a class="xps-pagination__link" href="?q=espresso&amp;page=1"><span aria-hidden="true">&laquo;</span><span class="xps-sr-only">First page</span></a>
+    </li>
+    <li class="xps-pagination__item xps-pagination__item--previous">
+      <a class="xps-pagination__link" href="?q=espresso&amp;page=4"><span aria-hidden="true">&lsaquo;</span><span class="xps-sr-only">Previous page</span></a>
+    </li>
+    <li class="xps-pagination__item xps-pagination__item--page">
+      <a class="xps-pagination__link" href="?q=espresso&amp;page=1"><span class="xps-sr-only">Page </span>1</a>
+    </li>
+    <li class="xps-pagination__item xps-pagination__item--ellipsis">
+      <span class="xps-pagination__ellipsis" aria-hidden="true">&hellip;</span>
+    </li>
+    <li class="xps-pagination__item xps-pagination__item--page">
+      <a class="xps-pagination__link" href="?q=espresso&amp;page=4"><span class="xps-sr-only">Page </span>4</a>
+    </li>
+    <li class="xps-pagination__item xps-pagination__item--page xps-pagination__item--current">
+      <a class="xps-pagination__link" href="?q=espresso&amp;page=5" aria-current="page"><span class="xps-sr-only">Page </span>5</a>
+    </li>
+    <li class="xps-pagination__item xps-pagination__item--page">
+      <a class="xps-pagination__link" href="?q=espresso&amp;page=6"><span class="xps-sr-only">Page </span>6</a>
+    </li>
+    <li class="xps-pagination__item xps-pagination__item--ellipsis">
+      <span class="xps-pagination__ellipsis" aria-hidden="true">&hellip;</span>
+    </li>
+    <li class="xps-pagination__item xps-pagination__item--page">
+      <a class="xps-pagination__link" href="?q=espresso&amp;page=9"><span class="xps-sr-only">Page </span>9</a>
+    </li>
+    <li class="xps-pagination__item xps-pagination__item--next">
+      <a class="xps-pagination__link" href="?q=espresso&amp;page=6"><span aria-hidden="true">&rsaquo;</span><span class="xps-sr-only">Next page</span></a>
+    </li>
+    <li class="xps-pagination__item xps-pagination__item--last">
+      <a class="xps-pagination__link" href="?q=espresso&amp;page=9"><span aria-hidden="true">&raquo;</span><span class="xps-sr-only">Last page</span></a>
+    </li>
+  </ul>
+</nav>

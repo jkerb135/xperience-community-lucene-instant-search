@@ -1,6 +1,6 @@
 # ADR-0006: the JSON search contract
 
-- **Status:** accepted
+- **Status:** superseded by ADR-0010 (owned contract, 2026-08-21) — the Algolia-shaped wire contract described here is replaced; versioning header, Problem Details, schema-as-source and quicktype generation carry over
 - **Date:** 2026-08-21
 - **Spec reference:** §4.2, §4.3, §5.7, §8.4, §9.1
 
