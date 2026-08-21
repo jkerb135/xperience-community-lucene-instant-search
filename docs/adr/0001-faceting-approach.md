@@ -1,6 +1,6 @@
 # ADR-0001: §4.5 — Lucene taxonomy sidecar vs DocValues
 
-- **Status:** proposed
+- **Status:** accepted — owner decision 2026-08-21 (lead recommendation A; benchmark in docs/internal/spike-faceting-results.md)
 - **Date:** 2026-08-21
 - **Spec reference:** §4.5, §13.1
 
