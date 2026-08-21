@@ -3,6 +3,50 @@
 Intentional simplifications, one entry each: where it lives, what was simplified, the ceiling it hits,
 and how to lift it.
 
+## `connectAutocomplete` and `connectHierarchicalMenu` in `XpSearch.Client/src/connectors.ts`
+
+- **Simplified:** eight of the ten connectors spec 5.7 lists are published; these two are not exported at
+  all. `connectAutocomplete` needs the `/suggest` semantics (query suggestions vs federated hits, and the
+  stale-response and keyboard policy) that are still open decision 6 in the spec, and
+  `connectHierarchicalMenu` needs hierarchical facet semantics, which depend on the faceting approach of
+  ADR-0001. The transport half of autocomplete exists already: `SearchClient.suggest()`.
+- **Ceiling:** the `autocomplete`, `hierarchicalMenu` and taxonomy-navigation widgets cannot be built
+  yet, and a developer who needs either has to call `SearchClient.suggest()` and drive
+  `helper.setQuery()` by hand.
+- **Upgrade path:** add the two connector files once those decisions land; both are additive, so neither
+  is a breaking change.
+
+## `connectRange` in `XpSearch.Client/src/connectors/range.ts`
+
+- **Simplified:** the control's bounds come from `widgetParams.min`/`max`, and `canRefine` is false
+  without them, because the JSON contract carries no numeric facet statistics — there is nowhere for a
+  server-computed min/max to arrive.
+- **Ceiling:** a range slider over an unknown corpus has to be hand-configured, and its ends do not
+  follow the current result set.
+- **Upgrade path:** add facet statistics to `SearchResponse` (a contract change, so a coordinated event)
+  and read them in the connector, keeping the params as an override.
+
+## Default route mapping in `XpSearch.Client/src/routing.ts`
+
+- **Simplified:** `defaultStateToRoute` owns the params `q`, `page` and `sort`, one param per facet
+  attribute, and `<attribute>_<lt|lte|eq|gte|gt>` for numeric refinements. A facet attribute called `q`,
+  `page`, `sort` or `price_lte` collides with the mapping and will not round-trip, and two instances with
+  `routing: true` on one page fight over the same params.
+- **Ceiling:** those attribute names, and multi-instance routing, need the
+  `routing: { stateToRoute, routeToState }` escape hatch — public and tested, but hand-written.
+- **Upgrade path:** add a documented `routing.prefix` option that namespaces every param (`s1_q`,
+  `s1_tags`) when a second instance needs the URL too.
+
+## `mock/server.ts` in `XpSearch.Client`
+
+- **Simplified:** the mock matches query terms as lowercase substrings over title, body and tags, scores
+  by term hits with a title bonus, and highlights by regex over the HTML-encoded snippet. It models the
+  wire contract, not the Lucene pipeline: no analyzers, stemming, stopwords, synonyms or boost rules.
+- **Ceiling:** relevance-ordering assertions written against it prove nothing about the real engine, and
+  a UI tuned to its scores may look different against Lucene.
+- **Upgrade path:** point the docs' examples and the widget tests at the real endpoint once
+  `XpSearch.Core` serves it; keep the mock for offline development.
+
 ## `NoWarn NU5104` in `Directory.Build.props`
 
 - **Simplified:** the packages are marked stable while depending, transitively, on the
