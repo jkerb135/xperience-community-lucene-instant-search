@@ -634,7 +634,7 @@ namespace XpSearch.Core.Contract
                 case "conversion":
                     return EventType.Conversion;
             }
-            throw new Exception("Cannot unmarshal type EventType");
+            throw new JsonException("Cannot unmarshal type EventType");
         }
 
         public override void Write(Utf8JsonWriter writer, EventType value, JsonSerializerOptions options)
@@ -648,7 +648,7 @@ namespace XpSearch.Core.Contract
                     JsonSerializer.Serialize(writer, "conversion", options);
                     return;
             }
-            throw new Exception("Cannot marshal type EventType");
+            throw new JsonException("Cannot marshal type EventType");
         }
 
         public static readonly EventTypeConverter Singleton = new EventTypeConverter();
@@ -668,7 +668,7 @@ namespace XpSearch.Core.Contract
                 case "or":
                     return FacetOperator.Or;
             }
-            throw new Exception("Cannot unmarshal type FacetOperator");
+            throw new JsonException("Cannot unmarshal type FacetOperator");
         }
 
         public override void Write(Utf8JsonWriter writer, FacetOperator value, JsonSerializerOptions options)
@@ -682,7 +682,7 @@ namespace XpSearch.Core.Contract
                     JsonSerializer.Serialize(writer, "or", options);
                     return;
             }
-            throw new Exception("Cannot marshal type FacetOperator");
+            throw new JsonException("Cannot marshal type FacetOperator");
         }
 
         public static readonly FacetOperatorConverter Singleton = new FacetOperatorConverter();
@@ -710,7 +710,7 @@ namespace XpSearch.Core.Contract
                 case "ne":
                     return NumericOperator.Ne;
             }
-            throw new Exception("Cannot unmarshal type NumericOperator");
+            throw new JsonException("Cannot unmarshal type NumericOperator");
         }
 
         public override void Write(Utf8JsonWriter writer, NumericOperator value, JsonSerializerOptions options)
@@ -736,7 +736,7 @@ namespace XpSearch.Core.Contract
                     JsonSerializer.Serialize(writer, "ne", options);
                     return;
             }
-            throw new Exception("Cannot marshal type NumericOperator");
+            throw new JsonException("Cannot marshal type NumericOperator");
         }
 
         public static readonly NumericOperatorConverter Singleton = new NumericOperatorConverter();

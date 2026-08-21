@@ -37,7 +37,7 @@ public sealed class ExecuteSearchStage : ISearchStage
         ArgumentNullException.ThrowIfNull(context);
 
         string indexName = context.Request.Index;
-        int topN = Math.Max(1, (context.Page + 1) * context.HitsPerPage);
+        int topN = Math.Max(1, context.Page * context.PageSize);
         var sort = BuildSort(context);
 
         if (context.FacetsConfig is null)
@@ -119,12 +119,12 @@ public sealed class ExecuteSearchStage : ISearchStage
 
     private static void Materialize(SearchContext context, IndexSearcher searcher, TopDocs hits)
     {
-        context.TotalHits = hits.TotalHits;
+        context.Total = hits.TotalHits;
 
-        int skip = context.Page * context.HitsPerPage;
+        int skip = (context.Page - 1) * context.PageSize;
         var page = new List<ScoredDocument>();
 
-        for (int i = skip; i < hits.ScoreDocs.Length && page.Count < context.HitsPerPage; i++)
+        for (int i = skip; i < hits.ScoreDocs.Length && page.Count < context.PageSize; i++)
         {
             var scoreDoc = hits.ScoreDocs[i];
             page.Add(new ScoredDocument(searcher.Doc(scoreDoc.Doc), scoreDoc.Score));

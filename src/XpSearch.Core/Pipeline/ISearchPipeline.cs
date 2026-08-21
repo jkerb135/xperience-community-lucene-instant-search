@@ -12,7 +12,7 @@ namespace XpSearch.Core.Pipeline;
 /// </remarks>
 public static class SearchStageOrder
 {
-    /// <summary>Validate and normalize the request: trim, lowercase, length cap, filter parsing.</summary>
+    /// <summary>Validate and normalize the request: trim, lowercase, length cap, filter validation.</summary>
     public const int Normalize = 100;
 
     /// <summary>Reserved for synonym expansion (Phase 5). Not implemented.</summary>
@@ -24,7 +24,7 @@ public static class SearchStageOrder
     /// <summary>Build the Lucene query from the normalized free text.</summary>
     public const int BuildQuery = 400;
 
-    /// <summary>Apply facet refinements as drill-downs or boolean MUST clauses.</summary>
+    /// <summary>Apply facet refinements as drill-downs or boolean clauses.</summary>
     public const int FacetFilters = 500;
 
     /// <summary>Apply numeric refinements as range queries.</summary>
@@ -76,7 +76,7 @@ public interface ISearchPipeline
     /// <summary>Executes one search.</summary>
     /// <param name="request">The request to run.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The response, with <c>processingTimeMs</c> and <c>queryId</c> already set.</returns>
+    /// <returns>The response, with <c>tookMs</c> and <c>queryId</c> already set.</returns>
     /// <exception cref="Abstractions.IndexNotFoundException">The requested index is not registered.</exception>
     /// <exception cref="Abstractions.SearchValidationException">The request is not valid.</exception>
     Task<SearchResponse> ExecuteAsync(SearchRequest request, CancellationToken cancellationToken);

@@ -1,3 +1,4 @@
+using XpSearch.Core.Contract;
 using XpSearch.Core.Pipeline;
 
 namespace XpSearch.Core.Abstractions;
@@ -13,15 +14,16 @@ namespace XpSearch.Core.Abstractions;
 /// </remarks>
 public interface IFacetProvider
 {
-    /// <summary>Gets the counts for the requested dimensions.</summary>
+    /// <summary>Gets the facet values for the requested dimensions.</summary>
     /// <param name="context">The executed search.</param>
     /// <param name="dimensions">The dimensions the request asked for.</param>
     /// <param name="maxValues">Maximum number of values to return per dimension.</param>
     /// <returns>
-    /// Counts keyed by dimension and then by value. Only requested dimensions appear and only values
-    /// with a non-zero count, as the contract requires.
+    /// The values keyed by dimension, each list ordered by count descending then value ascending.
+    /// Only requested dimensions appear and only values with a non-zero count, as the contract
+    /// requires; each value carries the label a widget displays for it.
     /// </returns>
-    Dictionary<string, Dictionary<string, long>> GetCounts(
+    Dictionary<string, FacetValue[]> GetFacets(
         SearchContext context,
         IReadOnlyList<string> dimensions,
         int maxValues);

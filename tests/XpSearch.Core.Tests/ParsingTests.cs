@@ -1,90 +1,28 @@
 using NUnit.Framework;
 
 using XpSearch.Core.Abstractions;
-using XpSearch.Core.Filters;
 using XpSearch.Core.Indexing;
+using XpSearch.Core.Options;
+using XpSearch.Core.Pipeline;
 using XpSearch.Core.Pipeline.Stages;
 using XpSearch.Core.Tests.Fixtures;
 
 namespace XpSearch.Core.Tests;
 
-/// <summary>Unit tests of the request grammars and normalization rules.</summary>
+/// <summary>Unit tests of the sort keys, the normalization rules and the field conventions.</summary>
 [TestFixture]
 internal sealed class ParsingTests
 {
     private static IndexSchema Schema => TestCorpus.Schema;
 
-    [TestCase("price<=50", "price", NumericOperator.LessThanOrEqual, 50d)]
-    [TestCase("price >= 12.5", "price", NumericOperator.GreaterThanOrEqual, 12.5d)]
-    [TestCase("publishedAt>1700000000", "publishedAt", NumericOperator.GreaterThan, 1700000000d)]
-    [TestCase("stock!=0", "stock", NumericOperator.NotEqual, 0d)]
-    [TestCase("_rank = -3", "_rank", NumericOperator.Equal, -3d)]
-    [TestCase("a.b<1", "a.b", NumericOperator.LessThan, 1d)]
-    public void NumericFilter_AcceptsTheContractGrammar(string expression, string attribute, NumericOperator op, double value)
-    {
-        bool parsed = NumericFilterParser.TryParse(expression, out var filter);
-
-        Expect.Multiple(() =>
-        {
-            Assert.That(parsed, Is.True);
-            Assert.That(filter!.Attribute, Is.EqualTo(attribute));
-            Assert.That(filter.Operator, Is.EqualTo(op));
-            Assert.That(filter.Value, Is.EqualTo(value));
-        });
-    }
-
-    [TestCase("")]
-    [TestCase("price")]
-    [TestCase("price<")]
-    [TestCase("<=50")]
-    [TestCase("1price<=50")]
-    [TestCase("price=<50")]
-    [TestCase("price<=abc")]
-    [TestCase("price <= 50 or stock > 1")]
-    [TestCase("price<=1.2.3")]
-    public void NumericFilter_RejectsAnythingElse(string expression) =>
-        Assert.That(NumericFilterParser.TryParse(expression, out _), Is.False);
-
-    [Test]
-    public void NumericFilter_RejectsANonNumericAttribute() =>
-        Expect.Throws<SearchValidationException>(() => NumericFilterParser.ParseAll(["Title>=1"], Schema));
-
-    [Test]
-    public void NumericFilter_ResolvesTheAttributeToItsSchemaCasing()
-    {
-        var parsed = NumericFilterParser.ParseAll(["price<=50"], Schema);
-
-        Assert.That(parsed[0].Attribute, Is.EqualTo(TestCorpus.PriceField));
-    }
-
-    [Test]
-    public void FacetFilter_ParsesGroupsAndKeepsColonsInValues()
-    {
-        var parsed = FacetFilterParser.ParseAll(
-            [[$"{TestCorpus.TagsField}:a:b"], [$"{TestCorpus.CategoryField}:coffee"]],
-            Schema);
-
-        Expect.Multiple(() =>
-        {
-            Assert.That(parsed, Has.Count.EqualTo(2));
-            Assert.That(parsed[0][0].Value, Is.EqualTo("a:b"));
-            Assert.That(parsed[1][0].Attribute, Is.EqualTo(TestCorpus.CategoryField));
-        });
-    }
-
-    [TestCase("noattribute")]
-    [TestCase(":value")]
-    [TestCase("Tags:")]
-    [TestCase("Price:5")]
-    public void FacetFilter_RejectsMalformedOrNonFacetableEntries(string entry) =>
-        Expect.Throws<SearchValidationException>(() => FacetFilterParser.ParseAll([[entry]], Schema));
+    private static readonly Dictionary<string, SortKey> NoSortKeys = new(StringComparer.OrdinalIgnoreCase);
 
     [Test]
     public void SortKey_AcceptsRelevanceAndSuffixedSortableAttributes()
     {
-        var relevance = SortKeyParser.Parse("relevance", Schema, out bool relevanceDescending);
-        var descending = SortKeyParser.Parse($"{TestCorpus.PriceField}_desc", Schema, out bool priceDescending);
-        var ascending = SortKeyParser.Parse($"{TestCorpus.PriceField}_asc", Schema, out bool priceAscending);
+        var relevance = SortKeyParser.Parse("relevance", Schema, NoSortKeys, out bool relevanceDescending);
+        var descending = SortKeyParser.Parse($"{TestCorpus.PriceField}_desc", Schema, NoSortKeys, out bool priceDescending);
+        var ascending = SortKeyParser.Parse($"{TestCorpus.PriceField}_asc", Schema, NoSortKeys, out bool priceAscending);
 
         Expect.Multiple(() =>
         {
@@ -97,12 +35,40 @@ internal sealed class ParsingTests
         });
     }
 
+    [Test]
+    public void SortKey_ResolvesAKeyConfiguredForTheIndex()
+    {
+        var keys = new Dictionary<string, SortKey>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["newest"] = new SortKey(TestCorpus.PublishedAtField, Descending: true)
+        };
+
+        var field = SortKeyParser.Parse("newest", Schema, keys, out bool descending);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(field!.Name, Is.EqualTo(TestCorpus.PublishedAtField));
+            Assert.That(descending, Is.True);
+        });
+    }
+
+    [Test]
+    public void SortKey_RejectsAConfiguredKeyPointingAtANonSortableAttribute()
+    {
+        var keys = new Dictionary<string, SortKey>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["by-body"] = new SortKey(TestCorpus.BodyField)
+        };
+
+        Expect.Throws<SearchValidationException>(() => SortKeyParser.Parse("by-body", Schema, keys, out _));
+    }
+
     [TestCase("Price")]
     [TestCase("Body_asc")]
     [TestCase("nosuchfield_desc")]
     [TestCase("Price_up")]
     public void SortKey_RejectsAnythingElse(string sort) =>
-        Expect.Throws<SearchValidationException>(() => SortKeyParser.Parse(sort, Schema, out _));
+        Expect.Throws<SearchValidationException>(() => SortKeyParser.Parse(sort, Schema, NoSortKeys, out _));
 
     [TestCase(null, "")]
     [TestCase("   ", "")]
@@ -137,6 +103,20 @@ internal sealed class ParsingTests
             Assert.That(LuceneFieldNames.SortFieldName(number), Is.EqualTo("Price"));
             Assert.That(LuceneFieldNames.SearchFieldName(taxonomy), Is.EqualTo("Tags_text"));
             Assert.That(LuceneFieldNames.SearchFieldName(text), Is.EqualTo("Title"));
+            Assert.That(LuceneFieldNames.LabelFieldName(taxonomy), Is.EqualTo("Tags_label"));
+        });
+    }
+
+    [Test]
+    public void LuceneFieldNames_RoundTripALabelTerm()
+    {
+        (string? value, string? title) = LuceneFieldNames.SplitLabel(LuceneFieldNames.ComposeLabel("coffee", "Coffee beans"));
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(value, Is.EqualTo("coffee"));
+            Assert.That(title, Is.EqualTo("Coffee beans"));
+            Assert.That(LuceneFieldNames.SplitLabel("coffee").Value, Is.Null, "a term without a separator is not a label");
         });
     }
 }

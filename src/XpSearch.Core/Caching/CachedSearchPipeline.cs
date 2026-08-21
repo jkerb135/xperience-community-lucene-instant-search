@@ -59,13 +59,13 @@ public sealed class CachedSearchPipeline : ISearchPipeline
     private static SearchResponse WithQueryId(SearchResponse response, string? queryId) =>
         new()
         {
-            Hits = response.Hits,
+            Results = response.Results,
             Facets = response.Facets,
             Page = response.Page,
-            HitsPerPage = response.HitsPerPage,
-            NbHits = response.NbHits,
-            NbPages = response.NbPages,
-            ProcessingTimeMs = response.ProcessingTimeMs,
+            PageSize = response.PageSize,
+            Total = response.Total,
+            TotalPages = response.TotalPages,
+            TookMs = response.TookMs,
             QueryId = string.IsNullOrWhiteSpace(queryId) ? Guid.NewGuid().ToString() : queryId
         };
 }

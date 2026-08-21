@@ -35,7 +35,7 @@ public sealed class CollectFacetsStage : ISearchStage
 
         if (context.RequestedFacets.Count > 0)
         {
-            context.FacetCounts = provider.GetCounts(context, context.RequestedFacets, options.MaxFacetValues);
+            context.FacetValues = provider.GetFacets(context, context.RequestedFacets, options.MaxFacetValues);
         }
 
         return Task.CompletedTask;

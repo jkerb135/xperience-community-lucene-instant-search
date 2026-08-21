@@ -107,8 +107,8 @@ internal sealed class TestSearchIndex : ILuceneIndexAccessor, IDisposable
     {
         var document = new Document
         {
-            new StringField(BaseDocumentProperties.ID, source.ObjectId, Field.Store.YES),
-            new StringField(BaseDocumentProperties.ITEM_GUID, source.ObjectId, Field.Store.YES),
+            new StringField(BaseDocumentProperties.ID, source.ResultId, Field.Store.YES),
+            new StringField(BaseDocumentProperties.ITEM_GUID, source.ResultId, Field.Store.YES),
             new TextField(IndexSchemaProvider.TitleField, source.Title, Field.Store.YES),
             new SortedDocValuesField(IndexSchemaProvider.TitleField + LuceneFieldNames.SortSuffix, new BytesRef(source.Title)),
             new TextField(TestCorpus.BodyField, source.Body, Field.Store.YES),
@@ -153,7 +153,11 @@ internal sealed class TestSearchIndex : ILuceneIndexAccessor, IDisposable
             }
 
             document.Add(new StringField(dimension, value, Field.Store.YES));
-            document.Add(new TextField(dimension + LuceneFieldNames.TextSuffix, value, Field.Store.NO));
+            document.Add(new TextField(dimension + LuceneFieldNames.TextSuffix, TestCorpus.TitleOf(value), Field.Store.NO));
+            document.Add(new StringField(
+                dimension + LuceneFieldNames.LabelSuffix,
+                LuceneFieldNames.ComposeLabel(value, TestCorpus.TitleOf(value)),
+                Field.Store.NO));
         }
     }
 }

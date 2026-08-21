@@ -5,7 +5,6 @@ using Lucene.Net.Search;
 
 using XpSearch.Core.Abstractions;
 using XpSearch.Core.Contract;
-using XpSearch.Core.Filters;
 
 namespace XpSearch.Core.Pipeline;
 
@@ -61,19 +60,22 @@ public sealed class SearchContext
     /// <summary>Gets or sets the normalized free-text query: trimmed, lowercased and length-capped.</summary>
     public string QueryText { get; set; }
 
-    /// <summary>Gets or sets the zero-based page number, after validation.</summary>
+    /// <summary>Gets or sets the one-based page number, after validation.</summary>
     public int Page { get; set; }
 
     /// <summary>Gets or sets the page size, after validation and server-side clamping.</summary>
-    public int HitsPerPage { get; set; }
+    public int PageSize { get; set; }
 
     /// <summary>Gets or sets the facet dimensions counts were requested for.</summary>
     public IReadOnlyList<string> RequestedFacets { get; set; } = [];
 
-    /// <summary>Gets or sets the parsed facet refinements: outer list ANDed, inner list ORed.</summary>
-    public IReadOnlyList<IReadOnlyList<FacetRefinement>> FacetFilters { get; set; } = [];
+    /// <summary>
+    /// Gets or sets the validated facet refinements, one entry per attribute and all ANDed. The
+    /// attribute of each entry is resolved to the schema's own casing.
+    /// </summary>
+    public IReadOnlyList<FacetFilter> FacetFilters { get; set; } = [];
 
-    /// <summary>Gets or sets the parsed numeric refinements, all ANDed.</summary>
+    /// <summary>Gets or sets the validated numeric refinements, all ANDed.</summary>
     public IReadOnlyList<NumericFilter> NumericFilters { get; set; } = [];
 
     /// <summary>Gets or sets the field to sort on, or <see langword="null"/> for relevance ordering.</summary>
@@ -82,8 +84,8 @@ public sealed class SearchContext
     /// <summary>Gets or sets a value indicating whether the sort is descending.</summary>
     public bool SortDescending { get; set; }
 
-    /// <summary>Gets or sets the attributes to project onto each hit; empty means every retrievable attribute.</summary>
-    public IReadOnlyList<string> AttributesToRetrieve { get; set; } = [];
+    /// <summary>Gets or sets the fields to project into each result's attributes; empty means every retrievable field.</summary>
+    public IReadOnlyList<string> Fields { get; set; } = [];
 
     /// <summary>
     /// Gets or sets the query everything else wraps: free text, language filter and any refinement
@@ -99,7 +101,7 @@ public sealed class SearchContext
         new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
 
     /// <summary>Gets or sets the total number of matching documents across all pages.</summary>
-    public int TotalHits { get; set; }
+    public int Total { get; set; }
 
     /// <summary>Gets or sets the documents of the requested page, in ranked order.</summary>
     public IReadOnlyList<ScoredDocument> Documents { get; set; } = [];
@@ -108,10 +110,11 @@ public sealed class SearchContext
     public Lucene.Net.Facet.Facets? Facets { get; set; }
 
     /// <summary>
-    /// Gets or sets the projected facet counts: requested dimensions only, non-zero values only.
+    /// Gets or sets the projected facet values: requested dimensions only, non-zero counts only,
+    /// each list ordered by count descending then value ascending.
     /// <see langword="null"/> when the request asked for no facets.
     /// </summary>
-    public Dictionary<string, Dictionary<string, long>>? FacetCounts { get; set; }
+    public Dictionary<string, FacetValue[]>? FacetValues { get; set; }
 
     /// <summary>
     /// Gets or sets the highlighted snippets, one entry per document in <see cref="Documents"/> and in

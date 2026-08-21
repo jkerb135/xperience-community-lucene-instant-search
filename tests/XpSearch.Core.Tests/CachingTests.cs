@@ -151,7 +151,7 @@ internal sealed class CachingTests
 
             return Task.FromResult(new SearchResponse
             {
-                Hits = [],
+                Results = [],
                 QueryId = request.QueryId ?? Guid.NewGuid().ToString()
             });
         }

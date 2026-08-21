@@ -1,12 +1,12 @@
 using Lucene.Net.Search;
 
 using XpSearch.Core.Abstractions;
-using XpSearch.Core.Filters;
+using XpSearch.Core.Contract;
 
 namespace XpSearch.Core.Pipeline.Stages;
 
 /// <summary>
-/// Applies <c>numericFilters</c> as range queries ANDed onto the base query. <c>!=</c> becomes a
+/// Applies <c>filters.numeric</c> as range queries ANDed onto the base query. <c>ne</c> becomes a
 /// MUST_NOT of the equality range.
 /// </summary>
 public sealed class NumericFilterStage : ISearchStage
@@ -31,7 +31,7 @@ public sealed class NumericFilterStage : ISearchStage
             var field = context.Schema.Find(filter.Attribute)!;
             var range = BuildRange(field, filter);
 
-            combined.Add(range, filter.Operator == NumericOperator.NotEqual ? Occur.MUST_NOT : Occur.MUST);
+            combined.Add(range, filter.Operator == NumericOperator.Ne ? Occur.MUST_NOT : Occur.MUST);
         }
 
         context.BaseQuery = combined;
@@ -42,10 +42,10 @@ public sealed class NumericFilterStage : ISearchStage
     {
         (double? min, double? max, bool minInclusive, bool maxInclusive) = filter.Operator switch
         {
-            NumericOperator.LessThan => ((double?)null, (double?)filter.Value, true, false),
-            NumericOperator.LessThanOrEqual => (null, filter.Value, true, true),
-            NumericOperator.GreaterThan => (filter.Value, null, false, true),
-            NumericOperator.GreaterThanOrEqual => (filter.Value, null, true, true),
+            NumericOperator.Lt => ((double?)null, (double?)filter.Value, true, false),
+            NumericOperator.Lte => (null, filter.Value, true, true),
+            NumericOperator.Gt => (filter.Value, null, false, true),
+            NumericOperator.Gte => (filter.Value, null, true, true),
             _ => (filter.Value, filter.Value, true, true)
         };
 
@@ -57,7 +57,7 @@ public sealed class NumericFilterStage : ISearchStage
         }
 
         // An exclusive bound on an integer field is folded into an inclusive one, so a fractional
-        // comparand such as "publishedAt<50.5" still means "at most 50".
+        // comparand such as publishedAt lt 50.5 still means "at most 50".
         long? intMin = min is null ? null : (long)(minInclusive ? Math.Ceiling(min.Value) : Math.Floor(min.Value) + 1);
         long? intMax = max is null ? null : (long)(maxInclusive ? Math.Floor(max.Value) : Math.Ceiling(max.Value) - 1);
 

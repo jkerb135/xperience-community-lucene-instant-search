@@ -42,6 +42,15 @@ const csharpEdits = [
     to: 'internal class TimeOnlyConverter',
   },
   {
+    // A converter that cannot read a wire value throws a bare Exception, which ASP.NET Core would
+    // answer with a 500. JsonException is what a malformed body actually is, and what minimal APIs
+    // turn into a 400 before the handler ever runs.
+    why: 'a bad enum value on the wire is a bad request, not a server fault',
+    all: true,
+    from: 'throw new Exception("Cannot ',
+    to: 'throw new JsonException("Cannot ',
+  },
+  {
     // quicktype has no data for `additionalProperties: true`, so it falls back to `object`.
     // JsonElement is what System.Text.Json actually puts in there, and what the projection
     // stage builds, so the property is typed as the thing it holds.
@@ -104,7 +113,7 @@ function generate(target, outFile) {
     if (!text.includes(edit.from)) {
       throw new Error(`${target.name}: quicktype no longer emits \`${edit.from}\` (edit reason: ${edit.why}). Review the generated output before removing this edit.`);
     }
-    text = text.replace(edit.from, edit.to);
+    text = edit.all ? text.replaceAll(edit.from, edit.to) : text.replace(edit.from, edit.to);
   }
   return target.header + text;
 }

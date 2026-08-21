@@ -7,7 +7,7 @@ namespace XpSearch.Core.Tests.Fixtures;
 
 /// <summary>One document of the fixture corpus, before it becomes a Lucene document.</summary>
 internal sealed record TestDocument(
-    string ObjectId,
+    string ResultId,
     string Title,
     string Body,
     string ContentType,
@@ -31,8 +31,27 @@ internal static class TestCorpus
     internal const string PriceField = "Price";
     internal const string PublishedAtField = "PublishedAt";
 
-    /// <summary>The objectID of the document whose body contains a script tag.</summary>
+    /// <summary>The result id of the document whose body contains a script tag.</summary>
     internal const string ScriptDocumentId = "doc-script:en";
+
+    /// <summary>
+    /// The title of each taxonomy tag, keyed by its code name - the pair an Xperience taxonomy field
+    /// carries, and the reason a facet value has both a value and a label.
+    /// </summary>
+    internal static IReadOnlyDictionary<string, string> TagTitles { get; } = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["coffee"] = "Coffee beans",
+        ["equipment"] = "Equipment",
+        ["accessories"] = "Accessories",
+        ["brewing"] = "Brewing",
+        ["milk"] = "Milk",
+        ["grinding"] = "Grinding"
+    };
+
+    /// <summary>Gets the title of a tag, falling back to its code name.</summary>
+    /// <param name="value">The tag code name.</param>
+    /// <returns>The title.</returns>
+    internal static string TitleOf(string value) => TagTitles.TryGetValue(value, out string? title) ? title : value;
 
     internal static IndexSchema Schema { get; } = new(
         IndexName,

@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 using Kentico.Xperience.Lucene.Core;
 
 using Lucene.Net.Index;
@@ -18,7 +20,7 @@ namespace XpSearch.Core.Search;
 
 /// <summary>
 /// Autocomplete by prefix-matching the index's suggest field and returning the matching documents -
-/// the "federated hits" mode of spec §4.3.
+/// the document-suggestion mode of spec §4.3.
 /// </summary>
 /// <remarks>
 /// The other mode, query suggestions from logged popular queries, depends on the Phase 6 analytics
@@ -86,7 +88,7 @@ public sealed class FederatedHitsSuggestService : ISuggestService
             return Empty();
         }
 
-        int maxItems = ValidateMaxItems(request.MaxItems);
+        int limit = ValidateLimit(request.Limit);
         var schema = await schemaProvider.GetSchemaAsync(request.Index, cancellationToken).ConfigureAwait(false);
         var suggestField = schema.Find(indexOptions.SuggestField)
             ?? throw new SearchValidationException(
@@ -97,10 +99,10 @@ public sealed class FederatedHitsSuggestService : ISuggestService
 
         var suggestions = accessor.UseSearcher(request.Index, searcher =>
         {
-            var hits = searcher.Search(query, maxItems);
-            var results = new List<Suggestion>(hits.ScoreDocs.Length);
+            var matches = searcher.Search(query, limit);
+            var suggested = new List<Suggestion>(matches.ScoreDocs.Length);
 
-            foreach (var scoreDoc in hits.ScoreDocs)
+            foreach (var scoreDoc in matches.ScoreDocs)
             {
                 var document = searcher.Doc(scoreDoc.Doc);
                 string? text = document.Get(suggestField.Name);
@@ -110,22 +112,23 @@ public sealed class FederatedHitsSuggestService : ISuggestService
                     continue;
                 }
 
-                results.Add(new Suggestion
+                suggested.Add(new Suggestion
                 {
                     Text = text,
                     Url = WebUrl.ToRootRelative(document.Get(BaseDocumentProperties.URL)),
-                    Hits =
-                    [
-                        new Hit
+                    Result = new Result
+                    {
+                        Id = document.Get(BaseDocumentProperties.ID) ?? string.Empty,
+                        Score = scoreDoc.Score,
+                        Attributes = new Dictionary<string, JsonElement>(StringComparer.Ordinal)
                         {
-                            ObjectId = document.Get(BaseDocumentProperties.ID) ?? string.Empty,
-                            Score = scoreDoc.Score
+                            [suggestField.Name] = JsonSerializer.SerializeToElement(text)
                         }
-                    ]
+                    }
                 });
             }
 
-            return results;
+            return suggested;
         });
 
         return new SuggestResponse { Suggestions = [.. suggestions] };
@@ -135,19 +138,19 @@ public sealed class FederatedHitsSuggestService : ISuggestService
 
     private static string NormalizePrefix(string? query) => (query ?? string.Empty).Trim().ToLowerInvariant();
 
-    private int ValidateMaxItems(long? maxItems)
+    private int ValidateLimit(long? limit)
     {
-        if (maxItems is null)
+        if (limit is null)
         {
-            return options.DefaultMaxSuggestions;
+            return options.DefaultSuggestLimit;
         }
 
-        if (maxItems < 1)
+        if (limit < 1)
         {
-            throw new SearchValidationException("maxItems", "maxItems must be one or greater.");
+            throw new SearchValidationException("limit", "limit must be one or greater.");
         }
 
-        return (int)Math.Min(maxItems.Value, options.MaxSuggestions);
+        return (int)Math.Min(limit.Value, options.MaxSuggestLimit);
     }
 
     private static Query BuildQuery(string prefix, SchemaField suggestField, string? language)
