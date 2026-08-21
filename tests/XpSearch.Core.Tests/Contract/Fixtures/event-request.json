@@ -1,6 +1,6 @@
 {
-  "eventType": "click",
+  "type": "click",
   "queryId": "q",
-  "objectID": "o",
+  "resultId": "o",
   "position": 1
 }

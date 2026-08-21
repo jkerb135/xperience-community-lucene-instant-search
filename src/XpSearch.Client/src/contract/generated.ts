@@ -4,19 +4,22 @@
 //     CI guard: npm run contract:check
 // </auto-generated>
 /**
- * Wire contract for the Xperience Search HTTP API (spec 4.2, 4.3, 9.1). This schema is the
- * single source of truth: the C# DTOs (XpSearch.Core.Contract) and the TypeScript types
- * (@yourco/xperience-search) are generated from it and must never be hand-edited. Field
- * names deliberately mirror Algolia's request/response shape. That is a documented feature,
- * not an accident: a team moving off Algolia can swap the transport and keep most of their
- * UI code. Endpoints: POST /api/xpsearch/query (SearchRequest -> SearchResponse), POST
- * /api/xpsearch/suggest (SuggestRequest -> SuggestResponse), POST /api/xpsearch/events
- * (EventRequest -> 202 Accepted with an empty body; there is no event response type). Every
- * response carries the header X-XpSearch-Api-Version: 1; the contract version is the semver
- * major of both the NuGet and npm packages, and routes never carry a version segment.
- * Errors are RFC 9457 Problem Details (application/problem+json) as produced by ASP.NET
- * Core's ProblemDetails - see https://learn.microsoft.com/aspnet/core/web-api/handle-errors
- * - and are deliberately not redefined here.
+ * Wire contract for the Xperience Search HTTP API (spec 4.2, 4.3, 9.1, as amended by
+ * ADR-0010). This schema is the single source of truth: the C# DTOs
+ * (XpSearch.Core.Contract) and the TypeScript types (@yourco/xperience-search) are
+ * generated from it and must never be hand-edited. Names and shapes are owned by this
+ * product and chosen for Xperience's content model - taxonomy tags have code names and
+ * titles, fields are typed - not for compatibility with any other vendor's API; a team
+ * arriving from a hosted search service is served by docs/guides/migrating-from-algolia.md,
+ * which is generated from contract/algolia-map.json. Endpoints: POST /api/xpsearch/query
+ * (SearchRequest -> SearchResponse), POST /api/xpsearch/suggest (SuggestRequest ->
+ * SuggestResponse), POST /api/xpsearch/events (EventRequest -> 202 Accepted with an empty
+ * body; there is no event response type). Every response carries the header
+ * X-XpSearch-Api-Version: 1; the contract version is the semver major of both the NuGet and
+ * npm packages, and routes never carry a version segment. Errors are RFC 9457 Problem
+ * Details (application/problem+json) as produced by ASP.NET Core's ProblemDetails - see
+ * https://learn.microsoft.com/aspnet/core/web-api/handle-errors - and are deliberately not
+ * redefined here.
  */
 export interface XpSearchContract {
     /**
@@ -50,34 +53,30 @@ export interface XpSearchContract {
  */
 export interface EventRequest {
     /**
-     * Required. "click" when the user opens a result, "conversion" when the developer signals a
-     * goal reached after a search.
-     */
-    eventType: EventType;
-    /**
-     * Code name of the index the search ran against. Omit to have the server resolve it from
-     * queryId.
-     */
-    index?: string;
-    /**
-     * Required. objectID of the hit the event is about.
-     */
-    objectID: string;
-    /**
-     * One-based position of the hit in the result list. Required when eventType is "click",
-     * ignored for "conversion".
+     * One-based position of the result in the list. Required when type is "click", ignored for
+     * "conversion".
      */
     position?: number;
     /**
-     * Required. The queryId from the SearchResponse that produced the hit. This is what
+     * Required. The queryId from the SearchResponse that produced the result. This is what
      * correlates the event back to its search.
      */
     queryId: string;
+    /**
+     * Required. The id of the result the event is about.
+     */
+    resultId: string;
+    /**
+     * Required. What happened.
+     */
+    type: EventType;
 }
 
 /**
- * Required. "click" when the user opens a result, "conversion" when the developer signals a
- * goal reached after a search.
+ * Required. What happened.
+ *
+ * The kind of an analytics event: "click" when the user opens a result, "conversion" when
+ * the developer signals a goal reached after a search.
  */
 export type EventType = "click" | "conversion";
 
@@ -88,34 +87,27 @@ export type EventType = "click" | "conversion";
  */
 export interface SearchRequest {
     /**
-     * Attributes to project onto each hit. Omit to return the index's configured default
-     * projection. objectID is always returned.
-     */
-    attributesToRetrieve?: string[];
-    /**
-     * When true, each hit carries _rankingInfo explaining its score. Defaults to false. Used by
+     * When true, each result carries ranking explaining its score. Defaults to false. Used by
      * the admin query tester (spec 8.4).
      */
     explain?: boolean;
-    /**
-     * Facet refinements. The outer array is ANDed, each inner array is ORed:
-     * [["contentType:Article","contentType:Product"],["tags:coffee"]] means (Article OR
-     * Product) AND coffee.
-     */
-    facetFilters?: Array<string[]>;
     /**
      * Attributes to compute facet counts for. Counts come back in SearchResponse.facets.
      */
     facets?: string[];
     /**
+     * Fields to project into each result's attributes. Omit to return the index's configured
+     * default projection. The result id is always returned and is never an attribute.
+     */
+    fields?: string[];
+    /**
+     * Structured refinements. Omit to search unfiltered.
+     */
+    filters?: Filters;
+    /**
      * Highlighting options. Omit to use the defaults.
      */
     highlight?: HighlightOptions;
-    /**
-     * Number of hits per page. Defaults to 20. The maximum of 1000 is a contract ceiling; the
-     * effective maximum is enforced server-side and may be lower per configuration.
-     */
-    hitsPerPage?: number;
     /**
      * Required. Code name of the Lucene index to search, as registered in the Xperience Search
      * application. Must be non-empty; validated server-side, which answers 400 Problem Details
@@ -128,17 +120,14 @@ export interface SearchRequest {
      */
     language?: string;
     /**
-     * Numeric refinements, ANDed together. Grammar: attribute, operator, number - where the
-     * attribute starts with a letter or underscore and may contain word characters and dots,
-     * the operator is one of <=, >=, <, >, =, != and the number is an optionally negative
-     * integer or decimal. Whitespace around the operator is allowed. Dates are compared as Unix
-     * epoch seconds.
-     */
-    numericFilters?: string[];
-    /**
-     * Zero-based page number. Defaults to 0.
+     * One-based page number. Defaults to 1, which is the first page.
      */
     page?: number;
+    /**
+     * Number of results per page. Defaults to 20. The maximum of 1000 is a contract ceiling;
+     * the effective maximum is enforced server-side and may be lower per configuration.
+     */
+    pageSize?: number;
     /**
      * Free-text query. An empty string (the default) means match all documents.
      */
@@ -156,13 +145,87 @@ export interface SearchRequest {
 }
 
 /**
+ * Structured refinements. Omit to search unfiltered.
+ *
+ * The structured refinements of a search request. Facet and numeric entries are ANDed
+ * together; there is no string filter grammar and therefore nothing to escape.
+ */
+export interface Filters {
+    /**
+     * Facet refinements, one entry per attribute, ANDed together.
+     */
+    facets?: FacetFilter[];
+    /**
+     * Numeric refinements, ANDed together. Dates are compared as Unix epoch seconds.
+     */
+    numeric?: NumericFilter[];
+}
+
+/**
+ * The selected values of one facetable attribute. An unknown or non-facetable attribute is
+ * a 400 Problem Details keyed by the entry's JSON path, for example
+ * filters.facets[0].attribute.
+ */
+export interface FacetFilter {
+    /**
+     * Required. The facetable attribute the values belong to, for example "contentType".
+     */
+    attribute: string;
+    /**
+     * How the values combine. Defaults to "or".
+     */
+    operator?: FacetOperator;
+    /**
+     * Required. The selected values. An empty array refines nothing.
+     */
+    values: string[];
+}
+
+/**
+ * How the values combine. Defaults to "or".
+ *
+ * How the selected values of one facet combine: "or" matches a document carrying any of
+ * them, "and" matches only a document carrying all of them.
+ */
+export type FacetOperator = "or" | "and";
+
+/**
+ * One comparison against a numeric or date attribute. An unknown or non-numeric attribute
+ * is a 400 Problem Details keyed by the entry's JSON path, for example
+ * filters.numeric[0].attribute.
+ */
+export interface NumericFilter {
+    /**
+     * Required. The numeric or date attribute to compare, for example "price".
+     */
+    attribute: string;
+    /**
+     * Required. The comparison to apply.
+     */
+    operator: NumericOperator;
+    /**
+     * Required. The right-hand side of the comparison. A date attribute is compared as Unix
+     * epoch seconds.
+     */
+    value: number;
+}
+
+/**
+ * Required. The comparison to apply.
+ *
+ * The comparison of a numeric filter: less than, less than or equal, equal, not equal,
+ * greater than or equal, greater than.
+ */
+export type NumericOperator = "lt" | "lte" | "eq" | "ne" | "gte" | "gt";
+
+/**
  * Highlighting options. Omit to use the defaults.
  *
  * Per-request highlighting configuration.
  */
 export interface HighlightOptions {
     /**
-     * Fields to produce highlighted snippets for. Results land in Hit._highlights.
+     * Fields to produce highlighted snippets for. Results land in Result.highlights.
      */
     fields?: string[];
     /**
@@ -186,94 +249,122 @@ export interface HighlightOptions {
  */
 export interface SearchResponse {
     /**
-     * Facet counts, keyed by attribute name and then by facet value. Only attributes listed in
-     * SearchRequest.facets appear, and only values with a non-zero count in the current result
-     * set.
+     * Facet values keyed by attribute name. Only attributes listed in SearchRequest.facets
+     * appear, and only values with a non-zero count in the current result set. Each list is
+     * ordered by count descending, then by value ascending.
      */
-    facets?: { [key: string]: { [key: string]: number } };
+    facets?: { [key: string]: FacetValue[] };
     /**
-     * The hits on the requested page, in ranked order.
-     */
-    hits: Hit[];
-    /**
-     * Page size that was applied, after server-side clamping.
-     */
-    hitsPerPage: number;
-    /**
-     * Total number of matching documents across all pages.
-     */
-    nbHits: number;
-    /**
-     * Total number of pages available.
-     */
-    nbPages: number;
-    /**
-     * Zero-based number of the page that was returned.
+     * One-based number of the page that was returned.
      */
     page: number;
     /**
-     * Server-side processing time in milliseconds, excluding network time.
+     * Page size that was applied, after server-side clamping.
      */
-    processingTimeMs: number;
+    pageSize: number;
     /**
      * Correlation id for this search. Echoes SearchRequest.queryId when supplied, otherwise
      * server-generated. Send it back on click and conversion events.
      */
     queryId?: string;
+    /**
+     * The results on the requested page, in ranked order.
+     */
+    results: Result[];
+    /**
+     * Server-side processing time in milliseconds, excluding network time.
+     */
+    tookMs: number;
+    /**
+     * Total number of matching documents across all pages.
+     */
+    total: number;
+    /**
+     * Total number of pages available.
+     */
+    totalPages: number;
 }
 
 /**
- * One search result. Deliberately an open object: objectID and the underscore-prefixed
- * members are reserved by the contract, and every other property is a retrieved document
- * attribute (title, url, summary, image, ...) whose set is decided by
- * SearchRequest.attributesToRetrieve and the index configuration. Any attribute holding a
- * link - url is the conventional name - is always root-relative
- * ("/articles/espresso-basics") or absolute
- * ("https://example.com/articles/espresso-basics"); never the app-relative "~/..." form
- * Xperience URL retrievers return, because the server resolves that before the hit reaches
- * the wire.
+ * The values of one attribute, in display order.
+ *
+ * One value of one facetable attribute, with the count of matching documents and the text a
+ * widget displays for it.
  */
-export interface Hit {
+export interface FacetValue {
+    /**
+     * Required. Number of matching documents carrying this value.
+     */
+    count: number;
+    /**
+     * Required. The text to display. For a taxonomy dimension this is the tag title; for any
+     * other attribute it equals value.
+     */
+    label: string;
+    /**
+     * Required. The value to send back in filters.facets. For a taxonomy dimension this is the
+     * tag code name.
+     */
+    value: string;
+}
+
+/**
+ * One search result. A closed object: id, score, attributes, highlights and ranking are the
+ * only members, so a document field can never collide with a contract member.
+ *
+ * The document behind this suggestion, present only for indexes that suggest documents.
+ */
+export interface Result {
+    /**
+     * Required. The retrieved document fields (title, url, summary, image, ...), whose set is
+     * decided by SearchRequest.fields and the index configuration. The only open object in the
+     * contract, and the reason the members beside it can never be shadowed. Any attribute
+     * holding a link - url is the conventional name - is always root-relative
+     * ("/articles/espresso-basics") or absolute
+     * ("https://example.com/articles/espresso-basics"); never the app-relative "~/..." form
+     * Xperience URL retrievers return, because the server resolves that before the result
+     * reaches the wire.
+     */
+    attributes: { [key: string]: unknown };
     /**
      * Highlighted snippets keyed by field name. Present only for fields requested in
      * SearchRequest.highlight.fields. Values are HTML-encoded content with the configured pre
      * and post tags inserted, so they are safe to render as HTML.
      */
-    _highlights?: { [key: string]: string };
-    /**
-     * Score explanation. Present only when SearchRequest.explain is true; absent otherwise.
-     */
-    _rankingInfo?: RankingInfo;
-    /**
-     * Final relevance score after boosts and rules. Higher is more relevant; values are only
-     * comparable within one response.
-     */
-    _score?: number;
+    highlights?: { [key: string]: string };
     /**
      * Required. Stable unique identifier of the indexed document. Send it back on click and
      * conversion events.
      */
-    objectID: string;
-    [property: string]: unknown;
+    id: string;
+    /**
+     * Score explanation. Present only when SearchRequest.explain is true; absent otherwise.
+     */
+    ranking?: RankingInfo;
+    /**
+     * Final relevance score after boosts and rules. Higher is more relevant; values are only
+     * comparable within one response.
+     */
+    score?: number;
 }
 
 /**
  * Score explanation. Present only when SearchRequest.explain is true; absent otherwise.
  *
- * Per-hit score explanation, returned only when SearchRequest.explain is true (spec 4.2,
+ * Per-result score explanation, returned only when SearchRequest.explain is true (spec 4.2,
  * 8.4).
  */
 export interface RankingInfo {
-    /**
-     * Boosts and rules that changed the score or position, in application order.
-     */
-    appliedBoosts?: string[];
     /**
      * Lucene score before any boost rule was applied.
      */
     baseScore?: number;
     /**
-     * One-based position of this hit in the final ranking, across all pages.
+     * Boosts and rules that changed the score or position, in application order.
+     */
+    boosts?: string[];
+    /**
+     * One-based position of this result in the final ranking, across all pages.
      */
     position?: number;
 }
@@ -282,7 +373,7 @@ export interface RankingInfo {
  * Placeholder property so the code generator emits SuggestRequest. Never sent on the wire.
  *
  * Body of POST /api/xpsearch/suggest. Whether an index answers with query suggestions or
- * with federated hits is server-side per-index configuration, not a request field.
+ * with matching documents is server-side per-index configuration, not a request field.
  */
 export interface SuggestRequest {
     /**
@@ -297,7 +388,7 @@ export interface SuggestRequest {
     /**
      * Maximum number of suggestions to return. Defaults to 5. Enforced server-side.
      */
-    maxItems?: number;
+    limit?: number;
     /**
      * Required. The partial input to prefix-match. May be an empty string, which yields no
      * suggestions.
@@ -313,7 +404,7 @@ export interface SuggestRequest {
  */
 export interface SuggestResponse {
     /**
-     * Suggestions in display order, at most SuggestRequest.maxItems of them.
+     * Suggestions in display order, at most SuggestRequest.limit of them.
      */
     suggestions: Suggestion[];
 }
@@ -323,17 +414,16 @@ export interface SuggestResponse {
  */
 export interface Suggestion {
     /**
-     * Documents behind this suggestion, present only for indexes configured in federated-hits
-     * mode.
+     * The document behind this suggestion, present only for indexes that suggest documents.
      */
-    hits?: Hit[];
+    result?: Result;
     /**
      * Required. The text to display and, for a query suggestion, to search for when picked.
      */
     text: string;
     /**
-     * Link to follow when the suggestion is picked, present only for indexes configured in
-     * federated-hits mode. Root-relative or absolute, never the app-relative "~/..." form.
+     * Link to follow when the suggestion is picked, present only for indexes that suggest
+     * documents. Root-relative or absolute, never the app-relative "~/..." form.
      */
     url?: string;
 }

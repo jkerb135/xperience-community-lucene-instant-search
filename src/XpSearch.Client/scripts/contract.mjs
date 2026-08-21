@@ -42,21 +42,32 @@ const csharpEdits = [
     to: 'internal class TimeOnlyConverter',
   },
   {
-    // attributes-only emits EventTypeConverter (which maps "click"/"conversion") but attaches it to
-    // nothing, so a default JsonSerializer would write the enum as 0/1. Attaching it to the enum
-    // itself makes every use of EventType round-trip the wire strings, options or no options.
-    // The pragma is scoped to the enum, not the file: CS1591 (missing XML doc) is otherwise a real
-    // signal here, and every other emitted member carries its schema description. JSON Schema has
-    // nowhere to describe an individual enum value, so these two members cannot be documented.
-    why: 'attributes-only leaves the enum converter unattached',
-    from: '    public enum EventType { Click, Conversion };',
-    to: [
-      '#pragma warning disable CS1591 // no way to document an individual enum member from JSON Schema',
-      '    [JsonConverter(typeof(EventTypeConverter))]',
-      '    public enum EventType { Click, Conversion };',
-      '#pragma warning restore CS1591',
-    ].join('\n'),
+    // quicktype has no data for `additionalProperties: true`, so it falls back to `object`.
+    // JsonElement is what System.Text.Json actually puts in there, and what the projection
+    // stage builds, so the property is typed as the thing it holds.
+    why: 'the open attributes bag is the one place the schema cannot name a value type',
+    from: 'public Dictionary<string, object> Attributes { get; set; }',
+    to: 'public Dictionary<string, JsonElement> Attributes { get; set; }',
   },
+  // attributes-only emits a converter per string enum (mapping "click", "or", "lte", ...) but
+  // attaches it to nothing, so a default JsonSerializer would write the enum as 0/1. Attaching
+  // each converter to its enum makes every use round-trip the wire strings, options or no
+  // options. The pragma is scoped to the enum, not the file: CS1591 (missing XML doc) is
+  // otherwise a real signal here, and every other emitted member carries its schema
+  // description. JSON Schema has nowhere to describe an individual enum value, so these
+  // members cannot be documented.
+  ...['EventType { Click, Conversion }', 'FacetOperator { And, Or }', 'NumericOperator { Eq, Gt, Gte, Lt, Lte, Ne }'].map(
+    (declaration) => ({
+      why: 'attributes-only leaves the enum converter unattached',
+      from: `    public enum ${declaration};`,
+      to: [
+        '#pragma warning disable CS1591 // no way to document an individual enum member from JSON Schema',
+        `    [JsonConverter(typeof(${declaration.split(' ')[0]}Converter))]`,
+        `    public enum ${declaration};`,
+        '#pragma warning restore CS1591',
+      ].join('\n'),
+    })
+  ),
 ];
 
 const targets = [
@@ -98,33 +109,55 @@ function generate(target, outFile) {
   return target.header + text;
 }
 
-// The contract's Hit is an open object (spec 4.2): reserved members plus any retrieved attribute.
-// quicktype honours `additionalProperties: true` in TypeScript (index signature) but NOT in C#,
-// where the open half is hand-written as a partial class in Contract/Hit.cs.
-function assertHitStaysOpen(lang, text) {
+/**
+ * The contract's `Result` is closed - `id`, `score`, `attributes`, `highlights`, `ranking` and
+ * nothing else (ADR-0010) - and `attributes` is the single open object inside it. Both halves
+ * are asserted here because a schema edit that reopened the result, or closed the attribute
+ * bag, would still generate cleanly and only fail much later.
+ */
+function assertResultShape(lang, text) {
   const schema = JSON.parse(readFileSync(schemaPath, 'utf8'));
-  const names = Object.keys(schema.$defs.Hit.properties);
-  // The generated `Hit` body only: everything from the declaration to its closing brace. Scoped,
-  // so that a property removed from Hit but still present on another type is still caught.
-  const anchor = lang === 'C#' ? 'public partial class Hit\n' : 'export interface Hit {';
-  const hitBody = text.slice(text.indexOf(anchor)).split('\n    }')[0].split('\n}')[0];
+  const expected = Object.keys(schema.$defs.Result.properties).sort().join(', ');
+  // The generated `Result` body only: everything from the declaration to its closing brace.
+  // Scoped, so a property removed from Result but still present on another type is caught.
+  const anchor = lang === 'C#' ? 'public partial class Result\n' : 'export interface Result {';
+  const body = text.slice(text.indexOf(anchor)).split('\n    }')[0].split('\n}')[0];
   const declared = lang === 'C#'
-    ? [...hitBody.matchAll(/\[JsonPropertyName\("([^"]+)"\)]/g)].map((m) => m[1])
-    : [...hitBody.matchAll(/^\s{4}(\w+)\??:/gm)].map((m) => m[1]);
-  const expected = [...names].sort().join(', ');
+    ? [...body.matchAll(/\[JsonPropertyName\("([^"]+)"\)]/g)].map((m) => m[1])
+    : [...body.matchAll(/^\s{4}(\w+)\??:/gm)].map((m) => m[1]);
   if (declared.sort().join(', ') !== expected) {
-    throw new Error(`${lang}: generated Hit declares [${declared.join(', ')}] but the schema's Hit.properties are [${expected}].`);
+    throw new Error(`${lang}: generated Result declares [${declared.join(', ')}] but the schema's Result.properties are [${expected}].`);
   }
-  if (lang === 'C#') {
-    if (!/public partial class Hit\b/.test(text)) {
-      throw new Error('C#: Hit is no longer a partial class, so Contract/Hit.cs can no longer add [JsonExtensionData].');
-    }
-    const handWritten = readFileSync(resolve(clientDir, '../XpSearch.Core/Contract/Hit.cs'), 'utf8');
-    if (!handWritten.includes('[JsonExtensionData]')) {
-      throw new Error('C#: Contract/Hit.cs no longer carries [JsonExtensionData]; Hit would be a closed object.');
-    }
-  } else if (!hitBody.includes('[property: string]: unknown;')) {
-    throw new Error('TypeScript: generated Hit lost its index signature; it would be a closed object.');
+  if (/\[JsonExtensionData]|\[property: string]: unknown;/.test(body)) {
+    throw new Error(`${lang}: generated Result is an open object; the contract requires a closed one.`);
+  }
+  const attributes = lang === 'C#'
+    ? 'public Dictionary<string, JsonElement> Attributes'
+    : 'attributes: { [key: string]: unknown }';
+  if (!body.includes(attributes)) {
+    throw new Error(`${lang}: Result.attributes is no longer the open bag (\`${attributes}\` is gone).`);
+  }
+}
+
+/**
+ * The published surface of each language binding: the wire types and nothing else. XpSearch.Core
+ * is a NuGet package, so a quicktype upgrade that made its serializer plumbing public would
+ * silently widen the API; the C# half of this assertion is what stops that.
+ */
+const PUBLIC_TYPES = [
+  'EventRequest', 'EventType', 'FacetFilter', 'FacetOperator', 'FacetValue', 'Filters',
+  'HighlightOptions', 'NumericFilter', 'NumericOperator', 'RankingInfo', 'Result',
+  'SearchRequest', 'SearchResponse', 'SuggestRequest', 'SuggestResponse', 'Suggestion',
+];
+
+function assertPublicSurface(lang, text) {
+  const declared = lang === 'C#'
+    ? [...text.matchAll(/^\s*public (?:partial class|enum) (\w+)/gm)].map((m) => m[1])
+    : [...text.matchAll(/^export (?:interface|type) (\w+)/gm)].map((m) => m[1]);
+  // XpSearchContract is the generator's top-level placeholder: internal in C#, unavoidable in TS.
+  const actual = declared.filter((name) => name !== 'XpSearchContract').sort().join(', ');
+  if (actual !== PUBLIC_TYPES.join(', ')) {
+    throw new Error(`${lang}: public contract types are [${actual}] but should be [${PUBLIC_TYPES.join(', ')}].`);
   }
 }
 
@@ -136,7 +169,8 @@ for (const target of targets) {
   const outFile = check ? join(scratch, target.out.split(/[\\/]/).pop()) : target.out;
   if (!check) { mkdirSync(dirname(outFile), { recursive: true }); }
   const text = generate(target, outFile);
-  assertHitStaysOpen(target.name, text);
+  assertResultShape(target.name, text);
+  assertPublicSurface(target.name, text);
   if (check) {
     const current = readFileSync(target.out, 'utf8').replace(/\r\n/g, '\n');
     if (current !== text) {

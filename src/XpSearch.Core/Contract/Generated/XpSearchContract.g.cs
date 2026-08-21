@@ -15,19 +15,22 @@ namespace XpSearch.Core.Contract
     using System.Globalization;
 
     /// <summary>
-    /// Wire contract for the Xperience Search HTTP API (spec 4.2, 4.3, 9.1). This schema is the
-    /// single source of truth: the C# DTOs (XpSearch.Core.Contract) and the TypeScript types
-    /// (@yourco/xperience-search) are generated from it and must never be hand-edited. Field
-    /// names deliberately mirror Algolia's request/response shape. That is a documented feature,
-    /// not an accident: a team moving off Algolia can swap the transport and keep most of their
-    /// UI code. Endpoints: POST /api/xpsearch/query (SearchRequest -&gt; SearchResponse), POST
-    /// /api/xpsearch/suggest (SuggestRequest -&gt; SuggestResponse), POST /api/xpsearch/events
-    /// (EventRequest -&gt; 202 Accepted with an empty body; there is no event response type). Every
-    /// response carries the header X-XpSearch-Api-Version: 1; the contract version is the semver
-    /// major of both the NuGet and npm packages, and routes never carry a version segment.
-    /// Errors are RFC 9457 Problem Details (application/problem+json) as produced by ASP.NET
-    /// Core's ProblemDetails - see https://learn.microsoft.com/aspnet/core/web-api/handle-errors
-    /// - and are deliberately not redefined here.
+    /// Wire contract for the Xperience Search HTTP API (spec 4.2, 4.3, 9.1, as amended by
+    /// ADR-0010). This schema is the single source of truth: the C# DTOs
+    /// (XpSearch.Core.Contract) and the TypeScript types (@yourco/xperience-search) are
+    /// generated from it and must never be hand-edited. Names and shapes are owned by this
+    /// product and chosen for Xperience's content model - taxonomy tags have code names and
+    /// titles, fields are typed - not for compatibility with any other vendor's API; a team
+    /// arriving from a hosted search service is served by docs/guides/migrating-from-algolia.md,
+    /// which is generated from contract/algolia-map.json. Endpoints: POST /api/xpsearch/query
+    /// (SearchRequest -&gt; SearchResponse), POST /api/xpsearch/suggest (SuggestRequest -&gt;
+    /// SuggestResponse), POST /api/xpsearch/events (EventRequest -&gt; 202 Accepted with an empty
+    /// body; there is no event response type). Every response carries the header
+    /// X-XpSearch-Api-Version: 1; the contract version is the semver major of both the NuGet and
+    /// npm packages, and routes never carry a version segment. Errors are RFC 9457 Problem
+    /// Details (application/problem+json) as produced by ASP.NET Core's ProblemDetails - see
+    /// https://learn.microsoft.com/aspnet/core/web-api/handle-errors - and are deliberately not
+    /// redefined here.
     /// </summary>
     internal partial class XpSearchContract
     {
@@ -77,40 +80,31 @@ namespace XpSearch.Core.Contract
     public partial class EventRequest
     {
         /// <summary>
-        /// Required. "click" when the user opens a result, "conversion" when the developer signals a
-        /// goal reached after a search.
-        /// </summary>
-        [JsonPropertyName("eventType")]
-        public EventType EventType { get; set; }
-
-        /// <summary>
-        /// Code name of the index the search ran against. Omit to have the server resolve it from
-        /// queryId.
-        /// </summary>
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        [JsonPropertyName("index")]
-        public string? Index { get; set; }
-
-        /// <summary>
-        /// Required. objectID of the hit the event is about.
-        /// </summary>
-        [JsonPropertyName("objectID")]
-        public string ObjectId { get; set; }
-
-        /// <summary>
-        /// One-based position of the hit in the result list. Required when eventType is "click",
-        /// ignored for "conversion".
+        /// One-based position of the result in the list. Required when type is "click", ignored for
+        /// "conversion".
         /// </summary>
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("position")]
         public long? Position { get; set; }
 
         /// <summary>
-        /// Required. The queryId from the SearchResponse that produced the hit. This is what
+        /// Required. The queryId from the SearchResponse that produced the result. This is what
         /// correlates the event back to its search.
         /// </summary>
         [JsonPropertyName("queryId")]
         public string QueryId { get; set; }
+
+        /// <summary>
+        /// Required. The id of the result the event is about.
+        /// </summary>
+        [JsonPropertyName("resultId")]
+        public string ResultId { get; set; }
+
+        /// <summary>
+        /// Required. What happened.
+        /// </summary>
+        [JsonPropertyName("type")]
+        public EventType Type { get; set; }
     }
 
     /// <summary>
@@ -121,29 +115,12 @@ namespace XpSearch.Core.Contract
     public partial class SearchRequest
     {
         /// <summary>
-        /// Attributes to project onto each hit. Omit to return the index's configured default
-        /// projection. objectID is always returned.
-        /// </summary>
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        [JsonPropertyName("attributesToRetrieve")]
-        public string[]? AttributesToRetrieve { get; set; }
-
-        /// <summary>
-        /// When true, each hit carries _rankingInfo explaining its score. Defaults to false. Used by
+        /// When true, each result carries ranking explaining its score. Defaults to false. Used by
         /// the admin query tester (spec 8.4).
         /// </summary>
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("explain")]
         public bool? Explain { get; set; }
-
-        /// <summary>
-        /// Facet refinements. The outer array is ANDed, each inner array is ORed:
-        /// [["contentType:Article","contentType:Product"],["tags:coffee"]] means (Article OR
-        /// Product) AND coffee.
-        /// </summary>
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        [JsonPropertyName("facetFilters")]
-        public string[][]? FacetFilters { get; set; }
 
         /// <summary>
         /// Attributes to compute facet counts for. Counts come back in SearchResponse.facets.
@@ -153,19 +130,26 @@ namespace XpSearch.Core.Contract
         public string[]? Facets { get; set; }
 
         /// <summary>
+        /// Fields to project into each result's attributes. Omit to return the index's configured
+        /// default projection. The result id is always returned and is never an attribute.
+        /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonPropertyName("fields")]
+        public string[]? Fields { get; set; }
+
+        /// <summary>
+        /// Structured refinements. Omit to search unfiltered.
+        /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonPropertyName("filters")]
+        public Filters? Filters { get; set; }
+
+        /// <summary>
         /// Highlighting options. Omit to use the defaults.
         /// </summary>
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("highlight")]
         public HighlightOptions? Highlight { get; set; }
-
-        /// <summary>
-        /// Number of hits per page. Defaults to 20. The maximum of 1000 is a contract ceiling; the
-        /// effective maximum is enforced server-side and may be lower per configuration.
-        /// </summary>
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        [JsonPropertyName("hitsPerPage")]
-        public long? HitsPerPage { get; set; }
 
         /// <summary>
         /// Required. Code name of the Lucene index to search, as registered in the Xperience Search
@@ -184,22 +168,19 @@ namespace XpSearch.Core.Contract
         public string? Language { get; set; }
 
         /// <summary>
-        /// Numeric refinements, ANDed together. Grammar: attribute, operator, number - where the
-        /// attribute starts with a letter or underscore and may contain word characters and dots,
-        /// the operator is one of &lt;=, &gt;=, &lt;, &gt;, =, != and the number is an optionally negative
-        /// integer or decimal. Whitespace around the operator is allowed. Dates are compared as Unix
-        /// epoch seconds.
-        /// </summary>
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        [JsonPropertyName("numericFilters")]
-        public string[]? NumericFilters { get; set; }
-
-        /// <summary>
-        /// Zero-based page number. Defaults to 0.
+        /// One-based page number. Defaults to 1, which is the first page.
         /// </summary>
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("page")]
         public long? Page { get; set; }
+
+        /// <summary>
+        /// Number of results per page. Defaults to 20. The maximum of 1000 is a contract ceiling;
+        /// the effective maximum is enforced server-side and may be lower per configuration.
+        /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonPropertyName("pageSize")]
+        public long? PageSize { get; set; }
 
         /// <summary>
         /// Free-text query. An empty string (the default) means match all documents.
@@ -226,6 +207,83 @@ namespace XpSearch.Core.Contract
     }
 
     /// <summary>
+    /// Structured refinements. Omit to search unfiltered.
+    ///
+    /// The structured refinements of a search request. Facet and numeric entries are ANDed
+    /// together; there is no string filter grammar and therefore nothing to escape.
+    /// </summary>
+    public partial class Filters
+    {
+        /// <summary>
+        /// Facet refinements, one entry per attribute, ANDed together.
+        /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonPropertyName("facets")]
+        public FacetFilter[]? Facets { get; set; }
+
+        /// <summary>
+        /// Numeric refinements, ANDed together. Dates are compared as Unix epoch seconds.
+        /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonPropertyName("numeric")]
+        public NumericFilter[]? Numeric { get; set; }
+    }
+
+    /// <summary>
+    /// The selected values of one facetable attribute. An unknown or non-facetable attribute is
+    /// a 400 Problem Details keyed by the entry's JSON path, for example
+    /// filters.facets[0].attribute.
+    /// </summary>
+    public partial class FacetFilter
+    {
+        /// <summary>
+        /// Required. The facetable attribute the values belong to, for example "contentType".
+        /// </summary>
+        [JsonPropertyName("attribute")]
+        public string Attribute { get; set; }
+
+        /// <summary>
+        /// How the values combine. Defaults to "or".
+        /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonPropertyName("operator")]
+        public FacetOperator? Operator { get; set; }
+
+        /// <summary>
+        /// Required. The selected values. An empty array refines nothing.
+        /// </summary>
+        [JsonPropertyName("values")]
+        public string[] Values { get; set; }
+    }
+
+    /// <summary>
+    /// One comparison against a numeric or date attribute. An unknown or non-numeric attribute
+    /// is a 400 Problem Details keyed by the entry's JSON path, for example
+    /// filters.numeric[0].attribute.
+    /// </summary>
+    public partial class NumericFilter
+    {
+        /// <summary>
+        /// Required. The numeric or date attribute to compare, for example "price".
+        /// </summary>
+        [JsonPropertyName("attribute")]
+        public string Attribute { get; set; }
+
+        /// <summary>
+        /// Required. The comparison to apply.
+        /// </summary>
+        [JsonPropertyName("operator")]
+        public NumericOperator Operator { get; set; }
+
+        /// <summary>
+        /// Required. The right-hand side of the comparison. A date attribute is compared as Unix
+        /// epoch seconds.
+        /// </summary>
+        [JsonPropertyName("value")]
+        public double Value { get; set; }
+    }
+
+    /// <summary>
     /// Highlighting options. Omit to use the defaults.
     ///
     /// Per-request highlighting configuration.
@@ -233,7 +291,7 @@ namespace XpSearch.Core.Contract
     public partial class HighlightOptions
     {
         /// <summary>
-        /// Fields to produce highlighted snippets for. Results land in Hit._highlights.
+        /// Fields to produce highlighted snippets for. Results land in Result.highlights.
         /// </summary>
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("fields")]
@@ -269,49 +327,25 @@ namespace XpSearch.Core.Contract
     public partial class SearchResponse
     {
         /// <summary>
-        /// Facet counts, keyed by attribute name and then by facet value. Only attributes listed in
-        /// SearchRequest.facets appear, and only values with a non-zero count in the current result
-        /// set.
+        /// Facet values keyed by attribute name. Only attributes listed in SearchRequest.facets
+        /// appear, and only values with a non-zero count in the current result set. Each list is
+        /// ordered by count descending, then by value ascending.
         /// </summary>
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("facets")]
-        public Dictionary<string, Dictionary<string, long>>? Facets { get; set; }
+        public Dictionary<string, FacetValue[]>? Facets { get; set; }
 
         /// <summary>
-        /// The hits on the requested page, in ranked order.
-        /// </summary>
-        [JsonPropertyName("hits")]
-        public Hit[] Hits { get; set; }
-
-        /// <summary>
-        /// Page size that was applied, after server-side clamping.
-        /// </summary>
-        [JsonPropertyName("hitsPerPage")]
-        public long HitsPerPage { get; set; }
-
-        /// <summary>
-        /// Total number of matching documents across all pages.
-        /// </summary>
-        [JsonPropertyName("nbHits")]
-        public long NbHits { get; set; }
-
-        /// <summary>
-        /// Total number of pages available.
-        /// </summary>
-        [JsonPropertyName("nbPages")]
-        public long NbPages { get; set; }
-
-        /// <summary>
-        /// Zero-based number of the page that was returned.
+        /// One-based number of the page that was returned.
         /// </summary>
         [JsonPropertyName("page")]
         public long Page { get; set; }
 
         /// <summary>
-        /// Server-side processing time in milliseconds, excluding network time.
+        /// Page size that was applied, after server-side clamping.
         /// </summary>
-        [JsonPropertyName("processingTimeMs")]
-        public long ProcessingTimeMs { get; set; }
+        [JsonPropertyName("pageSize")]
+        public long PageSize { get; set; }
 
         /// <summary>
         /// Correlation id for this search. Echoes SearchRequest.queryId when supplied, otherwise
@@ -320,68 +354,122 @@ namespace XpSearch.Core.Contract
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("queryId")]
         public string? QueryId { get; set; }
+
+        /// <summary>
+        /// The results on the requested page, in ranked order.
+        /// </summary>
+        [JsonPropertyName("results")]
+        public Result[] Results { get; set; }
+
+        /// <summary>
+        /// Server-side processing time in milliseconds, excluding network time.
+        /// </summary>
+        [JsonPropertyName("tookMs")]
+        public long TookMs { get; set; }
+
+        /// <summary>
+        /// Total number of matching documents across all pages.
+        /// </summary>
+        [JsonPropertyName("total")]
+        public long Total { get; set; }
+
+        /// <summary>
+        /// Total number of pages available.
+        /// </summary>
+        [JsonPropertyName("totalPages")]
+        public long TotalPages { get; set; }
     }
 
     /// <summary>
-    /// One search result. Deliberately an open object: objectID and the underscore-prefixed
-    /// members are reserved by the contract, and every other property is a retrieved document
-    /// attribute (title, url, summary, image, ...) whose set is decided by
-    /// SearchRequest.attributesToRetrieve and the index configuration. Any attribute holding a
-    /// link - url is the conventional name - is always root-relative
-    /// ("/articles/espresso-basics") or absolute
-    /// ("https://example.com/articles/espresso-basics"); never the app-relative "~/..." form
-    /// Xperience URL retrievers return, because the server resolves that before the hit reaches
-    /// the wire.
+    /// The values of one attribute, in display order.
+    ///
+    /// One value of one facetable attribute, with the count of matching documents and the text a
+    /// widget displays for it.
     /// </summary>
-    public partial class Hit
+    public partial class FacetValue
     {
+        /// <summary>
+        /// Required. Number of matching documents carrying this value.
+        /// </summary>
+        [JsonPropertyName("count")]
+        public long Count { get; set; }
+
+        /// <summary>
+        /// Required. The text to display. For a taxonomy dimension this is the tag title; for any
+        /// other attribute it equals value.
+        /// </summary>
+        [JsonPropertyName("label")]
+        public string Label { get; set; }
+
+        /// <summary>
+        /// Required. The value to send back in filters.facets. For a taxonomy dimension this is the
+        /// tag code name.
+        /// </summary>
+        [JsonPropertyName("value")]
+        public string Value { get; set; }
+    }
+
+    /// <summary>
+    /// One search result. A closed object: id, score, attributes, highlights and ranking are the
+    /// only members, so a document field can never collide with a contract member.
+    ///
+    /// The document behind this suggestion, present only for indexes that suggest documents.
+    /// </summary>
+    public partial class Result
+    {
+        /// <summary>
+        /// Required. The retrieved document fields (title, url, summary, image, ...), whose set is
+        /// decided by SearchRequest.fields and the index configuration. The only open object in the
+        /// contract, and the reason the members beside it can never be shadowed. Any attribute
+        /// holding a link - url is the conventional name - is always root-relative
+        /// ("/articles/espresso-basics") or absolute
+        /// ("https://example.com/articles/espresso-basics"); never the app-relative "~/..." form
+        /// Xperience URL retrievers return, because the server resolves that before the result
+        /// reaches the wire.
+        /// </summary>
+        [JsonPropertyName("attributes")]
+        public Dictionary<string, JsonElement> Attributes { get; set; }
+
         /// <summary>
         /// Highlighted snippets keyed by field name. Present only for fields requested in
         /// SearchRequest.highlight.fields. Values are HTML-encoded content with the configured pre
         /// and post tags inserted, so they are safe to render as HTML.
         /// </summary>
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        [JsonPropertyName("_highlights")]
+        [JsonPropertyName("highlights")]
         public Dictionary<string, string>? Highlights { get; set; }
+
+        /// <summary>
+        /// Required. Stable unique identifier of the indexed document. Send it back on click and
+        /// conversion events.
+        /// </summary>
+        [JsonPropertyName("id")]
+        public string Id { get; set; }
 
         /// <summary>
         /// Score explanation. Present only when SearchRequest.explain is true; absent otherwise.
         /// </summary>
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        [JsonPropertyName("_rankingInfo")]
-        public RankingInfo? RankingInfo { get; set; }
+        [JsonPropertyName("ranking")]
+        public RankingInfo? Ranking { get; set; }
 
         /// <summary>
         /// Final relevance score after boosts and rules. Higher is more relevant; values are only
         /// comparable within one response.
         /// </summary>
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        [JsonPropertyName("_score")]
+        [JsonPropertyName("score")]
         public double? Score { get; set; }
-
-        /// <summary>
-        /// Required. Stable unique identifier of the indexed document. Send it back on click and
-        /// conversion events.
-        /// </summary>
-        [JsonPropertyName("objectID")]
-        public string ObjectId { get; set; }
     }
 
     /// <summary>
     /// Score explanation. Present only when SearchRequest.explain is true; absent otherwise.
     ///
-    /// Per-hit score explanation, returned only when SearchRequest.explain is true (spec 4.2,
+    /// Per-result score explanation, returned only when SearchRequest.explain is true (spec 4.2,
     /// 8.4).
     /// </summary>
     public partial class RankingInfo
     {
-        /// <summary>
-        /// Boosts and rules that changed the score or position, in application order.
-        /// </summary>
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        [JsonPropertyName("appliedBoosts")]
-        public string[]? AppliedBoosts { get; set; }
-
         /// <summary>
         /// Lucene score before any boost rule was applied.
         /// </summary>
@@ -390,7 +478,14 @@ namespace XpSearch.Core.Contract
         public double? BaseScore { get; set; }
 
         /// <summary>
-        /// One-based position of this hit in the final ranking, across all pages.
+        /// Boosts and rules that changed the score or position, in application order.
+        /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonPropertyName("boosts")]
+        public string[]? Boosts { get; set; }
+
+        /// <summary>
+        /// One-based position of this result in the final ranking, across all pages.
         /// </summary>
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("position")]
@@ -401,7 +496,7 @@ namespace XpSearch.Core.Contract
     /// Placeholder property so the code generator emits SuggestRequest. Never sent on the wire.
     ///
     /// Body of POST /api/xpsearch/suggest. Whether an index answers with query suggestions or
-    /// with federated hits is server-side per-index configuration, not a request field.
+    /// with matching documents is server-side per-index configuration, not a request field.
     /// </summary>
     public partial class SuggestRequest
     {
@@ -423,8 +518,8 @@ namespace XpSearch.Core.Contract
         /// Maximum number of suggestions to return. Defaults to 5. Enforced server-side.
         /// </summary>
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        [JsonPropertyName("maxItems")]
-        public long? MaxItems { get; set; }
+        [JsonPropertyName("limit")]
+        public long? Limit { get; set; }
 
         /// <summary>
         /// Required. The partial input to prefix-match. May be an empty string, which yields no
@@ -443,7 +538,7 @@ namespace XpSearch.Core.Contract
     public partial class SuggestResponse
     {
         /// <summary>
-        /// Suggestions in display order, at most SuggestRequest.maxItems of them.
+        /// Suggestions in display order, at most SuggestRequest.limit of them.
         /// </summary>
         [JsonPropertyName("suggestions")]
         public Suggestion[] Suggestions { get; set; }
@@ -455,12 +550,11 @@ namespace XpSearch.Core.Contract
     public partial class Suggestion
     {
         /// <summary>
-        /// Documents behind this suggestion, present only for indexes configured in federated-hits
-        /// mode.
+        /// The document behind this suggestion, present only for indexes that suggest documents.
         /// </summary>
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        [JsonPropertyName("hits")]
-        public Hit[]? Hits { get; set; }
+        [JsonPropertyName("result")]
+        public Result? Result { get; set; }
 
         /// <summary>
         /// Required. The text to display and, for a query suggestion, to search for when picked.
@@ -469,8 +563,8 @@ namespace XpSearch.Core.Contract
         public string Text { get; set; }
 
         /// <summary>
-        /// Link to follow when the suggestion is picked, present only for indexes configured in
-        /// federated-hits mode. Root-relative or absolute, never the app-relative "~/..." form.
+        /// Link to follow when the suggestion is picked, present only for indexes that suggest
+        /// documents. Root-relative or absolute, never the app-relative "~/..." form.
         /// </summary>
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("url")]
@@ -478,12 +572,36 @@ namespace XpSearch.Core.Contract
     }
 
     /// <summary>
-    /// Required. "click" when the user opens a result, "conversion" when the developer signals a
-    /// goal reached after a search.
+    /// Required. What happened.
+    ///
+    /// The kind of an analytics event: "click" when the user opens a result, "conversion" when
+    /// the developer signals a goal reached after a search.
     /// </summary>
 #pragma warning disable CS1591 // no way to document an individual enum member from JSON Schema
     [JsonConverter(typeof(EventTypeConverter))]
     public enum EventType { Click, Conversion };
+#pragma warning restore CS1591
+
+    /// <summary>
+    /// How the values combine. Defaults to "or".
+    ///
+    /// How the selected values of one facet combine: "or" matches a document carrying any of
+    /// them, "and" matches only a document carrying all of them.
+    /// </summary>
+#pragma warning disable CS1591 // no way to document an individual enum member from JSON Schema
+    [JsonConverter(typeof(FacetOperatorConverter))]
+    public enum FacetOperator { And, Or };
+#pragma warning restore CS1591
+
+    /// <summary>
+    /// Required. The comparison to apply.
+    ///
+    /// The comparison of a numeric filter: less than, less than or equal, equal, not equal,
+    /// greater than or equal, greater than.
+    /// </summary>
+#pragma warning disable CS1591 // no way to document an individual enum member from JSON Schema
+    [JsonConverter(typeof(NumericOperatorConverter))]
+    public enum NumericOperator { Eq, Gt, Gte, Lt, Lte, Ne };
 #pragma warning restore CS1591
 
     internal static class Converter
@@ -493,6 +611,8 @@ namespace XpSearch.Core.Contract
             Converters =
             {
                 EventTypeConverter.Singleton,
+                FacetOperatorConverter.Singleton,
+                NumericOperatorConverter.Singleton,
                 new DateOnlyConverter(),
                 new TimeOnlyConverter(),
                 IsoDateTimeOffsetConverter.Singleton
@@ -532,6 +652,94 @@ namespace XpSearch.Core.Contract
         }
 
         public static readonly EventTypeConverter Singleton = new EventTypeConverter();
+    }
+
+    internal class FacetOperatorConverter : JsonConverter<FacetOperator>
+    {
+        public override bool CanConvert(Type t) => t == typeof(FacetOperator);
+
+        public override FacetOperator Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            var value = reader.GetString();
+            switch (value)
+            {
+                case "and":
+                    return FacetOperator.And;
+                case "or":
+                    return FacetOperator.Or;
+            }
+            throw new Exception("Cannot unmarshal type FacetOperator");
+        }
+
+        public override void Write(Utf8JsonWriter writer, FacetOperator value, JsonSerializerOptions options)
+        {
+            switch (value)
+            {
+                case FacetOperator.And:
+                    JsonSerializer.Serialize(writer, "and", options);
+                    return;
+                case FacetOperator.Or:
+                    JsonSerializer.Serialize(writer, "or", options);
+                    return;
+            }
+            throw new Exception("Cannot marshal type FacetOperator");
+        }
+
+        public static readonly FacetOperatorConverter Singleton = new FacetOperatorConverter();
+    }
+
+    internal class NumericOperatorConverter : JsonConverter<NumericOperator>
+    {
+        public override bool CanConvert(Type t) => t == typeof(NumericOperator);
+
+        public override NumericOperator Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            var value = reader.GetString();
+            switch (value)
+            {
+                case "eq":
+                    return NumericOperator.Eq;
+                case "gt":
+                    return NumericOperator.Gt;
+                case "gte":
+                    return NumericOperator.Gte;
+                case "lt":
+                    return NumericOperator.Lt;
+                case "lte":
+                    return NumericOperator.Lte;
+                case "ne":
+                    return NumericOperator.Ne;
+            }
+            throw new Exception("Cannot unmarshal type NumericOperator");
+        }
+
+        public override void Write(Utf8JsonWriter writer, NumericOperator value, JsonSerializerOptions options)
+        {
+            switch (value)
+            {
+                case NumericOperator.Eq:
+                    JsonSerializer.Serialize(writer, "eq", options);
+                    return;
+                case NumericOperator.Gt:
+                    JsonSerializer.Serialize(writer, "gt", options);
+                    return;
+                case NumericOperator.Gte:
+                    JsonSerializer.Serialize(writer, "gte", options);
+                    return;
+                case NumericOperator.Lt:
+                    JsonSerializer.Serialize(writer, "lt", options);
+                    return;
+                case NumericOperator.Lte:
+                    JsonSerializer.Serialize(writer, "lte", options);
+                    return;
+                case NumericOperator.Ne:
+                    JsonSerializer.Serialize(writer, "ne", options);
+                    return;
+            }
+            throw new Exception("Cannot marshal type NumericOperator");
+        }
+
+        public static readonly NumericOperatorConverter Singleton = new NumericOperatorConverter();
     }
     
     internal class DateOnlyConverter : JsonConverter<DateOnly>

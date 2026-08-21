@@ -10,7 +10,7 @@ namespace XpSearch.Core.Tests.Contract;
 /// shape frozen in spec §4.2. The fixtures are the spec's own samples with the JSONC comments
 /// stripped; the TypeScript side checks the same two payloads in
 /// <c>XpSearch.Client/src/contract/__fixtures__/spec-samples.ts</c>.
-/// The one edit to the samples is the spec's <c>"baseScore": 6.10</c>, written here in canonical
+/// The one edit to the samples is the amendment's <c>"baseScore": 6.10</c>, written here in canonical
 /// form as <c>6.1</c> - the same number, but <see cref="JsonNode.DeepEquals"/> compares number
 /// literals, not values, so the trailing zero would fail the round trip for no contract reason.
 /// </summary>
@@ -39,41 +39,77 @@ public class ContractRoundTripTests
     [Test]
     public void SearchResponse_Spec_Sample_Round_Trips() => AssertRoundTrips<SearchResponse>("search-response.json");
 
-    /// <summary>A hit keeps its non-reserved attributes (title, url, summary) through the open-object extension data.</summary>
+    /// <summary>A result's document fields live in the closed <c>attributes</c> bag, beside the contract members.</summary>
     [Test]
-    public void Hit_Keeps_Non_Reserved_Attributes()
+    public void Result_Keeps_Its_Attributes_Beside_The_Contract_Members()
     {
         var response = JsonSerializer.Deserialize<SearchResponse>(ReadFixture("search-response.json"))!;
-        Hit hit = response.Hits[0];
+        Result result = response.Results[0];
 
         using (Assert.EnterMultipleScope())
         {
-            Assert.That(hit.ObjectId, Is.EqualTo("web-page-42-en"));
-            Assert.That(hit.Score, Is.EqualTo(8.42d));
-            Assert.That(hit.Highlights!["title"], Is.EqualTo("<mark>Espresso</mark> Basics"));
-            Assert.That(hit.RankingInfo!.Position, Is.EqualTo(1));
-            // objectID and the underscore members are the only reserved ones: url is as much a
-            // retrieved attribute as title and summary, so all three arrive as extension data.
-            Assert.That(hit.Attributes.Keys, Is.EquivalentTo(new[] { "title", "url", "summary" }));
-            Assert.That(hit.Attributes["title"].GetString(), Is.EqualTo("Espresso Basics"));
-            Assert.That(hit.Attributes["url"].GetString(), Is.EqualTo("/articles/espresso-basics"));
-            Assert.That(hit.Attributes["summary"].GetString(), Is.EqualTo("..."));
+            Assert.That(result.Id, Is.EqualTo("web-page-42-en"));
+            Assert.That(result.Score, Is.EqualTo(8.42d));
+            Assert.That(result.Highlights!["title"], Is.EqualTo("<mark>Espresso</mark> Basics"));
+            Assert.That(result.Ranking!.Position, Is.EqualTo(1));
+            Assert.That(result.Ranking.Boosts, Is.EqualTo(new[] { "freshness:+1.2", "rule:pin-espresso-guide" }));
+            // Every retrieved field is an attribute; nothing shares a namespace with id or score.
+            Assert.That(result.Attributes.Keys, Is.EquivalentTo(new[] { "title", "url", "summary" }));
+            Assert.That(result.Attributes["title"].GetString(), Is.EqualTo("Espresso Basics"));
+            Assert.That(result.Attributes["url"].GetString(), Is.EqualTo("/articles/espresso-basics"));
+            Assert.That(result.Attributes["summary"].GetString(), Is.EqualTo("..."));
         }
     }
 
-    /// <summary>Without explain=true a hit has no _rankingInfo, and it is not written back out as null.</summary>
+    /// <summary>Facets are ordered arrays carrying the label a widget displays, not a value-to-count map.</summary>
     [Test]
-    public void Hit_Without_Explain_Has_No_RankingInfo()
+    public void Facets_Are_Ordered_Arrays_With_Labels()
     {
-        const string json = """{"objectID":"web-page-42-en","title":"Espresso Basics"}""";
-
-        var hit = JsonSerializer.Deserialize<Hit>(json)!;
+        var response = JsonSerializer.Deserialize<SearchResponse>(ReadFixture("search-response.json"))!;
+        FacetValue[] tags = response.Facets!["tags"];
 
         using (Assert.EnterMultipleScope())
         {
-            Assert.That(hit.RankingInfo, Is.Null);
-            Assert.That(hit.Score, Is.Null);
-            Assert.That(JsonSerializer.Serialize(hit), Does.Not.Contain("_rankingInfo"));
+            Assert.That(tags[0].Value, Is.EqualTo("coffee"));
+            Assert.That(tags[0].Label, Is.EqualTo("Coffee"));
+            Assert.That(tags[0].Count, Is.EqualTo(40));
+            Assert.That(tags.Select(value => value.Count), Is.Ordered.Descending);
+        }
+    }
+
+    /// <summary>Structured filters deserialize into typed entries: no grammar, no escaping.</summary>
+    [Test]
+    public void Filters_Are_Structured()
+    {
+        var request = JsonSerializer.Deserialize<SearchRequest>(ReadFixture("search-request.json"))!;
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(request.Page, Is.EqualTo(1), "page is one-based");
+            Assert.That(request.PageSize, Is.EqualTo(20));
+            Assert.That(request.Fields, Is.EqualTo(new[] { "title", "url", "summary", "image" }));
+            Assert.That(request.Filters!.Facets![0].Attribute, Is.EqualTo("contentType"));
+            Assert.That(request.Filters.Facets[0].Values, Is.EqualTo(new[] { "Article", "Product" }));
+            Assert.That(request.Filters.Facets[0].Operator, Is.EqualTo(FacetOperator.Or));
+            Assert.That(request.Filters.Facets[1].Operator, Is.Null, "operator is optional and defaults to or");
+            Assert.That(request.Filters.Numeric![0].Operator, Is.EqualTo(NumericOperator.Lte));
+            Assert.That(request.Filters.Numeric[0].Value, Is.EqualTo(50d));
+        }
+    }
+
+    /// <summary>Without explain=true a result has no ranking, and it is not written back out as null.</summary>
+    [Test]
+    public void Result_Without_Explain_Has_No_Ranking()
+    {
+        const string json = """{"id":"web-page-42-en","attributes":{"title":"Espresso Basics"}}""";
+
+        var result = JsonSerializer.Deserialize<Result>(json)!;
+
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(result.Ranking, Is.Null);
+            Assert.That(result.Score, Is.Null);
+            Assert.That(JsonSerializer.Serialize(result), Does.Not.Contain("ranking"));
         }
     }
 
@@ -90,12 +126,12 @@ public class ContractRoundTripTests
 
         using (Assert.EnterMultipleScope())
         {
-            Assert.That(request.EventType, Is.EqualTo(EventType.Click));
+            Assert.That(request.Type, Is.EqualTo(EventType.Click));
             Assert.That(request.Position, Is.EqualTo(1));
-            Assert.That(JsonSerializer.Serialize(request), Does.Contain("\"eventType\":\"click\""));
+            Assert.That(JsonSerializer.Serialize(request), Does.Contain("\"type\":\"click\""));
             Assert.That(
-                JsonSerializer.Serialize(new EventRequest { EventType = EventType.Conversion, QueryId = "q", ObjectId = "o" }),
-                Does.Contain("\"eventType\":\"conversion\""));
+                JsonSerializer.Serialize(new EventRequest { Type = EventType.Conversion, QueryId = "q", ResultId = "o" }),
+                Does.Contain("\"type\":\"conversion\""));
         }
     }
 
@@ -113,8 +149,9 @@ public class ContractRoundTripTests
 
         Assert.That(exported, Is.EqualTo(new[]
         {
-            "ContractConstants", "EventRequest", "EventType", "HighlightOptions", "Hit",
-            "RankingInfo", "SearchRequest", "SearchResponse", "SuggestRequest", "SuggestResponse", "Suggestion",
+            "ContractConstants", "EventRequest", "EventType", "FacetFilter", "FacetOperator", "FacetValue",
+            "Filters", "HighlightOptions", "NumericFilter", "NumericOperator", "RankingInfo", "Result",
+            "SearchRequest", "SearchResponse", "SuggestRequest", "SuggestResponse", "Suggestion",
         }));
     }
 

@@ -1,14 +1,19 @@
 {
   "index": "site-content",
   "query": "espresso",
-  "page": 0,
-  "hitsPerPage": 20,
-  "facets": ["contentType", "tags", "language"],
-  "facetFilters": [
-    ["contentType:Article", "contentType:Product"],
-    ["tags:coffee"]
-  ],
-  "numericFilters": ["price<=50", "publishedAt>=1700000000"],
+  "page": 1,
+  "pageSize": 20,
+  "facets": ["contentType", "tags"],
+  "filters": {
+    "facets": [
+      { "attribute": "contentType", "values": ["Article", "Product"], "operator": "or" },
+      { "attribute": "tags", "values": ["coffee"] }
+    ],
+    "numeric": [
+      { "attribute": "price", "operator": "lte", "value": 50 },
+      { "attribute": "publishedAt", "operator": "gte", "value": 1700000000 }
+    ]
+  },
   "sort": "relevance",
   "highlight": {
     "fields": ["title", "content"],
@@ -16,7 +21,8 @@
     "postTag": "</mark>",
     "snippetLength": 200
   },
-  "attributesToRetrieve": ["title", "url", "summary", "image"],
+  "fields": ["title", "url", "summary", "image"],
   "language": "en",
-  "queryId": "generated-guid"
+  "queryId": "generated-guid",
+  "explain": false
 }

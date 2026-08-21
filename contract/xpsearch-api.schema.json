@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/your-org/your-monorepo/libraries/xperience-search/contract/xpsearch-api.schema.json",
   "title": "XpSearchContract",
-  "description": "Wire contract for the Xperience Search HTTP API (spec 4.2, 4.3, 9.1). This schema is the single source of truth: the C# DTOs (XpSearch.Core.Contract) and the TypeScript types (@yourco/xperience-search) are generated from it and must never be hand-edited. Field names deliberately mirror Algolia's request/response shape. That is a documented feature, not an accident: a team moving off Algolia can swap the transport and keep most of their UI code. Endpoints: POST /api/xpsearch/query (SearchRequest -> SearchResponse), POST /api/xpsearch/suggest (SuggestRequest -> SuggestResponse), POST /api/xpsearch/events (EventRequest -> 202 Accepted with an empty body; there is no event response type). Every response carries the header X-XpSearch-Api-Version: 1; the contract version is the semver major of both the NuGet and npm packages, and routes never carry a version segment. Errors are RFC 9457 Problem Details (application/problem+json) as produced by ASP.NET Core's ProblemDetails - see https://learn.microsoft.com/aspnet/core/web-api/handle-errors - and are deliberately not redefined here.",
+  "description": "Wire contract for the Xperience Search HTTP API (spec 4.2, 4.3, 9.1, as amended by ADR-0010). This schema is the single source of truth: the C# DTOs (XpSearch.Core.Contract) and the TypeScript types (@yourco/xperience-search) are generated from it and must never be hand-edited. Names and shapes are owned by this product and chosen for Xperience's content model - taxonomy tags have code names and titles, fields are typed - not for compatibility with any other vendor's API; a team arriving from a hosted search service is served by docs/guides/migrating-from-algolia.md, which is generated from contract/algolia-map.json. Endpoints: POST /api/xpsearch/query (SearchRequest -> SearchResponse), POST /api/xpsearch/suggest (SuggestRequest -> SuggestResponse), POST /api/xpsearch/events (EventRequest -> 202 Accepted with an empty body; there is no event response type). Every response carries the header X-XpSearch-Api-Version: 1; the contract version is the semver major of both the NuGet and npm packages, and routes never carry a version segment. Errors are RFC 9457 Problem Details (application/problem+json) as produced by ASP.NET Core's ProblemDetails - see https://learn.microsoft.com/aspnet/core/web-api/handle-errors - and are deliberately not redefined here.",
   "type": "object",
   "additionalProperties": false,
   "properties": {
@@ -48,16 +48,16 @@
         },
         "page": {
           "type": "integer",
-          "minimum": 0,
-          "default": 0,
-          "description": "Zero-based page number. Defaults to 0."
+          "minimum": 1,
+          "default": 1,
+          "description": "One-based page number. Defaults to 1, which is the first page."
         },
-        "hitsPerPage": {
+        "pageSize": {
           "type": "integer",
           "minimum": 1,
           "maximum": 1000,
           "default": 20,
-          "description": "Number of hits per page. Defaults to 20. The maximum of 1000 is a contract ceiling; the effective maximum is enforced server-side and may be lower per configuration."
+          "description": "Number of results per page. Defaults to 20. The maximum of 1000 is a contract ceiling; the effective maximum is enforced server-side and may be lower per configuration."
         },
         "facets": {
           "type": "array",
@@ -67,27 +67,9 @@
           },
           "description": "Attributes to compute facet counts for. Counts come back in SearchResponse.facets."
         },
-        "facetFilters": {
-          "type": "array",
-          "items": {
-            "type": "array",
-            "description": "One OR group. Any matching value inside the group satisfies it.",
-            "items": {
-              "type": "string",
-              "pattern": "^[A-Za-z_][A-Za-z0-9_.]*:.+$",
-              "description": "A filter in \"attribute:value\" form, for example \"contentType:Article\"."
-            }
-          },
-          "description": "Facet refinements. The outer array is ANDed, each inner array is ORed: [[\"contentType:Article\",\"contentType:Product\"],[\"tags:coffee\"]] means (Article OR Product) AND coffee."
-        },
-        "numericFilters": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "pattern": "^[A-Za-z_][\\w.]*\\s*(<=|>=|<|>|=|!=)\\s*-?\\d+(\\.\\d+)?$",
-            "description": "A numeric comparison, for example \"price<=50\" or \"publishedAt>=1700000000\"."
-          },
-          "description": "Numeric refinements, ANDed together. Grammar: attribute, operator, number - where the attribute starts with a letter or underscore and may contain word characters and dots, the operator is one of <=, >=, <, >, =, != and the number is an optionally negative integer or decimal. Whitespace around the operator is allowed. Dates are compared as Unix epoch seconds."
+        "filters": {
+          "$ref": "#/$defs/Filters",
+          "description": "Structured refinements. Omit to search unfiltered."
         },
         "sort": {
           "type": "string",
@@ -98,13 +80,13 @@
           "$ref": "#/$defs/HighlightOptions",
           "description": "Highlighting options. Omit to use the defaults."
         },
-        "attributesToRetrieve": {
+        "fields": {
           "type": "array",
           "items": {
             "type": "string",
-            "description": "Attribute name to include on each hit."
+            "description": "Field name to include in each result's attributes."
           },
-          "description": "Attributes to project onto each hit. Omit to return the index's configured default projection. objectID is always returned."
+          "description": "Fields to project into each result's attributes. Omit to return the index's configured default projection. The result id is always returned and is never an attribute."
         },
         "language": {
           "type": "string",
@@ -117,9 +99,107 @@
         "explain": {
           "type": "boolean",
           "default": false,
-          "description": "When true, each hit carries _rankingInfo explaining its score. Defaults to false. Used by the admin query tester (spec 8.4)."
+          "description": "When true, each result carries ranking explaining its score. Defaults to false. Used by the admin query tester (spec 8.4)."
         }
       }
+    },
+    "Filters": {
+      "type": "object",
+      "title": "Filters",
+      "description": "The structured refinements of a search request. Facet and numeric entries are ANDed together; there is no string filter grammar and therefore nothing to escape.",
+      "additionalProperties": false,
+      "properties": {
+        "facets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FacetFilter"
+          },
+          "description": "Facet refinements, one entry per attribute, ANDed together."
+        },
+        "numeric": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/NumericFilter"
+          },
+          "description": "Numeric refinements, ANDed together. Dates are compared as Unix epoch seconds."
+        }
+      }
+    },
+    "FacetFilter": {
+      "type": "object",
+      "title": "FacetFilter",
+      "description": "The selected values of one facetable attribute. An unknown or non-facetable attribute is a 400 Problem Details keyed by the entry's JSON path, for example filters.facets[0].attribute.",
+      "required": [
+        "attribute",
+        "values"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "attribute": {
+          "type": "string",
+          "description": "Required. The facetable attribute the values belong to, for example \"contentType\"."
+        },
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "One facet value; for a taxonomy dimension this is the tag code name, not its title."
+          },
+          "description": "Required. The selected values. An empty array refines nothing."
+        },
+        "operator": {
+          "$ref": "#/$defs/FacetOperator",
+          "default": "or",
+          "description": "How the values combine. Defaults to \"or\"."
+        }
+      }
+    },
+    "FacetOperator": {
+      "type": "string",
+      "title": "FacetOperator",
+      "enum": [
+        "or",
+        "and"
+      ],
+      "description": "How the selected values of one facet combine: \"or\" matches a document carrying any of them, \"and\" matches only a document carrying all of them."
+    },
+    "NumericFilter": {
+      "type": "object",
+      "title": "NumericFilter",
+      "description": "One comparison against a numeric or date attribute. An unknown or non-numeric attribute is a 400 Problem Details keyed by the entry's JSON path, for example filters.numeric[0].attribute.",
+      "required": [
+        "attribute",
+        "operator",
+        "value"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "attribute": {
+          "type": "string",
+          "description": "Required. The numeric or date attribute to compare, for example \"price\"."
+        },
+        "operator": {
+          "$ref": "#/$defs/NumericOperator",
+          "description": "Required. The comparison to apply."
+        },
+        "value": {
+          "type": "number",
+          "description": "Required. The right-hand side of the comparison. A date attribute is compared as Unix epoch seconds."
+        }
+      }
+    },
+    "NumericOperator": {
+      "type": "string",
+      "title": "NumericOperator",
+      "enum": [
+        "lt",
+        "lte",
+        "eq",
+        "ne",
+        "gte",
+        "gt"
+      ],
+      "description": "The comparison of a numeric filter: less than, less than or equal, equal, not equal, greater than or equal, greater than."
     },
     "HighlightOptions": {
       "type": "object",
@@ -133,7 +213,7 @@
             "type": "string",
             "description": "Field name to highlight."
           },
-          "description": "Fields to produce highlighted snippets for. Results land in Hit._highlights."
+          "description": "Fields to produce highlighted snippets for. Results land in Result.highlights."
         },
         "preTag": {
           "type": "string",
@@ -158,51 +238,50 @@
       "title": "SearchResponse",
       "description": "Body of a 200 response from POST /api/xpsearch/query.",
       "required": [
-        "hits",
+        "results",
         "page",
-        "hitsPerPage",
-        "nbHits",
-        "nbPages",
-        "processingTimeMs"
+        "pageSize",
+        "total",
+        "totalPages",
+        "tookMs"
       ],
       "additionalProperties": false,
       "properties": {
-        "hits": {
+        "results": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/Hit"
+            "$ref": "#/$defs/Result"
           },
-          "description": "The hits on the requested page, in ranked order."
+          "description": "The results on the requested page, in ranked order."
         },
         "facets": {
           "type": "object",
-          "description": "Facet counts, keyed by attribute name and then by facet value. Only attributes listed in SearchRequest.facets appear, and only values with a non-zero count in the current result set.",
+          "description": "Facet values keyed by attribute name. Only attributes listed in SearchRequest.facets appear, and only values with a non-zero count in the current result set. Each list is ordered by count descending, then by value ascending.",
           "additionalProperties": {
-            "type": "object",
-            "description": "Counts for one attribute, keyed by facet value.",
-            "additionalProperties": {
-              "type": "integer",
-              "description": "Number of matching documents carrying this value."
+            "type": "array",
+            "description": "The values of one attribute, in display order.",
+            "items": {
+              "$ref": "#/$defs/FacetValue"
             }
           }
         },
         "page": {
           "type": "integer",
-          "description": "Zero-based number of the page that was returned."
+          "description": "One-based number of the page that was returned."
         },
-        "hitsPerPage": {
+        "pageSize": {
           "type": "integer",
           "description": "Page size that was applied, after server-side clamping."
         },
-        "nbHits": {
+        "total": {
           "type": "integer",
           "description": "Total number of matching documents across all pages."
         },
-        "nbPages": {
+        "totalPages": {
           "type": "integer",
           "description": "Total number of pages available."
         },
-        "processingTimeMs": {
+        "tookMs": {
           "type": "integer",
           "description": "Server-side processing time in milliseconds, excluding network time."
         },
@@ -212,24 +291,30 @@
         }
       }
     },
-    "Hit": {
+    "Result": {
       "type": "object",
-      "title": "Hit",
-      "description": "One search result. Deliberately an open object: objectID and the underscore-prefixed members are reserved by the contract, and every other property is a retrieved document attribute (title, url, summary, image, ...) whose set is decided by SearchRequest.attributesToRetrieve and the index configuration. Any attribute holding a link - url is the conventional name - is always root-relative (\"/articles/espresso-basics\") or absolute (\"https://example.com/articles/espresso-basics\"); never the app-relative \"~/...\" form Xperience URL retrievers return, because the server resolves that before the hit reaches the wire.",
+      "title": "Result",
+      "description": "One search result. A closed object: id, score, attributes, highlights and ranking are the only members, so a document field can never collide with a contract member.",
       "required": [
-        "objectID"
+        "id",
+        "attributes"
       ],
-      "additionalProperties": true,
+      "additionalProperties": false,
       "properties": {
-        "objectID": {
+        "id": {
           "type": "string",
           "description": "Required. Stable unique identifier of the indexed document. Send it back on click and conversion events."
         },
-        "_score": {
+        "score": {
           "type": "number",
           "description": "Final relevance score after boosts and rules. Higher is more relevant; values are only comparable within one response."
         },
-        "_highlights": {
+        "attributes": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Required. The retrieved document fields (title, url, summary, image, ...), whose set is decided by SearchRequest.fields and the index configuration. The only open object in the contract, and the reason the members beside it can never be shadowed. Any attribute holding a link - url is the conventional name - is always root-relative (\"/articles/espresso-basics\") or absolute (\"https://example.com/articles/espresso-basics\"); never the app-relative \"~/...\" form Xperience URL retrievers return, because the server resolves that before the result reaches the wire."
+        },
+        "highlights": {
           "type": "object",
           "description": "Highlighted snippets keyed by field name. Present only for fields requested in SearchRequest.highlight.fields. Values are HTML-encoded content with the configured pre and post tags inserted, so they are safe to render as HTML.",
           "additionalProperties": {
@@ -237,23 +322,48 @@
             "description": "Highlighted snippet for one field."
           }
         },
-        "_rankingInfo": {
+        "ranking": {
           "$ref": "#/$defs/RankingInfo",
           "description": "Score explanation. Present only when SearchRequest.explain is true; absent otherwise."
+        }
+      }
+    },
+    "FacetValue": {
+      "type": "object",
+      "title": "FacetValue",
+      "description": "One value of one facetable attribute, with the count of matching documents and the text a widget displays for it.",
+      "required": [
+        "value",
+        "label",
+        "count"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": "string",
+          "description": "Required. The value to send back in filters.facets. For a taxonomy dimension this is the tag code name."
+        },
+        "label": {
+          "type": "string",
+          "description": "Required. The text to display. For a taxonomy dimension this is the tag title; for any other attribute it equals value."
+        },
+        "count": {
+          "type": "integer",
+          "description": "Required. Number of matching documents carrying this value."
         }
       }
     },
     "RankingInfo": {
       "type": "object",
       "title": "RankingInfo",
-      "description": "Per-hit score explanation, returned only when SearchRequest.explain is true (spec 4.2, 8.4).",
+      "description": "Per-result score explanation, returned only when SearchRequest.explain is true (spec 4.2, 8.4).",
       "additionalProperties": false,
       "properties": {
         "baseScore": {
           "type": "number",
           "description": "Lucene score before any boost rule was applied."
         },
-        "appliedBoosts": {
+        "boosts": {
           "type": "array",
           "items": {
             "type": "string",
@@ -264,14 +374,14 @@
         "position": {
           "type": "integer",
           "minimum": 1,
-          "description": "One-based position of this hit in the final ranking, across all pages."
+          "description": "One-based position of this result in the final ranking, across all pages."
         }
       }
     },
     "SuggestRequest": {
       "type": "object",
       "title": "SuggestRequest",
-      "description": "Body of POST /api/xpsearch/suggest. Whether an index answers with query suggestions or with federated hits is server-side per-index configuration, not a request field.",
+      "description": "Body of POST /api/xpsearch/suggest. Whether an index answers with query suggestions or with matching documents is server-side per-index configuration, not a request field.",
       "required": [
         "index",
         "query"
@@ -286,7 +396,7 @@
           "type": "string",
           "description": "Required. The partial input to prefix-match. May be an empty string, which yields no suggestions."
         },
-        "maxItems": {
+        "limit": {
           "type": "integer",
           "minimum": 1,
           "maximum": 100,
@@ -313,7 +423,7 @@
           "items": {
             "$ref": "#/$defs/Suggestion"
           },
-          "description": "Suggestions in display order, at most SuggestRequest.maxItems of them."
+          "description": "Suggestions in display order, at most SuggestRequest.limit of them."
         }
       }
     },
@@ -330,16 +440,13 @@
           "type": "string",
           "description": "Required. The text to display and, for a query suggestion, to search for when picked."
         },
-        "hits": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/Hit"
-          },
-          "description": "Documents behind this suggestion, present only for indexes configured in federated-hits mode."
-        },
         "url": {
           "type": "string",
-          "description": "Link to follow when the suggestion is picked, present only for indexes configured in federated-hits mode. Root-relative or absolute, never the app-relative \"~/...\" form."
+          "description": "Link to follow when the suggestion is picked, present only for indexes that suggest documents. Root-relative or absolute, never the app-relative \"~/...\" form."
+        },
+        "result": {
+          "$ref": "#/$defs/Result",
+          "description": "The document behind this suggestion, present only for indexes that suggest documents."
         }
       }
     },
@@ -348,38 +455,39 @@
       "title": "EventRequest",
       "description": "Body of POST /api/xpsearch/events (spec 4.3, 9.1). The endpoint answers 202 Accepted with an empty body, so there is no response type. Logging is consent-gated and best-effort: a 202 means the event was accepted, not that an activity was written.",
       "required": [
-        "eventType",
+        "type",
         "queryId",
-        "objectID"
+        "resultId"
       ],
       "additionalProperties": false,
       "properties": {
-        "eventType": {
-          "type": "string",
-          "enum": [
-            "click",
-            "conversion"
-          ],
-          "description": "Required. \"click\" when the user opens a result, \"conversion\" when the developer signals a goal reached after a search."
+        "type": {
+          "$ref": "#/$defs/EventType",
+          "description": "Required. What happened."
         },
         "queryId": {
           "type": "string",
-          "description": "Required. The queryId from the SearchResponse that produced the hit. This is what correlates the event back to its search."
+          "description": "Required. The queryId from the SearchResponse that produced the result. This is what correlates the event back to its search."
         },
-        "objectID": {
+        "resultId": {
           "type": "string",
-          "description": "Required. objectID of the hit the event is about."
+          "description": "Required. The id of the result the event is about."
         },
         "position": {
           "type": "integer",
           "minimum": 1,
-          "description": "One-based position of the hit in the result list. Required when eventType is \"click\", ignored for \"conversion\"."
-        },
-        "index": {
-          "type": "string",
-          "description": "Code name of the index the search ran against. Omit to have the server resolve it from queryId."
+          "description": "One-based position of the result in the list. Required when type is \"click\", ignored for \"conversion\"."
         }
       }
+    },
+    "EventType": {
+      "type": "string",
+      "title": "EventType",
+      "enum": [
+        "click",
+        "conversion"
+      ],
+      "description": "The kind of an analytics event: \"click\" when the user opens a result, \"conversion\" when the developer signals a goal reached after a search."
     }
   }
 }
