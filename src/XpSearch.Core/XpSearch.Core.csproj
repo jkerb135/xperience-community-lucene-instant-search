@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>XpSearch.Core</RootNamespace>
+    <AssemblyName>XpSearch.Core</AssemblyName>
+    <PackageId>YourCo.Xperience.Search.Core</PackageId>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Kentico.Xperience.WebApp" />
+    <PackageReference Include="Kentico.Xperience.Lucene.Core" />
+    <PackageReference Include="Lucene.Net.Highlighter" />
+    <PackageReference Include="Lucene.Net.QueryParser" />
+  </ItemGroup>
+
+</Project>

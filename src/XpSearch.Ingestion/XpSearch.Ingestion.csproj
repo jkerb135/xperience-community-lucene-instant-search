@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>XpSearch.Ingestion</RootNamespace>
+    <AssemblyName>XpSearch.Ingestion</AssemblyName>
+    <PackageId>YourCo.Xperience.Search.Ingestion</PackageId>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\XpSearch.Core\XpSearch.Core.csproj" />
+  </ItemGroup>
+
+</Project>

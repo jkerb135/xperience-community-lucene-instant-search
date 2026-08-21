@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>XpSearch.Widgets</RootNamespace>
+    <AssemblyName>XpSearch.Widgets</AssemblyName>
+    <PackageId>YourCo.Xperience.Search.Widgets</PackageId>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\XpSearch.Core\XpSearch.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Kentico.Xperience.WebApp" />
+  </ItemGroup>
+
+</Project>

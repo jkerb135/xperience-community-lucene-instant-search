@@ -1,0 +1,11 @@
+bin/
+obj/
+node_modules/
+dist/
+*.user
+.vs/
+.idea/
+appsettings.Development.json
+*.snk
+licensing/private-key.pem
+tests/performance/corpora/*.json
