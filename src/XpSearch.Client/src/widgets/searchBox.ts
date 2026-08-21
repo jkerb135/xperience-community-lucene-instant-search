@@ -6,7 +6,7 @@
 import { withSearchBox } from '../behaviors/searchBox';
 import { html, render } from '../templates/html';
 import type { Widget } from '../types';
-import { createRoot, idBase, resolveContainer } from './dom';
+import { createRoot, resolveContainer, widgetId } from './dom';
 
 export type SearchBoxWidgetParams = {
   container: string | HTMLElement;
@@ -46,14 +46,14 @@ export function searchBox(params: SearchBoxWidgetParams): Widget {
       clear = options.clear;
 
       if (isFirstRender) {
-        const ids = idBase(container, 'search-box');
+        const id = (part: string): string => widgetId(container, 'search-box', part);
         root = createRoot(container, 'form', 'xps xps-search-box');
         root.setAttribute('role', 'search');
         root.setAttribute('novalidate', '');
         render(
-          html`<label class="xps-search-box__label${showLabel ? '' : ' xps-sr-only'}" for="${ids}-input">${label}</label>
+          html`<label class="xps-search-box__label${showLabel ? '' : ' xps-sr-only'}" for="${id('input')}">${label}</label>
   <div class="xps-search-box__field">
-    <input class="xps-search-box__input" id="${ids}-input" type="search" name="q" value="" placeholder="${placeholder}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+    <input class="xps-search-box__input" id="${id('input')}" type="search" name="q" value="" placeholder="${placeholder}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
     <span class="xps-search-box__loading xps-skeleton" aria-hidden="true"></span>
     <button class="xps-button xps-search-box__reset" type="reset" aria-label="Clear the search query" hidden><span aria-hidden="true">&times;</span></button>
     ${showSubmit

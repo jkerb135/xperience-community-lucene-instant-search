@@ -1,0 +1,9 @@
+<Project>
+
+  <!-- Same reason as Directory.Build.props: a sample restores from packages by version, so it opts
+       out of the repository's central package management instead of inheriting its versions. -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+</Project>

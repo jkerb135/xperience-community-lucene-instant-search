@@ -349,7 +349,8 @@ export function startMockServer(port = 0): Promise<{ url: string; close: () => P
   });
 }
 
-// Only when started directly (`npm run mock`), not when a test imports startMockServer.
+// Only when started directly (`npx xpsearch-mock`, `npm run repo:mock`), not when a test imports
+// startMockServer.
 if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const port = Number(process.env['PORT'] ?? 3131);
   void startMockServer(port).then(({ url }) => {

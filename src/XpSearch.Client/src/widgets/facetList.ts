@@ -12,7 +12,7 @@ import {
 } from '../behaviors/facetList';
 import { escapeHtml, html, render, type Renderable } from '../templates/html';
 import type { Widget } from '../types';
-import { createRoot, idBase, resolveContainer } from './dom';
+import { createRoot, resolveContainer, widgetId } from './dom';
 
 export type FacetListWidgetParams = {
   container: string | HTMLElement;
@@ -90,21 +90,21 @@ export function facetList(params: FacetListWidgetParams): Widget {
       toggleShowMore = options.toggleShowMore;
 
       if (isFirstRender) {
-        const ids = idBase(container, `${attribute}`);
+        const id = (part: string): string => widgetId(container, attribute, part);
         root = createRoot(
           container,
           'div',
           `xps xps-facet-list${searchable ? ' xps-facet-list--searchable' : ''}`
         );
         render(
-          html`<h3 class="xps-facet-list__title" id="${ids}-title">${label}</h3>
+          html`<h3 class="xps-facet-list__title" id="${id('title')}">${label}</h3>
   ${searchable
     ? html`<div class="xps-facet-list__search">
-      <label class="xps-sr-only" for="${ids}-search">Search in ${label}</label>
-      <input class="xps-facet-list__search-input" id="${ids}-search" type="search" value="" placeholder="${searchablePlaceholder ?? `Search in ${label}`}" autocomplete="off">
+      <label class="xps-sr-only" for="${id('search')}">Search in ${label}</label>
+      <input class="xps-facet-list__search-input" id="${id('search')}" type="search" value="" placeholder="${searchablePlaceholder ?? `Search in ${label}`}" autocomplete="off">
     </div>`
     : ''}
-  <ul class="xps-facet-list__list" aria-labelledby="${ids}-title"></ul>
+  <ul class="xps-facet-list__list" aria-labelledby="${id('title')}"></ul>
   <p class="xps-facet-list__no-results" role="status" hidden>No matching filters.</p>
   ${withShowMore
     ? html`<button class="xps-button xps-facet-list__show-more" type="button" aria-expanded="false">${showMoreLabels?.more ?? 'Show more'}</button>`

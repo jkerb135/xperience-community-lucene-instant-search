@@ -22,6 +22,79 @@ export type MountConfig = Record<string, unknown> & { container: HTMLElement };
 
 export type MountWidgetFactory = (config: MountConfig) => Widget;
 
+/** One field of a {@link MountConfigSpec}. A trailing `?` makes the field optional. */
+export type MountFieldSpec =
+  | 'string'
+  | 'string?'
+  | 'number'
+  | 'number?'
+  | 'boolean'
+  | 'boolean?';
+
+/** What {@link readMountConfig} expects each config key to be. */
+export type MountConfigSpec = Record<string, MountFieldSpec>;
+
+type MountFieldType<TSpec extends MountFieldSpec> = TSpec extends `string${string}`
+  ? string
+  : TSpec extends `number${string}`
+    ? number
+    : boolean;
+
+type OptionalKeys<TSpec extends MountConfigSpec> = {
+  [K in keyof TSpec]: TSpec[K] extends `${string}?` ? K : never;
+}[keyof TSpec];
+
+/** The narrowed shape a {@link MountConfigSpec} describes. */
+export type MountConfigOf<TSpec extends MountConfigSpec> = {
+  [K in Exclude<keyof TSpec, OptionalKeys<TSpec>>]: MountFieldType<TSpec[K]>;
+} & {
+  [K in OptionalKeys<TSpec>]?: MountFieldType<TSpec[K]>;
+};
+
+/**
+ * Narrows the untyped values of a `data-xps-config` to the shape a widget factory needs.
+ *
+ * A mount config is a **trust boundary**: the JSON is whatever an editor typed into the widget
+ * dialog, so every value arrives as `unknown` and has to be checked before use. A missing or
+ * wrong-typed required key throws an `Error` naming the key; the bootstrap turns that into one
+ * `console.error` and skips the widget, leaving the rest of the page working.
+ *
+ * An empty string counts as absent: an editor who leaves a text field blank has not configured it.
+ *
+ * ```ts
+ * const { attribute, label } = readMountConfig(config, { attribute: 'string', label: 'string?' });
+ * ```
+ */
+export function readMountConfig<TSpec extends MountConfigSpec>(
+  config: MountConfig,
+  spec: TSpec
+): MountConfigOf<TSpec> {
+  const out: Record<string, unknown> = {};
+  for (const [key, field] of Object.entries(spec) as [string, MountFieldSpec][]) {
+    const optional = field.endsWith('?');
+    const kind = optional ? field.slice(0, -1) : field;
+    const raw = config[key];
+    const value = raw === '' || raw === null ? undefined : raw;
+
+    if (value === undefined) {
+      if (!optional) {
+        throw new Error(`data-xps-config: "${key}" is required and must be a ${kind}.`);
+      }
+      continue;
+    }
+    if (typeof value !== kind) {
+      throw new Error(
+        `data-xps-config: "${key}" must be a ${kind}, got ${typeof value} (${JSON.stringify(value)}).`
+      );
+    }
+    if (kind === 'number' && !Number.isFinite(value)) {
+      throw new Error(`data-xps-config: "${key}" must be a finite number, got ${String(value)}.`);
+    }
+    out[key] = value;
+  }
+  return out as MountConfigOf<TSpec>;
+}
+
 /**
  * Bare identifiers reserved for the widgets shipped with the library; everything else must be
  * namespaced with a dot. Registering one of these replaces the built-in of the same name.

@@ -15,3 +15,11 @@ tests/performance/corpora/*.json
 
 # Copied from src/XpSearch.Client/dist and themes/src by the XpSearch.Widgets build
 src/XpSearch.Widgets/wwwroot/
+
+# Built by src/XpSearch.Client/scripts/package-assets.mjs for the npm tarball
+src/XpSearch.Client/themes/
+src/XpSearch.Client/mock/server.mjs
+
+# Built by samples/pack-and-build.mjs: the local NuGet + npm feed the sample restores from
+samples/.feed/
+samples/CustomWidget.Dropdown/package-lock.json

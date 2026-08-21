@@ -5,56 +5,194 @@ mechanics — state subscription, data shaping, filter dispatch, URL building �
 rendering. The widgets shipped with Xperience Search are written the same way, on the same behaviours,
 so anything they can do, your control can do.
 
-### A dropdown facet in 40 lines
+### A worked example: a single-select dropdown facet
 
-```js
+This exact file lives at `samples/CustomWidget.Dropdown/src/dropdownFacet.ts` in the library
+repository, is built and tested against the **packed** packages in CI (`node samples/pack-and-build.mjs`), and is
+reproduced here in full. Nothing is elided, and it typechecks under `strict` with no `any` and no
+import from an internal path.
+
+```ts
+/**
+ * `myCompany.dropdownFacet` — a single-select `<select>` facet built on the published
+ * `withFacetList` behaviour. This file is the worked example in
+ * `docs/guides/custom-widgets.md`; the two are the same text and CI builds this one.
+ */
+import { escapeHtml, readMountConfig, registerWidgetType, widgetId } from '@yourco/xperience-search';
+import type { MountConfig, Widget } from '@yourco/xperience-search';
 import { withFacetList } from '@yourco/xperience-search/behaviors';
 
-export const dropdownFacet = withFacetList((renderOptions, isFirstRender) => {
-  const { items, apply, params } = renderOptions;
+/** The one identifier the JavaScript side uses, so the two registrations cannot drift. */
+export const WIDGET_TYPE = 'myCompany.dropdownFacet';
+
+export interface DropdownFacetParams extends Record<string, unknown> {
+  /** The element to render into. In Page Builder this is the `.xps-mount` element itself. */
+  container: HTMLElement;
+  /** Visible label of the select. Defaults to "Filter". */
+  label?: string;
+  /** Text of the option that applies no filter. Defaults to "All". */
+  allLabel?: string;
+}
+
+const option = (value: string, text: string, selected: boolean): string =>
+  `<option value="${escapeHtml(value)}"${selected ? ' selected' : ''}>${escapeHtml(text)}</option>`;
+
+export const dropdownFacet = withFacetList<DropdownFacetParams>((renderOptions, isFirstRender) => {
+  const { items, apply, canApply, params } = renderOptions;
   const { container, label = 'Filter', allLabel = 'All' } = params;
 
   if (isFirstRender) {
-    container.innerHTML = `
-      <label class="xps-dropdown__label" for="${container.id}-select">${label}</label>
-      <select class="xps-dropdown__select" id="${container.id}-select"></select>`;
+    const id = widgetId(container, 'dropdown-facet', 'control');
+    container.innerHTML = `<div class="xps xps-stack xps-select">
+  <label class="xps-select__label" for="${id}">${escapeHtml(label)}</label>
+  <select class="xps-select__control" id="${id}"></select>
+</div>`;
 
-    container.querySelector('select').addEventListener('change', (event) => {
-      const current = renderOptions.items.find((item) => item.isActive);
-      if (current) apply(current.value);              // clear the previous one (single select)
-      if (event.target.value) apply(event.target.value);
+    const control = container.querySelector('select');
+    control?.addEventListener('change', () => {
+      // The applied value is read back from the DOM, not from `renderOptions`: this listener is
+      // registered once and would otherwise close over the first render's items. It is written
+      // back here too, because a re-render is queued on a microtask — two changes in a row can
+      // both happen before one arrives.
+      const previous = control.dataset['xpsActive'] ?? '';
+      control.dataset['xpsActive'] = control.value;
+      if (previous !== '') apply(previous); // single select: clear what was chosen before
+      if (control.value !== '') apply(control.value);
     });
   }
 
   const select = container.querySelector('select');
+  const root = container.querySelector('.xps-select');
+  if (!select || !root) return;
+
+  const active = items.find((item) => item.isActive);
   select.innerHTML =
-    `<option value="">${allLabel}</option>` +
-    items.map((item) => `
-      <option value="${item.value}" ${item.isActive ? 'selected' : ''}>
-        ${item.label} (${item.count})
-      </option>`).join('');
-  select.value = items.find((item) => item.isActive)?.value ?? '';
+    option('', allLabel, active === undefined) +
+    items.map((item) => option(item.value, `${item.label} (${item.count})`, item.isActive)).join('');
+  // State is authoritative: routing or a clear-filters widget can change it behind our back.
+  select.value = active?.value ?? '';
+  select.dataset['xpsActive'] = active?.value ?? '';
+  select.disabled = !canApply;
+  root.classList.toggle('xps-select--disabled', !canApply);
 });
+
+/**
+ * Makes the control resolvable from `data-xps-widget="myCompany.dropdownFacet"`.
+ * The mount config is editor-supplied JSON, so `readMountConfig` narrows it; a missing
+ * `attribute` throws, which the bootstrap turns into one `console.error` and a skipped widget.
+ */
+export function registerDropdownFacet(): void {
+  registerWidgetType(WIDGET_TYPE, (config: MountConfig): Widget =>
+    dropdownFacet({
+      container: config.container,
+      ...readMountConfig(config, {
+        attribute: 'string',
+        label: 'string?',
+        allLabel: 'string?',
+      }),
+    })
+  );
+}
 ```
 
-```js
-search.addWidgets([
-  dropdownFacet({
-    container: document.querySelector('#facet-brand'),
-    attribute: 'brand',
-    label: 'Brand',
-    limit: 50,
-    sortBy: ['name:asc'],
-  }),
-]);
+Add it to an instance like any built-in. `container` is an `HTMLElement`, so narrow the result of
+`querySelector` before passing it:
+
+```ts
+const container = document.querySelector<HTMLElement>('#facet-brand');
+if (container) {
+  search.addWidgets([
+    dropdownFacet({ container, attribute: 'brand', label: 'Brand', limit: 50, sortBy: ['name:asc'] }),
+  ]);
+}
 ```
 
 No fetch, no request building, no facet-count math, no URL sync, no debouncing, no state management.
 The behaviour supplied `items` and `apply`; everything else is inherited. `item.label` is already the
 display text the server chose — the taxonomy tag title, not its code name.
 
-> The event handler is registered once and reads `renderOptions.items` at click time, because
-> `renderOptions` is rebuilt on every render — capture the behaviour's actions, not its data.
+Five things in it are not obvious, and each is the subject of a section below:
+
+| Line | Why |
+|---|---|
+| `widgetId(container, 'dropdown-facet', 'control')` | A Page Builder mount element has no `id`, so deriving one from `container.id` produces `id="-control"` on every instance. See [Element ids](#element-ids). |
+| `escapeHtml(...)` on every interpolation | Facet labels and editor-typed text are untrusted. See [Escaping](#escaping). |
+| `readMountConfig(config, spec)` | `data-xps-config` is whatever an editor typed. See [Placing a custom widget in Page Builder](#placing-a-custom-widget-in-page-builder). |
+| `dataset['xpsActive']`, written in both places | The single-select idiom. See [What `apply()` does, and when render runs](#what-apply-does-and-when-render-runs). |
+| `xps`, `xps-stack`, `xps-select` | Documented shell classes, not invented ones. See [Theming](theming.md) and `themes/MARKUP.md`. |
+
+### What `apply()` does, and when render runs
+
+`apply(value)` on `withFacetList` is `actions.toggleFacet(attribute, value).search()` — it **toggles
+and searches**. The toggle is synchronous, so `search.state` is already correct when `apply` returns;
+the request is not, because it goes through the debounced transport (`debounceMs`, default 150 ms).
+Two `apply` calls in one handler therefore produce **one** request, carrying the state after both.
+
+A state change re-renders on a **microtask**, not synchronously: the instance coalesces the renders
+of a chained mutation into one, so `render` has not run yet when the handler that called `apply`
+returns. (Verified by `src/behaviors/facet-apply.test.ts` in the client.)
+
+Both facts drive the **single-select idiom**: to replace the current value rather than add to it,
+clear the old one and apply the new one in the same handler —
+
+```ts
+if (previous !== '') apply(previous);   // toggling an active value clears it
+if (next !== '') apply(next);
+```
+
+— and keep `previous` somewhere that survives a handler running twice before a render. The example
+uses `select.dataset.xpsActive`, written by `render` (state wins when routing or a clear-filters
+widget changes it) *and* by the handler (so a second change before the render is still correct).
+Deriving `previous` from the last render's `items` is the bug this example used to ship: choose one
+value and then another quickly, and both end up active.
+
+> The event handler is registered once, so it must read the behaviour's data at event time, not
+> close over the `renderOptions` of the first render — capture the actions, not the data. Here
+> "at event time" means the DOM, which is the only thing guaranteed current.
+
+`actions.clearFilters(attribute)` looks like a one-call alternative. It is not equivalent: it also
+clears numeric filters on the attribute, and it does not search — you would have to chain
+`.search()` yourself.
+
+### Escaping
+
+Nothing escapes for you when you assign `innerHTML`. Facet labels come from the index, and
+`label`/`allLabel` come from whatever an editor typed into a widget dialog, so both are untrusted:
+
+```ts
+import { escapeHtml, html } from '@yourco/xperience-search';
+
+element.innerHTML = `<option value="${escapeHtml(item.value)}">${escapeHtml(item.label)}</option>`;
+element.innerHTML = String(html`<option value="${item.value}">${item.label}</option>`);
+```
+
+- `escapeHtml(value: string): string` escapes `& < > " '`. Use it per interpolation when you are
+  building a string, including inside a quoted attribute — a `"` in a taxonomy code name breaks out
+  of `value="…"` otherwise.
+- `` html`…` `` is the same guarantee for a whole template: everything interpolated is escaped, and
+  results nest. `html.raw(value)` opts a string out, for markup you produced yourself — never for an
+  index field or editor input. See [Widget reference → Templating helpers](widget-reference.md#templating-helpers).
+- `textContent`/`setAttribute` need neither.
+
+The C# side is already correct: `data-xps-config` is HTML-attribute-encoded by
+`XpSearchMountRenderer`, and the bootstrap `JSON.parse`s the decoded value — so a quote an editor
+types survives intact and arrives at your factory as a plain string. Escaping it again on the way
+into markup is your job.
+
+### Element ids
+
+`widgetId(container, widget, part)` is the single implementation of `MARKUP.md` rule 4,
+`id="xps-{instance}-{widget}-{part}"`:
+
+```ts
+const id = widgetId(container, 'dropdown-facet', 'control');   // xps-search-1-dropdown-facet-control
+```
+
+The instance segment is `data-xps-instance`, else the container's own `id`, else `default` — a Page
+Builder mount element carries no `id`, which is why `container.id` alone yields `id="-control"`,
+duplicated across every instance on the page. All parts of one widget share a prefix, so call it once
+per part, and a second widget of the same name in the same instance gets `-2` appended rather than
+colliding.
 
 ### How a behaviour works
 
@@ -101,17 +239,15 @@ Accessibility state is handed to you rather than derived: `isActive` for `aria-p
 ### TypeScript
 
 Behaviours are generic over your widget params (and, for results, over your document shape), so nothing
-in a custom widget needs an `any` or an import from an internal path:
+in a custom widget needs an `any` or an import from an internal path — the worked example above is the
+proof, and `samples/CustomWidget.Dropdown` typechecks it under `strict` with
+`noUncheckedIndexedAccess` on every CI run. Your params type must extend `Record<string, unknown>`,
+which is the only constraint a behaviour puts on it.
+
+Results are generic over the document shape:
 
 ```ts
-import { withFacetList, withResults } from '@yourco/xperience-search/behaviors';
-
-const dropdownFacet = withFacetList<{ container: HTMLElement; label?: string }>(
-  ({ items, apply, params }) => {
-    params.container.textContent = `${params.label ?? 'Filter'}: ${items.length}`;
-    if (items[0]) apply(items[0].value);
-  }
-);
+import { withResults } from '@yourco/xperience-search/behaviors';
 
 interface Product extends Record<string, unknown> {
   title: string;
@@ -149,8 +285,10 @@ search.addWidgets([{
 
 `prepareState(state)` shapes the state that becomes the request; `prepareRequest(request)` sets request
 fields that are not state (`facets`, `highlight`, `fields`). `render` runs after every response and
-again on every state change with the previous `results`, so controls update the moment they are clicked
-rather than when the network answers.
+again on every state change with the previous `results` — on a microtask, so several mutations in one
+handler produce one render, and controls update before the network answers rather than after it. It
+is not synchronous: the state is current the instant `actions` returns, the DOM is current one
+microtask later. See [What `apply()` does](#what-apply-does-and-when-render-runs).
 
 Widgets never talk to each other and never write to state: `actions` is the only sanctioned mutation
 path, and the state object is frozen so a stray assignment throws instead of silently diverging.
@@ -171,13 +309,36 @@ search.on('error', ({ error, phase, widget }) => {
 
 Register the factory under a namespaced identifier and the `.xps-mount` bootstrap will resolve it:
 
-```js
-import { registerWidgetType } from '@yourco/xperience-search';
-registerWidgetType('myCompany.dropdownFacet', (config) => dropdownFacet(config));
+```ts
+import { readMountConfig, registerWidgetType } from '@yourco/xperience-search';
+import type { MountConfig, Widget } from '@yourco/xperience-search';
+
+registerWidgetType('myCompany.dropdownFacet', (config: MountConfig): Widget =>
+  dropdownFacet({
+    container: config.container,
+    ...readMountConfig(config, { attribute: 'string', label: 'string?', allLabel: 'string?' }),
+  })
+);
 ```
 
-The factory receives the parsed `data-xps-config` plus `container`, the mount element itself. The
-bootstrap scans for `.xps-mount`, groups the elements by `data-xps-instance` (default `"default"`),
+The factory receives the parsed `data-xps-config` plus `container`, the mount element itself.
+
+**A mount config is a trust boundary.** `MountConfig` is `Record<string, unknown> & { container:
+HTMLElement }`, because the JSON is whatever an editor typed into the widget dialog — so
+`config.attribute` is `unknown` and passing it straight to a behaviour that wants a `string` is
+(correctly) a compile error. `readMountConfig(config, spec)` narrows it:
+
+| Spec value | Accepts |
+|---|---|
+| `'string'`, `'number'`, `'boolean'` | required; a missing, empty (`''`/`null`) or wrong-typed value throws an `Error` naming the key |
+| `'string?'`, `'number?'`, `'boolean?'` | the same, but absent means the key is simply omitted, so your `?? 'default'` applies |
+
+An empty string counts as absent: an editor who left a text field blank has not configured it. The
+return type is derived from the spec, so the required keys are non-optional and the optional ones are
+`?`. A throw inside a factory is contained — the bootstrap logs one `console.error` and skips that
+mount.
+
+The bootstrap scans for `.xps-mount`, groups the elements by `data-xps-instance` (default `"default"`),
 builds one `createSearch()` instance per group and starts it:
 
 ```html
@@ -204,10 +365,22 @@ builds one `createSearch()` instance per group and starts it:
   (`searchBox`, `results`, `facetList`, `pagination`, `resultStats`, `sortSelect`, `clearFilters`,
   `activeFilters`, `toggleFilter`, `suggestions`, `rangeFilter`, `categoryTree`, `loadMore`) are
   reserved for the built-ins so a future release never collides with your control.
+- **Keep the identifier in one place.** Three strings have to agree and nothing validates them at
+  build time: `registerWidgetType('myCompany.dropdownFacet')` and the view component's
+  `WidgetType => "myCompany.dropdownFacet"` must be *identical* (camel-cased by convention, like the
+  built-ins), while `[RegisterWidget(identifier: "MyCompany.DropdownFacet")]` is the Xperience-side
+  identifier and follows Xperience's Pascal-cased `Company.Object` convention — it is not the same
+  string and does not have to be. Export a constant (`export const WIDGET_TYPE = …`) on the
+  JavaScript side and a `const` on the C# side; a typo is otherwise a `console.error` on a live page.
 - **Accessibility is yours, but scaffolded.** Use real form controls, and take `isActive`, `canApply`
   and `isStalled` from the behaviour instead of deriving them.
-- **The shell CSS is available to you.** Layout primitives, focus rings and skeleton classes are
-  documented utilities — see [Theming](theming.md).
+- **The shell CSS is available to you, and only it.** Layout primitives (`xps`, `xps-stack`,
+  `xps-cluster`), `xps-button`, `xps-chip`, `xps-skeleton`, `xps-sr-only` and the shared `xps-select`
+  block are documented utilities you may render — see [Theming](theming.md) and `themes/MARKUP.md`. Do **not** borrow
+  another widget's block (`xps-facet-list__*`, `xps-results__*`): those are that widget's
+  contract, and `themes/scripts/check.mjs` enforces a three-way agreement between the CSS, the
+  fixtures and `MARKUP.md` that your class names are not part of. Anything else is your own block,
+  which you style yourself.
 - **The behaviour API is semver-major.** `RenderOptions`, `SearchActions` and the widget lifecycle only
   break on a major version.
 
@@ -281,7 +454,17 @@ an attribute, and the widget renders:
 ```
 
 Two registrations make it work end to end: `registerWidgetType('myCompany.dropdownFacet', ...)` on the
-JavaScript side (above) and `[RegisterWidget]` on the C# side. The identifiers must match, dot and all.
+JavaScript side (above) and `[RegisterWidget]` on the C# side. Three identifier strings are in play
+and the casing differs on purpose:
+
+| String | Convention | Must equal |
+|---|---|---|
+| `registerWidgetType('myCompany.dropdownFacet')` | `company.widgetName`, camel-cased, like the built-ins | `WidgetType` |
+| `protected override string WidgetType => "myCompany.dropdownFacet"` | the same value — it becomes `data-xps-widget` | the registration above |
+| `[RegisterWidget(identifier: "MyCompany.DropdownFacet")]` | `Company.Object`, Pascal-cased — Xperience's own convention for a widget identifier | nothing on the JavaScript side |
+
+Nothing checks the first pair at build time, so keep each in one constant (`export const WIDGET_TYPE`
+in the module, a `const string` on the view component) rather than typing the string twice.
 
 #### What the base class gives you
 
@@ -296,7 +479,32 @@ JavaScript side (above) and `[RegisterWidget]` on the C# side. The identifiers m
 
 `BuildModel(properties)` is public, so a widget's markup can be asserted in a unit test without an
 Xperience application: substitute `IXpSearchEditorContext` and `IXpSearchIndexCatalog`, use the real
-`XpSearchMountRenderer`, and read `model.Mount`.
+`XpSearchMountRenderer`, and read `model.Mount`. Three details the compiler will otherwise teach you:
+
+```csharp
+// 1. IXpSearchIndexCatalog.GetIndexNames() returns IReadOnlyList<string>, not IEnumerable<string>.
+private sealed class StubIndexCatalog : IXpSearchIndexCatalog
+{
+    public IReadOnlyList<string> GetIndexNames() => ["site-content"];
+}
+
+var model = new DropdownFacetWidgetViewComponent(
+    new XpSearchMountRenderer(), new StubEditorContext(XpSearchEditorMode.Live), new StubIndexCatalog())
+    .BuildModel(new DropdownFacetWidgetProperties { Index = "site-content", Attribute = "brand" });
+
+// 2. XpSearchMountViewModel.Mount is IHtmlContent — write it out to get a string.
+using var writer = new StringWriter();
+model.Mount!.WriteTo(writer, HtmlEncoder.Default);
+var markup = writer.ToString();
+
+// 3. data-xps-config is HTML-attribute-encoded, so decode before asserting on the JSON.
+Assert.That(markup, Does.Contain("data-xps-widget=\"myCompany.dropdownFacet\""));
+Assert.That(WebUtility.HtmlDecode(markup), Does.Contain("\"attribute\":\"brand\""));
+```
+
+`model.Mount` is `null` when `ConfigurationHint` returned a message; `model.EditorMessage` carries it
+in `XpSearchEditorMode.Edit` and is `null` on the live site. The full fixture is
+`samples/CustomWidget.Dropdown/dotnet/CustomWidget.Dropdown.Tests/DropdownFacetWidgetTests.cs`.
 
 #### Registration and services
 
@@ -310,4 +518,8 @@ the asset tag helper.
 - [Page Builder widgets](page-builder-widgets.md) — the shipped widgets, their editor properties, assets.
 - [JavaScript client](js-client.md) — options, the actions, routing, the event bus, the mock server.
 - [Search API](search-api.md) — the JSON contract behind `results`.
+- [Widget reference](widget-reference.md) — the built-in widgets, the templating helpers, the XSS model.
 - [Migrating from Algolia](migrating-from-algolia.md) — the name-by-name map, verb by verb.
+- `samples/CustomWidget.Dropdown` in the library repository — the example above as a buildable
+  project: the widget, the Page Builder view component, jsdom tests for the JavaScript and
+  NUnit tests for the C#, all against the packed packages.

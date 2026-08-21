@@ -91,7 +91,7 @@ describe('the demo widget set against the mock server', () => {
     }
 
     // Sort.
-    const select = document.querySelector('.xps-sort-select__select') as HTMLSelectElement;
+    const select = document.querySelector('.xps-sort-select .xps-select__control') as HTMLSelectElement;
     select.value = 'price_asc';
     select.dispatchEvent(new Event('change', { bubbles: true }));
     await settled(search, () => search.state.sort === 'price_asc' && search.status === 'idle');

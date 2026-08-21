@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { mountAll, registerWidgetType } from './bootstrap';
+import { mountAll, readMountConfig, registerWidgetType } from './bootstrap';
+import type { MountConfig } from './bootstrap';
 import { withFacetList } from './behaviors/facetList';
 import { API_VERSION_HEADER } from './contract/constants';
 import type { SearchRequest, SearchResponse } from './contract/generated';
@@ -235,5 +236,61 @@ describe('mountAll (spec 7.1)', () => {
     });
     started.push(...mountAll());
     expect(mountAll()).toEqual([]);
+  });
+});
+
+describe('readMountConfig', () => {
+  const config = (values: Record<string, unknown>): MountConfig =>
+    ({ ...values, container: document.createElement('div') }) as MountConfig;
+
+  it('narrows the documented one-liner', () => {
+    const { attribute, label, limit, showMore } = readMountConfig(
+      config({ attribute: 'brand', label: 'Brand', limit: 20, showMore: true }),
+      { attribute: 'string', label: 'string?', limit: 'number?', showMore: 'boolean?' }
+    );
+    expect([attribute, label, limit, showMore]).toEqual(['brand', 'Brand', 20, true]);
+  });
+
+  it('leaves an absent optional key undefined', () => {
+    const read = readMountConfig(config({ attribute: 'brand' }), {
+      attribute: 'string',
+      label: 'string?',
+    });
+    expect(read).toEqual({ attribute: 'brand' });
+  });
+
+  it('treats an empty string as absent', () => {
+    expect(readMountConfig(config({ label: '' }), { label: 'string?' })).toEqual({});
+    expect(() => readMountConfig(config({ attribute: '' }), { attribute: 'string' })).toThrow(
+      /"attribute" is required/
+    );
+  });
+
+  it('names the key when a value has the wrong type', () => {
+    expect(() => readMountConfig(config({ limit: 'ten' }), { limit: 'number' })).toThrow(
+      /"limit" must be a number, got string/
+    );
+  });
+
+  it('rejects a non-finite number', () => {
+    expect(() => readMountConfig(config({ limit: Number.NaN }), { limit: 'number' })).toThrow(
+      /"limit" must be a finite number/
+    );
+  });
+
+  it('is reported once and skips the widget when a factory throws on it', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    registerWidgetType('myCompany.needsAttribute', (raw) => {
+      readMountConfig(raw, { attribute: 'string' });
+      throw new Error('unreachable');
+    });
+    const element = document.createElement('div');
+    element.className = 'xps-mount';
+    element.dataset['xpsWidget'] = 'myCompany.needsAttribute';
+    element.dataset['xpsInstanceConfig'] = '{"index":"site-content"}';
+    element.dataset['xpsConfig'] = '{}';
+    document.body.append(element);
+    started.push(...mountAll());
+    expect(consoleError.mock.calls.flat().join(' ')).toContain('failed to build');
   });
 });

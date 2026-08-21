@@ -1,8 +1,8 @@
-<!-- sortBy — native select with a visible label -->
+<!-- sortBy — the shared xps-select block with a visible label -->
 
-<div class="xps xps-sort-select">
-  <label class="xps-sort-select__label" for="xps-search-1-sort-select-select">Sort by</label>
-  <select class="xps-sort-select__select" id="xps-search-1-sort-select-select" name="sort">
+<div class="xps xps-sort-select xps-select">
+  <label class="xps-select__label" for="xps-search-1-sort-select-select">Sort by</label>
+  <select class="xps-select__control" id="xps-search-1-sort-select-select" name="sort">
     <option value="relevance" selected>Relevance</option>
     <option value="date_desc">Newest first</option>
     <option value="date_asc">Oldest first</option>
@@ -10,9 +10,9 @@
 </div>
 
 <!-- label hidden from sighted users but still associated -->
-<div class="xps xps-sort-select">
-  <label class="xps-sort-select__label xps-sr-only" for="xps-search-2-sort-select-select">Sort by</label>
-  <select class="xps-sort-select__select" id="xps-search-2-sort-select-select" name="sort">
+<div class="xps xps-sort-select xps-select">
+  <label class="xps-select__label xps-sr-only" for="xps-search-2-sort-select-select">Sort by</label>
+  <select class="xps-select__control" id="xps-search-2-sort-select-select" name="sort">
     <option value="relevance">Relevance</option>
     <option value="date_desc" selected>Newest first</option>
   </select>

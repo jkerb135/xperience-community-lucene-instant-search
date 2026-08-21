@@ -81,6 +81,20 @@ The one opt-out. `html.raw('<b>bold</b>')` marks a string as already-safe HTML a
 verbatim. Use it only for markup you produced, never for a value that came from a user or from an
 index field you do not control.
 
+### `escapeHtml(value)`
+
+`escapeHtml(value: string): string` escapes `&`, `<`, `>`, `"` and `'`. Exported from the package
+root, and the right tool when you are assembling a string rather than a template — a custom widget
+assigning `innerHTML`, for instance:
+
+```js
+element.innerHTML = `<option value="${escapeHtml(item.value)}">${escapeHtml(item.label)}</option>`;
+```
+
+`html` already does this for everything interpolated into it, so a `templates` function does not need
+it. Attribute values are the case people miss: a `"` in a taxonomy code name breaks out of
+`value="…"` unless it is escaped. See [Custom widgets → Escaping](custom-widgets.md#escaping).
+
 ### `highlight(field, result)`
 
 Returns the server's highlighted form of `field` — already HTML-encoded before `<mark>` was inserted
@@ -300,9 +314,11 @@ sortSelect({
 | `label` | `'Sort by'` | Label text. |
 | `hideLabel` | `false` | Adds `xps-sr-only` to the label; it stays associated. |
 
-Markup: `<div class="xps xps-sort-select">` with `xps-sort-select__label` (`<label for>`) and
-`xps-sort-select__select` (a native `<select name="sort">`). The select is built once and only its
-`value` is patched, so changing the sort does not destroy the element you are using.
+Markup: `<div class="xps xps-sort-select xps-select">` — the widget adds only its identity class and
+renders the shared `xps-select` block, so it is the same `xps-select__label` (`<label for>`) and
+`xps-select__control` (a native `<select name="sort">`) a custom widget renders. The select is built
+once and only its `value` is patched, so changing the sort does not destroy the element you are
+using.
 
 ## `clearFilters`
 
@@ -383,6 +399,12 @@ automatically:
 If you assemble markup yourself, quote your attribute values and keep untrusted values inside an
 interpolation. `render(result, container)` performs exactly one `innerHTML` assignment; there is no
 virtual DOM and no sanitizer downstream of you.
+
+A **custom widget** is outside that table: it owns its own DOM writes, so nothing is escaped for it
+automatically. Use `` html`…` `` and it inherits the same guarantees; use a string and `innerHTML`
+and every interpolation is yours to `escapeHtml`. The untrusted values are facet labels and values
+(index content) and anything an editor typed into a widget dialog, which arrives through
+`data-xps-config` already attribute-decoded. `textContent` and `setAttribute` are always safe.
 
 ## Page Builder mounts
 

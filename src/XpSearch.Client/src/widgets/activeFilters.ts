@@ -12,7 +12,7 @@ import {
 } from '../behaviors/activeFilters';
 import { html } from '../templates/html';
 import type { Widget } from '../types';
-import { createRoot, idBase, renderKeepingFocus, resolveContainer } from './dom';
+import { createRoot, renderKeepingFocus, resolveContainer, widgetId } from './dom';
 
 /** The attribute filters both widgets share, spelled out (they cannot be intersected in). */
 type Scope = {
@@ -43,7 +43,6 @@ const valueOf = (item: ActiveFilterItem): string =>
 export function activeFilters(params: ActiveFiltersWidgetParams): Widget {
   const container = resolveContainer(params.container, 'activeFilters');
   let root: HTMLElement | undefined;
-  let ids = '';
   let items: ActiveFilterItem[] = [];
 
   const widget = withActiveFilters<ActiveFiltersWidgetParams>(
@@ -52,7 +51,6 @@ export function activeFilters(params: ActiveFiltersWidgetParams): Widget {
       items = options.items;
 
       if (isFirstRender) {
-        ids = idBase(container, 'active-filters');
         root = createRoot(container, 'div', 'xps xps-active-filters');
         root.addEventListener('click', (event) => {
           const target = event.target;
@@ -65,8 +63,8 @@ export function activeFilters(params: ActiveFiltersWidgetParams): Widget {
 
       root.classList.toggle('xps-active-filters--empty', !options.canApply);
       renderKeepingFocus(
-        html`<h3 class="xps-active-filters__title xps-sr-only" id="${ids}-title">${title}</h3>
-  <ul class="xps-active-filters__list" aria-labelledby="${ids}-title">${options.items.map(
+        html`<h3 class="xps-active-filters__title xps-sr-only" id="${widgetId(container, 'active-filters', 'title')}">${title}</h3>
+  <ul class="xps-active-filters__list" aria-labelledby="${widgetId(container, 'active-filters', 'title')}">${options.items.map(
     (item, at) => {
       const name = attributeLabels?.[item.attribute] ?? item.attribute;
       const value = valueOf(item);

@@ -1,0 +1,22 @@
+{
+  "name": "customwidget.dropdown",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@yourco/xperience-search": "file:../.feed/yourco-xperience-search-0.1.0.tgz"
+  },
+  "devDependencies": {
+    "jsdom": "^30.0.1",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11"
+  }
+}

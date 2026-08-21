@@ -13,9 +13,17 @@ export {
   FIRST_PARTY_WIDGET_TYPES,
   getWidgetType,
   mountAll,
+  readMountConfig,
   registerWidgetType,
 } from './bootstrap';
-export type { MountConfig, MountWidgetFactory } from './bootstrap';
+export type {
+  MountConfig,
+  MountConfigOf,
+  MountConfigSpec,
+  MountFieldSpec,
+  MountWidgetFactory,
+} from './bootstrap';
+export { widgetId } from './widgets/dom';
 export { defaultRouteToState, defaultStateToRoute } from './routing';
 export {
   activeFilters,

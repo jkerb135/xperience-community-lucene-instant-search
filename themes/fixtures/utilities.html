@@ -17,6 +17,25 @@
     </span>
   </div>
 
+  <!-- .xps-select: the themed labelled select. The only styled <select> in the product;
+       sortSelect renders this same block. -->
+  <div class="xps-select">
+    <label class="xps-select__label" for="xps-search-1-dropdown-facet-control">Content type</label>
+    <select class="xps-select__control" id="xps-search-1-dropdown-facet-control">
+      <option value="">Any type</option>
+      <option value="Article" selected>Article (34)</option>
+      <option value="Product">Product (12)</option>
+    </select>
+  </div>
+
+  <!-- nothing to filter on: the real attribute plus the modifier -->
+  <div class="xps-select xps-select--disabled">
+    <label class="xps-select__label" for="xps-search-2-dropdown-facet-control">Content type</label>
+    <select class="xps-select__control" id="xps-search-2-dropdown-facet-control" disabled>
+      <option value="">Any type</option>
+    </select>
+  </div>
+
   <!-- .xps-skeleton: structural placeholder, currentColor at low opacity -->
   <div class="xps-stack">
     <span class="xps-skeleton xps-skeleton--title"></span>

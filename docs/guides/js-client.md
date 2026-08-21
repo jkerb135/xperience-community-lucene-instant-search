@@ -105,7 +105,9 @@ and the read-only `state`, `results`, `status`, `actions` and `index`.
 ### Changing state: the actions
 
 `search.actions` is the only sanctioned way to mutate state. Mutators are chainable and none of them
-searches; `search()` executes.
+searches; `search()` executes. (The `apply()` a *behaviour* hands a widget is the exception by design:
+it is the mutation **and** `search()`, because a control that is clicked should search. See
+[Custom widgets](custom-widgets.md#what-apply-does-and-when-render-runs).)
 
 ```js
 search.actions
@@ -189,7 +191,9 @@ search.off('render', handler);
 
 - `stateChange` — after every mutation that actually changes the state, before the response.
 - `render` — after every widget render pass: once per response, and once per state change with the
-  previous results (`null` before the first one).
+  previous results (`null` before the first one). A state change renders on a **microtask**, so
+  several mutations in one handler are one render, and the DOM is up to date one microtask after
+  `actions` returns rather than synchronously.
 - `error` — `phase` is `'init' | 'render' | 'dispose' | 'search' | 'contract'`, and `widget` names the
   widget when one is at fault. A throwing widget never takes the page down; see
   [Custom widgets](custom-widgets.md).
@@ -220,16 +224,20 @@ The package ships a dependency-free mock of the search API, so you can build UI 
 exists. It serves 54 fixture documents with three facet attributes (`contentType`, `tags`, `language`),
 a numeric `price` and a `publishedAt`.
 
+It ships in the npm package as `mock/server.mjs`, with a `xpsearch-mock` bin entry:
+
 ```bash
-cd libraries/xperience-search/src/XpSearch.Client
-npm ci
-npm run mock            # xpsearch mock server on http://127.0.0.1:3131/api/xpsearch/query (54 documents)
-npm run demo            # the same corpus behind a full demo page on http://127.0.0.1:3131/
+npm install @yourco/xperience-search
+npx xpsearch-mock                                            # http://127.0.0.1:3131/api/xpsearch/query
+PORT=4000 npx xpsearch-mock                                  # another port
+node node_modules/@yourco/xperience-search/mock/server.mjs   # the same thing, no npx
 ```
 
-`npm run demo` builds the bundles and serves `src/XpSearch.Client/demo/index.html` with the theme
-stylesheets — a complete search page assembled from every default widget, plus a second, independent
-instance built from `.xps-mount` markup.
+Working in this repository instead? `cd src/XpSearch.Client && npm ci`, then `npm run repo:mock` for
+the same server from source, or `npm run repo:demo` to build the bundles and serve
+`src/XpSearch.Client/demo/index.html` with the theme stylesheets — a complete search page assembled
+from every default widget, plus a second, independent instance built from `.xps-mount` markup. The
+`repo:` scripts read `mock/*.ts`, `demo/` and `../../themes`, none of which are in the tarball.
 
 ```bash
 curl -s -X POST http://127.0.0.1:3131/api/xpsearch/query \

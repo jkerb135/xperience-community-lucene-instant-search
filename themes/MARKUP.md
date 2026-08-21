@@ -25,9 +25,16 @@ class named here appears in a fixture.
 3. **Optional parts are toggled with the `hidden` attribute**, not by removing them from the DOM
    and not by a `--hidden` modifier. Shell has `.xps [hidden] { display: none !important }`, which
    also keeps a host stylesheet from revealing them.
-4. **`id` pattern**: `id="xps-{instance}-{widget}-{part}"` (`id="xps-search-1-search-box-input"`). The
-   instance id is `data-xps-instance` from the Page Builder mount, or the widget's container id.
-   Ids must be unique across the page — several instances can coexist.
+4. **`id` pattern**: `id="xps-{instance}-{widget}-{part}"` (`id="xps-search-1-search-box-input"`).
+   The instance segment is `data-xps-instance` from the Page Builder mount, else the widget's
+   container id, else the literal `default` — a Page Builder mount element carries **no `id`**, so
+   `data-xps-instance` is the only thing that separates two instances on one page.
+   Ids must be unique across the page, so when the same widget is placed twice in one instance the
+   second one's `{widget}` segment gets `-2` appended (`id="xps-search-1-sort-select-2-select"`), the
+   third `-3`, and so on; every part of one widget shares the one prefix, and a re-render never
+   renumbers it. `widgetId(container, widget, part)` is exported from
+   `@yourco/xperience-search` and is the single implementation of this rule — the shipped
+   renderers and custom widgets call the same function, so nobody has to re-derive it.
 5. **Disabled controls use the real attribute** (`disabled` on form controls, `aria-disabled="true"`
    on links and on elements that stay focusable), *plus* the `--disabled` modifier for styling.
 6. **Never remove focus.** Shell draws the ring with `:focus-visible` in `currentColor`; renderers
@@ -58,6 +65,7 @@ to know to inherit accessible defaults.
 | `xps-cluster` | Horizontal flex that wraps, `gap: var(--xps-space)`. |
 | `xps-button` | Button box: inline-flex, `2.25rem` minimum height, symmetric padding. Shell adds no colour; the default theme gives it a surface, border and radius. |
 | `xps-button--primary` | Accent-filled button (default theme only). |
+| `xps-select` | Labelled-select box: flex row, `gap` half `--xps-space`. Children: `xps-select__label` (a real `<label for>`; add `xps-sr-only` to hide it) and `xps-select__control` (the native `<select>`, styled like every other form control by the default theme). Modifier `xps-select--disabled` pairs with the `disabled` attribute on the control (rule 5). The only themed `<select>` in the product — `sortSelect` renders this same block, and a custom widget that needs a drop-down should too. |
 | `xps-chip` | Removable-token box. Children: `xps-chip__label`, optional `xps-chip__attribute` (the facet name inside the label), `xps-chip__remove` (a `<button>` with an `aria-label` naming what is removed). |
 | `xps-skeleton` | Loading placeholder: `currentColor` at low opacity with a pulse animation, suppressed under `prefers-reduced-motion`. Modifiers `--title`, `--text`, `--block`. |
 | `xps-highlight` | The class on the `<mark>` element produced by the `highlight` template helper. |
@@ -189,9 +197,11 @@ Fixture: `fixtures/result-stats.html`. Root `<div class="xps xps-result-stats">`
 
 ## sortSelect
 
-Fixture: `fixtures/sort-select.html`. Root `<div class="xps xps-sort-select">` with
-`xps-sort-select__label` (`<label for>`, add `xps-sr-only` to hide it) and `xps-sort-select__select`
-(a native `<select>`, one `<option>` per `items` entry, `selected` on the current sort).
+Fixture: `fixtures/sort-select.html`. Root `<div class="xps xps-sort-select xps-select">`: the widget
+adds only its identity class and renders the shared **`xps-select`** block described under
+Utilities — `xps-select__label` (`<label for>`, add `xps-sr-only` to hide it) and
+`xps-select__control` (a native `<select name="sort">`, one `<option>` per `items` entry, `selected`
+on the current sort). `xps-sort-select` itself carries no styling; it is the hook a site can target.
 
 ## clearFilters
 
