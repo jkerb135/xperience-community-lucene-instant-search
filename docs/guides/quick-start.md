@@ -38,8 +38,9 @@ public sealed class MySearchIndexingStrategy : XpSearchIndexingStrategy
         CMS.Websites.IWebPageUrlRetriever urlRetriever,
         CMS.ContentEngine.ITaxonomyRetriever taxonomyRetriever,
         IContentTypeFieldSource fieldSource,
+        XpSearchIndexingOptions indexingOptions,
         Microsoft.Extensions.Logging.ILogger<XpSearchIndexingStrategy> logger)
-        : base(executor, urlRetriever, taxonomyRetriever, fieldSource, logger)
+        : base(executor, urlRetriever, taxonomyRetriever, fieldSource, indexingOptions, logger)
     {
     }
 }

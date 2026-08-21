@@ -20,8 +20,9 @@ public sealed class MySearchIndexingStrategy : XpSearchIndexingStrategy
         IWebPageUrlRetriever urlRetriever,
         ITaxonomyRetriever taxonomyRetriever,
         IContentTypeFieldSource fieldSource,
+        XpSearchIndexingOptions indexingOptions,
         ILogger<XpSearchIndexingStrategy> logger)
-        : base(executor, urlRetriever, taxonomyRetriever, fieldSource, logger)
+        : base(executor, urlRetriever, taxonomyRetriever, fieldSource, indexingOptions, logger)
     {
     }
 }
@@ -93,13 +94,22 @@ docs tell you to prefix schema fields with the schema name to avoid exactly that
 content type's own field is the one indexed and the schema field is dropped, with an `ILogger` warning
 naming the field and the content type.
 
+Both definitions are read through `IDataClassDefinitionSource`, whose default implementation calls
+`DataClassInfoProvider.GetDataClassInfo(className)`. The static provider is deliberate: `DataClassInfo`
+is one of the system classes that has no `IInfoProvider<T>` registration, so injecting one makes an
+application fail to start. Substitute the interface if you need class definitions from somewhere else.
+
 Nothing about this is specific to web pages: a reusable content item is mapped through the same
 `IContentTypeFieldSource.GetFields(item.ContentTypeName)` call, so its schema fields are indexed the
 same way.
 
 ### How taxonomies become facets
 
-An Xperience taxonomy field holds tag references (GUIDs). For each one the strategy resolves the tags
+An Xperience taxonomy field holds tag references (GUIDs), stored in the column as JSON. The untyped
+query result hands the column back as it is stored, so the strategy converts it through the data type
+registered for the field data type `taxonomy` (`DataTypeManager.ConvertToSystemType`) rather than casting
+it — which works for every content type, including ones with no generated class. For each reference the
+strategy resolves the tags
 through `ITaxonomyRetriever.RetrieveTags(identifiers, languageName)` and writes three things per tag:
 
 - a `FacetField(fieldName, tag.Name)` — the facet dimension, named after your field, registered
@@ -148,21 +158,99 @@ and applied in registration order.
 
 Do not change `Name`: it is both the content type field the value is read from and the Lucene field it is
 written to, so renaming it breaks the read. Project a different name in your own code, or add a second
-field in an override of `MapToLuceneDocumentOrNull`.
+field from the contribution hook below.
 
-To add fields the detector cannot know about, override `MapToLuceneDocumentOrNull`, call `base`, and add
-to the document it returns:
+### Adding fields of your own
+
+To add fields the detector cannot know about, override `ContributeAsync`. It runs once per document,
+after the item's own fields and after any flattening, with everything the mapping used:
 
 ```csharp
-public override async Task<Document?> MapToLuceneDocumentOrNull(IIndexEventItemModel item)
+protected override async Task ContributeAsync(
+    IndexingContext context,
+    Document document,
+    CancellationToken cancellationToken)
 {
-    var document = await base.MapToLuceneDocumentOrNull(item);
+    // The item, its loaded content and its detected schema.
+    string? summary = context.Data.GetValue<object>("ArticlePageSummary") as string;
 
-    document?.Add(new StringField("Source", "cms", Field.Store.YES));
+    // Written with the same encoding the base mapping uses: analyzed text plus its sort field,
+    // a facet dimension plus its stored code names and its `_label` terms, and so on.
+    await context.AddFieldAsync(
+        new SchemaField("Summary", SearchFieldKind.Text, Searchable: true, Facetable: false, Sortable: false, Retrievable: true),
+        summary,
+        cancellationToken);
 
-    return document;
+    // Or straight into the document, when the encoding is yours.
+    document.Add(new StringField("Source", "cms", Field.Store.YES));
 }
 ```
+
+`context.AddFieldAsync(field, value)` takes the raw value as a content query data container returns it —
+including the raw JSON of a taxonomy column, which it converts through the field's registered data type.
+`context.AddTaxonomyAsync(field, tags)` takes `TagReference`s you already hold. Neither duplicates any of
+the mapping code: both are the same calls the base mapping makes.
+
+An item that throws while it is mapped — from your hook or from a field — is logged as an error naming
+the item and the field, and skipped. It never escapes `MapToLuceneDocumentOrNull`, because the Lucene
+integration maps a whole batch in one task and one bad document would otherwise cost the rebuild.
+
+### Linked items
+
+A page often holds nothing itself: everything lives on a linked reusable content item. Dancing Goat's
+`DancingGoat.ProductPage` is exactly that — one field, `ProductPageProduct`, linking a
+`ProductCoffee` / `ProductBrewer` / `ProductGrinder` / `ProductAccessory`, all of which take their
+`ProductFieldName`, `ProductFieldPrice`, `ProductFieldTags` and `ProductFieldCategory` from the
+`ProductFields` reusable field schema. Indexed as-is, the page document has a `Title` and a `Url` and
+nothing to search or facet on, while the product documents have the fields but no URL.
+
+`FlattenLinkedItems` folds the linked item into the page's document (spec §10.7):
+
+```csharp
+builder.Services.AddXpSearch(
+    options => { },
+    indexing => indexing.FlattenLinkedItems(
+        ProductPage.CONTENT_TYPE_NAME,
+        nameof(ProductPage.ProductPageProduct),
+        [
+            ProductCoffee.CONTENT_TYPE_NAME,
+            ProductBrewer.CONTENT_TYPE_NAME,
+            ProductGrinder.CONTENT_TYPE_NAME,
+            ProductAccessory.CONTENT_TYPE_NAME
+        ]));
+```
+
+What that does:
+
+- the item is loaded with `WithLinkedItems`, and the linked items are read off the result with
+  `TryGetLinkedItems` — the documented way to reach them when a query result is mapped by hand;
+- each linked item's **own** `ContentTypeName` decides which fields are detected, so a field that
+  accepts four content types needs no per-type code;
+- every detected field is written onto the parent's document under its own name, with the same
+  encoding it would have on the linked item's own document — a flattened taxonomy is a facet
+  dimension like any other;
+- the class names you list are what the **schema** reports. The document is mapped from whatever the
+  linked item turns out to be, but `facets`, `fields`, sort validation and the admin attribute
+  dropdown have to know the flattened fields without loading an item, so the types the field accepts
+  are named in the registration. After the call above, `IndexSchema` reports `ProductFieldTags` on
+  `DancingGoat.ProductPage`.
+
+A name the parent content type already defines wins over the flattened one, with a warning naming the
+field, the parent type and the link. When the field holds several linked items, the first one to define
+a name is the one that contributes it.
+
+The `depth` argument (1 by default) is the depth the parent is loaded with, so raise it only when a
+`ContributeAsync` override needs the linked item's *own* linked items.
+
+**Reindexing is still yours.** Flattening changes what a page's document contains, not when it is
+rebuilt: if the linked product changes, nothing tells the integration that the page has to be reindexed.
+That is what `DefaultLuceneIndexingStrategy.FindItemsToReindex` is for, and the flatten option does not
+infer it — the mapping from a changed reusable item back to the pages that link it needs a query the
+option has no way to guess. Dancing Goat's sample strategy overrides it; do the same for each flattened
+relationship.
+
+Once the page carries the product's fields, drop the reusable content types from the index
+configuration, or the same product is in the index twice — once with a URL, once without.
 
 ### The schema it exposes
 
@@ -194,8 +282,9 @@ public sealed class SchemaEndpoint(IIndexSchemaProvider schemas)
 
 ### Secured content
 
-Items marked `IsSecured` are never indexed, exactly as `DefaultLuceneIndexingStrategy` does it. If you
-override `MapToLuceneDocumentOrNull` and do not call `base`, that guard is yours to reinstate.
+Items marked `IsSecured` are never indexed, exactly as `DefaultLuceneIndexingStrategy` does it. Use
+`ContributeAsync` rather than overriding `MapToLuceneDocumentOrNull`; if you do override it and do not
+call `base`, that guard — and the skip-and-log behaviour above — is yours to reinstate.
 
 ### Related
 

@@ -1,6 +1,7 @@
 using System.Globalization;
 
 using CMS.ContentEngine;
+using CMS.DataEngine;
 using CMS.Helpers;
 using CMS.Websites;
 
@@ -24,8 +25,9 @@ namespace XpSearch.Core.Indexing;
 /// <remarks>
 /// Register it like any other strategy - <c>.RegisterStrategy&lt;MyStrategy&gt;("MyStrategy")</c> on
 /// <c>AddKenticoLucene</c> - and pick it in the admin Search application. Override
-/// <see cref="MapToLuceneDocumentOrNull"/> and call <c>base</c> to add fields of your own; use
-/// <see cref="XpSearchIndexingOptions"/> to exclude or re-flag a detected field.
+/// <see cref="ContributeAsync"/> to add fields of your own with the same encoding the base mapping
+/// uses; use <see cref="XpSearchIndexingOptions"/> to exclude or re-flag a detected field, or to
+/// flatten a linked reusable item into the document (spec §10.7).
 /// </remarks>
 public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
 {
@@ -33,6 +35,7 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
     private readonly IWebPageUrlRetriever urlRetriever;
     private readonly ITaxonomyRetriever taxonomyRetriever;
     private readonly IContentTypeFieldSource fieldSource;
+    private readonly XpSearchIndexingOptions options;
     private readonly ILogger<XpSearchIndexingStrategy> logger;
 
     // Shared with FacetsConfigFactory: dimensions are registered as they are discovered while mapping,
@@ -40,29 +43,36 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
     private readonly FacetsConfig facetsConfig = new();
     private readonly HashSet<string> registeredDimensions = new(StringComparer.Ordinal);
 
+    // One warning per colliding (content type, field) pair, however many documents hit it.
+    private readonly HashSet<string> reportedCollisions = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Initializes a new instance of the <see cref="XpSearchIndexingStrategy"/> class.</summary>
     /// <param name="executor">Executes the untyped content query that loads the item's field values.</param>
     /// <param name="urlRetriever">Resolves the web page URL stored on the document.</param>
     /// <param name="taxonomyRetriever">Resolves tag identifiers to tag code names and titles.</param>
     /// <param name="fieldSource">Detects the searchable fields of a content type.</param>
+    /// <param name="options">Per-field overrides and linked-item flattening supplied by the developer.</param>
     /// <param name="logger">Logger.</param>
     public XpSearchIndexingStrategy(
         IContentQueryExecutor executor,
         IWebPageUrlRetriever urlRetriever,
         ITaxonomyRetriever taxonomyRetriever,
         IContentTypeFieldSource fieldSource,
+        XpSearchIndexingOptions options,
         ILogger<XpSearchIndexingStrategy> logger)
     {
         ArgumentNullException.ThrowIfNull(executor);
         ArgumentNullException.ThrowIfNull(urlRetriever);
         ArgumentNullException.ThrowIfNull(taxonomyRetriever);
         ArgumentNullException.ThrowIfNull(fieldSource);
+        ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(logger);
 
         this.executor = executor;
         this.urlRetriever = urlRetriever;
         this.taxonomyRetriever = taxonomyRetriever;
         this.fieldSource = fieldSource;
+        this.options = options;
         this.logger = logger;
     }
 
@@ -77,6 +87,10 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
     public static string ComposeResultId(string itemGuid, string languageName) => $"{itemGuid}:{languageName}";
 
     /// <inheritdoc />
+    /// <remarks>
+    /// An item that cannot be mapped is logged and skipped rather than allowed to throw: the Lucene
+    /// integration maps a whole batch in one task, so one bad document would otherwise cost the rebuild.
+    /// </remarks>
     public override async Task<Document?> MapToLuceneDocumentOrNull(IIndexEventItemModel item)
     {
         ArgumentNullException.ThrowIfNull(item);
@@ -87,68 +101,69 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
             return null;
         }
 
-        var data = await LoadItem(item).ConfigureAwait(false);
-
-        if (data is null)
+        try
         {
-            logger.LogDebug("No content found for {ContentType} {ItemGuid}; skipping.", item.ContentTypeName, item.ItemGuid);
+            return await Map(item, CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                exception,
+                "Skipping {ContentType} {ItemGuid} ({LanguageName}): the item could not be mapped to a document.",
+                item.ContentTypeName,
+                item.ItemGuid,
+                item.LanguageName);
+
             return null;
         }
-
-        var document = new Document
-        {
-            new StringField(BaseDocumentProperties.ID, ComposeResultId(item.ItemGuid.ToString(), item.LanguageName), Field.Store.YES),
-            new FacetField(BaseDocumentProperties.CONTENT_TYPE_NAME, item.ContentTypeName),
-            new FacetField(BaseDocumentProperties.LANGUAGE_NAME, item.LanguageName)
-        };
-
-        AddText(document, IndexSchemaProvider.TitleField, item.Name, sortable: true);
-
-        if (item is IndexEventWebPageItemModel webPage)
-        {
-            // Retrieve returns the app-relative "~/..." form, which is not valid on the wire.
-            var url = await urlRetriever
-                .Retrieve(webPage.WebPageItemTreePath, webPage.WebsiteChannelName, webPage.LanguageName, forPreview: false)
-                .ConfigureAwait(false);
-
-            document.Add(new StringField(BaseDocumentProperties.URL, WebUrl.ToRootRelative(url?.RelativePath), Field.Store.YES));
-        }
-
-        foreach (var field in fieldSource.GetFields(item.ContentTypeName))
-        {
-            await AddField(document, field, data, item.LanguageName).ConfigureAwait(false);
-        }
-
-        return document;
     }
 
     /// <inheritdoc />
     public override FacetsConfig FacetsConfigFactory() => facetsConfig;
 
-    private async Task AddField(Document document, SchemaField field, IContentQueryDataContainer data, string languageName)
+    /// <summary>
+    /// Adds anything the auto-detected mapping cannot know about to the document of one item. The base
+    /// implementation does nothing.
+    /// </summary>
+    /// <param name="context">The item, its loaded data, its detected schema, and the helpers that write a value the way the base mapping does.</param>
+    /// <param name="document">The document being built. The same one <paramref name="context"/> writes into.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A task that completes when the contribution has been made.</returns>
+    /// <remarks>
+    /// Runs after the item's own fields and after any <see cref="XpSearchIndexingOptions.FlattenLinkedItems"/>
+    /// registration, so an override sees - and can replace - everything the base mapping produced.
+    /// Throwing from here skips the document; it is logged, not propagated.
+    /// </remarks>
+    protected virtual Task ContributeAsync(IndexingContext context, Document document, CancellationToken cancellationToken) =>
+        Task.CompletedTask;
+
+    /// <summary>Adds one value to a document with the encoding its field kind implies.</summary>
+    internal async Task AddValue(Document document, SchemaField field, object? value, string languageName, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(field);
+
         switch (field.Kind)
         {
             case SearchFieldKind.Taxonomy:
-                await AddTaxonomy(document, field, data, languageName).ConfigureAwait(false);
+                await AddTags(document, field, ToTagReferences(value), languageName, cancellationToken).ConfigureAwait(false);
                 break;
 
             case SearchFieldKind.Text:
                 // Rich text arrives as HTML; the platform stripper is used rather than a regex so
                 // entities and comments are handled: CMS.Helpers.HTMLHelper.StripTags.
-                AddText(document, field.Name, HTMLHelper.StripTags(data.GetValue<string>(field.Name), true, " "), field.Sortable);
+                AddText(document, field.Name, HTMLHelper.StripTags(value as string, true, " "), field.Sortable);
                 break;
 
             case SearchFieldKind.Keyword:
-                AddKeyword(document, field, data.GetValue<string>(field.Name));
+                AddKeyword(document, field, value as string);
                 break;
 
-            case SearchFieldKind.Number when TryGetNumber(data, field.Name, out double number):
+            case SearchFieldKind.Number when TryGetNumber(value, out double number):
                 document.Add(new DoubleField(field.Name, number, Field.Store.YES));
                 document.Add(new DoubleDocValuesField(field.Name, number));
                 break;
 
-            case SearchFieldKind.Date when data.GetValue<DateTime?>(field.Name) is { } date:
+            case SearchFieldKind.Date when value is DateTime date:
                 long epochSeconds = new DateTimeOffset(DateTime.SpecifyKind(date, DateTimeKind.Utc)).ToUnixTimeSeconds();
                 document.Add(new Int64Field(field.Name, epochSeconds, Field.Store.YES));
                 document.Add(new NumericDocValuesField(field.Name, epochSeconds));
@@ -159,51 +174,33 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
         }
     }
 
-    private async Task AddTaxonomy(Document document, SchemaField field, IContentQueryDataContainer data, string languageName)
+    /// <summary>
+    /// Converts the raw value of a Taxonomy column to the tag references it stands for.
+    /// </summary>
+    /// <remarks>
+    /// The untyped <see cref="IContentQueryDataContainer"/> hands back the column as it is stored - a
+    /// JSON string - so <c>GetValue&lt;IEnumerable&lt;TagReference&gt;&gt;</c> throws
+    /// <see cref="InvalidCastException"/>. The registered data type is what converts it: the field data
+    /// type <c>taxonomy</c> is registered with the C# type <c>IEnumerable&lt;TagReference&gt;</c> and a
+    /// conversion function, and the system "performs value conversions (and object mapping for complex
+    /// types) when transferring data to and from the database" through it - see
+    /// https://docs.kentico.com/documentation/developers-and-admins/customization/field-editor/data-types
+    /// and https://docs.kentico.com/documentation/developers-and-admins/customization/field-editor/add-custom-data-types.
+    /// <see cref="DataTypeManager.ConvertToSystemType"/> applies that registered conversion for any
+    /// content type, which is what indexing needs: there are no generated classes for content types we
+    /// have never seen.
+    /// </remarks>
+    private static IEnumerable<TagReference> ToTagReferences(object? value) => value switch
     {
-        var references = data.GetValue<IEnumerable<TagReference>>(field.Name);
-        var identifiers = (references ?? []).Select(reference => reference.Identifier).Distinct().ToList();
-
-        if (identifiers.Count == 0)
-        {
-            return;
-        }
-
-        RegisterDimension(field.Name);
-
-        // Tag identifiers are GUIDs; the code name is what a facet filter refers to and the title is
-        // what a visitor would type. See the tag selector in the admin form component reference.
-        var tags = await taxonomyRetriever.RetrieveTags(identifiers, languageName).ConfigureAwait(false);
-
-        foreach (var tag in tags)
-        {
-            if (string.IsNullOrWhiteSpace(tag.Name))
-            {
-                continue;
-            }
-
-            document.Add(new FacetField(field.Name, tag.Name));
-            document.Add(new StringField(field.Name, tag.Name, Field.Store.YES));
-            document.Add(new TextField(LuceneFieldNames.SearchFieldName(field), tag.Title ?? tag.Name, Field.Store.NO));
-
-            // The pair, verbatim and un-analyzed, so the query side can read every code name's
-            // title straight out of the term dictionary and put it in the facet value's label.
-            document.Add(new StringField(
-                LuceneFieldNames.LabelFieldName(field),
-                LuceneFieldNames.ComposeLabel(tag.Name, tag.Title ?? tag.Name),
-                Field.Store.NO));
-        }
-    }
-
-    private void RegisterDimension(string dimension)
-    {
-        if (registeredDimensions.Add(dimension))
-        {
-            // A taxonomy field always holds a set, so its dimension must accept several values per
-            // document; FacetsConfig.Build throws otherwise.
-            facetsConfig.SetMultiValued(dimension, true);
-        }
-    }
+        null => [],
+        IEnumerable<TagReference> references => references,
+        _ => DataTypeManager.ConvertToSystemType(
+            TypeEnum.Field,
+            FieldDataType.Taxonomy,
+            value,
+            CultureInfo.InvariantCulture,
+            nullIfDefault: false) as IEnumerable<TagReference> ?? []
+    };
 
     private static void AddText(Document document, string name, string? value, bool sortable)
     {
@@ -235,10 +232,9 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
         }
     }
 
-    private static bool TryGetNumber(IContentQueryDataContainer data, string name, out double value)
+    private static bool TryGetNumber(object? raw, out double value)
     {
         value = 0;
-        object? raw = data.GetValue<object>(name);
 
         if (raw is null)
         {
@@ -256,16 +252,210 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
         }
     }
 
-    private async Task<IContentQueryDataContainer?> LoadItem(IIndexEventItemModel item)
+    private async Task<Document?> Map(IIndexEventItemModel item, CancellationToken cancellationToken)
+    {
+        var data = await LoadItem(item, cancellationToken).ConfigureAwait(false);
+
+        if (data is null)
+        {
+            logger.LogDebug("No content found for {ContentType} {ItemGuid}; skipping.", item.ContentTypeName, item.ItemGuid);
+            return null;
+        }
+
+        var document = new Document
+        {
+            new StringField(BaseDocumentProperties.ID, ComposeResultId(item.ItemGuid.ToString(), item.LanguageName), Field.Store.YES),
+            new FacetField(BaseDocumentProperties.CONTENT_TYPE_NAME, item.ContentTypeName),
+            new FacetField(BaseDocumentProperties.LANGUAGE_NAME, item.LanguageName)
+        };
+
+        AddText(document, IndexSchemaProvider.TitleField, item.Name, sortable: true);
+
+        if (item is IndexEventWebPageItemModel webPage)
+        {
+            // Retrieve returns the app-relative "~/..." form, which is not valid on the wire.
+            var url = await urlRetriever
+                .Retrieve(webPage.WebPageItemTreePath, webPage.WebsiteChannelName, webPage.LanguageName, forPreview: false)
+                .ConfigureAwait(false);
+
+            document.Add(new StringField(BaseDocumentProperties.URL, WebUrl.ToRootRelative(url?.RelativePath), Field.Store.YES));
+        }
+
+        var fields = fieldSource.GetFields(item.ContentTypeName);
+        var written = new HashSet<string>(fields.Select(field => field.Name), StringComparer.OrdinalIgnoreCase);
+
+        foreach (var field in fields)
+        {
+            if (!await TryAddFrom(document, field, data, item, cancellationToken).ConfigureAwait(false))
+            {
+                return null;
+            }
+        }
+
+        if (!await Flatten(document, data, item, written, cancellationToken).ConfigureAwait(false))
+        {
+            return null;
+        }
+
+        await ContributeAsync(new IndexingContext(this, document, item, data, fields), document, cancellationToken).ConfigureAwait(false);
+
+        return document;
+    }
+
+    /// <summary>Adds one detected field, reporting the field by name when it is what failed.</summary>
+    private async Task<bool> TryAddFrom(
+        Document document,
+        SchemaField field,
+        IContentQueryDataContainer data,
+        IIndexEventItemModel item,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await AddValue(document, field, data.GetValue<object>(field.Name), item.LanguageName, cancellationToken).ConfigureAwait(false);
+
+            return true;
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                exception,
+                "Skipping {ContentType} {ItemGuid} ({LanguageName}): field {FieldName} could not be indexed.",
+                item.ContentTypeName,
+                item.ItemGuid,
+                item.LanguageName,
+                field.Name);
+
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Indexes the fields of the items linked from the configured fields onto the parent's document
+    /// (spec §10.7).
+    /// </summary>
+    /// <remarks>
+    /// Linked items are read off the container with <c>TryGetLinkedItems</c>, the documented way to
+    /// reach the levels <c>WithLinkedItems</c> loaded when the result is mapped by hand - see
+    /// https://docs.kentico.com/documentation/developers-and-admins/api/content-item-api/reference-content-item-query.
+    /// Each linked item's own <c>ContentTypeName</c> decides which fields are detected, so a field that
+    /// accepts several content types needs no extra configuration here.
+    /// </remarks>
+    private async Task<bool> Flatten(
+        Document document,
+        IContentQueryDataContainer data,
+        IIndexEventItemModel item,
+        HashSet<string> written,
+        CancellationToken cancellationToken)
+    {
+        foreach (var link in options.FlattenedLinksOf(item.ContentTypeName))
+        {
+            if (!data.TryGetLinkedItems(link.LinkedFieldName, out var linkedItems))
+            {
+                logger.LogDebug(
+                    "No linked items loaded for {ContentType}.{FieldName} on {ItemGuid}; nothing to flatten.",
+                    item.ContentTypeName,
+                    link.LinkedFieldName,
+                    item.ItemGuid);
+
+                continue;
+            }
+
+            foreach (var linkedItem in linkedItems)
+            {
+                foreach (var field in fieldSource.GetFields(linkedItem.ContentTypeName))
+                {
+                    if (!written.Add(field.Name))
+                    {
+                        ReportCollision(item.ContentTypeName, link.LinkedFieldName, field.Name);
+                        continue;
+                    }
+
+                    if (!await TryAddFrom(document, field, linkedItem, item, cancellationToken).ConfigureAwait(false))
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private void ReportCollision(string contentTypeName, string linkedFieldName, string fieldName)
+    {
+        if (!reportedCollisions.Add(contentTypeName + "." + fieldName))
+        {
+            return;
+        }
+
+        logger.LogWarning(
+            "Field {FieldName} is defined both by content type {ContentType} and by an item linked from its {LinkedFieldName} field. " +
+            "The content type's own value is indexed and the linked item's is ignored.",
+            fieldName,
+            contentTypeName,
+            linkedFieldName);
+    }
+
+    /// <summary>Adds resolved tag references to a document as a facet dimension.</summary>
+    internal async Task AddTags(Document document, SchemaField field, IEnumerable<TagReference> references, string languageName, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(field);
+
+        var identifiers = (references ?? []).Select(reference => reference.Identifier).Distinct().ToList();
+
+        if (identifiers.Count == 0)
+        {
+            return;
+        }
+
+        RegisterDimension(field.Name);
+
+        // Tag identifiers are GUIDs; the code name is what a facet filter refers to and the title is
+        // what a visitor would type. See the tag selector in the admin form component reference.
+        var tags = await taxonomyRetriever.RetrieveTags(identifiers, languageName, cancellationToken).ConfigureAwait(false);
+
+        foreach (var tag in tags)
+        {
+            if (string.IsNullOrWhiteSpace(tag.Name))
+            {
+                continue;
+            }
+
+            document.Add(new FacetField(field.Name, tag.Name));
+            document.Add(new StringField(field.Name, tag.Name, Field.Store.YES));
+            document.Add(new TextField(LuceneFieldNames.SearchFieldName(field), tag.Title ?? tag.Name, Field.Store.NO));
+
+            // The pair, verbatim and un-analyzed, so the query side can read every code name's
+            // title straight out of the term dictionary and put it in the facet value's label.
+            document.Add(new StringField(
+                LuceneFieldNames.LabelFieldName(field),
+                LuceneFieldNames.ComposeLabel(tag.Name, tag.Title ?? tag.Name),
+                Field.Store.NO));
+        }
+    }
+
+    private void RegisterDimension(string dimension)
+    {
+        if (registeredDimensions.Add(dimension))
+        {
+            // A taxonomy field always holds a set, so its dimension must accept several values per
+            // document; FacetsConfig.Build throws otherwise.
+            facetsConfig.SetMultiValued(dimension, true);
+        }
+    }
+
+    private async Task<IContentQueryDataContainer?> LoadItem(IIndexEventItemModel item, CancellationToken cancellationToken)
     {
         var builder = new ContentItemQueryBuilder();
+        int depth = options.LinkedItemsDepth;
 
         if (item is IndexEventWebPageItemModel webPage)
         {
             builder.ForContentType(
                 item.ContentTypeName,
                 config => config
-                    .WithLinkedItems(1)
+                    .WithLinkedItems(depth)
                     .ForWebsite(webPage.WebsiteChannelName)
                     .Where(where => where.WhereEquals(nameof(IWebPageContentQueryDataContainer.WebPageItemGUID), webPage.ItemGuid)));
         }
@@ -274,14 +464,14 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
             builder.ForContentType(
                 item.ContentTypeName,
                 config => config
-                    .WithLinkedItems(1)
+                    .WithLinkedItems(depth)
                     .Where(where => where.WhereEquals(nameof(IContentQueryDataContainer.ContentItemGUID), item.ItemGuid)));
         }
 
         builder.InLanguage(item.LanguageName);
 
         var result = await executor
-            .GetResult(builder, container => container, cancellationToken: default)
+            .GetResult(builder, container => container, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
 
         return result.FirstOrDefault();

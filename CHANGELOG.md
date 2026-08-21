@@ -8,6 +8,28 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Fixed:** taxonomy fields no longer break indexing. The untyped content query result hands a Taxonomy
+  column back as the JSON it is stored as, so `GetValue<IEnumerable<TagReference>>` threw
+  `InvalidCastException` and took the whole rebuild batch with it — on a Dancing Goat host that meant an
+  empty index and no facets at all. Values are now converted through the data type registered for the
+  field data type (`DataTypeManager.ConvertToSystemType`), which works for any content type without a
+  generated class, and every field is read as `object` and converted rather than cast. An item that
+  still cannot be mapped is logged as an error naming the item and the field, and skipped, instead of
+  escaping `MapToLuceneDocumentOrNull`.
+- **Fixed:** `AddXpSearch` no longer requires `IInfoProvider<DataClassInfo>`, which Xperience 31.8.0 does
+  not register (`DataClassInfoProvider` is `INotManagedByContainer`), so an application with the default
+  DI validation failed to start. Class form definitions are read through the new
+  `IDataClassDefinitionSource`, whose default implementation calls the documented static
+  `DataClassInfoProvider.GetDataClassInfo(className)`.
+- **Added:** linked reusable content items can be flattened into the parent document (spec §10.7) —
+  `indexing.FlattenLinkedItems(contentTypeName, linkedFieldName, linkedContentTypeNames, depth)` indexes
+  every field of each linked item onto the linking type's document under its own name, facets included,
+  and reports those fields as part of the parent type's schema. Underneath it is a new
+  `protected virtual XpSearchIndexingStrategy.ContributeAsync(IndexingContext, Document, CancellationToken)`
+  hook whose context exposes the item, its data, its schema and `AddFieldAsync` / `AddTaxonomyAsync`, so a
+  subclass adds fields with the base mapping's encoding instead of copying it. `XpSearchIndexingStrategy`
+  takes `XpSearchIndexingOptions` as a new constructor parameter — update derived strategies.
+
 - **Changed (breaking):** the wire contract and the JavaScript API are owned by this product rather
   than modelled on Algolia and InstantSearch (ADR-0010). `SearchRequest` takes a one-based `page`,
   `pageSize`, `fields` and structured `filters` (`{ facets: [{ attribute, values, operator }],

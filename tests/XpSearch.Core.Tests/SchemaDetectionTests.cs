@@ -177,7 +177,8 @@ internal sealed class SchemaDetectionTests
         var provider = new IndexSchemaProvider(
             new TestSearchIndex(TestCorpus.IndexName, []),
             new StaticContentTypeSource([ContentTypeName]),
-            new StaticFieldSource(FormInfoContentTypeFieldSource.Detect(ClassFormDefinition(), ContentTypeName, new XpSearchIndexingOptions())));
+            new StaticFieldSource(FormInfoContentTypeFieldSource.Detect(ClassFormDefinition(), ContentTypeName, new XpSearchIndexingOptions())),
+            new XpSearchIndexingOptions());
 
         var schema = await provider.GetSchemaAsync(TestCorpus.IndexName, CancellationToken.None);
 
@@ -193,7 +194,7 @@ internal sealed class SchemaDetectionTests
     public void IndexSchemaProvider_ThrowsForAnUnknownIndex()
     {
         using var index = new TestSearchIndex(TestCorpus.IndexName, []);
-        var provider = new IndexSchemaProvider(index, new StaticContentTypeSource([]), new StaticFieldSource([]));
+        var provider = new IndexSchemaProvider(index, new StaticContentTypeSource([]), new StaticFieldSource([]), new XpSearchIndexingOptions());
 
         Expect.ThrowsAsync<IndexNotFoundException>(() => provider.GetSchemaAsync("Nope", CancellationToken.None));
     }

@@ -38,24 +38,24 @@ public sealed class FormInfoContentTypeFieldSource : IContentTypeFieldSource
     /// <summary>Field property naming the reusable field schema a schema field belongs to.</summary>
     private const string SchemaIdentifierProperty = "kxp_schema_identifier";
 
-    private readonly IInfoProvider<DataClassInfo> dataClassProvider;
+    private readonly IDataClassDefinitionSource definitions;
     private readonly XpSearchIndexingOptions options;
     private readonly ILogger<FormInfoContentTypeFieldSource> logger;
 
     /// <summary>Initializes a new instance of the <see cref="FormInfoContentTypeFieldSource"/> class.</summary>
-    /// <param name="dataClassProvider">Provider of content type definitions.</param>
+    /// <param name="definitions">Source of class form definitions.</param>
     /// <param name="options">Per-field overrides supplied by the developer.</param>
     /// <param name="logger">Logs field names a content type and a reusable field schema both define.</param>
     public FormInfoContentTypeFieldSource(
-        IInfoProvider<DataClassInfo> dataClassProvider,
+        IDataClassDefinitionSource definitions,
         XpSearchIndexingOptions options,
         ILogger<FormInfoContentTypeFieldSource> logger)
     {
-        ArgumentNullException.ThrowIfNull(dataClassProvider);
+        ArgumentNullException.ThrowIfNull(definitions);
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(logger);
 
-        this.dataClassProvider = dataClassProvider;
+        this.definitions = definitions;
         this.options = options;
         this.logger = logger;
     }
@@ -183,8 +183,5 @@ public sealed class FormInfoContentTypeFieldSource : IContentTypeFieldSource
         _ => null
     };
 
-    private string? ClassFormDefinition(string className) => dataClassProvider.Get()
-        .WhereEquals(nameof(DataClassInfo.ClassName), className)
-        .FirstOrDefault()?
-        .ClassFormDefinition;
+    private string? ClassFormDefinition(string className) => definitions.GetFormDefinition(className);
 }
