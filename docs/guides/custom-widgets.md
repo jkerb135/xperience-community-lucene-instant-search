@@ -211,14 +211,101 @@ builds one `createSearch()` instance per group and starts it:
 
 ### Page Builder widgets in C#
 
-_Coming with the Page Builder widgets._ The `XpSearchMountWidgetViewComponent<T>` base class, the
-`[RegisterWidget]` registration and the facet-attribute selector that populate the mount markup above
-ship with the `XpSearch.Widgets` package; this page will grow the C# half then. Everything on the
-JavaScript side is already in place: emit the mount div with a serialized config object and the
-bootstrap does the rest.
+Make the same control placeable by editors. Subclass `XpSearchMountWidgetViewComponent<T>`: it
+serializes your properties into `data-xps-config`, emits the instance grouping and the instance options,
+and renders the editor-only unconfigured block. You never hand-write a mount div or JSON-encode anything.
+
+```csharp
+using Kentico.PageBuilder.Web.Mvc;
+using Kentico.Xperience.Admin.Base.FormAnnotations;
+
+using XpSearch.Widgets;
+using XpSearch.Widgets.Mounting;
+using XpSearch.Widgets.Options;
+
+[assembly: RegisterWidget(
+    identifier: "MyCompany.DropdownFacet",
+    viewComponentType: typeof(DropdownFacetWidgetViewComponent),
+    name: "Search - Dropdown filter",
+    propertiesType: typeof(DropdownFacetWidgetProperties),
+    Description = "Filters a search on one attribute, as a single-select drop-down.",
+    IconClass = "icon-chevron-down",
+    AllowCache = false)]
+
+// `Index` (order 10) and `InstanceId` (order 20) come from the base class; start your own at 30.
+public sealed class DropdownFacetWidgetProperties : XpSearchMountWidgetProperties
+{
+    // The attribute drop-down is filled from the selected index's facetable fields, and hidden
+    // until an index is chosen. `Index` must be ordered before it, which the base class guarantees.
+    [DropDownComponent(Label = "Attribute", Order = OrderFirstWidgetProperty)]
+    [FormComponentConfiguration(XpSearchWidgetConstants.FacetAttributeConfiguratorIdentifier, nameof(Index))]
+    public string Attribute { get; set; } = string.Empty;
+
+    [TextInputComponent(Label = "Label", Order = OrderFirstWidgetProperty + 10)]
+    public string Label { get; set; } = "Filter";
+
+    [TextInputComponent(Label = "\"All\" option text", Order = OrderFirstWidgetProperty + 20)]
+    public string AllLabel { get; set; } = "All";
+}
+
+public sealed class DropdownFacetWidgetViewComponent
+    : XpSearchMountWidgetViewComponent<DropdownFacetWidgetProperties>
+{
+    public DropdownFacetWidgetViewComponent(
+        IXpSearchMountRenderer renderer,
+        IXpSearchEditorContext editorContext,
+        IXpSearchIndexCatalog indexCatalog)
+        : base(renderer, editorContext, indexCatalog)
+    {
+    }
+
+    protected override string WidgetType => "myCompany.dropdownFacet";
+
+    // Without an attribute there is nothing to filter on: instruct the editor instead of rendering.
+    protected override string? ConfigurationHint(DropdownFacetWidgetProperties properties) =>
+        string.IsNullOrWhiteSpace(properties.Attribute) ? "Select the attribute to filter on." : null;
+}
+```
+
+That is the whole C# side. The editor drags "Search - Dropdown filter" onto the page, picks an index and
+an attribute, and the widget renders:
+
+```html
+<div class="xps-mount"
+     data-xps-widget="myCompany.dropdownFacet"
+     data-xps-instance="default"
+     data-xps-config="{&quot;attribute&quot;:&quot;brand&quot;,&quot;label&quot;:&quot;Brand&quot;,&quot;allLabel&quot;:&quot;All&quot;}"
+     data-xps-instance-config="{&quot;index&quot;:&quot;site-content&quot;}"></div>
+```
+
+Two registrations make it work end to end: `registerWidgetType('myCompany.dropdownFacet', ...)` on the
+JavaScript side (above) and `[RegisterWidget]` on the C# side. The identifiers must match, dot and all.
+
+#### What the base class gives you
+
+| Member | Default | Override when |
+|---|---|---|
+| `WidgetType` | abstract | always — it is the `data-xps-widget` value |
+| `BuildConfig(properties, config)` | every public property except `Index` and `InstanceId`, camel-cased, skipping nulls and empty strings | a config key is not simply the camel-cased property name |
+| `BuildInstanceConfig(properties, instanceConfig)` | nothing beyond `index` | a property really is instance-wide (page size, retrieved fields) |
+| `ConfigurationHint(properties)` | `null` (configured) | the widget needs more than an index before it can render |
+| `GetWidgetType(properties)` | `WidgetType` | a property decides *which* JavaScript widget to mount |
+| `CurrentIndex` | the editor's index, or the project's only index | you need the resolved index inside the three methods above |
+
+`BuildModel(properties)` is public, so a widget's markup can be asserted in a unit test without an
+Xperience application: substitute `IXpSearchEditorContext` and `IXpSearchIndexCatalog`, use the real
+`XpSearchMountRenderer`, and read `model.Mount`.
+
+#### Registration and services
+
+`services.AddXpSearchWidgets()` registers `IXpSearchMountRenderer`, `IXpSearchEditorContext`,
+`IXpSearchIndexCatalog` and `ISearchResultTemplateRegistry`; your view component's constructor takes
+whichever of them it needs. See [Page Builder widgets](page-builder-widgets.md) for the host setup and
+the asset tag helper.
 
 ### Related pages
 
+- [Page Builder widgets](page-builder-widgets.md) — the shipped widgets, their editor properties, assets.
 - [JavaScript client](js-client.md) — options, the actions, routing, the event bus, the mock server.
 - [Search API](search-api.md) — the JSON contract behind `results`.
 - [Migrating from Algolia](migrating-from-algolia.md) — the name-by-name map, verb by verb.

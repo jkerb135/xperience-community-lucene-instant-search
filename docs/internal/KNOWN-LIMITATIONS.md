@@ -241,3 +241,60 @@ and how to lift it.
   guide and in `themes/MARKUP.md`, but nothing enforces it.
 - **Upgrade path:** none wanted — the alternative is shell shipping a colour, which is the rule
   that keeps it safe to load on any site.
+
+## `ResultsWidgetViewComponent.BuildInstanceConfig` in `XpSearch.Widgets`
+
+- **Simplified:** *Results per page* and *Fields to show* are instance-wide search options, but only the
+  Results widget knows them, and `mountAll()` takes the instance options from the **first** mount of a
+  `data-xps-instance` group that names an `index`. Every widget emits the index (so any one of them can
+  start the instance), which means the Results widget's two extra keys only apply when it happens to be
+  the first widget of its instance in page order.
+- **Ceiling:** a page whose Results widget sits after the search box or the facet list silently falls back
+  to the index's configured page size and field projection.
+- **Upgrade path:** merge the instance configs of a group in `readInstanceOptions`
+  (`XpSearch.Client/src/bootstrap.ts`) instead of returning the first usable one, later keys winning over
+  earlier ones. Backwards compatible: a group that agrees today produces the same object.
+
+## `ResultsWidgetProperties.ResultTemplate` in `XpSearch.Widgets`
+
+- **Simplified:** `[RegisterSearchResultTemplate]` and the "Result template" drop-down register and select
+  a template; the chosen identifier is written into `data-xps-config` as `template`. Nothing renders the
+  registered view. Spec §5.8 also asks for server-rendered templates on the initial page load, which
+  needs a server-side search on render and the progressive-enhancement handover to the client.
+- **Ceiling:** an editor can choose a template and see no difference. The JavaScript `templates.item`
+  option is the only way to change a result's markup today.
+- **Upgrade path:** run the query in `ResultsWidgetViewComponent.InvokeAsync`, render
+  `SearchResultTemplate.ViewName` per result into the mount element, and have the `results` widget adopt
+  the existing children on its first render instead of replacing them.
+
+## `SuggestionsWidgetViewComponent` and pagination style "Load more" in `XpSearch.Widgets`
+
+- **Simplified:** both emit a mount for a JavaScript widget that is reserved but not shipped -
+  `suggestions` and `loadMore`. The mount is rendered anyway, so the markup contract is already right when
+  those widgets land.
+- **Ceiling:** placing either today produces one `console.error` from the bootstrap ("unknown widget
+  type") and an empty container. Every other widget of the instance keeps working - the bootstrap skips
+  the mount rather than throwing.
+- **Upgrade path:** none needed on the C# side; the widgets start working when `suggestions` and
+  `loadMore` are added to `DEFAULT_WIDGETS` in `XpSearch.Client/src/widgets/index.ts`.
+
+## `ResultStatsWidgetProperties` in `XpSearch.Widgets`
+
+- **Simplified:** spec §7.3 lists a "text template" property for the stats widget. The `resultStats`
+  JavaScript widget takes its result text as a *function* (`templates.text`), which an editor's text field
+  cannot supply, so the widget exposes only `emptyText` - the one string option the widget really has.
+- **Ceiling:** changing the "42 results in 14 ms" wording is a developer task, not an editor task.
+- **Upgrade path:** give the `resultStats` widget a string `textTemplate` option with `{total}` and
+  `{tookMs}` placeholders, then add the matching editor property; the mount contract does not change.
+
+## `SortOptionsValidation.IsValidKey` in `XpSearch.Widgets`
+
+- **Simplified:** a sort key is accepted when it is `relevance`, a key configured in
+  `XpSearchIndexOptions.SortKeys`, or anything ending in `_asc` / `_desc`. The suffix branch does not check
+  that the field before the suffix exists and is sortable, because that needs the index schema and the
+  validation runs while the mount markup is built.
+- **Ceiling:** an editor can type `nosuchfield_desc;Newest` and get a selector entry the API rejects at
+  query time.
+- **Upgrade path:** resolve `IIndexSchemaProvider` in the sort widget and check the field against
+  `SchemaField.Sortable`, or move the check into an admin validation rule so the editor is told in the
+  configuration dialog.

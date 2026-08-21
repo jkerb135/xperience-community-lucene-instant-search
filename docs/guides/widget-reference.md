@@ -391,7 +391,8 @@ need no JavaScript of their own:
 
 `data-xps-config` is the widget's options object minus `container`, which is the mount element.
 `registerWidgetType('searchBox', …)` overrides a built-in of the same name; custom types must
-contain a dot. See [Building a custom widget](custom-widgets.md).
+contain a dot. See [Building a custom widget](custom-widgets.md) and
+[Page Builder widgets](page-builder-widgets.md).
 
 ## Not in this release
 
