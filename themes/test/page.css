@@ -1,0 +1,63 @@
+/* Chrome for the verification page only. Never shipped: it styles the harness, not the widgets.
+   It deliberately targets bare elements — the point is to prove the widget stylesheets do not. */
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+}
+
+main {
+  padding: 1.5rem;
+  max-width: 60rem;
+}
+
+h1 {
+  font-size: 1.25rem;
+}
+
+.note {
+  max-width: 48rem;
+}
+
+.fx {
+  margin: 2rem 0;
+  padding: 1rem;
+  border: 1px dashed #bbb;
+}
+
+.fx > h2 {
+  margin: 0 0 0.75rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #777;
+}
+
+/* separate the state variants inside one fixture */
+.fx > .xps + .xps {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px dotted #ccc;
+}
+
+/* the autocomplete popup is absolutely positioned; reserve room so the demo does not overlap */
+.fx--autocomplete .xps-autocomplete {
+  margin-bottom: 24rem;
+}
+
+/* the fixtures use a transparent 1px gif for the image slot; tint it so the slot is visible */
+.fx .xps-hit__image {
+  background: #dcdcdc;
+}
+
+.host-sample {
+  margin: 2rem 0;
+  padding: 1rem;
+  border: 2px solid #b8005c;
+}
+
+.host-sample h2 {
+  margin-top: 0;
+  font-size: 0.95rem;
+}
