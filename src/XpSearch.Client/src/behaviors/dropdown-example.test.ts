@@ -1,33 +1,38 @@
 // @vitest-environment jsdom
 /**
  * Spec 12, "Extensibility" and "Connector coverage": the documented dropdown-facet example
- * (docs/guides/custom-widgets.md) built from the public connector API only — no `any`, no
+ * (docs/guides/custom-widgets.md) built from the public behaviour API only — no `any`, no
  * imports from internal paths — and driven through a real instance.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { connectRefinementList } from '../connectors';
+import { withFacetList } from '../behaviors';
 import { API_VERSION_HEADER } from '../contract/constants';
 import type { SearchRequest, SearchResponse } from '../contract/generated';
-import { xpsearch } from '../instance';
-import type { InstantSearch } from '../types';
+import { createSearch } from '../instance';
+import type { SearchInstance } from '../types';
 
 const BODY: SearchResponse = {
-  hits: [],
-  facets: { brand: { Rancilio: 8, Gaggia: 5 } },
-  page: 0,
-  hitsPerPage: 20,
-  nbHits: 13,
-  nbPages: 1,
-  processingTimeMs: 3,
+  results: [],
+  facets: {
+    brand: [
+      { value: 'Rancilio', label: 'Rancilio', count: 8 },
+      { value: 'Gaggia', label: 'Gaggia', count: 5 },
+    ],
+  },
+  page: 1,
+  pageSize: 20,
+  total: 13,
+  totalPages: 1,
+  tookMs: 3,
 };
 
-const dropdownFacet = connectRefinementList<{
+const dropdownFacet = withFacetList<{
   container: HTMLElement;
   label?: string;
   allLabel?: string;
 }>((renderOptions, isFirstRender) => {
-  const { items, refine, widgetParams } = renderOptions;
-  const { container, label = 'Filter', allLabel = 'All' } = widgetParams;
+  const { items, apply, params } = renderOptions;
+  const { container, label = 'Filter', allLabel = 'All' } = params;
 
   if (isFirstRender) {
     container.innerHTML = `
@@ -35,10 +40,10 @@ const dropdownFacet = connectRefinementList<{
       <select class="xps-dropdown__select" id="${container.id}-select"></select>`;
 
     container.querySelector('select')!.addEventListener('change', (event) => {
-      const current = renderOptions.items.find((item) => item.isRefined);
-      if (current) refine(current.value);
+      const current = renderOptions.items.find((item) => item.isActive);
+      if (current) apply(current.value);
       const picked = (event.target as HTMLSelectElement).value;
-      if (picked) refine(picked);
+      if (picked) apply(picked);
     });
   }
 
@@ -48,13 +53,13 @@ const dropdownFacet = connectRefinementList<{
     items
       .map(
         (item) =>
-          `<option value="${item.value}" ${item.isRefined ? 'selected' : ''}>${item.label} (${item.count})</option>`
+          `<option value="${item.value}" ${item.isActive ? 'selected' : ''}>${item.label} (${item.count})</option>`
       )
       .join('');
-  select.value = items.find((item) => item.isRefined)?.value ?? '';
+  select.value = items.find((item) => item.isActive)?.value ?? '';
 });
 
-let search: InstantSearch | undefined;
+let search: SearchInstance | undefined;
 afterEach(() => {
   search?.dispose();
   search = undefined;
@@ -76,7 +81,7 @@ describe('the documented dropdown facet', () => {
     container.id = 'facet-brand';
     document.body.append(container);
 
-    search = xpsearch({
+    search = createSearch({
       index: 'site-content',
       debounceMs: 0,
       fetchFn: fetchFn as unknown as typeof fetch,
@@ -95,7 +100,7 @@ describe('the documented dropdown facet', () => {
     select.dispatchEvent(new Event('change'));
 
     await vi.waitFor(() => expect(requests).toHaveLength(2));
-    expect(requests[1]?.facetFilters).toEqual([['brand:Gaggia']]);
+    expect(requests[1]?.filters?.facets).toEqual([{ attribute: 'brand', values: ['Gaggia'] }]);
     await vi.waitFor(() => expect(select.value).toBe('Gaggia'));
   });
 });

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import { escapeHtml, formatNumber, highlight, html, render, toHtml } from './html';
-import type { Hit } from '../types';
+import type { Result } from '../types';
 
 const EVIL = '<script>alert("x")</script>';
 
@@ -69,26 +69,27 @@ describe('escapeHtml', () => {
 });
 
 describe('highlight', () => {
-  const hit = (extra: Record<string, unknown>): Hit => ({ objectID: 'doc-1', ...extra }) as Hit;
+  const asResult = (extra: Partial<Result>): Result =>
+    ({ id: 'doc-1', attributes: {}, ...extra }) as Result;
 
   it('returns the server highlight and adds the shell class to each mark', () => {
-    const result = highlight(
+    const marked = highlight(
       'title',
-      hit({ _highlights: { title: '<mark>Es</mark>presso &amp; <mark>Milk</mark>' } })
+      asResult({ highlights: { title: '<mark>Es</mark>presso &amp; <mark>Milk</mark>' } })
     );
-    expect(result.value).toBe(
+    expect(marked.value).toBe(
       '<mark class="xps-highlight">Es</mark>presso &amp; <mark class="xps-highlight">Milk</mark>'
     );
   });
 
-  it('falls back to the escaped plain field', () => {
-    expect(highlight('title', hit({ title: EVIL })).value).toBe(
+  it('falls back to the escaped plain attribute', () => {
+    expect(highlight('title', asResult({ attributes: { title: EVIL } })).value).toBe(
       '&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;'
     );
   });
 
   it('is empty when neither the highlight nor the field exists', () => {
-    expect(highlight('nope', hit({})).value).toBe('');
+    expect(highlight('nope', asResult({})).value).toBe('');
   });
 });
 

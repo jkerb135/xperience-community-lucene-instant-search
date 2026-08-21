@@ -3,16 +3,16 @@
  *
  * Markup a Page Builder widget emits:
  *   <div class="xps-mount"
- *        data-xps-widget="refinementList"
+ *        data-xps-widget="facetList"
  *        data-xps-instance="search-1"
  *        data-xps-instance-config='{"index":"site-content","routing":true}'
  *        data-xps-config='{"attribute":"contentType","limit":10}'></div>
  *
- * Mounts are grouped by `data-xps-instance` (default `"default"`), one `xpsearch()` per group.
+ * Mounts are grouped by `data-xps-instance` (default `"default"`), one `createSearch()` per group.
  * Nothing here throws: a misconfigured mount is a console error and a skipped widget.
  */
-import { xpsearch } from './instance';
-import type { InstantSearch, Widget, XpSearchOptions } from './types';
+import { createSearch } from './instance';
+import type { SearchInstance, Widget, XpSearchOptions } from './types';
 import { DEFAULT_WIDGETS } from './widgets';
 
 /** Config from `data-xps-config`, plus the mount element the widget renders into. */
@@ -26,18 +26,19 @@ export type MountWidgetFactory = (config: MountConfig) => Widget;
  */
 export const FIRST_PARTY_WIDGET_TYPES: readonly string[] = [
   'searchBox',
-  'hits',
-  'refinementList',
+  'results',
+  'facetList',
   'pagination',
-  'stats',
-  'sortBy',
-  'autocomplete',
-  'clearRefinements',
-  'currentRefinements',
-  'rangeSlider',
-  'hierarchicalMenu',
-  'infiniteHits',
-  'toggleRefinement',
+  'resultStats',
+  'sortSelect',
+  'clearFilters',
+  'activeFilters',
+  'toggleFilter',
+  // Reserved for the Phase 2.5 widgets, so a project cannot take one of these names first.
+  'suggestions',
+  'rangeFilter',
+  'categoryTree',
+  'loadMore',
 ];
 
 const registry = new Map<string, MountWidgetFactory>();
@@ -73,7 +74,7 @@ const MOUNTED = 'xpsMounted';
  * `data-xps-instance` group. Already-mounted elements are skipped, so calling it again after
  * inserting markup mounts only what is new.
  */
-export function mountAll(root: ParentNode | undefined = globalThis.document): InstantSearch[] {
+export function mountAll(root: ParentNode | undefined = globalThis.document): SearchInstance[] {
   if (!root) return [];
   const groups = new Map<string, HTMLElement[]>();
   for (const element of root.querySelectorAll<HTMLElement>('.xps-mount')) {
@@ -84,7 +85,7 @@ export function mountAll(root: ParentNode | undefined = globalThis.document): In
     groups.set(id, group);
   }
 
-  const instances: InstantSearch[] = [];
+  const instances: SearchInstance[] = [];
   for (const [id, elements] of groups) {
     const options = readInstanceOptions(id, elements);
     if (!options) continue;
@@ -96,7 +97,7 @@ export function mountAll(root: ParentNode | undefined = globalThis.document): In
         element.dataset[MOUNTED] = 'true';
       }
     }
-    const instance = xpsearch(options);
+    const instance = createSearch(options);
     instance.addWidgets(widgets);
     instance.start();
     instances.push(instance);
@@ -128,7 +129,7 @@ function buildWidget(element: HTMLElement): Widget | undefined {
     return undefined;
   }
   // A registered factory wins over the built-in of the same name, which is what makes
-  // `registerWidgetType('hits', …)` a supported override rather than a collision.
+  // `registerWidgetType('results', …)` a supported override rather than a collision.
   const factory = registry.get(type) ?? DEFAULT_WIDGETS[type];
   if (!factory) {
     console.error(

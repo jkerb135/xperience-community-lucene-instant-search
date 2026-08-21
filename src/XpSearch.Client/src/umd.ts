@@ -2,17 +2,17 @@
  * UMD entry (spec 5.9): one `<script>` tag, one global `xpsearch`, everything hanging off it.
  * Unlike the ESM entry, this one boots itself — `.xps-mount` markup works with no author code.
  */
+import * as behaviors from './behaviors';
 import { mountAll } from './bootstrap';
-import * as connectors from './connectors';
-import xpsearchCore from './index';
+import createSearchCore from './index';
 import * as core from './index';
 import type { XpSearchOptions } from './types';
 
 const xpsearch = Object.assign(
-  (options: XpSearchOptions) => xpsearchCore(options),
+  (options: XpSearchOptions) => createSearchCore(options),
   core,
-  connectors,
-  { connectors }
+  behaviors,
+  { behaviors }
 );
 
 if (typeof document !== 'undefined') {

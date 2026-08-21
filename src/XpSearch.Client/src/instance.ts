@@ -1,5 +1,5 @@
 /**
- * `xpsearch()` — the search instance: widget lifecycle, error isolation, the event bus,
+ * `createSearch()` — the search instance: widget lifecycle, error isolation, the event bus,
  * routing, and the glue between `SearchState` and `SearchClient` (spec 5.1, 5.2, 5.5, 5.7).
  */
 import { SearchClient } from './client';
@@ -8,11 +8,11 @@ import * as st from './state';
 import type {
   EventType,
   FacetOperator,
-  InstantSearch,
   NumericOperator,
   RoutingOptions,
+  SearchActions,
   SearchEvents,
-  SearchHelper,
+  SearchInstance,
   SearchRequest,
   SearchResults,
   SearchState,
@@ -23,8 +23,8 @@ import type {
 
 type Handler = (payload: never) => void;
 
-export function xpsearch(options: XpSearchOptions): InstantSearch {
-  if (!options?.index) throw new Error('xpsearch({ index }) is required.');
+export function createSearch(options: XpSearchOptions): SearchInstance {
+  if (!options?.index) throw new Error('createSearch({ index }) is required.');
 
   const routingOptions: RoutingOptions =
     typeof options.routing === 'object' && options.routing !== null ? options.routing : {};
@@ -38,7 +38,6 @@ export function xpsearch(options: XpSearchOptions): InstantSearch {
   const widgets: Widget[] = [];
   const rendered = new WeakSet<Widget>();
   const listeners = new Map<keyof SearchEvents, Set<Handler>>();
-  const facetOperators: Record<string, FacetOperator> = {};
 
   let results: SearchResults | null = null;
   let status: SearchStatus = 'idle';
@@ -92,23 +91,21 @@ export function xpsearch(options: XpSearchOptions): InstantSearch {
   const buildRequest = (): SearchRequest => {
     let state = store.get();
     widgets.forEach((widget, at) => {
-      if (!widget.getSearchParameters) return;
-      const next = safely(widget, at, 'render', () => widget.getSearchParameters!(state));
+      if (!widget.prepareState) return;
+      const next = safely(widget, at, 'render', () => widget.prepareState!(state));
       if (next) state = st.createState(next);
     });
     let request: SearchRequest = {
       index: options.index,
-      ...st.stateToWireFragment(state, facetOperators),
+      ...st.stateToWireFragment(state),
       ...(options.facets === undefined ? {} : { facets: options.facets }),
       ...(options.highlight === undefined ? {} : { highlight: options.highlight }),
-      ...(options.attributesToRetrieve === undefined
-        ? {}
-        : { attributesToRetrieve: options.attributesToRetrieve }),
+      ...(options.fields === undefined ? {} : { fields: options.fields }),
       ...(options.language === undefined ? {} : { language: options.language }),
     };
     widgets.forEach((widget, at) => {
-      if (!widget.getRequestParameters) return;
-      const next = safely(widget, at, 'render', () => widget.getRequestParameters!(request));
+      if (!widget.prepareRequest) return;
+      const next = safely(widget, at, 'render', () => widget.prepareRequest!(request));
       if (next) request = next;
     });
     if (request.facets) request.facets = [...new Set(request.facets)];
@@ -122,13 +119,13 @@ export function xpsearch(options: XpSearchOptions): InstantSearch {
       const isFirstRender = !rendered.has(widget);
       rendered.add(widget);
       safely(widget, at, 'render', () =>
-        widget.render!({ results, state, helper, instantSearchInstance: instance, isFirstRender })
+        widget.render!({ results, state, actions, search: instance, isFirstRender })
       );
     });
     emit('render', { results, state });
   };
 
-  /** Coalesces the renders a chained helper call would otherwise trigger one per mutation. */
+  /** Coalesces the renders a chained actions call would otherwise trigger one per mutation. */
   const scheduleRender = (): void => {
     if (renderQueued || !started || disposed) return;
     renderQueued = true;
@@ -140,6 +137,9 @@ export function xpsearch(options: XpSearchOptions): InstantSearch {
 
   const setState = (next: SearchState): void => {
     const previous = store.get();
+    // A mutation that changes nothing must not re-render or push a history entry: widgets
+    // declare things on init (a facet operator, say) that are often already what they are.
+    if (JSON.stringify(next) === JSON.stringify(previous)) return;
     store.set(next);
     emit('stateChange', { state: next });
     if (routingEnabled) {
@@ -157,7 +157,7 @@ export function xpsearch(options: XpSearchOptions): InstantSearch {
     status = 'loading';
     if (stalledTimer !== undefined) clearTimeout(stalledTimer);
     stalledTimer = setTimeout(() => {
-      // A slow request is a rendering concern: `isSearchStalled` drives spinners (spec 5.7).
+      // A slow request is a rendering concern: `isStalled` drives spinners (spec 5.7).
       if (status === 'loading') {
         status = 'stalled';
         scheduleRender();
@@ -182,66 +182,56 @@ export function xpsearch(options: XpSearchOptions): InstantSearch {
     );
   };
 
-  const helper: SearchHelper = {
-    setQuery(q) {
-      setState(st.setQuery(store.get(), q));
-      return helper;
+  const actions: SearchActions = {
+    setQuery(query) {
+      setState(st.setQuery(store.get(), query));
+      return actions;
     },
-    toggleFacetRefinement(attribute, value) {
-      setState(st.toggleFacetRefinement(store.get(), attribute, value));
-      return helper;
+    toggleFacet(attribute, value) {
+      setState(st.toggleFacet(store.get(), attribute, value));
+      return actions;
     },
-    clearRefinements(attribute) {
-      setState(st.clearRefinements(store.get(), attribute));
-      return helper;
+    clearFilters(attribute) {
+      setState(st.clearFilters(store.get(), attribute));
+      return actions;
     },
     setPage(page) {
       setState(st.setPage(store.get(), page));
-      return helper;
+      return actions;
     },
-    addNumericRefinement(attr, op, value) {
-      setState(st.addNumericRefinement(store.get(), attr, op, value));
-      return helper;
+    setNumericFilter(attribute: string, operator: NumericOperator, value: number) {
+      setState(st.setNumericFilter(store.get(), attribute, operator, value));
+      return actions;
+    },
+    removeNumericFilter(attribute: string, operator?: NumericOperator) {
+      setState(st.removeNumericFilter(store.get(), attribute, operator));
+      return actions;
     },
     setSort(key) {
       setState(st.setSort(store.get(), key));
-      return helper;
+      return actions;
     },
-    search() {
-      runSearch();
+    setPageSize(pageSize) {
+      setState(st.setPageSize(store.get(), pageSize));
+      return actions;
+    },
+    setFacetOperator(attribute: string, operator: FacetOperator) {
+      setState(st.setFacetOperator(store.get(), attribute, operator));
+      return actions;
     },
     getState: () => store.get(),
-    setNumericRefinement(attr: string, op: NumericOperator, value: number) {
-      setState(st.setNumericRefinement(store.get(), attr, op, value));
-      return helper;
-    },
-    removeNumericRefinement(attr: string, op?: NumericOperator) {
-      setState(st.removeNumericRefinement(store.get(), attr, op));
-      return helper;
-    },
-    setHitsPerPage(hitsPerPage) {
-      setState(st.setHitsPerPage(store.get(), hitsPerPage));
-      return helper;
-    },
-    setFacetOperator(attribute, operator) {
-      // Not part of the state: it is how the values of one attribute combine on the wire.
-      facetOperators[attribute] = operator;
-      return helper;
+    search() {
+      runSearch();
     },
   };
 
   const initWidget = (widget: Widget, at: number): void => {
     safely(widget, at, 'init', () =>
-      widget.init?.({
-        state: store.get(),
-        helper,
-        instantSearchInstance: instance,
-        instantiate: instance,
-      })
+      widget.init?.({ state: store.get(), actions, search: instance })
     );
   };
 
-  const instance: InstantSearch = {
+  const instance: SearchInstance = {
     get state() {
       return store.get();
     },
@@ -251,7 +241,7 @@ export function xpsearch(options: XpSearchOptions): InstantSearch {
     get status() {
       return status;
     },
-    helper,
+    actions,
     index: options.index,
 
     addWidgets(added) {
@@ -316,19 +306,18 @@ export function xpsearch(options: XpSearchOptions): InstantSearch {
       return instance;
     },
 
-    createURL(state) {
-      return router.createURL(state ?? store.get());
+    urlFor(state) {
+      return router.urlFor(state ?? store.get());
     },
 
-    sendEvent(eventType: EventType, objectID: string, position?: number) {
+    sendEvent(type: EventType, resultId: string, position?: number) {
       const queryId = results?.queryId;
       // Without a queryId there is nothing to correlate the event with, so drop it silently.
       if (!queryId) return;
       client.sendEvent({
-        eventType,
-        objectID,
+        type,
+        resultId,
         queryId,
-        index: options.index,
         ...(position === undefined ? {} : { position }),
       });
     },
@@ -337,5 +326,5 @@ export function xpsearch(options: XpSearchOptions): InstantSearch {
   return instance;
 }
 
-/** The transport behind an instance, for `connectAutocomplete` and direct callers. */
+/** The transport behind an instance, for direct callers. */
 export { SearchClient } from './client';

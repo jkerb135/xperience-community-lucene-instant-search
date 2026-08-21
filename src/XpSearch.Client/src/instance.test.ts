@@ -1,17 +1,22 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { API_VERSION_HEADER } from './contract/constants';
 import type { SearchRequest, SearchResponse } from './contract/generated';
-import { xpsearch } from './instance';
-import type { InstantSearch, SearchState, Widget } from './types';
+import { createSearch } from './instance';
+import type { SearchInstance, SearchState, Widget } from './types';
 
 const BODY: SearchResponse = {
-  hits: [{ objectID: 'doc-1', title: 'Espresso Basics' }],
-  facets: { tags: { coffee: 3, milk: 1 } },
-  page: 0,
-  hitsPerPage: 20,
-  nbHits: 1,
-  nbPages: 1,
-  processingTimeMs: 4,
+  results: [{ id: 'doc-1', attributes: { title: 'Espresso Basics' } }],
+  facets: {
+    tags: [
+      { value: 'coffee', label: 'Coffee', count: 3 },
+      { value: 'milk', label: 'Milk drinks', count: 1 },
+    ],
+  },
+  page: 1,
+  pageSize: 20,
+  total: 1,
+  totalPages: 1,
+  tookMs: 4,
   queryId: 'q-1',
 };
 
@@ -28,9 +33,9 @@ function stubFetch(): { fetchFn: typeof fetch; requests: SearchRequest[] } {
   return { fetchFn: fetchFn as unknown as typeof fetch, requests };
 }
 
-const instances: InstantSearch[] = [];
-const create = (options: Parameters<typeof xpsearch>[0]): InstantSearch => {
-  const instance = xpsearch({ debounceMs: 0, ...options });
+const instances: SearchInstance[] = [];
+const create = (options: Parameters<typeof createSearch>[0]): SearchInstance => {
+  const instance = createSearch({ debounceMs: 0, ...options });
   instances.push(instance);
   return instance;
 };
@@ -41,12 +46,12 @@ afterEach(() => {
 });
 
 describe('widget lifecycle', () => {
-  it('runs getSearchParameters, init and render in widget-add order, init exactly once', async () => {
+  it('runs prepareState, init and render in widget-add order, init exactly once', async () => {
     const { fetchFn, requests } = stubFetch();
     const order: string[] = [];
     const widget = (name: string): Widget => ({
       $$type: name,
-      getSearchParameters: (state) => {
+      prepareState: (state) => {
         order.push(`params:${name}`);
         return state;
       },
@@ -74,19 +79,19 @@ describe('widget lifecycle', () => {
     expect(order.slice(-2)).toEqual(['dispose:a', 'dispose:b']);
   });
 
-  it('merges getSearchParameters and getRequestParameters into the outgoing request', async () => {
+  it('merges prepareState and prepareRequest into the outgoing request', async () => {
     const { fetchFn, requests } = stubFetch();
     const search = create({ index: 'site-content', fetchFn, initialState: { query: 'espresso' } });
     search.addWidgets([
-      { getSearchParameters: (state) => ({ ...state, hitsPerPage: 5 }) },
-      { getRequestParameters: (request) => ({ ...request, facets: ['tags'] }) },
+      { prepareState: (state) => ({ ...state, pageSize: 5 }) },
+      { prepareRequest: (request) => ({ ...request, facets: ['tags'] }) },
     ]);
     search.start();
     await vi.waitFor(() => expect(requests).toHaveLength(1));
     expect(requests[0]).toMatchObject({
       index: 'site-content',
       query: 'espresso',
-      hitsPerPage: 5,
+      pageSize: 5,
       facets: ['tags'],
     });
   });
@@ -108,43 +113,45 @@ describe('widget lifecycle', () => {
 
   it('renders on state change with the last results, before the response arrives', async () => {
     const { fetchFn } = stubFetch();
-    const seen: Array<{ query: string; hits: number }> = [];
+    const seen: Array<{ query: string; results: number }> = [];
     const search = create({ index: 'site-content', fetchFn });
     search.addWidgets([
       {
         render: ({ results, state }) =>
-          seen.push({ query: state.query, hits: results?.hits.length ?? -1 }),
+          seen.push({ query: state.query, results: results?.results.length ?? -1 }),
       },
     ]);
     search.start();
     await vi.waitFor(() => expect(seen).toHaveLength(1));
-    search.helper.setQuery('espresso');
+    search.actions.setQuery('espresso');
     await vi.waitFor(() => expect(seen).toHaveLength(2));
-    expect(seen[1]).toEqual({ query: 'espresso', hits: 1 });
+    expect(seen[1]).toEqual({ query: 'espresso', results: 1 });
   });
 });
 
-describe('SearchHelper', () => {
+describe('SearchActions', () => {
   it('is chainable and searches only when told to', async () => {
     const { fetchFn, requests } = stubFetch();
     const search = create({ index: 'site-content', fetchFn, searchOnInitialLoad: false });
     search.start();
 
-    const returned = search.helper
+    const returned = search.actions
       .setQuery('espresso')
-      .toggleFacetRefinement('tags', 'coffee')
-      .addNumericRefinement('price', '<=', 50)
+      .toggleFacet('tags', 'coffee')
+      .setNumericFilter('price', 'lte', 50)
       .setSort('price_asc');
-    expect(returned).toBe(search.helper);
+    expect(returned).toBe(search.actions);
     await new Promise((r) => setTimeout(r, 5));
     expect(requests).toHaveLength(0);
 
-    search.helper.search();
+    search.actions.search();
     await vi.waitFor(() => expect(requests).toHaveLength(1));
     expect(requests[0]).toMatchObject({
       query: 'espresso',
-      facetFilters: [['tags:coffee']],
-      numericFilters: ['price<=50'],
+      filters: {
+        facets: [{ attribute: 'tags', values: ['coffee'] }],
+        numeric: [{ attribute: 'price', operator: 'lte', value: 50 }],
+      },
       sort: 'price_asc',
     });
   });
@@ -153,13 +160,15 @@ describe('SearchHelper', () => {
     const { fetchFn, requests } = stubFetch();
     const search = create({ index: 'site-content', fetchFn, searchOnInitialLoad: false });
     search.start();
-    search.helper
+    search.actions
       .setFacetOperator('tags', 'and')
-      .toggleFacetRefinement('tags', 'coffee')
-      .toggleFacetRefinement('tags', 'milk')
+      .toggleFacet('tags', 'coffee')
+      .toggleFacet('tags', 'milk')
       .search();
     await vi.waitFor(() => expect(requests).toHaveLength(1));
-    expect(requests[0]?.facetFilters).toEqual([['tags:coffee'], ['tags:milk']]);
+    expect(requests[0]?.filters?.facets).toEqual([
+      { attribute: 'tags', values: ['coffee', 'milk'], operator: 'and' },
+    ]);
   });
 
   it('hands widgets a frozen state they cannot write to', async () => {
@@ -200,7 +209,7 @@ describe('error isolation (spec 5.7)', () => {
     await vi.waitFor(() => expect(renders).toEqual(['before', 'after']));
     expect(errors).toEqual([{ widget: 'bad.widget', message: 'boom' }]);
     expect(consoleError).toHaveBeenCalled();
-    expect(search.results?.nbHits).toBe(1);
+    expect(search.results?.total).toBe(1);
   });
 
   it('emits an error and keeps working when a search fails', async () => {
@@ -228,12 +237,12 @@ describe('event bus', () => {
     search.on('stateChange', () => events.push('stateChange')).on('render', onRender);
     search.start();
     await vi.waitFor(() => expect(events).toContain('render'));
-    search.helper.setQuery('a');
+    search.actions.setQuery('a');
     await vi.waitFor(() => expect(events.filter((e) => e === 'stateChange')).toHaveLength(1));
 
     search.off('render', onRender);
     const before = events.filter((e) => e === 'render').length;
-    search.helper.setQuery('b');
+    search.actions.setQuery('b');
     await new Promise((r) => setTimeout(r, 10));
     expect(events.filter((e) => e === 'render')).toHaveLength(before);
   });
@@ -249,11 +258,11 @@ describe('multi-instance (spec 12)', () => {
     b.start();
     await vi.waitFor(() => expect(second.requests).toHaveLength(1));
 
-    a.helper.setQuery('espresso').toggleFacetRefinement('tags', 'coffee').search();
+    a.actions.setQuery('espresso').toggleFacet('tags', 'coffee').search();
     await vi.waitFor(() => expect(first.requests).toHaveLength(2));
 
     expect(b.state.query).toBe('');
-    expect(b.state.facetFilters).toEqual({});
+    expect(b.state.filters.facets).toEqual([]);
     expect(second.requests).toHaveLength(1);
     expect(first.requests[1]).toMatchObject({ index: 'index-a', query: 'espresso' });
   });
@@ -276,10 +285,9 @@ describe('analytics', () => {
     await vi.waitFor(() => expect(posts).toHaveLength(2));
     expect(posts[1]?.url).toBe('/api/xpsearch/events');
     expect(JSON.parse(posts[1]!.body)).toEqual({
-      eventType: 'click',
-      objectID: 'doc-1',
+      type: 'click',
+      resultId: 'doc-1',
       queryId: 'q-1',
-      index: 'site-content',
       position: 1,
     });
   });

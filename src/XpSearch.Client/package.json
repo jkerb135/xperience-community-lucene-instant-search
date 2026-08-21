@@ -14,10 +14,10 @@
       "import": "./dist/xpsearch.mjs",
       "default": "./dist/xpsearch.umd.js"
     },
-    "./connectors": {
-      "types": "./dist/types/connectors.d.ts",
-      "import": "./dist/connectors.mjs",
-      "default": "./dist/connectors.mjs"
+    "./behaviors": {
+      "types": "./dist/types/behaviors.d.ts",
+      "import": "./dist/behaviors.mjs",
+      "default": "./dist/behaviors.mjs"
     },
     "./package.json": "./package.json"
   },
@@ -32,6 +32,8 @@
     "build": "rollup -c && tsc -p tsconfig.build.json",
     "size": "node scripts/size.mjs",
     "mock": "node mock/server.ts",
+    "docs:migration": "node scripts/migration-guide.mjs",
+    "docs:check": "node scripts/migration-guide.mjs --check",
     "demo": "npm run build && node mock/demo-server.ts"
   },
   "devDependencies": {
