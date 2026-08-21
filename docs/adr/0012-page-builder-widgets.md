@@ -31,9 +31,11 @@ editor-only instruction block for an unconfigured widget. Three decisions had no
 | Assets | Serve them from the assembly through an embedded-file provider | Nothing to copy | Needs startup wiring the host must not forget, and a non-standard URL space |
 | Assets | Ship them as Razor Class Library static web assets (`Microsoft.NET.Sdk.Razor`, `wwwroot/`) | Versioned with the package, served by `UseStaticFiles()` alone, standard `_content/<PackageId>/` URLs, the views compile into the same RCL | Not the documented Page Builder bundling path; a project using that bundling has to copy the files itself |
 | Configurator | Put it in `XpSearch.Widgets`, referenced by type | One package | `FormComponentConfigurator<T>` and `DropDownComponent` live in `Kentico.Xperience.Admin.Base.dll` (the `Kentico.Xperience.Admin` package), so every live-site project would take a dependency on the administration |
-| Configurator | Put it in `XpSearch.Admin`, referenced by string identifier | Live-site code stays free of the administration package; this is the documented pattern for [deploying without the administration](https://docs.kentico.com/documentation/developers-and-admins/deployment/deploy-to-private-cloud/deploy-without-the-administration) | Two packages must be installed for the drop-down to populate |
+| Configurator | Put it in `XpSearch.Admin`, sharing the option-building code through `XpSearch.Widgets` | Live-site code stays free of the administration package | `XpSearch.Admin` would depend on `XpSearch.Widgets`, which spec §2.2 forbids - a headless site installing Admin for relevance tuning would pull the Page Builder package and its static assets |
+| Configurator | Put it in `XpSearch.Admin`, sharing the option-building code through `XpSearch.Core` | Live-site code stays free of the administration package ([deploying without the administration](https://docs.kentico.com/documentation/developers-and-admins/deployment/deploy-to-private-cloud/deploy-without-the-administration)), and the package graph stays the flat `Core` &larr; `Widgets`, `Core` &larr; `Admin` of spec §2.2 | Two packages must be installed for the drop-down to populate |
 | Instance config | Only the Results widget emits it | One source of truth, no agreement needed | An instance without a Results widget never starts |
-| Instance config | Every mount emits it; all must agree on the index | Any single widget is enough to start the instance; order-independent for the index | Options only one widget knows (page size, fields) depend on that widget being first |
+| Instance config | Every mount emits it; the bootstrap takes the first that names an index | No JavaScript change | Options only one widget knows (page size, fields) depend on that widget being first - an editor property that silently does nothing |
+| Instance config | Every mount emits it; the bootstrap **merges** the group's objects | Placement-independent for every option, not just the index; a disagreement becomes a warning instead of a silent override | A behaviour change in `mountAll()` |
 
 ## Decision
 
@@ -53,22 +55,27 @@ path base. A project that prefers Kentico's bundling copies the three files into
 package, while the *annotations* (`DropDownComponentAttribute`, `IDropDownOptionsProvider`,
 `FormComponentConfigurationAttribute`) ship in `Kentico.Xperience.Admin.Base.Shared.dll`, which comes
 with `Kentico.Xperience.WebApp`. So `XpSearch.Widgets` can declare the drop-down and its dependency —
-`[FormComponentConfiguration(XpSearchWidgetConstants.FacetAttributeConfiguratorIdentifier, nameof(Index))]`
-— without referencing the administration at all, and `XpSearch.Admin` registers
-`FacetAttributeConfigurator` under that identifier with `[RegisterFormComponentConfigurator]`. The logic
-that turns a schema into option lines is a plain static method, `FacetAttributeOptions.BuildOptionsAsync`,
-in `XpSearch.Widgets`, so it is unit-tested against a substituted `IIndexSchemaProvider` without any
-administration types; the configurator is a fifteen-line shell that hides the field
-(`VisibilityConditions.Add(new AlwaysInvisible())`) when the method returns `null`.
+`[FormComponentConfiguration(XpSearchConstants.FacetAttributeConfiguratorIdentifier, nameof(Index))]` —
+without referencing the administration at all, and `XpSearch.Admin` registers
+`FacetAttributeConfigurator` under that identifier with `[RegisterFormComponentConfigurator]`.
 
-**Every mount emits `data-xps-instance-config` with its index, and all widgets of one instance must
-select the same index.** That is the documented rule, and it is what makes drag-and-drop placement work:
-any one widget is enough to start the instance, so an editor can build a search out of a search box and
-a facet list with no results widget at all and still get a running instance. Two options that are
-genuinely instance-wide — *Results per page* and *Fields to show* — are contributed by the Results widget
-into the same object, and therefore apply when the Results widget is the first widget of its instance in
-page order. Both are optional and both have index-level defaults, so the ordering only matters to a
-project that sets them.
+**Everything the two packages share sits in `XpSearch.Core`.** The configurator identifier and the name
+of the index property are `XpSearch.Core.XpSearchConstants`; the logic that turns a schema into
+`value;label` option lines is `XpSearch.Core.Facets.FacetAttributeOptions.BuildOptionsAsync`. That keeps
+the package graph the one spec §2.2 states — `Widgets` depends on `Core`, `Admin` depends on `Core`, and
+neither on the other — so a headless site that installs `XpSearch.Admin` for relevance tuning never pulls
+the Page Builder package or its static assets. The option builder is unit-tested in `XpSearch.Core.Tests`
+against a substituted `IIndexSchemaProvider`; the configurator is a fifteen-line shell that hides the
+field (`VisibilityConditions.Add(new AlwaysInvisible())`) when the method returns `null`.
+
+**Every mount emits `data-xps-instance-config` with its index, and `mountAll()` merges the group's
+objects into one.** Emitting from every mount is what makes drag-and-drop placement work: any one widget
+is enough to start the instance, so an editor can build a search out of a search box and a facet list
+with no results widget at all and still get a running instance. Merging is what makes the two genuinely
+instance-wide options — *Results per page* and *Fields to show*, which only the Results widget knows —
+placement-independent, as §7.3 editor properties have to be. The first definition of a key wins and a
+disagreement is one `console.warn` naming the key and the instance, so the rule editors are given is
+unchanged: all widgets of one instance must select the same index.
 
 **The index falls back to the project's only index.** `IXpSearchIndexCatalog` (over
 `ILuceneIndexManager.GetAllIndices()`) supplies both the drop-down and the fallback: a project with one
@@ -86,9 +93,12 @@ one is chosen.
   `YourCo.Xperience.Search.Admin` populates it. This is stated in the guide.
 - `XpSearch.Admin` now references `XpSearch.Widgets` (for the identifier constant and `nameof(Index)`),
   which makes the package graph Core ← Widgets ← Admin.
-- Instance options that only one widget can know are order-dependent. The upgrade path is a small change
-  in `mountAll()` — merge the instance configs of a group instead of taking the first — recorded in
-  `KNOWN-LIMITATIONS.md`.
+- `readInstanceOptions` in `src/XpSearch.Client/src/bootstrap.ts` changed behaviour: it merges the
+  group's instance configs rather than taking the first usable one. A group whose mounts already agreed
+  produces exactly the same options object, so existing markup is unaffected.
+- `XpSearch.Core` gained two Page-Builder-facing members it does not itself use — `XpSearchConstants` and
+  `Facets.FacetAttributeOptions`. That is the price of the flat package graph: they are the contract
+  between `Widgets` and `Admin`, and Core is the only place both can see.
 - The mount markup is asserted through `IXpSearchMountRenderer` and `BuildModel()` without Razor, and the
   view itself is rendered once through a minimal MVC host, which is what proves it compiled into the RCL
   at the path the base class returns.

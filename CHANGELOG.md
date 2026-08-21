@@ -22,7 +22,18 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 - **Added:** `FacetAttributeConfigurator` in `YourCo.Xperience.Search.Admin`, registered as
   `xpsearch.facetAttribute`, which fills a facet widget's attribute drop-down from the selected index's
   facetable schema fields and hides it until an index is chosen (spec §7.4). It is referenced by string
-  identifier, so widget properties stay free of a dependency on `Kentico.Xperience.Admin`.
+  identifier, so widget properties stay free of a dependency on `Kentico.Xperience.Admin`, and the pieces
+  it shares with the widgets — `XpSearch.Core.XpSearchConstants` and
+  `XpSearch.Core.Facets.FacetAttributeOptions` — live in Core, so `Admin` and `Widgets` stay independent
+  of each other (spec §2.2).
+- **Changed:** `mountAll()` now **merges** the `data-xps-instance-config` objects of every mount in a
+  `data-xps-instance` group instead of using the first one that names an `index`. The first definition of
+  a key wins and a mount that disagrees logs one `console.warn` naming the key and the instance, so the
+  results widget's page size and retrieved fields apply wherever an editor placed it. Markup whose mounts
+  already agreed is unaffected.
+- **Added:** `resultStats` takes a string `textTemplate` with `{total}`, `{tookMs}`, `{query}`, `{page}`
+  and `{totalPages}` placeholders (template and values escaped; `templates.text` still wins), which is
+  what the Page Builder stats widget's **Text template** property emits.
 - **Added:** `docs/guides/page-builder-widgets.md`, the C# half of `docs/guides/custom-widgets.md`, and
   ADR-0012.
 

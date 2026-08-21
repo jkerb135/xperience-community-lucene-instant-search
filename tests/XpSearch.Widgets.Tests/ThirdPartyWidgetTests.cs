@@ -2,6 +2,7 @@ using Kentico.Xperience.Admin.Base.FormAnnotations;
 
 using NUnit.Framework;
 
+using XpSearch.Core;
 using XpSearch.Widgets.Mounting;
 using XpSearch.Widgets.Options;
 
@@ -14,7 +15,7 @@ namespace XpSearch.Widgets.Tests;
 internal sealed class DropdownFacetWidgetProperties : XpSearchMountWidgetProperties
 {
     [DropDownComponent(Label = "Attribute", Order = OrderFirstWidgetProperty)]
-    [FormComponentConfiguration(XpSearchWidgetConstants.FacetAttributeConfiguratorIdentifier, nameof(Index))]
+    [FormComponentConfiguration(XpSearchConstants.FacetAttributeConfiguratorIdentifier, nameof(Index))]
     public string Attribute { get; set; } = string.Empty;
 
     [TextInputComponent(Label = "Label", Order = OrderFirstWidgetProperty + 10)]

@@ -1,6 +1,7 @@
 using Kentico.PageBuilder.Web.Mvc;
 using Kentico.Xperience.Admin.Base.FormAnnotations;
 
+using XpSearch.Core;
 using XpSearch.Widgets;
 using XpSearch.Widgets.Components.Widgets.XpSearch;
 using XpSearch.Widgets.Mounting;
@@ -29,7 +30,7 @@ public sealed class FacetListWidgetProperties : XpSearchMountWidgetProperties
         Label = "Attribute",
         Placeholder = "Select an attribute",
         Order = OrderFirstWidgetProperty)]
-    [FormComponentConfiguration(XpSearchWidgetConstants.FacetAttributeConfiguratorIdentifier, nameof(Index))]
+    [FormComponentConfiguration(XpSearchConstants.FacetAttributeConfiguratorIdentifier, nameof(Index))]
     public string Attribute { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the heading shown above the values. Empty falls back to the attribute name.</summary>

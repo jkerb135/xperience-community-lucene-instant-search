@@ -209,18 +209,23 @@ internal sealed class MountMarkupTests
     }
 
     [Test]
-    public void ResultStats_emits_its_empty_state_text()
+    public void ResultStats_emits_its_text_template_and_empty_state_text()
     {
         var component = new ResultStatsWidgetViewComponent(renderer, editor, catalog);
 
-        string markup = Render(component, new ResultStatsWidgetProperties { Index = Index, EmptyText = "Start typing." });
+        string markup = Render(component, new ResultStatsWidgetProperties
+        {
+            Index = Index,
+            TextTemplate = "{total} hits in {tookMs} ms",
+            EmptyText = "Start typing."
+        });
 
+        var config = Rendered.Json(markup, "data-xps-config");
         Expect.Multiple(() =>
         {
             Assert.That(Rendered.Attribute(markup, "data-xps-widget"), Is.EqualTo("resultStats"));
-            Assert.That(
-                Rendered.Json(markup, "data-xps-config").GetProperty("emptyText").GetString(),
-                Is.EqualTo("Start typing."));
+            Assert.That(config.GetProperty("textTemplate").GetString(), Is.EqualTo("{total} hits in {tookMs} ms"));
+            Assert.That(config.GetProperty("emptyText").GetString(), Is.EqualTo("Start typing."));
         });
     }
 

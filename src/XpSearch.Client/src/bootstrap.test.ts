@@ -127,6 +127,57 @@ describe('mountAll (spec 7.1)', () => {
     expect(requests[0]?.facets?.sort()).toEqual(['contentType', 'tags']);
   });
 
+  it('merges the instance config of every mount, so a late results widget still sets pageSize and fields', async () => {
+    registerWidgetType('facetList', (config) =>
+      facetWidget(config as { container: HTMLElement; attribute: string })
+    );
+    // The order an editor happens to drop widgets in: the facet list first, the results widget last.
+    mount({
+      'data-xps-widget': 'facetList',
+      'data-xps-instance-config': '{"index":"site-content"}',
+      'data-xps-config': '{"attribute":"tags"}',
+    });
+    mount({
+      'data-xps-widget': 'facetList',
+      'data-xps-instance-config':
+        '{"index":"site-content","initialState":{"pageSize":12},"fields":["title","url"]}',
+      'data-xps-config': '{"attribute":"contentType"}',
+    });
+
+    started.push(...mountAll());
+    await vi.waitFor(() => expect(requests).toHaveLength(1));
+    expect(requests[0]?.pageSize).toBe(12);
+    expect(requests[0]?.fields).toEqual(['title', 'url']);
+  });
+
+  it('warns once per conflicting key and keeps the first value', async () => {
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    registerWidgetType('facetList', (config) =>
+      facetWidget(config as { container: HTMLElement; attribute: string })
+    );
+    mount({
+      'data-xps-widget': 'facetList',
+      'data-xps-instance-config': '{"index":"index-a"}',
+      'data-xps-config': '{"attribute":"tags"}',
+    });
+    mount({
+      'data-xps-widget': 'facetList',
+      'data-xps-instance-config': '{"index":"index-b"}',
+      'data-xps-config': '{"attribute":"contentType"}',
+    });
+    mount({
+      'data-xps-widget': 'facetList',
+      'data-xps-instance-config': '{"index":"index-c"}',
+      'data-xps-config': '{"attribute":"author"}',
+    });
+
+    started.push(...mountAll());
+    await vi.waitFor(() => expect(requests).toHaveLength(1));
+    expect(requests[0]?.index).toBe('index-a');
+    expect(consoleWarn.mock.calls).toHaveLength(1);
+    expect(consoleWarn.mock.calls[0]?.[0]).toMatch(/conflicting data-xps-instance-config values for "index"/);
+  });
+
   it('skips an unknown widget type with a console error instead of throwing', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     registerWidgetType('facetList', (config) =>

@@ -1,13 +1,12 @@
 using Kentico.Xperience.Admin.Base.Forms;
 
 using XpSearch.Admin.Forms;
+using XpSearch.Core;
 using XpSearch.Core.Abstractions;
-using XpSearch.Widgets;
-using XpSearch.Widgets.Mounting;
-using XpSearch.Widgets.Options;
+using XpSearch.Core.Facets;
 
 [assembly: RegisterFormComponentConfigurator(
-    XpSearchWidgetConstants.FacetAttributeConfiguratorIdentifier,
+    XpSearchConstants.FacetAttributeConfiguratorIdentifier,
     typeof(FacetAttributeConfigurator))]
 
 namespace XpSearch.Admin.Forms;
@@ -20,7 +19,8 @@ namespace XpSearch.Admin.Forms;
 /// Dependent-field pattern from
 /// https://docs.kentico.com/documentation/developers-and-admins/customization/extend-the-administration-interface/ui-form-components/editing-components/configure-editing-component-state.
 /// Registered under a string identifier so live-site widget properties can reference it without a
-/// dependency on <c>Kentico.Xperience.Admin</c>.
+/// dependency on <c>Kentico.Xperience.Admin</c>, and it reaches the option-building logic through
+/// <c>XpSearch.Core</c> so this package does not depend on <c>XpSearch.Widgets</c> (spec §2.2).
 /// </remarks>
 public sealed class FacetAttributeConfigurator : FormComponentConfigurator<DropDownComponent>
 {
@@ -43,7 +43,7 @@ public sealed class FacetAttributeConfigurator : FormComponentConfigurator<DropD
         ArgumentNullException.ThrowIfNull(formComponent);
         ArgumentNullException.ThrowIfNull(formFieldValueProvider);
 
-        formFieldValueProvider.TryGet<string>(nameof(XpSearchMountWidgetProperties.Index), out string? indexName);
+        formFieldValueProvider.TryGet<string>(XpSearchConstants.IndexPropertyName, out string? indexName);
 
         string? options = await FacetAttributeOptions.BuildOptionsAsync(schemaProvider, indexName, cancellationToken);
 

@@ -188,8 +188,10 @@ builds one `createSearch()` instance per group and starts it:
      data-xps-config='{"attribute":"brand","label":"Brand"}'></div>
 ```
 
-- Instance options come from `data-xps-instance-config` on **any** mount in the group — the first one
-  that parses and names an `index` wins — so widgets can be dropped in any order.
+- Instance options are **merged** from the `data-xps-instance-config` of every mount in the group, so an
+  option only one widget knows still applies wherever that widget sits. The first definition of a key
+  wins; a mount that disagrees produces one `console.warn` naming the key. The group needs an `index`
+  from at least one mount.
 - The UMD bundle runs `mountAll()` itself on `DOMContentLoaded`. From a bundler, call
   `mountAll(root = document)` after your `registerWidgetType` calls; already-mounted elements are
   skipped, so it is safe to call again after injecting markup.
@@ -219,7 +221,7 @@ and renders the editor-only unconfigured block. You never hand-write a mount div
 using Kentico.PageBuilder.Web.Mvc;
 using Kentico.Xperience.Admin.Base.FormAnnotations;
 
-using XpSearch.Widgets;
+using XpSearch.Core;
 using XpSearch.Widgets.Mounting;
 using XpSearch.Widgets.Options;
 
@@ -238,7 +240,7 @@ public sealed class DropdownFacetWidgetProperties : XpSearchMountWidgetPropertie
     // The attribute drop-down is filled from the selected index's facetable fields, and hidden
     // until an index is chosen. `Index` must be ordered before it, which the base class guarantees.
     [DropDownComponent(Label = "Attribute", Order = OrderFirstWidgetProperty)]
-    [FormComponentConfiguration(XpSearchWidgetConstants.FacetAttributeConfiguratorIdentifier, nameof(Index))]
+    [FormComponentConfiguration(XpSearchConstants.FacetAttributeConfiguratorIdentifier, nameof(Index))]
     public string Attribute { get; set; } = string.Empty;
 
     [TextInputComponent(Label = "Label", Order = OrderFirstWidgetProperty + 10)]

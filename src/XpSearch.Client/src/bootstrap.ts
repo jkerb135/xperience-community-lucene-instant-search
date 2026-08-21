@@ -9,6 +9,8 @@
  *        data-xps-config='{"attribute":"contentType","limit":10}'></div>
  *
  * Mounts are grouped by `data-xps-instance` (default `"default"`), one `createSearch()` per group.
+ * The group's `data-xps-instance-config` objects are merged, so an option only one widget knows -
+ * the Page Builder results widget's page size and fields - applies wherever the editor placed it.
  * Nothing here throws: a misconfigured mount is a console error and a skipped widget.
  */
 import { createSearch } from './instance';
@@ -106,16 +108,34 @@ export function mountAll(root: ParentNode | undefined = globalThis.document): Se
 }
 
 function readInstanceOptions(id: string, elements: HTMLElement[]): XpSearchOptions | undefined {
-  // Instance options come from `data-xps-instance-config` on any mount in the group; the first
-  // one that parses wins, so the Page Builder widgets can all emit it without agreeing on order.
+  // Instance options are merged across every mount of the group rather than taken from the first one,
+  // so a widget that contributes an option the others cannot know (`initialState.pageSize`, `fields`)
+  // works wherever an editor dropped it. The first definition of a key wins; a later mount that
+  // disagrees is a warning, never a silent override.
+  const merged: Record<string, unknown> = {};
+  const conflicts = new Set<string>();
   for (const element of elements) {
     const raw = element.dataset['xpsInstanceConfig'];
     if (!raw) continue;
     const parsed = parseJson(raw, element, 'data-xps-instance-config');
-    if (parsed && typeof parsed['index'] === 'string' && parsed['index'] !== '') {
-      return parsed as unknown as XpSearchOptions;
+    if (!parsed) continue;
+    for (const [key, value] of Object.entries(parsed)) {
+      if (!(key in merged)) {
+        merged[key] = value;
+      } else if (!conflicts.has(key) && JSON.stringify(merged[key]) !== JSON.stringify(value)) {
+        conflicts.add(key);
+        console.warn(
+          `[xpsearch] instance "${id}" has conflicting data-xps-instance-config values for "${key}"; keeping the first one. Every widget of one instance must agree.`,
+          element
+        );
+      }
     }
   }
+
+  if (typeof merged['index'] === 'string' && merged['index'] !== '') {
+    return merged as unknown as XpSearchOptions;
+  }
+
   console.error(
     `[xpsearch] mount group "${id}" has no usable data-xps-instance-config with an "index"; skipping ${elements.length} mount(s).`
   );

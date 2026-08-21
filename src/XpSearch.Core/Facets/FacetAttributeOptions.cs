@@ -1,15 +1,16 @@
 using XpSearch.Core.Abstractions;
 
-namespace XpSearch.Widgets.Options;
+namespace XpSearch.Core.Facets;
 
 /// <summary>
 /// Builds the option list of the facet attribute drop-down from an index's real schema, so an editor
 /// picks a facetable field instead of typing a field name (spec §7.4).
 /// </summary>
 /// <remarks>
-/// The logic lives here rather than in the form component configurator so it can be exercised without
-/// the administration packages; <c>XpSearch.Admin</c>'s <c>FacetAttributeConfigurator</c> is a shell
-/// around it.
+/// The logic lives here rather than in the form component configurator for two reasons: it can be
+/// exercised without the administration packages, and <c>XpSearch.Admin</c> - which hosts the
+/// configurator - must not depend on <c>XpSearch.Widgets</c> (spec §2.2). The configurator is a shell
+/// around this method.
 /// </remarks>
 public static class FacetAttributeOptions
 {

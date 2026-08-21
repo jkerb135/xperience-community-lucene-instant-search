@@ -266,7 +266,15 @@ resultStats({
 |---|---|---|
 | `container` | — | Selector or element. Required. |
 | `templates.text` | `46 results in 14 ms` | `(data, helpers) => Renderable`. `data` is the render state: `total`, `tookMs`, `query`, `page`, `totalPages`, `pageSize`, `hasResults`. |
+| `textTemplate` | — | A plain string with `{total}`, `{tookMs}`, `{query}`, `{page}` and `{totalPages}` placeholders, for callers that cannot pass a function — the Page Builder stats widget's **Text template** property. The template and every substituted value are escaped, so markup in it is shown rather than rendered. Numbers use `formatNumber`. `templates.text` wins when both are given. |
 | `emptyText` | `'Type to search.'` | Shown before the first response. |
+
+```js
+resultStats({
+  container: '#search-stats',
+  textTemplate: '{total} results for "{query}" — page {page} of {totalPages}',
+});
+```
 
 Markup: `<div class="xps xps-result-stats">` (plus `--empty`) containing `xps-result-stats__text`, and
 in the default template `xps-result-stats__time` around the timing. **Not** a live region — `results`

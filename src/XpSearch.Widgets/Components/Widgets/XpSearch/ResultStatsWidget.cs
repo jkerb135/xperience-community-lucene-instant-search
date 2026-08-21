@@ -21,10 +21,17 @@ namespace XpSearch.Widgets.Components.Widgets.XpSearch;
 public sealed class ResultStatsWidgetProperties : XpSearchMountWidgetProperties
 {
     /// <summary>
-    /// Gets or sets the text shown before the first search runs. The result text itself is a
-    /// JavaScript template (<c>templates.text</c>), not an editor field.
+    /// Gets or sets the wording of the result line. Empty keeps the built-in text
+    /// ("46 results in 14 ms").
     /// </summary>
-    [TextInputComponent(Label = "Text before the first search", Order = OrderFirstWidgetProperty)]
+    [TextInputComponent(
+        Label = "Text template",
+        ExplanationText = "Placeholders: {total}, {tookMs}, {query}, {page}, {totalPages}. Leave empty for the built-in text. Markup is shown, not rendered.",
+        Order = OrderFirstWidgetProperty)]
+    public string TextTemplate { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the text shown before the first search runs.</summary>
+    [TextInputComponent(Label = "Text before the first search", Order = OrderFirstWidgetProperty + 10)]
     public string EmptyText { get; set; } = string.Empty;
 }
 

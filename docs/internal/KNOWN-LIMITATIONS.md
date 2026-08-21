@@ -242,19 +242,6 @@ and how to lift it.
 - **Upgrade path:** none wanted — the alternative is shell shipping a colour, which is the rule
   that keeps it safe to load on any site.
 
-## `ResultsWidgetViewComponent.BuildInstanceConfig` in `XpSearch.Widgets`
-
-- **Simplified:** *Results per page* and *Fields to show* are instance-wide search options, but only the
-  Results widget knows them, and `mountAll()` takes the instance options from the **first** mount of a
-  `data-xps-instance` group that names an `index`. Every widget emits the index (so any one of them can
-  start the instance), which means the Results widget's two extra keys only apply when it happens to be
-  the first widget of its instance in page order.
-- **Ceiling:** a page whose Results widget sits after the search box or the facet list silently falls back
-  to the index's configured page size and field projection.
-- **Upgrade path:** merge the instance configs of a group in `readInstanceOptions`
-  (`XpSearch.Client/src/bootstrap.ts`) instead of returning the first usable one, later keys winning over
-  earlier ones. Backwards compatible: a group that agrees today produces the same object.
-
 ## `ResultsWidgetProperties.ResultTemplate` in `XpSearch.Widgets`
 
 - **Simplified:** `[RegisterSearchResultTemplate]` and the "Result template" drop-down register and select
@@ -277,15 +264,6 @@ and how to lift it.
   the mount rather than throwing.
 - **Upgrade path:** none needed on the C# side; the widgets start working when `suggestions` and
   `loadMore` are added to `DEFAULT_WIDGETS` in `XpSearch.Client/src/widgets/index.ts`.
-
-## `ResultStatsWidgetProperties` in `XpSearch.Widgets`
-
-- **Simplified:** spec §7.3 lists a "text template" property for the stats widget. The `resultStats`
-  JavaScript widget takes its result text as a *function* (`templates.text`), which an editor's text field
-  cannot supply, so the widget exposes only `emptyText` - the one string option the widget really has.
-- **Ceiling:** changing the "42 results in 14 ms" wording is a developer task, not an editor task.
-- **Upgrade path:** give the `resultStats` widget a string `textTemplate` option with `{total}` and
-  `{tookMs}` placeholders, then add the matching editor property; the mount contract does not change.
 
 ## `SortOptionsValidation.IsValidKey` in `XpSearch.Widgets`
 

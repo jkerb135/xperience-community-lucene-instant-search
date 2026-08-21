@@ -1,8 +1,5 @@
 using NUnit.Framework;
 
-using NSubstitute;
-
-using XpSearch.Core.Abstractions;
 using XpSearch.Core.Options;
 using XpSearch.Widgets.Options;
 using XpSearch.Widgets.Sorting;
@@ -21,56 +18,12 @@ using XpSearch.Widgets.Templates;
 namespace XpSearch.Widgets.Tests;
 
 /// <summary>
-/// The drop-downs an editor sees: index list, facet attributes from the real schema (§7.4), result
-/// templates (§5.8), and the sort option grammar (§7.3).
+/// The drop-downs an editor sees: the index list, the result templates (§5.8) and the sort option
+/// grammar (§7.3). The facet attribute options live in Core; see <c>FacetAttributeOptionsTests</c>.
 /// </summary>
 [TestFixture]
 internal sealed class EditorOptionsTests
 {
-    private static IIndexSchemaProvider SchemaProvider(string indexName, params SchemaField[] fields)
-    {
-        var provider = Substitute.For<IIndexSchemaProvider>();
-        provider.GetSchemaAsync(indexName, Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(new IndexSchema(indexName, fields)));
-        provider.GetSchemaAsync(Arg.Is<string>(name => name != indexName), Arg.Any<CancellationToken>())
-            .Returns<Task<IndexSchema>>(_ => throw new IndexNotFoundException("nope"));
-
-        return provider;
-    }
-
-    private static SchemaField Field(string name, bool facetable) =>
-        new(name, facetable ? SearchFieldKind.Taxonomy : SearchFieldKind.Text, true, facetable, false, true);
-
-    [Test]
-    public async Task The_attribute_dropdown_offers_the_facetable_fields_only()
-    {
-        var provider = SchemaProvider("site-content", Field("title", false), Field("tags", true), Field("contentType", true));
-
-        string? options = await FacetAttributeOptions.BuildOptionsAsync(provider, "site-content", CancellationToken.None);
-
-        Assert.That(options, Is.EqualTo("tags;tags\r\ncontentType;contentType"));
-    }
-
-    [TestCase("")]
-    [TestCase("   ")]
-    [TestCase(null)]
-    public async Task The_attribute_dropdown_is_hidden_while_no_index_is_selected(string? indexName)
-    {
-        var provider = SchemaProvider("site-content", Field("tags", true));
-
-        Assert.That(await FacetAttributeOptions.BuildOptionsAsync(provider, indexName, CancellationToken.None), Is.Null);
-    }
-
-    [Test]
-    public async Task The_attribute_dropdown_is_hidden_for_an_unknown_index_or_one_without_facets()
-    {
-        var unknown = SchemaProvider("site-content", Field("tags", true));
-        var noFacets = SchemaProvider("site-content", Field("title", false));
-
-        Assert.That(await FacetAttributeOptions.BuildOptionsAsync(unknown, "gone", CancellationToken.None), Is.Null);
-        Assert.That(await FacetAttributeOptions.BuildOptionsAsync(noFacets, "site-content", CancellationToken.None), Is.Null);
-    }
-
     [Test]
     public async Task The_index_dropdown_lists_every_registered_index()
     {

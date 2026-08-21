@@ -9,7 +9,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\XpSearch.Core\XpSearch.Core.csproj" />
-    <ProjectReference Include="..\XpSearch.Widgets\XpSearch.Widgets.csproj" />
   </ItemGroup>
 
   <ItemGroup>

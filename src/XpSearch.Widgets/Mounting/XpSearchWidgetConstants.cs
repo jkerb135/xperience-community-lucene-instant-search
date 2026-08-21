@@ -14,15 +14,6 @@ public static class XpSearchWidgetConstants
     /// <summary>Path of the shared mount view every widget renders.</summary>
     public const string MountViewPath = "~/Components/Widgets/XpSearch/_Mount.cshtml";
 
-    /// <summary>
-    /// Identifier of the form component configurator that fills a facet attribute drop-down from the
-    /// selected index's schema (spec §7.4). Pair it with a <c>DropDownComponent</c> property:
-    /// <c>[FormComponentConfiguration(XpSearchWidgetConstants.FacetAttributeConfiguratorIdentifier, nameof(Index))]</c>.
-    /// The configurator itself lives in <c>XpSearch.Admin</c>; the string identifier keeps live-site
-    /// code free of a dependency on <c>Kentico.Xperience.Admin</c>.
-    /// </summary>
-    public const string FacetAttributeConfiguratorIdentifier = "xpsearch.facetAttribute";
-
     /// <summary>Widget identifier of the search box widget.</summary>
     public const string SearchBoxIdentifier = "XpSearch.SearchBox";
 

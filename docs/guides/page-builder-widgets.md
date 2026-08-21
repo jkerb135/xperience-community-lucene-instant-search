@@ -76,7 +76,7 @@ Then, per widget:
 | Results | Results per page · Result template · Fields to show (one field name per line) |
 | Facet list | Attribute · Label · Operator (any / all of the selected values) · Values shown · Show a "show more" button |
 | Pagination | Style (numbered pages / load more button) |
-| Result stats | Text before the first search |
+| Result stats | Text template (`{total}`, `{tookMs}`, `{query}`, `{page}`, `{totalPages}`) · Text before the first search |
 | Sort selector | Sort options (one `key;Label` per line) · Label · Hide the label visually |
 | Suggestions | Mode (matching documents / popular queries) · Maximum items |
 
@@ -116,15 +116,13 @@ Section "Articles"      →  Instance ID: articles   (search box, results, pagin
 Section "Products"      →  Instance ID: products   (search box, facet list, results)
 ```
 
-**The rule to remember: every widget of one instance must select the same index.** Instance options are
-read from the first mount of a group, in page order, that names an index — every Xperience Search widget
-names one, so agreeing on the index is all that matters. Two widgets in one instance pointing at
-different indexes is a configuration error the widgets cannot detect for you.
-
-Two properties of the **Results** widget are instance-wide rather than per-widget: *Results per page* and
-*Fields to show*. They are emitted into `data-xps-instance-config`, so they take effect when the Results
-widget is the first widget of its instance in the page markup. Both are optional; leave them alone and
-the index defaults apply.
+**The rule to remember: every widget of one instance must select the same index.** The bootstrap merges
+the `data-xps-instance-config` of every mount in a group into one options object, so placement order does
+not matter — two properties of the **Results** widget that are instance-wide rather than per-widget,
+*Results per page* and *Fields to show*, apply wherever the editor dropped the Results widget. Where two
+mounts define the same key with different values the first one in page order wins and the browser console
+carries one warning naming the key and the instance; pointing two widgets of one instance at different
+indexes is exactly that case.
 
 ### An unconfigured widget never breaks a live page
 

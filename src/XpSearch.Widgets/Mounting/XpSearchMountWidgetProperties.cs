@@ -42,6 +42,8 @@ public abstract class XpSearchMountWidgetProperties : IWidgetProperties
         DataProviderType = typeof(XpSearchIndexOptionsProvider),
         Order = OrderIndex)]
     public string Index { get; set; } = string.Empty;
+    // The name of this property is a contract: XpSearchConstants.IndexPropertyName is what the facet
+    // attribute configurator in XpSearch.Admin reads through IFormFieldValueProvider.
 
     /// <summary>
     /// Gets or sets the identifier that couples this widget to the other widgets of the same search.
