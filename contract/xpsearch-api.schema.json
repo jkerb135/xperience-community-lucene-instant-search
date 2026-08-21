@@ -1,0 +1,349 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/your-org/your-monorepo/libraries/xperience-search/contract/xpsearch-api.schema.json",
+  "title": "XpSearchContract",
+  "description": "Wire contract for the Xperience Search HTTP API (spec 4.2, 4.3, 9.1). This schema is the single source of truth: the C# DTOs (XpSearch.Core.Contract) and the TypeScript types (@yourco/xperience-search) are generated from it and must never be hand-edited. Field names deliberately mirror Algolia's request/response shape. That is a documented feature, not an accident: a team moving off Algolia can swap the transport and keep most of their UI code. Endpoints: POST /api/xpsearch/query (SearchRequest -> SearchResponse), POST /api/xpsearch/suggest (SuggestRequest -> SuggestResponse), POST /api/xpsearch/events (EventRequest -> 202 Accepted with an empty body; there is no event response type). Every response carries the header X-XpSearch-Api-Version: 1; the contract version is the semver major of both the NuGet and npm packages, and routes never carry a version segment. Errors are RFC 9457 Problem Details (application/problem+json) as produced by ASP.NET Core's ProblemDetails - see https://learn.microsoft.com/aspnet/core/web-api/handle-errors - and are deliberately not redefined here.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "searchRequest": {
+      "description": "Placeholder property so the code generator emits SearchRequest. Never sent on the wire.",
+      "$ref": "#/$defs/SearchRequest"
+    },
+    "searchResponse": {
+      "description": "Placeholder property so the code generator emits SearchResponse. Never sent on the wire.",
+      "$ref": "#/$defs/SearchResponse"
+    },
+    "suggestRequest": {
+      "description": "Placeholder property so the code generator emits SuggestRequest. Never sent on the wire.",
+      "$ref": "#/$defs/SuggestRequest"
+    },
+    "suggestResponse": {
+      "description": "Placeholder property so the code generator emits SuggestResponse. Never sent on the wire.",
+      "$ref": "#/$defs/SuggestResponse"
+    },
+    "eventRequest": {
+      "description": "Placeholder property so the code generator emits EventRequest. Never sent on the wire.",
+      "$ref": "#/$defs/EventRequest"
+    }
+  },
+  "$defs": {
+    "SearchRequest": {
+      "type": "object",
+      "title": "SearchRequest",
+      "description": "Body of POST /api/xpsearch/query.",
+      "required": ["index"],
+      "additionalProperties": false,
+      "properties": {
+        "index": {
+          "type": "string",
+          "description": "Required. Code name of the Lucene index to search, as registered in the Xperience Search application. Must be non-empty; validated server-side, which answers 400 Problem Details when it is not."
+        },
+        "query": {
+          "type": "string",
+          "default": "",
+          "description": "Free-text query. An empty string (the default) means match all documents."
+        },
+        "page": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0,
+          "description": "Zero-based page number. Defaults to 0."
+        },
+        "hitsPerPage": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000,
+          "default": 20,
+          "description": "Number of hits per page. Defaults to 20. The maximum of 1000 is a contract ceiling; the effective maximum is enforced server-side and may be lower per configuration."
+        },
+        "facets": {
+          "type": "array",
+          "items": { "type": "string", "description": "Facetable attribute name." },
+          "description": "Attributes to compute facet counts for. Counts come back in SearchResponse.facets."
+        },
+        "facetFilters": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "description": "One OR group. Any matching value inside the group satisfies it.",
+            "items": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_.]*:.+$",
+              "description": "A filter in \"attribute:value\" form, for example \"contentType:Article\"."
+            }
+          },
+          "description": "Facet refinements. The outer array is ANDed, each inner array is ORed: [[\"contentType:Article\",\"contentType:Product\"],[\"tags:coffee\"]] means (Article OR Product) AND coffee."
+        },
+        "numericFilters": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][\\w.]*\\s*(<=|>=|<|>|=|!=)\\s*-?\\d+(\\.\\d+)?$",
+            "description": "A numeric comparison, for example \"price<=50\" or \"publishedAt>=1700000000\"."
+          },
+          "description": "Numeric refinements, ANDed together. Grammar: attribute, operator, number - where the attribute starts with a letter or underscore and may contain word characters and dots, the operator is one of <=, >=, <, >, =, != and the number is an optionally negative integer or decimal. Whitespace around the operator is allowed. Dates are compared as Unix epoch seconds."
+        },
+        "sort": {
+          "type": "string",
+          "default": "relevance",
+          "description": "Sort order: the literal \"relevance\" (the default, score descending) or a sort key configured for the index."
+        },
+        "highlight": {
+          "$ref": "#/$defs/HighlightOptions",
+          "description": "Highlighting options. Omit to use the defaults."
+        },
+        "attributesToRetrieve": {
+          "type": "array",
+          "items": { "type": "string", "description": "Attribute name to include on each hit." },
+          "description": "Attributes to project onto each hit. Omit to return the index's configured default projection. objectID is always returned."
+        },
+        "language": {
+          "type": "string",
+          "description": "Language code of the content to search, for example \"en\". Omit to use the current request's language."
+        },
+        "queryId": {
+          "type": "string",
+          "description": "Client-supplied correlation id echoed back on the response and used to tie click and conversion events to this search. Omit to have the server generate one."
+        },
+        "explain": {
+          "type": "boolean",
+          "default": false,
+          "description": "When true, each hit carries _rankingInfo explaining its score. Defaults to false. Used by the admin query tester (spec 8.4)."
+        }
+      }
+    },
+    "HighlightOptions": {
+      "type": "object",
+      "title": "HighlightOptions",
+      "description": "Per-request highlighting configuration.",
+      "additionalProperties": false,
+      "properties": {
+        "fields": {
+          "type": "array",
+          "items": { "type": "string", "description": "Field name to highlight." },
+          "description": "Fields to produce highlighted snippets for. Results land in Hit._highlights."
+        },
+        "preTag": {
+          "type": "string",
+          "default": "<mark>",
+          "description": "Markup inserted before each match. Defaults to \"<mark>\"."
+        },
+        "postTag": {
+          "type": "string",
+          "default": "</mark>",
+          "description": "Markup inserted after each match. Defaults to \"</mark>\"."
+        },
+        "snippetLength": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 200,
+          "description": "Maximum snippet length in characters. Defaults to 200."
+        }
+      }
+    },
+    "SearchResponse": {
+      "type": "object",
+      "title": "SearchResponse",
+      "description": "Body of a 200 response from POST /api/xpsearch/query.",
+      "required": ["hits", "page", "hitsPerPage", "nbHits", "nbPages", "processingTimeMs"],
+      "additionalProperties": false,
+      "properties": {
+        "hits": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Hit" },
+          "description": "The hits on the requested page, in ranked order."
+        },
+        "facets": {
+          "type": "object",
+          "description": "Facet counts, keyed by attribute name and then by facet value. Only attributes listed in SearchRequest.facets appear, and only values with a non-zero count in the current result set.",
+          "additionalProperties": {
+            "type": "object",
+            "description": "Counts for one attribute, keyed by facet value.",
+            "additionalProperties": {
+              "type": "integer",
+              "description": "Number of matching documents carrying this value."
+            }
+          }
+        },
+        "page": {
+          "type": "integer",
+          "description": "Zero-based number of the page that was returned."
+        },
+        "hitsPerPage": {
+          "type": "integer",
+          "description": "Page size that was applied, after server-side clamping."
+        },
+        "nbHits": {
+          "type": "integer",
+          "description": "Total number of matching documents across all pages."
+        },
+        "nbPages": {
+          "type": "integer",
+          "description": "Total number of pages available."
+        },
+        "processingTimeMs": {
+          "type": "integer",
+          "description": "Server-side processing time in milliseconds, excluding network time."
+        },
+        "queryId": {
+          "type": "string",
+          "description": "Correlation id for this search. Echoes SearchRequest.queryId when supplied, otherwise server-generated. Send it back on click and conversion events."
+        }
+      }
+    },
+    "Hit": {
+      "type": "object",
+      "title": "Hit",
+      "description": "One search result. Deliberately an open object: objectID and the underscore-prefixed members are reserved by the contract, and every other property is a retrieved document attribute (title, url, summary, image, ...) whose set is decided by SearchRequest.attributesToRetrieve and the index configuration.",
+      "required": ["objectID"],
+      "additionalProperties": true,
+      "properties": {
+        "objectID": {
+          "type": "string",
+          "description": "Required. Stable unique identifier of the indexed document. Send it back on click and conversion events."
+        },
+        "_score": {
+          "type": "number",
+          "description": "Final relevance score after boosts and rules. Higher is more relevant; values are only comparable within one response."
+        },
+        "_highlights": {
+          "type": "object",
+          "description": "Highlighted snippets keyed by field name. Present only for fields requested in SearchRequest.highlight.fields. Values are HTML-encoded content with the configured pre and post tags inserted, so they are safe to render as HTML.",
+          "additionalProperties": {
+            "type": "string",
+            "description": "Highlighted snippet for one field."
+          }
+        },
+        "_rankingInfo": {
+          "$ref": "#/$defs/RankingInfo",
+          "description": "Score explanation. Present only when SearchRequest.explain is true; absent otherwise."
+        },
+        "url": {
+          "type": "string",
+          "description": "Canonical link to the document, when the index projects one. Always root-relative (\"/articles/espresso-basics\") or absolute (\"https://example.com/articles/espresso-basics\"); never the app-relative \"~/...\" form Xperience's URL retriever returns - the server resolves that before it reaches the wire."
+        }
+      }
+    },
+    "RankingInfo": {
+      "type": "object",
+      "title": "RankingInfo",
+      "description": "Per-hit score explanation, returned only when SearchRequest.explain is true (spec 4.2, 8.4).",
+      "additionalProperties": false,
+      "properties": {
+        "baseScore": {
+          "type": "number",
+          "description": "Lucene score before any boost rule was applied."
+        },
+        "appliedBoosts": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "One applied boost or rule, formatted source:effect, for example \"freshness:+1.2\" or \"rule:pin-espresso-guide\"."
+          },
+          "description": "Boosts and rules that changed the score or position, in application order."
+        },
+        "position": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "One-based position of this hit in the final ranking, across all pages."
+        }
+      }
+    },
+    "SuggestRequest": {
+      "type": "object",
+      "title": "SuggestRequest",
+      "description": "Body of POST /api/xpsearch/suggest. Whether an index answers with query suggestions or with federated hits is server-side per-index configuration, not a request field.",
+      "required": ["index", "query"],
+      "additionalProperties": false,
+      "properties": {
+        "index": {
+          "type": "string",
+          "description": "Required. Code name of the Lucene index to suggest from. Must be non-empty; validated server-side, which answers 400 Problem Details when it is not."
+        },
+        "query": {
+          "type": "string",
+          "description": "Required. The partial input to prefix-match. May be an empty string, which yields no suggestions."
+        },
+        "maxItems": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 5,
+          "description": "Maximum number of suggestions to return. Defaults to 5. Enforced server-side."
+        },
+        "language": {
+          "type": "string",
+          "description": "Language code to suggest in, for example \"en\". Omit to use the current request's language."
+        }
+      }
+    },
+    "SuggestResponse": {
+      "type": "object",
+      "title": "SuggestResponse",
+      "description": "Body of a 200 response from POST /api/xpsearch/suggest.",
+      "required": ["suggestions"],
+      "additionalProperties": false,
+      "properties": {
+        "suggestions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Suggestion" },
+          "description": "Suggestions in display order, at most SuggestRequest.maxItems of them."
+        }
+      }
+    },
+    "Suggestion": {
+      "type": "object",
+      "title": "Suggestion",
+      "description": "One autocomplete entry.",
+      "required": ["text"],
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "Required. The text to display and, for a query suggestion, to search for when picked."
+        },
+        "hits": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Hit" },
+          "description": "Documents behind this suggestion, present only for indexes configured in federated-hits mode."
+        },
+        "url": {
+          "type": "string",
+          "description": "Link to follow when the suggestion is picked, present only for indexes configured in federated-hits mode. Root-relative or absolute, never the app-relative \"~/...\" form."
+        }
+      }
+    },
+    "EventRequest": {
+      "type": "object",
+      "title": "EventRequest",
+      "description": "Body of POST /api/xpsearch/events (spec 4.3, 9.1). The endpoint answers 202 Accepted with an empty body, so there is no response type. Logging is consent-gated and best-effort: a 202 means the event was accepted, not that an activity was written.",
+      "required": ["eventType", "queryId", "objectID"],
+      "additionalProperties": false,
+      "properties": {
+        "eventType": {
+          "type": "string",
+          "enum": ["click", "conversion"],
+          "description": "Required. \"click\" when the user opens a result, \"conversion\" when the developer signals a goal reached after a search."
+        },
+        "queryId": {
+          "type": "string",
+          "description": "Required. The queryId from the SearchResponse that produced the hit. This is what correlates the event back to its search."
+        },
+        "objectID": {
+          "type": "string",
+          "description": "Required. objectID of the hit the event is about."
+        },
+        "position": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "One-based position of the hit in the result list. Required when eventType is \"click\", ignored for \"conversion\"."
+        },
+        "index": {
+          "type": "string",
+          "description": "Code name of the index the search ran against. Omit to have the server resolve it from queryId."
+        }
+      }
+    }
+  }
+}

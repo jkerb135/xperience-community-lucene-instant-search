@@ -1,0 +1,16 @@
+{
+  "name": "@yourco/xperience-search",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Xperience Search JavaScript client.",
+  "scripts": {
+    "contract:gen": "node scripts/contract.mjs",
+    "contract:check": "node scripts/contract.mjs --check",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "quicktype": "26.0.0",
+    "typescript": "7.0.2"
+  }
+}

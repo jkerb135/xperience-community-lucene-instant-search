@@ -1,0 +1,22 @@
+{
+  "index": "site-content",
+  "query": "espresso",
+  "page": 0,
+  "hitsPerPage": 20,
+  "facets": ["contentType", "tags", "language"],
+  "facetFilters": [
+    ["contentType:Article", "contentType:Product"],
+    ["tags:coffee"]
+  ],
+  "numericFilters": ["price<=50", "publishedAt>=1700000000"],
+  "sort": "relevance",
+  "highlight": {
+    "fields": ["title", "content"],
+    "preTag": "<mark>",
+    "postTag": "</mark>",
+    "snippetLength": 200
+  },
+  "attributesToRetrieve": ["title", "url", "summary", "image"],
+  "language": "en",
+  "queryId": "generated-guid"
+}

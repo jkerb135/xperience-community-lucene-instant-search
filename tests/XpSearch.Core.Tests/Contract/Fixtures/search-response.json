@@ -1,0 +1,30 @@
+{
+  "hits": [
+    {
+      "objectID": "web-page-42-en",
+      "title": "Espresso Basics",
+      "url": "/articles/espresso-basics",
+      "summary": "...",
+      "_score": 8.42,
+      "_highlights": {
+        "title": "<mark>Espresso</mark> Basics",
+        "content": "...brewing <mark>espresso</mark> requires..."
+      },
+      "_rankingInfo": {
+        "baseScore": 6.1,
+        "appliedBoosts": ["freshness:+1.2", "rule:pin-espresso-guide"],
+        "position": 1
+      }
+    }
+  ],
+  "facets": {
+    "contentType": { "Article": 34, "Product": 12 },
+    "tags": { "coffee": 40, "brewing": 18 }
+  },
+  "page": 0,
+  "hitsPerPage": 20,
+  "nbHits": 46,
+  "nbPages": 3,
+  "processingTimeMs": 14,
+  "queryId": "generated-guid"
+}
