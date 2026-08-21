@@ -245,9 +245,12 @@ curl -s -X POST http://127.0.0.1:3131/api/xpsearch/query \
     }
     // …
   ],
-  "facets": { "contentType": { "Article": 12, "FAQ": 9 }, "tags": { "coffee": 9, "espresso": 9 } },
-  "page": 0, "hitsPerPage": 2, "nbHits": 12, "nbPages": 6,
-  "processingTimeMs": 6, "queryId": "a1ad9f75-…"
+  "facets": {
+    "contentType": { "Article": 9, "FAQ": 5, "Product": 7 },
+    "tags": { "coffee": 4, "espresso": 8, "grinder": 4, "beans": 1, "milk": 1 }
+  },
+  "page": 0, "hitsPerPage": 2, "nbHits": 9, "nbPages": 5,
+  "processingTimeMs": 6, "queryId": "0b1a883e-…"
 }
 ```
 
