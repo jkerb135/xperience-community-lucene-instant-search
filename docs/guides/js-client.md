@@ -220,16 +220,20 @@ The package ships a dependency-free mock of the search API, so you can build UI 
 exists. It serves 54 fixture documents with three facet attributes (`contentType`, `tags`, `language`),
 a numeric `price` and a `publishedAt`.
 
+It ships in the npm package as `mock/server.mjs`, with a `xpsearch-mock` bin entry:
+
 ```bash
-cd libraries/xperience-search/src/XpSearch.Client
-npm ci
-npm run mock            # xpsearch mock server on http://127.0.0.1:3131/api/xpsearch/query (54 documents)
-npm run demo            # the same corpus behind a full demo page on http://127.0.0.1:3131/
+npm install @yourco/xperience-search
+npx xpsearch-mock                                            # http://127.0.0.1:3131/api/xpsearch/query
+PORT=4000 npx xpsearch-mock                                  # another port
+node node_modules/@yourco/xperience-search/mock/server.mjs   # the same thing, no npx
 ```
 
-`npm run demo` builds the bundles and serves `src/XpSearch.Client/demo/index.html` with the theme
-stylesheets — a complete search page assembled from every default widget, plus a second, independent
-instance built from `.xps-mount` markup.
+Working in this repository instead? `cd src/XpSearch.Client && npm ci`, then `npm run repo:mock` for
+the same server from source, or `npm run repo:demo` to build the bundles and serve
+`src/XpSearch.Client/demo/index.html` with the theme stylesheets — a complete search page assembled
+from every default widget, plus a second, independent instance built from `.xps-mount` markup. The
+`repo:` scripts read `mock/*.ts`, `demo/` and `../../themes`, none of which are in the tarball.
 
 ```bash
 curl -s -X POST http://127.0.0.1:3131/api/xpsearch/query \

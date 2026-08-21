@@ -350,3 +350,26 @@ and how to lift it.
   and a restart resets every window. Fine for "stop a runaway import"; not a billing-grade quota.
 - **Upgrade path:** swap the partition's limiter for a distributed one backed by the cache the host
   already runs; the partition key is already the right shard key.
+
+## `"private": true` in `src/XpSearch.Client/package.json`
+
+- **Simplified:** the npm package is complete — `dist/`, `themes/shell.css`, `themes/default.css`, a
+  runnable `mock/server.mjs` and a `README.md`, all verified by `npm pack --dry-run` — but the
+  manifest still carries `"private": true`, so `npm publish` refuses it. Publishing is Phase 8's job
+  (registry, scope, provenance, the release workflow); nothing about the tarball's contents is
+  waiting on it.
+- **Ceiling:** a JavaScript-only consumer cannot `npm install @yourco/xperience-search` from a
+  registry. They install the tarball by path (`npm install ./yourco-xperience-search-0.1.0.tgz`),
+  which is what `samples/pack-and-build.mjs` does, and every documented entry point then resolves.
+- **Upgrade path:** delete the `private` field and set `publishConfig.access`, in the release unit.
+
+## Repo-only scripts in the published `package.json`
+
+- **Simplified:** npm has no mechanism to strip `scripts` from a published manifest, so the entries
+  that only work inside this repository (`build`, `test`, `typecheck`, `size`, `contract:*`,
+  `docs:*`, `repo:mock`, `repo:demo`) travel in the tarball. They are prefixed `repo:` where a
+  consumer might plausibly run them, and `README.md` says so.
+- **Ceiling:** `npm run repo:mock` inside an installed package fails with a missing `mock/server.ts`
+  rather than being absent from `npm run`'s listing.
+- **Upgrade path:** a `prepack` step that rewrites `package.json` (or `npm pkg delete scripts.*` in
+  the release workflow) if the noise ever matters.

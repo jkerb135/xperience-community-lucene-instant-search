@@ -19,22 +19,29 @@
       "import": "./dist/behaviors.mjs",
       "default": "./dist/behaviors.mjs"
     },
+    "./themes/shell.css": "./themes/shell.css",
+    "./themes/default.css": "./themes/default.css",
+    "./mock/server.mjs": "./mock/server.mjs",
     "./package.json": "./package.json"
   },
   "files": [
-    "dist"
+    "dist",
+    "themes",
+    "mock/server.mjs",
+    "README.md"
   ],
   "scripts": {
-    "contract:gen": "node scripts/contract.mjs",
+    "build": "rollup -c && tsc -p tsconfig.build.json && node scripts/package-assets.mjs",
     "contract:check": "node scripts/contract.mjs --check",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "build": "rollup -c && tsc -p tsconfig.build.json",
-    "size": "node scripts/size.mjs",
-    "mock": "node mock/server.ts",
-    "docs:migration": "node scripts/migration-guide.mjs",
+    "contract:gen": "node scripts/contract.mjs",
     "docs:check": "node scripts/migration-guide.mjs --check",
-    "demo": "npm run build && node mock/demo-server.ts"
+    "docs:migration": "node scripts/migration-guide.mjs",
+    "prepack": "npm run build",
+    "repo:demo": "npm run build && node mock/demo-server.ts",
+    "repo:mock": "node mock/server.ts",
+    "size": "node scripts/size.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/node": "26.2.0",
@@ -45,5 +52,8 @@
     "rollup": "4.62.5",
     "typescript": "7.0.2",
     "vitest": "4.1.11"
+  },
+  "bin": {
+    "xpsearch-mock": "./mock/server.mjs"
   }
 }

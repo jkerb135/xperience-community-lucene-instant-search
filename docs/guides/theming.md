@@ -6,8 +6,8 @@ entirely by CSS custom properties. Load both and override a couple of variables,
 widget set matches your site:
 
 ```html
-<link rel="stylesheet" href="/node_modules/@yourco/xperience-search/themes/shell.css">
-<link rel="stylesheet" href="/node_modules/@yourco/xperience-search/themes/default.css">
+<link rel="stylesheet" href="/css/xpsearch/shell.css">
+<link rel="stylesheet" href="/css/xpsearch/default.css">
 <style>
   .xps {
     --xps-color-accent: #b8005c;
@@ -26,8 +26,12 @@ documented class names — see [using shell on its own](#using-shell-on-its-own)
 
 | Consumer | Path |
 |---|---|
-| npm | `@yourco/xperience-search/themes/shell.css`, `.../themes/default.css` |
-| In this repository | `libraries/xperience-search/themes/src/shell.css`, `themes/src/default.css` — `src/` is the source location; the packages ship the same two files at the root of their theme folder. |
+| Xperience site | `<xps-search-assets />` emits both `<link>` tags; the `YourCo.Xperience.Search.Widgets` package serves them as static web assets from `/_content/YourCo.Xperience.Search.Widgets/xpsearch/`. |
+| npm | `@yourco/xperience-search/themes/shell.css` and `.../themes/default.css` are package exports: `import '@yourco/xperience-search/themes/shell.css'` from a bundler, or copy the two files into the folder your site serves CSS from. |
+| In this repository | `themes/src/shell.css` and `themes/src/default.css` — the source location. Both packages ship those exact two files. |
+
+`node_modules` is not usually web-served, so the `<link>` snippet above points at wherever your build
+put them rather than at the package folder.
 
 Load `shell.css` first. `default.css` assumes it.
 
