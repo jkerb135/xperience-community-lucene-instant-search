@@ -112,7 +112,7 @@
 .xps-suggestions__input,
 .xps-facet-list__search-input,
 .xps-range-filter__input,
-.xps-sort-select__select {
+.xps-select__control {
   background-color: var(--xps-color-surface);
   color: var(--xps-color-text);
   border: 1px solid var(--xps-color-border);

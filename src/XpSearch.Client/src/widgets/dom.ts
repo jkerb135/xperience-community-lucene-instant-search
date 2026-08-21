@@ -19,20 +19,38 @@ export function resolveContainer(
 }
 
 const usedIds = new Set<string>();
-let anonymous = 0;
+/** container -> widget name -> the `xps-{instance}-{widget}` prefix already handed out for it. */
+const bases = new WeakMap<HTMLElement, Map<string, string>>();
 
 /**
- * The `xps-{instance}-{widget}` id prefix of MARKUP.md rule 4. The instance is the mount's
- * `data-xps-instance` or the container's id; ids must be unique across the page, so a repeat
- * gets a numeric suffix.
+ * The element id of one part of one widget, following MARKUP.md rule 4:
+ * `xps-{instance}-{widget}-{part}`.
+ *
+ * The instance is the mount's `data-xps-instance`, else the container's own `id`, else
+ * `default` — a Page Builder mount element carries no `id`, so `data-xps-instance` is the only
+ * thing that distinguishes two instances on one page. Ids must be unique across the page, so the
+ * second widget of the same name in the same instance gets `-2` appended to the `{widget}`
+ * segment (`xps-search-1-sort-select-2-select`), the third `-3`, and so on.
+ *
+ * Every part of the same widget in the same container shares one prefix, so calling this once per
+ * part is safe and a re-render does not renumber anything.
  */
-export function idBase(container: HTMLElement, widget: string): string {
-  const instance = container.dataset['xpsInstance'] || container.id || `s${++anonymous}`;
-  const base = `xps-${instance}-${widget}`;
-  let unique = base;
-  for (let n = 2; usedIds.has(unique); n++) unique = `${base}-${n}`;
-  usedIds.add(unique);
-  return unique;
+export function widgetId(container: HTMLElement, widget: string, part: string): string {
+  let perWidget = bases.get(container);
+  if (!perWidget) {
+    perWidget = new Map<string, string>();
+    bases.set(container, perWidget);
+  }
+  let base = perWidget.get(widget);
+  if (base === undefined) {
+    const instance = container.dataset['xpsInstance'] || container.id || 'default';
+    const prefix = `xps-${instance}-${widget}`;
+    base = prefix;
+    for (let n = 2; usedIds.has(base); n++) base = `${prefix}-${n}`;
+    usedIds.add(base);
+    perWidget.set(widget, base);
+  }
+  return `${base}-${part}`;
 }
 
 /**

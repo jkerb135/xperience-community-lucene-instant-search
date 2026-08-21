@@ -368,16 +368,22 @@
   gap: calc(var(--xps-space) / 2);
 }
 
-.xps-sort-select {
+/* The shared labelled-select block. Available to custom widgets; sortSelect uses it too, so
+   there is one themed <select> in the product rather than one per widget. */
+.xps-select {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: calc(var(--xps-space) / 2);
 }
 
-.xps-sort-select__select {
+.xps-select__control {
   min-height: 2.25rem;
   padding: calc(var(--xps-space) / 4) calc(var(--xps-space) / 2);
+}
+
+.xps-select--disabled {
+  opacity: 0.6;
 }
 
 .xps-active-filters__list {

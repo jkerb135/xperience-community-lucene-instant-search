@@ -11,6 +11,7 @@ import type { SearchRequest, SearchResponse } from '../contract/generated';
 import { createSearch } from '../instance';
 import type { SearchInstance, Widget } from '../types';
 import { html } from '../templates/html';
+import { widgetId } from './dom';
 import {
   clearFilters,
   activeFilters,
@@ -628,10 +629,11 @@ describe('sortSelect', () => {
     const host = container('sort');
     search = start([sortSelect({ container: host, items })]);
     const root = host.querySelector('.xps-sort-select') as HTMLElement;
-    expect(classesOf(root)).toEqual(['xps', 'xps-sort-select']);
+    expect(classesOf(root)).toEqual(['xps', 'xps-sort-select', 'xps-select']);
     const label = root.querySelector('label') as HTMLLabelElement;
     const select = root.querySelector('select') as HTMLSelectElement;
-    expect(classesOf(label)).toEqual(['xps-sort-select__label']);
+    expect(classesOf(label)).toEqual(['xps-select__label']);
+    expect(classesOf(select)).toEqual(['xps-select__control']);
     expect(label.htmlFor).toBe(select.id);
     expect(select.name).toBe('sort');
     expect([...select.options].map((option) => option.value)).toEqual(['relevance', 'date_desc']);
@@ -804,5 +806,41 @@ describe('request parameters', () => {
     search = start([facetList({ container: host, attribute: 'tags' })]);
     await settled(search);
     expect((calls[0]?.body as unknown as SearchRequest).facets).toEqual(['tags']);
+  });
+});
+
+describe('widgetId (MARKUP.md rule 4)', () => {
+  const el = (attrs: Record<string, string> = {}): HTMLElement => {
+    const node = document.createElement('div');
+    for (const [name, value] of Object.entries(attrs)) node.setAttribute(name, value);
+    return node;
+  };
+
+  it('prefers data-xps-instance over the container id', () => {
+    const node = el({ 'data-xps-instance': 'search-1', id: 'ignored' });
+    expect(widgetId(node, 'wid-a', 'select')).toBe('xps-search-1-wid-a-select');
+  });
+
+  it('falls back to the container id, then to "default"', () => {
+    expect(widgetId(el({ id: 'facet-brand' }), 'wid-b', 'label')).toBe(
+      'xps-facet-brand-wid-b-label'
+    );
+    expect(widgetId(el(), 'wid-c', 'input')).toBe('xps-default-wid-c-input');
+  });
+
+  it('gives every part of one widget the same prefix, render after render', () => {
+    const node = el({ 'data-xps-instance': 'search-2' });
+    expect(widgetId(node, 'wid-d', 'label')).toBe('xps-search-2-wid-d-label');
+    expect(widgetId(node, 'wid-d', 'select')).toBe('xps-search-2-wid-d-select');
+    expect(widgetId(node, 'wid-d', 'label')).toBe('xps-search-2-wid-d-label');
+  });
+
+  it('suffixes the widget segment when the same widget is mounted twice in one instance', () => {
+    const first = el({ 'data-xps-instance': 'search-3' });
+    const second = el({ 'data-xps-instance': 'search-3' });
+    const third = el({ 'data-xps-instance': 'search-3' });
+    expect(widgetId(first, 'wid-e', 'select')).toBe('xps-search-3-wid-e-select');
+    expect(widgetId(second, 'wid-e', 'select')).toBe('xps-search-3-wid-e-2-select');
+    expect(widgetId(third, 'wid-e', 'select')).toBe('xps-search-3-wid-e-3-select');
   });
 });
