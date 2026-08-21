@@ -241,3 +241,54 @@ and how to lift it.
   guide and in `themes/MARKUP.md`, but nothing enforces it.
 - **Upgrade path:** none wanted — the alternative is shell shipping a colour, which is the rule
   that keeps it safe to load on any site.
+
+## `LuceneQuiescenceWaiter` in `XpSearch.Ingestion/Indexing/ExternalDocumentReplayLuceneClient.cs`
+
+- **Simplified:** the post-rebuild replay decides that the integration's rebuild has finished by
+  polling `ILuceneClient.GetStatistics` every two seconds until the index's last-write time stops
+  changing, bounded by `XpSearchIngestionOptions.ReplayTimeout` (two minutes). There is no API that
+  reports "the rebuild queue is drained": `LuceneQueueWorker` is `internal` and publishes the new index
+  generation at the end of its batch.
+- **Ceiling:** a naive quiescence heuristic. A rebuild that stalls for longer than the poll interval
+  mid-way looks finished, and the replay can write into the outgoing index generation; a rebuild slower
+  than the timeout is not waited for at all. Nothing is lost either way — the rows stay in
+  `XpSearch.ExternalDocument` and the next push or rebuild rewrites them — but the pushed documents can
+  be missing from search until then.
+- **Upgrade path:** if the integration ever raises a rebuild-completed event, or exposes the published
+  index generation, replace the body of `LuceneQuiescenceWaiter.WaitAsync` with a wait on that. The
+  seam (`IRebuildCompletionWaiter`) already exists and is a single registration.
+
+## Facet counts for pushed documents in `ExternalDocumentFactory` (`XpSearch.Ingestion`)
+
+- **Simplified:** a `string[]` (taxonomy) attribute on an externally pushed document is written as plain
+  indexed terms plus the `_text` and `_label` companions, not as a `FacetField`. Facet fields have to be
+  registered in the strategy's `FacetsConfig` before `DefaultLuceneClient` builds the document, and an
+  external document has no strategy to register them on.
+- **Ceiling:** pushed documents can be *filtered* by such an attribute and their values appear in
+  results, but they do not contribute to the facet counts a `facetList` widget renders, because those
+  come from the taxonomy sidecar. An index mixing Xperience content and pushed documents shows counts
+  that are lower than the result totals.
+- **Upgrade path:** have the ingestion writer register the dimensions on the index's
+  `XpSearchIndexingStrategy` instance (it already owns a shared `FacetsConfig`) before upserting, or
+  write the taxonomy sidecar directly through `ILuceneIndexService.UseIndexAndTaxonomyWriter`.
+
+## API key and schema administration in `XpSearch.Ingestion`
+
+- **Simplified:** keys are created in code through `IApiKeyService.CreateAsync` and schemas are declared
+  in code with `[XpSearchSchema]` / `[XpSearchField]` (or in options). Spec §10.3 and §10.8 also ask for
+  both to be editable in the admin UI, on the Search tuning application.
+- **Ceiling:** a non-developer cannot mint or revoke an ingestion key, change a field's flags, or read
+  the ingestion log without SQL. The data is all there — `XpSearch.ApiKey` and `XpSearch.IngestionLog`
+  are installed and written to — but nothing renders it.
+- **Upgrade path:** the Admin unit adds three UI pages over the existing module classes and a schema
+  editor that writes into `XpSearchIngestionOptions.Indexes[...]`; no change to this package is needed
+  beyond exposing the key listing.
+
+## Rate limiting in `XpSearchIngestionServiceCollectionExtensions.PartitionByKey`
+
+- **Simplified:** the per-key rate limit is ASP.NET Core's in-memory fixed-window limiter, partitioned by
+  the key prefix (or the remote address when there is no key).
+- **Ceiling:** the window is per instance. Behind two web heads a key gets twice the configured budget,
+  and a restart resets every window. Fine for "stop a runaway import"; not a billing-grade quota.
+- **Upgrade path:** swap the partition's limiter for a distributed one backed by the cache the host
+  already runs; the partition key is already the right shard key.
