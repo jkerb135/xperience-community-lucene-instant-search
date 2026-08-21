@@ -1,20 +1,21 @@
 using Lucene.Net.Index;
 using Lucene.Net.Search;
 
-using XpSearch.Core.Filters;
+using XpSearch.Core.Contract;
 
 namespace XpSearch.Core.Pipeline.Stages;
 
 /// <summary>
-/// Applies <c>facetFilters</c>: the outer array is ANDed, each inner array is ORed.
+/// Applies <c>filters.facets</c>: entries are ANDed, and the values inside one entry combine
+/// according to its <c>operator</c> (<c>or</c> by default, <c>and</c> on request).
 /// </summary>
 /// <remarks>
-/// A group that refines a single, not-yet-drilled dimension becomes a drill-down, so the execute
-/// stage can run it through <c>DrillSideways</c> and keep that dimension's counts answering "what if
-/// I picked another value" - the semantics a refinement list needs. Anything a drill-down cannot
-/// express (a group spanning several dimensions, a second group on an already-drilled dimension, or
-/// an index with no taxonomy sidecar) becomes an ordinary boolean MUST clause on the base query,
-/// which is correct but counts that dimension as filtered.
+/// An <c>or</c> entry on a not-yet-drilled dimension becomes a drill-down, so the execute stage can
+/// run it through <c>DrillSideways</c> and keep that dimension's counts answering "what if I picked
+/// another value" - the semantics a facet list needs. Anything a drill-down cannot express (an
+/// <c>and</c> entry, a second entry on an already-drilled dimension, or an index with no taxonomy
+/// sidecar) becomes an ordinary boolean clause on the base query, which is correct but counts that
+/// dimension as filtered.
 /// </remarks>
 public sealed class FacetFilterStage : ISearchStage
 {
@@ -33,20 +34,17 @@ public sealed class FacetFilterStage : ISearchStage
 
         var mustClauses = new List<Query>();
 
-        foreach (var group in context.FacetFilters)
+        foreach (var filter in context.FacetFilters)
         {
-            string dimension = group[0].Attribute;
-            bool singleDimension = group.All(refinement =>
-                string.Equals(refinement.Attribute, dimension, StringComparison.Ordinal));
+            bool disjunctive = (filter.Operator ?? FacetOperator.Or) == FacetOperator.Or;
 
-            if (context.FacetsConfig is not null && singleDimension && !context.DrillDown.ContainsKey(dimension))
+            if (disjunctive && context.FacetsConfig is not null && !context.DrillDown.ContainsKey(filter.Attribute))
             {
-                context.DrillDown[dimension] = [.. group.Select(refinement => refinement.Value)];
+                context.DrillDown[filter.Attribute] = filter.Values;
+                continue;
             }
-            else
-            {
-                mustClauses.Add(BuildOrClause(group));
-            }
+
+            mustClauses.Add(BuildClause(filter, disjunctive));
         }
 
         if (mustClauses.Count == 0)
@@ -65,17 +63,17 @@ public sealed class FacetFilterStage : ISearchStage
         return Task.CompletedTask;
     }
 
-    private static Query BuildOrClause(IReadOnlyList<FacetRefinement> group)
+    private static Query BuildClause(FacetFilter filter, bool disjunctive)
     {
-        var or = new BooleanQuery();
+        var query = new BooleanQuery();
 
-        foreach (var refinement in group)
+        foreach (string value in filter.Values)
         {
             // The strategy stores every facet value verbatim in a StringField named after the
             // dimension, so a plain term query is the non-taxonomy equivalent of a drill-down.
-            or.Add(new TermQuery(new Term(refinement.Attribute, refinement.Value)), Occur.SHOULD);
+            query.Add(new TermQuery(new Term(filter.Attribute, value)), disjunctive ? Occur.SHOULD : Occur.MUST);
         }
 
-        return or;
+        return query;
     }
 }

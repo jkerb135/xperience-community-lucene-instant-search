@@ -8,7 +8,7 @@
  * either with `html.raw(value)` or by nesting another `html` result. Always quote attribute
  * values — `class="${x}"`, never `class=${x}` — because escaping covers quotes, not spaces.
  */
-import type { Hit } from '../types';
+import type { Result } from '../types';
 
 const ESCAPES: Record<string, string> = {
   '&': '&amp;',
@@ -68,17 +68,18 @@ export function render(value: Renderable, container: Element): void {
 
 /**
  * The server's highlighted form of `field` (already HTML-encoded before the tags were inserted,
- * spec 4.6) with the shell class added to each `<mark>`; falls back to the escaped plain field.
+ * spec 4.6) with the shell class added to each `<mark>`; falls back to the escaped plain
+ * attribute of the same name.
  */
-export function highlight<TItem extends Record<string, unknown>>(
+export function highlight<TAttributes extends Record<string, unknown>>(
   field: string,
-  hit: Hit<TItem>
+  result: Result<TAttributes>
 ): TemplateResult {
-  const marked = hit._highlights?.[field];
+  const marked = result.highlights?.[field];
   if (typeof marked === 'string' && marked !== '') {
     return new TemplateResult(marked.replace(/<mark>/g, '<mark class="xps-highlight">'));
   }
-  const plain = (hit as Record<string, unknown>)[field];
+  const plain = (result.attributes as Record<string, unknown>)[field];
   return new TemplateResult(plain === null || plain === undefined ? '' : escapeHtml(String(plain)));
 }
 

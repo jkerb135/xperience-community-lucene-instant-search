@@ -45,7 +45,7 @@ const typescript = () => ({
 
 export default [
   {
-    input: { xpsearch: 'src/index.ts', connectors: 'src/connectors.ts' },
+    input: { xpsearch: 'src/index.ts', behaviors: 'src/behaviors.ts' },
     output: {
       dir: 'dist',
       format: 'es',

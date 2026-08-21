@@ -43,7 +43,7 @@ internal sealed class TestHarness : IDisposable
                 new FacetFilterStage(),
                 new NumericFilterStage(),
                 new ExecuteSearchStage(Index),
-                new CollectFacetsStage(new TaxonomyFacetProvider(), wrapped),
+                new CollectFacetsStage(new TaxonomyFacetProvider(Index), wrapped),
                 new HighlightStage(new LuceneHighlighter()),
                 new ProjectResponseStage()
             ]);

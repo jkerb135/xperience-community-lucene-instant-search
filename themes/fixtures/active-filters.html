@@ -1,0 +1,37 @@
+<!-- activeFilters — removable chips, one per active filter value -->
+
+<div class="xps xps-active-filters">
+  <h3 class="xps-active-filters__title xps-sr-only" id="xps-search-1-active-filters-title">Active filters</h3>
+  <ul class="xps-active-filters__list" aria-labelledby="xps-search-1-active-filters-title">
+    <li class="xps-active-filters__item">
+      <span class="xps-chip">
+        <span class="xps-chip__label"><span class="xps-chip__attribute">Content type</span> Article</span>
+        <button class="xps-chip__remove" type="button" aria-label="Remove filter Content type: Article">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </span>
+    </li>
+    <li class="xps-active-filters__item">
+      <span class="xps-chip">
+        <span class="xps-chip__label"><span class="xps-chip__attribute">Tags</span> espresso</span>
+        <button class="xps-chip__remove" type="button" aria-label="Remove filter Tags: espresso">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </span>
+    </li>
+    <li class="xps-active-filters__item">
+      <span class="xps-chip">
+        <span class="xps-chip__label"><span class="xps-chip__attribute">Price</span> 50 to 300</span>
+        <button class="xps-chip__remove" type="button" aria-label="Remove filter Price: 50 to 300">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </span>
+    </li>
+  </ul>
+</div>
+
+<!-- nothing filtered: the widget renders an empty list rather than disappearing, so layout is stable -->
+<div class="xps xps-active-filters xps-active-filters--empty">
+  <h3 class="xps-active-filters__title xps-sr-only" id="xps-search-2-active-filters-title">Active filters</h3>
+  <ul class="xps-active-filters__list" aria-labelledby="xps-search-2-active-filters-title"></ul>
+</div>

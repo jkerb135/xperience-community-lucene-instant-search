@@ -13,10 +13,10 @@ public enum SearchFieldKind
     /// <summary>An un-analyzed string, matched and sorted verbatim (URLs, code names, GUIDs).</summary>
     Keyword,
 
-    /// <summary>A number, indexed as a Lucene <c>double</c> and filterable with <c>numericFilters</c>.</summary>
+    /// <summary>A number, indexed as a Lucene <c>double</c> and filterable with <c>filters.numeric</c>.</summary>
     Number,
 
-    /// <summary>A date, indexed as Unix epoch seconds and filterable with <c>numericFilters</c>.</summary>
+    /// <summary>A date, indexed as Unix epoch seconds and filterable with <c>filters.numeric</c>.</summary>
     Date,
 
     /// <summary>An Xperience taxonomy field, indexed as a multi-valued facet dimension.</summary>
@@ -29,9 +29,9 @@ public enum SearchFieldKind
 /// <param name="Name">Lucene field name; also the facet dimension name for <see cref="SearchFieldKind.Taxonomy"/>.</param>
 /// <param name="Kind">What the field holds.</param>
 /// <param name="Searchable">Whether free-text queries match against the field.</param>
-/// <param name="Facetable">Whether the field can appear in <c>facets</c> and <c>facetFilters</c>.</param>
+/// <param name="Facetable">Whether the field can appear in <c>facets</c> and <c>filters.facets</c>.</param>
 /// <param name="Sortable">Whether the field can be used as a sort key (<c>name_asc</c> / <c>name_desc</c>).</param>
-/// <param name="Retrievable">Whether the field is stored and can appear in <c>attributesToRetrieve</c>.</param>
+/// <param name="Retrievable">Whether the field is stored and can appear in <c>fields</c>.</param>
 /// <param name="Boost">Index-time boost applied to the searchable field.</param>
 public sealed record SchemaField(
     string Name,

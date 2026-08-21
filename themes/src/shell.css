@@ -212,45 +212,45 @@
 }
 
 /* --------------------------------------------------------------------------
- * hits / infiniteHits
+ * results / loadMore
  * ------------------------------------------------------------------------ */
 
-.xps-hits,
-.xps-infinite-hits {
+.xps-results,
+.xps-load-more {
   display: flex;
   flex-direction: column;
   gap: var(--xps-space);
 }
 
-.xps-hits__list,
-.xps-infinite-hits__list {
+.xps-results__list,
+.xps-load-more__list {
   display: flex;
   flex-direction: column;
   gap: calc(var(--xps-space) * 2);
 }
 
-.xps-hits__empty {
+.xps-results__empty {
   display: flex;
   flex-direction: column;
   gap: calc(var(--xps-space) / 2);
 }
 
-.xps-hit {
+.xps-result {
   display: flex;
   align-items: flex-start;
   gap: var(--xps-space);
 }
 
-.xps-hit__media {
+.xps-result__media {
   flex: 0 0 auto;
   width: 6rem;
 }
 
-.xps-hit__image {
+.xps-result__image {
   display: block;
 }
 
-.xps-hit__body {
+.xps-result__body {
   display: flex;
   flex-direction: column;
   gap: calc(var(--xps-space) / 2);
@@ -258,77 +258,77 @@
   flex: 1 1 auto;
 }
 
-.xps-hit__meta {
+.xps-result__meta {
   display: flex;
   flex-wrap: wrap;
   gap: var(--xps-space);
 }
 
-.xps-hit--skeleton .xps-hit__body {
+.xps-result--skeleton .xps-result__body {
   gap: calc(var(--xps-space) / 2);
   width: 100%;
 }
 
-.xps-infinite-hits__sentinel {
+.xps-load-more__sentinel {
   height: 1px;
 }
 
-.xps-infinite-hits__load-more {
+.xps-load-more__load-more {
   align-self: flex-start;
 }
 
 /* --------------------------------------------------------------------------
- * refinementList / toggleRefinement
+ * facetList / toggleFilter
  * ------------------------------------------------------------------------ */
 
-.xps-refinement-list {
+.xps-facet-list {
   display: flex;
   flex-direction: column;
   gap: calc(var(--xps-space) / 2);
 }
 
-.xps-refinement-list__search-input {
+.xps-facet-list__search-input {
   width: 100%;
   min-height: 2.25rem;
   padding: calc(var(--xps-space) / 2);
 }
 
-.xps-refinement-list__list {
+.xps-facet-list__list {
   display: flex;
   flex-direction: column;
   gap: calc(var(--xps-space) / 2);
 }
 
-.xps-refinement-list__label,
-.xps-toggle-refinement__label {
+.xps-facet-list__label,
+.xps-toggle-filter__label {
   display: flex;
   align-items: center;
   gap: calc(var(--xps-space) / 2);
   cursor: pointer;
 }
 
-.xps-refinement-list__item--disabled .xps-refinement-list__label,
-.xps-toggle-refinement--disabled .xps-toggle-refinement__label {
+.xps-facet-list__item--disabled .xps-facet-list__label,
+.xps-toggle-filter--disabled .xps-toggle-filter__label {
   cursor: default;
   opacity: 0.55;
 }
 
-.xps-refinement-list__checkbox,
-.xps-toggle-refinement__checkbox {
+.xps-facet-list__checkbox,
+.xps-toggle-filter__checkbox {
   flex: 0 0 auto;
 }
 
-.xps-refinement-list__value,
-.xps-toggle-refinement__value {
+.xps-facet-list__value,
+.xps-toggle-filter__value {
   min-width: 0;
 }
 
-.xps-refinement-list__count,
-.xps-toggle-refinement__count {
+.xps-facet-list__count,
+.xps-toggle-filter__count {
   margin-inline-start: auto;
 }
 
-.xps-refinement-list__show-more {
+.xps-facet-list__show-more {
   align-self: flex-start;
 }
 
@@ -362,25 +362,25 @@
  * stats / sortBy / clearRefinements / currentRefinements
  * ------------------------------------------------------------------------ */
 
-.xps-stats {
+.xps-result-stats {
   display: flex;
   align-items: baseline;
   gap: calc(var(--xps-space) / 2);
 }
 
-.xps-sort-by {
+.xps-sort-select {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: calc(var(--xps-space) / 2);
 }
 
-.xps-sort-by__select {
+.xps-sort-select__select {
   min-height: 2.25rem;
   padding: calc(var(--xps-space) / 4) calc(var(--xps-space) / 2);
 }
 
-.xps-current-refinements__list {
+.xps-active-filters__list {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -388,29 +388,29 @@
 }
 
 /* --------------------------------------------------------------------------
- * autocomplete — combobox with a listbox popup
+ * suggestions — combobox with a listbox popup
  * https://www.w3.org/WAI/ARIA/apg/patterns/combobox/
  * ------------------------------------------------------------------------ */
 
-.xps-autocomplete {
+.xps-suggestions {
   position: relative;
   display: block;
 }
 
-.xps-autocomplete__field {
+.xps-suggestions__field {
   display: flex;
   align-items: center;
   gap: calc(var(--xps-space) / 2);
 }
 
-.xps-autocomplete__input {
+.xps-suggestions__input {
   flex: 1 1 auto;
   min-width: 0;
   min-height: 2.25rem;
   padding: calc(var(--xps-space) / 2);
 }
 
-.xps-autocomplete__panel {
+.xps-suggestions__panel {
   position: absolute;
   inset-inline: 0;
   top: 100%;
@@ -420,11 +420,11 @@
   overscroll-behavior: contain;
 }
 
-.xps-autocomplete__group-title {
+.xps-suggestions__group-title {
   padding: calc(var(--xps-space) / 2) var(--xps-space);
 }
 
-.xps-autocomplete__option {
+.xps-suggestions__option {
   display: flex;
   flex-direction: column;
   gap: calc(var(--xps-space) / 4);
@@ -432,8 +432,8 @@
   cursor: pointer;
 }
 
-.xps-autocomplete__empty,
-.xps-autocomplete__footer {
+.xps-suggestions__empty,
+.xps-suggestions__footer {
   padding: calc(var(--xps-space) / 2) var(--xps-space);
 }
 
@@ -441,64 +441,64 @@
  * rangeSlider
  * ------------------------------------------------------------------------ */
 
-.xps-range-slider {
+.xps-range-filter {
   display: flex;
   flex-direction: column;
   gap: calc(var(--xps-space) / 2);
 }
 
-.xps-range-slider__track {
+.xps-range-filter__track {
   display: flex;
   flex-direction: column;
   gap: calc(var(--xps-space) / 4);
 }
 
-.xps-range-slider__range {
+.xps-range-filter__range {
   width: 100%;
   margin: 0;
 }
 
-.xps-range-slider__inputs {
+.xps-range-filter__inputs {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: calc(var(--xps-space) / 2);
 }
 
-.xps-range-slider__input {
+.xps-range-filter__input {
   width: 6rem;
   min-height: 2.25rem;
   padding: calc(var(--xps-space) / 4) calc(var(--xps-space) / 2);
 }
 
 /* --------------------------------------------------------------------------
- * hierarchicalMenu
+ * categoryTree
  * ------------------------------------------------------------------------ */
 
-.xps-hierarchical-menu {
+.xps-category-tree {
   display: flex;
   flex-direction: column;
   gap: calc(var(--xps-space) / 2);
 }
 
-.xps-hierarchical-menu__list {
+.xps-category-tree__list {
   display: flex;
   flex-direction: column;
   gap: calc(var(--xps-space) / 4);
 }
 
-.xps-hierarchical-menu__item > .xps-hierarchical-menu__list {
+.xps-category-tree__item > .xps-category-tree__list {
   margin-top: calc(var(--xps-space) / 4);
   padding-inline-start: var(--xps-space);
 }
 
-.xps-hierarchical-menu__link {
+.xps-category-tree__link {
   display: flex;
   align-items: center;
   gap: calc(var(--xps-space) / 2);
   padding: calc(var(--xps-space) / 4) 0;
 }
 
-.xps-hierarchical-menu__count {
+.xps-category-tree__count {
   margin-inline-start: auto;
 }

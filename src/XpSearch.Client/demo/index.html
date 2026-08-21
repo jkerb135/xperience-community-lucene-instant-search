@@ -60,7 +60,7 @@
        data-xps-instance-config='{"index":"site-content","searchOnInitialLoad":true,"debounceMs":150}'
        data-xps-config='{"placeholder":"Search the archive…","label":"Search the archive","showLabel":true}'></div>
   <div class="xps-mount"
-       data-xps-widget="stats"
+       data-xps-widget="resultStats"
        data-xps-instance="footer-search"
        data-xps-config='{}'></div>
 </footer>
@@ -68,17 +68,17 @@
 <script src="../dist/xpsearch.umd.js"></script>
 <script>
   const {
-    searchBox, hits, refinementList, pagination, stats, sortBy,
-    clearRefinements, currentRefinements, toggleRefinement, html, highlight, formatNumber,
+    createSearch, searchBox, results, facetList, pagination, resultStats, sortSelect,
+    clearFilters, activeFilters, toggleFilter, html, highlight, formatNumber,
   } = xpsearch;
 
-  const search = xpsearch({
+  const search = createSearch({
     endpoint: '/api/xpsearch/query',
     index: 'site-content',
     routing: true,
     searchOnInitialLoad: true,
     debounceMs: 150,
-    initialState: { hitsPerPage: 6 },
+    initialState: { pageSize: 6 },
     highlight: { fields: ['title', 'content'], snippetLength: 160 },
   });
 
@@ -92,16 +92,16 @@
       autofocus: true,
     }),
 
-    sortBy({
+    sortSelect({
       container: '#search-sort',
       items: [
         { label: 'Relevance', value: 'relevance' },
-        { label: 'Newest first', value: 'date_desc' },
+        { label: 'Newest first', value: 'newest' },
         { label: 'Price, low to high', value: 'price_asc' },
       ],
     }),
 
-    refinementList({
+    facetList({
       container: '#facet-content-type',
       attribute: 'contentType',
       label: 'Content type',
@@ -110,7 +110,7 @@
       sortBy: ['count:desc', 'name:asc'],
     }),
 
-    refinementList({
+    facetList({
       container: '#facet-tags',
       attribute: 'tags',
       label: 'Tags',
@@ -119,34 +119,34 @@
       limit: 4,
     }),
 
-    toggleRefinement({
+    toggleFilter({
       container: '#toggle-english',
       attribute: 'language',
       value: 'en',
       label: 'English only',
     }),
 
-    currentRefinements({
+    activeFilters({
       container: '#search-current',
       attributeLabels: { contentType: 'Content type', tags: 'Tag', language: 'Language' },
     }),
 
-    clearRefinements({ container: '#search-clear' }),
+    clearFilters({ container: '#search-clear' }),
 
-    hits({
+    results({
       container: '#search-results',
       // A custom item template, using only the documented helpers (spec §5.4).
       templates: {
-        item: (hit, { html, highlight, formatNumber }) => html`
-          <article class="xps-hit">
-            <div class="xps-hit__body">
-              <h3 class="xps-hit__title">
-                <a class="xps-hit__link" href="${hit.url}">${highlight('title', hit)}</a>
+        item: (result, { html, highlight, formatNumber }) => html`
+          <article class="xps-result">
+            <div class="xps-result__body">
+              <h3 class="xps-result__title">
+                <a class="xps-result__link" href="${result.attributes.url}">${highlight('title', result)}</a>
               </h3>
-              <p class="xps-hit__snippet">${highlight('content', hit)}</p>
-              <ul class="xps-hit__meta">
-                <li class="xps-hit__meta-item">${hit.contentType}</li>
-                <li class="xps-hit__meta-item">${formatNumber(hit.price)} EUR</li>
+              <p class="xps-result__snippet">${highlight('content', result)}</p>
+              <ul class="xps-result__meta">
+                <li class="xps-result__meta-item">${result.attributes.contentType}</li>
+                <li class="xps-result__meta-item">${formatNumber(result.attributes.price)} EUR</li>
               </ul>
             </div>
           </article>`,

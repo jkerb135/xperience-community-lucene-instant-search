@@ -1,30 +1,38 @@
 {
-  "hits": [
+  "results": [
     {
-      "objectID": "web-page-42-en",
-      "title": "Espresso Basics",
-      "url": "/articles/espresso-basics",
-      "summary": "...",
-      "_score": 8.42,
-      "_highlights": {
+      "id": "web-page-42-en",
+      "score": 8.42,
+      "attributes": {
+        "title": "Espresso Basics",
+        "url": "/articles/espresso-basics",
+        "summary": "..."
+      },
+      "highlights": {
         "title": "<mark>Espresso</mark> Basics",
         "content": "...brewing <mark>espresso</mark> requires..."
       },
-      "_rankingInfo": {
+      "ranking": {
         "baseScore": 6.1,
-        "appliedBoosts": ["freshness:+1.2", "rule:pin-espresso-guide"],
+        "boosts": ["freshness:+1.2", "rule:pin-espresso-guide"],
         "position": 1
       }
     }
   ],
   "facets": {
-    "contentType": { "Article": 34, "Product": 12 },
-    "tags": { "coffee": 40, "brewing": 18 }
+    "contentType": [
+      { "value": "Article", "label": "Article", "count": 34 },
+      { "value": "Product", "label": "Product", "count": 12 }
+    ],
+    "tags": [
+      { "value": "coffee", "label": "Coffee", "count": 40 },
+      { "value": "brewing", "label": "Brewing", "count": 18 }
+    ]
   },
-  "page": 0,
-  "hitsPerPage": 20,
-  "nbHits": 46,
-  "nbPages": 3,
-  "processingTimeMs": 14,
+  "page": 1,
+  "pageSize": 20,
+  "total": 46,
+  "totalPages": 3,
+  "tookMs": 14,
   "queryId": "generated-guid"
 }

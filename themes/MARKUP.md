@@ -15,13 +15,13 @@ class named here appears in a fixture.
 ## Rules that apply to every widget
 
 1. **Every widget root carries two classes: `xps` and its own root class** — for example
-   `<div class="xps xps-hits">`. `default.css` declares its custom properties on `.xps`, so a
+   `<div class="xps xps-results">`. `default.css` declares its custom properties on `.xps`, so a
    widget is self-theming wherever it lands; `shell.css` scopes its reset and focus ring to
    `.xps` for the same reason. Wrapping a whole search page in one `.xps` element also works —
    the nested re-declaration is a no-op — and is the cheaper option when you override variables.
 2. **Prefix everything `xps-`, BEM-ish**: `block__element--modifier`. Modifiers live on the
    element they modify, and the element keeps its base class
-   (`class="xps-refinement-list__item xps-refinement-list__item--selected"`).
+   (`class="xps-facet-list__item xps-facet-list__item--selected"`).
 3. **Optional parts are toggled with the `hidden` attribute**, not by removing them from the DOM
    and not by a `--hidden` modifier. Shell has `.xps [hidden] { display: none !important }`, which
    also keeps a host stylesheet from revealing them.
@@ -41,13 +41,13 @@ class named here appears in a fixture.
   `prefers-color-scheme: dark` variable set in `default.css`. It is opt-in because the theme does
   not control the host page's background. Renderers should pass the attribute through from
   configuration, never set it themselves.
-- Shell gives `xps-autocomplete__panel` position but no surface, and leaves `xps-highlight` at the
+- Shell gives `xps-suggestions__panel` position but no surface, and leaves `xps-highlight` at the
   browser's default `<mark>` styling — both need a colour, which shell does not have. A site
   running shell alone supplies them.
 
 ## Utilities (available to custom widgets — spec §5.7)
 
-Fixture: `fixtures/utilities.html`. These are the only classes a custom connector renderer needs
+Fixture: `fixtures/utilities.html`. These are the only classes a custom behaviour renderer needs
 to know to inherit accessible defaults.
 
 | Class | What it does |
@@ -70,7 +70,7 @@ with the `xps` class, so custom markup gets them for free.
 Fixture: `fixtures/mount.html`. Spec §7.1.
 
 ```html
-<div class="xps-mount" data-xps-widget="refinementList" data-xps-instance="search-1"
+<div class="xps-mount" data-xps-widget="facetList" data-xps-instance="search-1"
      data-xps-config='{"attribute":"contentType"}'></div>
 ```
 
@@ -98,68 +98,68 @@ Fixture: `fixtures/search-box.html`. Root `<form class="xps xps-search-box" role
 Accessibility: `role="search"` on the form, label associated by `for`/`id`, both icon buttons
 labelled by `aria-label` with their glyph `aria-hidden="true"`.
 
-## hits
+## results
 
-Fixture: `fixtures/hits.html`. Root `<div class="xps xps-hits">`.
+Fixture: `fixtures/results.html`. Root `<div class="xps xps-results">`.
 
 | Class | Element | Notes |
 |---|---|---|
-| `xps-hits` | `<div>` | |
-| `xps-hits--empty` | root modifier | No results for the current state. |
-| `xps-hits--loading` | root modifier | Results in flight; root also gets `aria-busy="true"`. |
-| `xps-hits__status` | `<p role="status" class="xps-sr-only">` | **The live region** (§5.6). Text changes to `"{n} results for “{query}”"`, `"No results…"`, `"Searching…"`. `role="status"` implies `aria-live="polite"`. |
-| `xps-hits__list` | `<ol>` | Ordered — result rank is meaningful. |
-| `xps-hits__item` | `<li>` | One per hit; wraps the item template output. |
-| `xps-hits__empty` | `<div>` | The `templates.empty` output. |
+| `xps-results` | `<div>` | |
+| `xps-results--empty` | root modifier | No results for the current state. |
+| `xps-results--loading` | root modifier | Results in flight; root also gets `aria-busy="true"`. |
+| `xps-results__status` | `<p role="status" class="xps-sr-only">` | **The live region** (§5.6). Text changes to `"{n} results for “{query}”"`, `"No results…"`, `"Searching…"`. `role="status"` implies `aria-live="polite"`. |
+| `xps-results__list` | `<ol>` | Ordered — result rank is meaningful. |
+| `xps-results__item` | `<li>` | One per result; wraps the item template output. |
+| `xps-results__empty` | `<div>` | The `templates.empty` output. |
 
 The default item template (`templates.item`) produces:
 
 | Class | Element | Notes |
 |---|---|---|
-| `xps-hit` | `<article>` | |
-| `xps-hit--skeleton` | modifier | Placeholder row during loading; also `aria-hidden="true"`. |
-| `xps-hit__media` | `<div>` | Image slot. Omitted when the hit has no image. |
-| `xps-hit__image` | `<img alt="" width height>` | Decorative: the title link carries the accessible name. |
-| `xps-hit__body` | `<div>` | |
-| `xps-hit__title` | `<h3>` | Heading level is configurable; the class does not change. |
-| `xps-hit__link` | `<a href>` | Wraps the highlighted title. |
-| `xps-hit__snippet` | `<p>` | Highlighted excerpt; contains `<mark class="xps-highlight">`. |
-| `xps-hit__meta` | `<ul>` | Content type, date, and any configured attributes. |
-| `xps-hit__meta-item` | `<li>` | |
+| `xps-result` | `<article>` | |
+| `xps-result--skeleton` | modifier | Placeholder row during loading; also `aria-hidden="true"`. |
+| `xps-result__media` | `<div>` | Image slot. Omitted when the result has no image. |
+| `xps-result__image` | `<img alt="" width height>` | Decorative: the title link carries the accessible name. |
+| `xps-result__body` | `<div>` | |
+| `xps-result__title` | `<h3>` | Heading level is configurable; the class does not change. |
+| `xps-result__link` | `<a href>` | Wraps the highlighted title. |
+| `xps-result__snippet` | `<p>` | Highlighted excerpt; contains `<mark class="xps-highlight">`. |
+| `xps-result__meta` | `<ul>` | Content type, date, and any configured attributes. |
+| `xps-result__meta-item` | `<li>` | |
 
-Only `xps-hits__status` announces counts. `stats` renders the same number visually but is not a
+Only `xps-results__status` announces counts. `resultStats` renders the same number visually but is not a
 live region, so a page with both widgets announces the change once.
 
-## refinementList
+## facetList
 
-Fixture: `fixtures/refinement-list.html`. Root `<div class="xps xps-refinement-list">`.
+Fixture: `fixtures/facet-list.html`. Root `<div class="xps xps-facet-list">`.
 
 | Class | Element | Notes |
 |---|---|---|
-| `xps-refinement-list` | `<div>` | |
-| `xps-refinement-list--searchable` | root modifier | `searchable: true`; the search sub-block is rendered. |
-| `xps-refinement-list__title` | `<h3 id>` | The attribute's display name; `<ul>` references it via `aria-labelledby`. |
-| `xps-refinement-list__search` | `<div>` | Holds an `xps-sr-only` label and the input. |
-| `xps-refinement-list__search-input` | `<input type="search">` | Facet value search. |
-| `xps-refinement-list__list` | `<ul aria-labelledby>` | |
-| `xps-refinement-list__item` | `<li>` | |
-| `xps-refinement-list__item--selected` | modifier | `isRefined` — the checkbox is `checked`. |
-| `xps-refinement-list__item--disabled` | modifier | `canRefine === false` — the checkbox is `disabled`. |
-| `xps-refinement-list__label` | `<label>` | Wraps the input, so the whole row is the hit area; no `for` needed. |
-| `xps-refinement-list__checkbox` | `<input type="checkbox">` | A real checkbox (§5.6), never a styled div. |
-| `xps-refinement-list__value` | `<span>` | May contain `<mark class="xps-highlight">` in the searchable variant. |
-| `xps-refinement-list__count` | `<span>` | Facet count. |
-| `xps-refinement-list__show-more` | `<button aria-expanded>` | `xps-button`. Label toggles Show more / Show less. |
-| `xps-refinement-list__show-more--disabled` | modifier | Nothing more to show; the button is `disabled` and stays in the DOM so focus survives. |
-| `xps-refinement-list__no-results` | `<p role="status">` | Facet search matched nothing. |
+| `xps-facet-list` | `<div>` | |
+| `xps-facet-list--searchable` | root modifier | `searchable: true`; the search sub-block is rendered. |
+| `xps-facet-list__title` | `<h3 id>` | The attribute's display name; `<ul>` references it via `aria-labelledby`. |
+| `xps-facet-list__search` | `<div>` | Holds an `xps-sr-only` label and the input. |
+| `xps-facet-list__search-input` | `<input type="search">` | Facet value search. |
+| `xps-facet-list__list` | `<ul aria-labelledby>` | |
+| `xps-facet-list__item` | `<li>` | |
+| `xps-facet-list__item--selected` | modifier | `isActive` — the checkbox is `checked`. |
+| `xps-facet-list__item--disabled` | modifier | `canApply === false` — the checkbox is `disabled`. |
+| `xps-facet-list__label` | `<label>` | Wraps the input, so the whole row is the click target; no `for` needed. |
+| `xps-facet-list__checkbox` | `<input type="checkbox">` | A real checkbox (§5.6), never a styled div. |
+| `xps-facet-list__value` | `<span>` | May contain `<mark class="xps-highlight">` in the searchable variant. |
+| `xps-facet-list__count` | `<span>` | Facet count. |
+| `xps-facet-list__show-more` | `<button aria-expanded>` | `xps-button`. Label toggles Show more / Show less. |
+| `xps-facet-list__show-more--disabled` | modifier | Nothing more to show; the button is `disabled` and stays in the DOM so focus survives. |
+| `xps-facet-list__no-results` | `<p role="status">` | Facet search matched nothing. |
 
-## toggleRefinement
+## toggleFilter
 
-Fixture: `fixtures/toggle-refinement.html`. Root `<div class="xps xps-toggle-refinement">`.
+Fixture: `fixtures/toggle-filter.html`. Root `<div class="xps xps-toggle-filter">`.
 
-`xps-toggle-refinement__label` (`<label>`) wraps `xps-toggle-refinement__checkbox`
-(`<input type="checkbox">`), `xps-toggle-refinement__value` and `xps-toggle-refinement__count`.
-`xps-toggle-refinement--disabled` is the `canRefine === false` state and pairs with the
+`xps-toggle-filter__label` (`<label>`) wraps `xps-toggle-filter__checkbox`
+(`<input type="checkbox">`), `xps-toggle-filter__value` and `xps-toggle-filter__count`.
+`xps-toggle-filter--disabled` is the `canApply === false` state and pairs with the
 `disabled` attribute.
 
 ## pagination
@@ -181,113 +181,113 @@ Fixture: `fixtures/pagination.html`. Root `<nav class="xps xps-pagination" aria-
 Every control's visible content is a glyph marked `aria-hidden="true"` plus an `xps-sr-only`
 name ("First page", "Page 4"), so the accessible name never reads as "«".
 
-## stats
+## resultStats
 
-Fixture: `fixtures/stats.html`. Root `<div class="xps xps-stats">` containing
-`xps-stats__text` (`<span>`) and, inside it, `xps-stats__time` (`<span>`) for the timing.
-`xps-stats--empty` is the no-query-yet state. Not a live region — see `hits`.
+Fixture: `fixtures/result-stats.html`. Root `<div class="xps xps-result-stats">` containing
+`xps-result-stats__text` (`<span>`) and, inside it, `xps-result-stats__time` (`<span>`) for the timing.
+`xps-result-stats--empty` is the no-query-yet state. Not a live region — see `results`.
 
-## sortBy
+## sortSelect
 
-Fixture: `fixtures/sort-by.html`. Root `<div class="xps xps-sort-by">` with
-`xps-sort-by__label` (`<label for>`, add `xps-sr-only` to hide it) and `xps-sort-by__select`
+Fixture: `fixtures/sort-select.html`. Root `<div class="xps xps-sort-select">` with
+`xps-sort-select__label` (`<label for>`, add `xps-sr-only` to hide it) and `xps-sort-select__select`
 (a native `<select>`, one `<option>` per `items` entry, `selected` on the current sort).
 
-## clearRefinements
+## clearFilters
 
-Fixture: `fixtures/clear-refinements.html`. Root `<div class="xps xps-clear-refinements">` with
-`xps-clear-refinements__button` (`<button type="button" class="xps-button">`).
-`xps-clear-refinements--disabled` + the `disabled` attribute when there is nothing to clear —
+Fixture: `fixtures/clear-filters.html`. Root `<div class="xps xps-clear-filters">` with
+`xps-clear-filters__button` (`<button type="button" class="xps-button">`).
+`xps-clear-filters--disabled` + the `disabled` attribute when there is nothing to clear —
 the button is never removed, so focus is not destroyed mid-interaction.
 
-## currentRefinements
+## activeFilters
 
-Fixture: `fixtures/current-refinements.html`. Root `<div class="xps xps-current-refinements">`.
+Fixture: `fixtures/active-filters.html`. Root `<div class="xps xps-active-filters">`.
 
 | Class | Element | Notes |
 |---|---|---|
-| `xps-current-refinements--empty` | root modifier | No active refinements; the empty `<ul>` still renders so layout does not jump. |
-| `xps-current-refinements__title` | `<h3 id>` | "Active filters"; usually `xps-sr-only`. |
-| `xps-current-refinements__list` | `<ul aria-labelledby>` | |
-| `xps-current-refinements__item` | `<li>` | Contains one `xps-chip`. |
+| `xps-active-filters--empty` | root modifier | No active filters; the empty `<ul>` still renders so layout does not jump. |
+| `xps-active-filters__title` | `<h3 id>` | "Active filters"; usually `xps-sr-only`. |
+| `xps-active-filters__list` | `<ul aria-labelledby>` | |
+| `xps-active-filters__item` | `<li>` | Contains one `xps-chip`. |
 
 The chip's remove button must carry a full `aria-label` naming the attribute and value
 ("Remove filter Content type: Article") — "×" alone is not a name.
 
-## rangeSlider
+## rangeFilter
 
-Fixture: `fixtures/range-slider.html`. Root `<div class="xps xps-range-slider">`.
+Fixture: `fixtures/range-filter.html`. Root `<div class="xps xps-range-filter">`.
 
 Two native `<input type="range">` controls, not a custom drag widget: they are keyboard-operable
 and announced by screen readers with no extra code.
 
 | Class | Element | Notes |
 |---|---|---|
-| `xps-range-slider__title` | `<h3 id>` | Referenced by the track's `aria-labelledby`. |
-| `xps-range-slider__track` | `<div role="group" aria-labelledby>` | |
-| `xps-range-slider__range` | `<input type="range">` | Plus `xps-range-slider__range--min` / `xps-range-slider__range--max`. `aria-describedby` points at the values line. |
-| `xps-range-slider__inputs` | `<div>` | Numeric entry row. |
-| `xps-range-slider__input-label` | `<label for>` | Visible "From" / "To". |
-| `xps-range-slider__input` | `<input type="number" inputmode="numeric">` | |
-| `xps-range-slider__separator` | `<span aria-hidden="true">` | |
-| `xps-range-slider__values` | `<p id>` | Human-readable current range. |
-| `xps-range-slider--disabled` | root modifier | No refinable range; all four inputs are `disabled`. |
+| `xps-range-filter__title` | `<h3 id>` | Referenced by the track's `aria-labelledby`. |
+| `xps-range-filter__track` | `<div role="group" aria-labelledby>` | |
+| `xps-range-filter__range` | `<input type="range">` | Plus `xps-range-filter__range--min` / `xps-range-filter__range--max`. `aria-describedby` points at the values line. |
+| `xps-range-filter__inputs` | `<div>` | Numeric entry row. |
+| `xps-range-filter__input-label` | `<label for>` | Visible "From" / "To". |
+| `xps-range-filter__input` | `<input type="number" inputmode="numeric">` | |
+| `xps-range-filter__separator` | `<span aria-hidden="true">` | |
+| `xps-range-filter__values` | `<p id>` | Human-readable current range. |
+| `xps-range-filter--disabled` | root modifier | No refinable range; all four inputs are `disabled`. |
 
-## hierarchicalMenu
+## categoryTree
 
-Fixture: `fixtures/hierarchical-menu.html`. Root
-`<nav class="xps xps-hierarchical-menu" aria-label="…">`, with `xps-hierarchical-menu__title` (`<h3>`).
-
-| Class | Element | Notes |
-|---|---|---|
-| `xps-hierarchical-menu__list` | `<ul>` | One depth modifier per level: `xps-hierarchical-menu__list--lvl0`, `xps-hierarchical-menu__list--lvl1`, `xps-hierarchical-menu__list--lvl2`, and so on for deeper trees. A child list nests inside its parent `<li>`. |
-| `xps-hierarchical-menu__item` | `<li>` | |
-| `xps-hierarchical-menu__item--selected` | modifier | On every node of the open path; the link gets `aria-current="true"`. |
-| `xps-hierarchical-menu__item--parent` | modifier | Has a nested list. |
-| `xps-hierarchical-menu__item--disabled` | modifier | Count 0; rendered as a `<span aria-disabled="true">` instead of a link. |
-| `xps-hierarchical-menu__link` | `<a href>` (or the disabled `<span>`) | href is a real, crawlable refined URL from `createURL`. |
-| `xps-hierarchical-menu__value` | `<span>` | |
-| `xps-hierarchical-menu__count` | `<span>` | |
-
-## infiniteHits
-
-Fixture: `fixtures/infinite-hits.html`. Root `<div class="xps xps-infinite-hits">`. Items reuse
-the `xps-hit` template exactly as `hits` does.
+Fixture: `fixtures/category-tree.html`. Root
+`<nav class="xps xps-category-tree" aria-label="…">`, with `xps-category-tree__title` (`<h3>`).
 
 | Class | Element | Notes |
 |---|---|---|
-| `xps-infinite-hits--exhausted` | root modifier | Every result loaded. |
-| `xps-infinite-hits__status` | `<p role="status" class="xps-sr-only">` | Live region: "Showing {n} of {m} results". |
-| `xps-infinite-hits__list` | `<ol>` | Appended to, never rebuilt — appending keeps scroll position and focus. |
-| `xps-infinite-hits__item` | `<li>` | |
-| `xps-infinite-hits__sentinel` | `<div aria-hidden="true">` | 1px intersection-observer target for the scroll path. |
-| `xps-infinite-hits__load-more` | `<button type="button" class="xps-button">` | The keyboard path. Always present; `disabled` when exhausted. |
+| `xps-category-tree__list` | `<ul>` | One depth modifier per level: `xps-category-tree__list--lvl0`, `xps-category-tree__list--lvl1`, `xps-category-tree__list--lvl2`, and so on for deeper trees. A child list nests inside its parent `<li>`. |
+| `xps-category-tree__item` | `<li>` | |
+| `xps-category-tree__item--selected` | modifier | On every node of the open path; the link gets `aria-current="true"`. |
+| `xps-category-tree__item--parent` | modifier | Has a nested list. |
+| `xps-category-tree__item--disabled` | modifier | Count 0; rendered as a `<span aria-disabled="true">` instead of a link. |
+| `xps-category-tree__link` | `<a href>` (or the disabled `<span>`) | href is a real, crawlable filtered URL from `urlFor`. |
+| `xps-category-tree__value` | `<span>` | |
+| `xps-category-tree__count` | `<span>` | |
 
-## autocomplete
+## loadMore
 
-Fixture: `fixtures/autocomplete.html`. Root `<div class="xps xps-autocomplete">`.
+Fixture: `fixtures/load-more.html`. Root `<div class="xps xps-load-more">`. Items reuse
+the `xps-result` template exactly as `results` does.
+
+| Class | Element | Notes |
+|---|---|---|
+| `xps-load-more--exhausted` | root modifier | Every result loaded. |
+| `xps-load-more__status` | `<p role="status" class="xps-sr-only">` | Live region: "Showing {n} of {m} results". |
+| `xps-load-more__list` | `<ol>` | Appended to, never rebuilt — appending keeps scroll position and focus. |
+| `xps-load-more__item` | `<li>` | |
+| `xps-load-more__sentinel` | `<div aria-hidden="true">` | 1px intersection-observer target for the scroll path. |
+| `xps-load-more__load-more` | `<button type="button" class="xps-button">` | The keyboard path. Always present; `disabled` when exhausted. |
+
+## suggestions
+
+Fixture: `fixtures/suggestions.html`. Root `<div class="xps xps-suggestions">`.
 Implements the WAI-ARIA APG combobox-with-listbox pattern:
 <https://www.w3.org/WAI/ARIA/apg/patterns/combobox/>.
 
 | Class | Element | Notes |
 |---|---|---|
-| `xps-autocomplete--open` | root modifier | Popup shown; mirrors `aria-expanded="true"`. |
-| `xps-autocomplete__form` | `<form role="search">` | Submitting goes to the full results page. |
-| `xps-autocomplete__label` | `<label for>` | Usually `xps-sr-only`. |
-| `xps-autocomplete__field` | `<div>` | |
-| `xps-autocomplete__input` | `<input type="text" role="combobox">` | `aria-expanded`, `aria-controls` → the listbox id, `aria-activedescendant` → the active option id (empty when none), `aria-autocomplete="list"`, `autocomplete="off"`. |
-| `xps-autocomplete__reset` | `<button type="reset" class="xps-button">` | `aria-label`; `hidden` while empty. |
-| `xps-autocomplete__panel` | `<div>` | Absolutely positioned; `hidden` when closed. |
-| `xps-autocomplete__list` | `<ul role="listbox" id aria-label>` | Always present, even when empty, so `aria-controls` never dangles. |
-| `xps-autocomplete__group` | `<li role="group" aria-labelledby>` | One per source (suggestions, federated hits). Omit the group wrapper when there is only one ungrouped source and put `role="option"` on `<li>` directly. |
-| `xps-autocomplete__group-title` | `<div id>` | Labels the group. Not an option. |
-| `xps-autocomplete__option` | `<div role="option" id aria-selected>` | Ids follow `…-option-{index}` in visual order. |
-| `xps-autocomplete__option--active` | modifier | The `aria-activedescendant` target; also `aria-selected="true"`. Exactly one at a time, or none. |
-| `xps-autocomplete__option-title` | `<span>` | May contain `<mark class="xps-highlight">`. |
-| `xps-autocomplete__option-meta` | `<span>` | Secondary line for federated hits. |
-| `xps-autocomplete__empty` | `<p role="status">` | Open with no suggestions. |
-| `xps-autocomplete__footer` | `<div>` | Holds `xps-autocomplete__see-all` (`<a href>`). |
-| `xps-autocomplete__see-all` | `<a href>` | Link to the full results page. |
+| `xps-suggestions--open` | root modifier | Popup shown; mirrors `aria-expanded="true"`. |
+| `xps-suggestions__form` | `<form role="search">` | Submitting goes to the full results page. |
+| `xps-suggestions__label` | `<label for>` | Usually `xps-sr-only`. |
+| `xps-suggestions__field` | `<div>` | |
+| `xps-suggestions__input` | `<input type="text" role="combobox">` | `aria-expanded`, `aria-controls` → the listbox id, `aria-activedescendant` → the active option id (empty when none), `aria-autocomplete="list"`, `autocomplete="off"`. |
+| `xps-suggestions__reset` | `<button type="reset" class="xps-button">` | `aria-label`; `hidden` while empty. |
+| `xps-suggestions__panel` | `<div>` | Absolutely positioned; `hidden` when closed. |
+| `xps-suggestions__list` | `<ul role="listbox" id aria-label>` | Always present, even when empty, so `aria-controls` never dangles. |
+| `xps-suggestions__group` | `<li role="group" aria-labelledby>` | One per source (query suggestions, matching documents). Omit the group wrapper when there is only one ungrouped source and put `role="option"` on `<li>` directly. |
+| `xps-suggestions__group-title` | `<div id>` | Labels the group. Not an option. |
+| `xps-suggestions__option` | `<div role="option" id aria-selected>` | Ids follow `…-option-{index}` in visual order. |
+| `xps-suggestions__option--active` | modifier | The `aria-activedescendant` target; also `aria-selected="true"`. Exactly one at a time, or none. |
+| `xps-suggestions__option-title` | `<span>` | May contain `<mark class="xps-highlight">`. |
+| `xps-suggestions__option-meta` | `<span>` | Secondary line for a matching document. |
+| `xps-suggestions__empty` | `<p role="status">` | Open with no suggestions. |
+| `xps-suggestions__footer` | `<div>` | Holds `xps-suggestions__see-all` (`<a href>`). |
+| `xps-suggestions__see-all` | `<a href>` | Link to the full results page. |
 
 Keyboard, per the APG: `Down`/`Up` move `aria-activedescendant` (DOM focus stays in the input),
 `Home`/`End` jump to the first/last option, `Enter` activates the active option, `Escape` closes

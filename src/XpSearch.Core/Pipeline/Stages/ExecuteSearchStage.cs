@@ -37,18 +37,18 @@ public sealed class ExecuteSearchStage : ISearchStage
         ArgumentNullException.ThrowIfNull(context);
 
         string indexName = context.Request.Index;
-        int topN = Math.Max(1, (context.Page + 1) * context.HitsPerPage);
+        int topN = Math.Max(1, context.Page * context.PageSize);
         var sort = BuildSort(context);
 
         if (context.FacetsConfig is null)
         {
             accessor.UseSearcher(indexName, searcher =>
             {
-                var hits = sort is null
+                var topDocs = sort is null
                     ? searcher.Search(context.BaseQuery, topN)
                     : searcher.Search(context.BaseQuery, null, topN, sort, doDocScores: true, doMaxScore: false);
 
-                Materialize(context, searcher, hits);
+                Materialize(context, searcher, topDocs);
                 return true;
             });
 
@@ -117,16 +117,16 @@ public sealed class ExecuteSearchStage : ISearchStage
         return new Sort(new SortField(LuceneFieldNames.SortFieldName(context.SortField), type, context.SortDescending));
     }
 
-    private static void Materialize(SearchContext context, IndexSearcher searcher, TopDocs hits)
+    private static void Materialize(SearchContext context, IndexSearcher searcher, TopDocs topDocs)
     {
-        context.TotalHits = hits.TotalHits;
+        context.Total = topDocs.TotalHits;
 
-        int skip = context.Page * context.HitsPerPage;
+        int skip = (context.Page - 1) * context.PageSize;
         var page = new List<ScoredDocument>();
 
-        for (int i = skip; i < hits.ScoreDocs.Length && page.Count < context.HitsPerPage; i++)
+        for (int i = skip; i < topDocs.ScoreDocs.Length && page.Count < context.PageSize; i++)
         {
-            var scoreDoc = hits.ScoreDocs[i];
+            var scoreDoc = topDocs.ScoreDocs[i];
             page.Add(new ScoredDocument(searcher.Doc(scoreDoc.Doc), scoreDoc.Score));
         }
 

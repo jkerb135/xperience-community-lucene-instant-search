@@ -3,71 +3,117 @@
  * Every function here is pure: it returns a new frozen state, never mutates the one given.
  */
 import type {
+  FacetFilter,
   FacetOperator,
+  NumericFilter,
   NumericOperator,
-  NumericRefinement,
   SearchRequest,
   SearchState,
+  StateFilters,
 } from './types';
+
+/** The first page. State, the wire and the URL all count pages from one. */
+export const FIRST_PAGE = 1;
 
 /** Freezes a state deeply enough that a widget cannot mutate it by accident. */
 function freeze(state: SearchState): SearchState {
-  for (const values of Object.values(state.facetFilters)) Object.freeze(values);
-  Object.freeze(state.facetFilters);
-  for (const numeric of state.numericFilters) Object.freeze(numeric);
-  Object.freeze(state.numericFilters);
+  for (const facet of state.filters.facets) {
+    Object.freeze(facet.values);
+    Object.freeze(facet);
+  }
+  for (const numeric of state.filters.numeric) Object.freeze(numeric);
+  Object.freeze(state.filters.facets);
+  Object.freeze(state.filters.numeric);
+  Object.freeze(state.filters);
   return Object.freeze(state);
+}
+
+/**
+ * Copies the filters, dropping the entries that carry nothing at all. An entry with no values
+ * survives only when it declares a non-default operator: that is a widget saying "my attribute
+ * is `and`" before the visitor has picked anything, and it must outlive an empty selection.
+ */
+function copyFilters(filters: Partial<StateFilters> | undefined): StateFilters {
+  const facets: FacetFilter[] = [];
+  for (const facet of filters?.facets ?? []) {
+    if (facet.values.length > 0 || facet.operator === 'and') {
+      facets.push({
+        attribute: facet.attribute,
+        values: [...facet.values],
+        ...(facet.operator === undefined ? {} : { operator: facet.operator }),
+      });
+    }
+  }
+  return { facets, numeric: (filters?.numeric ?? []).map((n) => ({ ...n })) };
 }
 
 /** Builds a complete, frozen state from a partial one. */
 export function createState(partial: Partial<SearchState> = {}): SearchState {
-  const facetFilters: Record<string, string[]> = {};
-  for (const [attribute, values] of Object.entries(partial.facetFilters ?? {})) {
-    if (values && values.length > 0) facetFilters[attribute] = [...values];
-  }
   return freeze({
     query: partial.query ?? '',
-    page: partial.page ?? 0,
-    facetFilters,
-    numericFilters: (partial.numericFilters ?? []).map((n) => ({ ...n })),
+    page: partial.page ?? FIRST_PAGE,
+    filters: copyFilters(partial.filters),
     sort: partial.sort ?? 'relevance',
-    ...(partial.hitsPerPage === undefined ? {} : { hitsPerPage: partial.hitsPerPage }),
+    ...(partial.pageSize === undefined ? {} : { pageSize: partial.pageSize }),
   });
 }
 
-/** A refinement change always returns to the first page; only `setPage` moves the page. */
-function withRefinement(state: SearchState, changes: Partial<SearchState>): SearchState {
-  return createState({ ...state, page: 0, ...changes });
+/** A filter change always returns to the first page; only `setPage` moves the page. */
+function withFilter(state: SearchState, changes: Partial<SearchState>): SearchState {
+  return createState({ ...state, page: FIRST_PAGE, ...changes });
+}
+
+/** The values currently selected on one attribute. */
+export function facetValues(state: SearchState, attribute: string): readonly string[] {
+  return state.filters.facets.find((facet) => facet.attribute === attribute)?.values ?? [];
+}
+
+/** The operator declared for one attribute, `'or'` when it has none. */
+export function facetOperator(state: SearchState, attribute: string): FacetOperator {
+  return state.filters.facets.find((facet) => facet.attribute === attribute)?.operator ?? 'or';
 }
 
 export function setQuery(state: SearchState, query: string): SearchState {
-  return withRefinement(state, { query });
+  return withFilter(state, { query });
 }
 
 export function setPage(state: SearchState, page: number): SearchState {
-  return createState({ ...state, page: Math.max(0, Math.trunc(page)) });
+  return createState({ ...state, page: Math.max(FIRST_PAGE, Math.trunc(page)) });
 }
 
 export function setSort(state: SearchState, sort: string): SearchState {
-  return withRefinement(state, { sort });
+  return withFilter(state, { sort });
 }
 
-export function setHitsPerPage(state: SearchState, hitsPerPage: number | undefined): SearchState {
-  return withRefinement(state, { hitsPerPage });
+export function setPageSize(state: SearchState, pageSize: number | undefined): SearchState {
+  return withFilter(state, { pageSize });
 }
 
-export function toggleFacetRefinement(
+/** Replaces one attribute's entry, dropping it when nothing is selected on it any more. */
+function withFacet(
   state: SearchState,
   attribute: string,
-  value: string
+  values: readonly string[],
+  operator?: FacetOperator
 ): SearchState {
-  const current = state.facetFilters[attribute] ?? [];
-  const next = current.includes(value)
-    ? current.filter((v) => v !== value)
-    : [...current, value];
-  const facetFilters = { ...state.facetFilters, [attribute]: next };
-  if (next.length === 0) delete facetFilters[attribute];
-  return withRefinement(state, { facetFilters });
+  const current = state.filters.facets.find((facet) => facet.attribute === attribute);
+  const kept = state.filters.facets.filter((facet) => facet.attribute !== attribute);
+  const chosen = operator ?? current?.operator;
+  const facets = [
+    ...kept,
+    { attribute, values: [...values], ...(chosen === undefined ? {} : { operator: chosen }) },
+  ];
+  // createState drops the entry again when it selects nothing and declares no `and`.
+  return withFilter(state, { filters: { ...state.filters, facets } });
+}
+
+export function toggleFacet(state: SearchState, attribute: string, value: string): SearchState {
+  const current = facetValues(state, attribute);
+  return withFacet(
+    state,
+    attribute,
+    current.includes(value) ? current.filter((v) => v !== value) : [...current, value]
+  );
 }
 
 export function setFacetValues(
@@ -75,62 +121,66 @@ export function setFacetValues(
   attribute: string,
   values: readonly string[]
 ): SearchState {
-  const facetFilters = { ...state.facetFilters, [attribute]: [...values] };
-  if (values.length === 0) delete facetFilters[attribute];
-  return withRefinement(state, { facetFilters });
+  return withFacet(state, attribute, values);
 }
 
-/** Clears every refinement, or every refinement on one attribute (facet and numeric alike). */
-export function clearRefinements(state: SearchState, attribute?: string): SearchState {
+/**
+ * Declares how the values of one attribute combine. It is state, not a side channel: it goes on
+ * the wire as `filters.facets[].operator` and belongs in the URL with the values it applies to.
+ */
+export function setFacetOperator(
+  state: SearchState,
+  attribute: string,
+  operator: FacetOperator
+): SearchState {
+  return withFacet(state, attribute, facetValues(state, attribute), operator);
+}
+
+/** Clears every filter, or every filter on one attribute (facet and numeric alike). */
+export function clearFilters(state: SearchState, attribute?: string): SearchState {
   if (attribute === undefined) {
-    return withRefinement(state, { facetFilters: {}, numericFilters: [] });
+    return withFilter(state, { filters: { facets: [], numeric: [] } });
   }
-  const facetFilters = { ...state.facetFilters };
-  delete facetFilters[attribute];
-  return withRefinement(state, {
-    facetFilters,
-    numericFilters: state.numericFilters.filter((n) => n.attribute !== attribute),
+  return withFilter(state, {
+    filters: {
+      facets: state.filters.facets.filter((facet) => facet.attribute !== attribute),
+      numeric: state.filters.numeric.filter((n) => n.attribute !== attribute),
+    },
   });
 }
 
-export function addNumericRefinement(
+/** Sets the bound on `attribute` for `operator`, replacing any existing one. */
+export function setNumericFilter(
   state: SearchState,
   attribute: string,
   operator: NumericOperator,
   value: number
 ): SearchState {
-  return withRefinement(state, {
-    numericFilters: [...state.numericFilters, { attribute, operator, value }],
-  });
-}
-
-/** Like `addNumericRefinement`, but replaces an existing bound on the same attribute+operator. */
-export function setNumericRefinement(
-  state: SearchState,
-  attribute: string,
-  operator: NumericOperator,
-  value: number
-): SearchState {
-  const kept = state.numericFilters.filter(
+  const kept = state.filters.numeric.filter(
     (n) => !(n.attribute === attribute && n.operator === operator)
   );
-  return withRefinement(state, { numericFilters: [...kept, { attribute, operator, value }] });
+  return withFilter(state, {
+    filters: { ...state.filters, numeric: [...kept, { attribute, operator, value }] },
+  });
 }
 
-export function removeNumericRefinement(
+export function removeNumericFilter(
   state: SearchState,
   attribute: string,
   operator?: NumericOperator
 ): SearchState {
-  return withRefinement(state, {
-    numericFilters: state.numericFilters.filter(
-      (n) => n.attribute !== attribute || (operator !== undefined && n.operator !== operator)
-    ),
+  return withFilter(state, {
+    filters: {
+      ...state.filters,
+      numeric: state.filters.numeric.filter(
+        (n) => n.attribute !== attribute || (operator !== undefined && n.operator !== operator)
+      ),
+    },
   });
 }
 
-export function isFacetRefined(state: SearchState, attribute: string, value: string): boolean {
-  return (state.facetFilters[attribute] ?? []).includes(value);
+export function isFacetActive(state: SearchState, attribute: string, value: string): boolean {
+  return facetValues(state, attribute).includes(value);
 }
 
 /** True when two states would produce the same request. */
@@ -140,73 +190,40 @@ export function statesEqual(a: SearchState, b: SearchState): boolean {
 
 /** The part of a `SearchRequest` that comes from state alone. */
 export function stateToWireFragment(
-  state: SearchState,
-  facetOperators: Readonly<Record<string, FacetOperator>> = {}
-): Pick<
-  SearchRequest,
-  'query' | 'page' | 'facetFilters' | 'numericFilters' | 'sort' | 'hitsPerPage'
-> {
-  // Outer array is ANDed, each inner array is ORed (spec 4.2). An `or` attribute contributes one
-  // inner array holding all of its values; an `and` attribute contributes one array per value.
-  const facetFilters: string[][] = [];
-  for (const [attribute, values] of Object.entries(state.facetFilters)) {
-    if (values.length === 0) continue;
-    const encoded = values.map((value) => `${attribute}:${value}`);
-    if ((facetOperators[attribute] ?? 'or') === 'and') {
-      for (const one of encoded) facetFilters.push([one]);
-    } else {
-      facetFilters.push(encoded);
-    }
-  }
-  const numericFilters = state.numericFilters.map(
-    (n) => `${n.attribute}${n.operator}${n.value}`
-  );
+  state: SearchState
+): Pick<SearchRequest, 'query' | 'page' | 'filters' | 'sort' | 'pageSize'> {
+  const copied = copyFilters(state.filters);
+  // An entry that selects nothing refines nothing; it exists in state only to carry its operator.
+  const filters = { ...copied, facets: copied.facets.filter((facet) => facet.values.length > 0) };
+  const hasFilters = filters.facets.length > 0 || filters.numeric.length > 0;
   return {
     query: state.query,
     page: state.page,
     sort: state.sort,
-    ...(facetFilters.length > 0 ? { facetFilters } : {}),
-    ...(numericFilters.length > 0 ? { numericFilters } : {}),
-    ...(state.hitsPerPage === undefined ? {} : { hitsPerPage: state.hitsPerPage }),
+    ...(hasFilters
+      ? {
+          filters: {
+            ...(filters.facets.length > 0 ? { facets: filters.facets as FacetFilter[] } : {}),
+            ...(filters.numeric.length > 0 ? { numeric: filters.numeric as NumericFilter[] } : {}),
+          },
+        }
+      : {}),
+    ...(state.pageSize === undefined ? {} : { pageSize: state.pageSize }),
   };
 }
 
 /** Reads a wire request fragment back into state — the inverse of `stateToWireFragment`. */
 export function stateFromWireFragment(request: Partial<SearchRequest>): SearchState {
-  const facetFilters: Record<string, string[]> = {};
-  for (const group of request.facetFilters ?? []) {
-    for (const entry of group) {
-      const separator = entry.indexOf(':');
-      if (separator <= 0) continue;
-      const attribute = entry.slice(0, separator);
-      const value = entry.slice(separator + 1);
-      (facetFilters[attribute] ??= []).push(value);
-    }
-  }
-  const numericFilters: NumericRefinement[] = [];
-  for (const entry of request.numericFilters ?? []) {
-    const parsed = parseNumericFilter(entry);
-    if (parsed) numericFilters.push(parsed);
-  }
   return createState({
     query: request.query,
     page: request.page,
     sort: request.sort,
-    facetFilters,
-    numericFilters,
-    hitsPerPage: request.hitsPerPage,
+    filters: {
+      facets: request.filters?.facets ?? [],
+      numeric: request.filters?.numeric ?? [],
+    },
+    pageSize: request.pageSize,
   });
-}
-
-/** Parses `price<=50` into its parts. Returns `null` for anything off-grammar (spec 4.2). */
-export function parseNumericFilter(filter: string): NumericRefinement | null {
-  const match = /^([A-Za-z_][\w.]*)\s*(<=|>=|<|>|=)\s*(-?\d+(?:\.\d+)?)$/.exec(filter);
-  if (!match) return null;
-  return {
-    attribute: match[1]!,
-    operator: match[2] as NumericOperator,
-    value: Number(match[3]),
-  };
 }
 
 /** The observable half of spec 5.1: hold a state, hand out changes. */

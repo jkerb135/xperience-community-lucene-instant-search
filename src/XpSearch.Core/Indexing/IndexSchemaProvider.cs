@@ -13,7 +13,7 @@ public sealed class IndexSchemaProvider : IIndexSchemaProvider
     /// <summary>
     /// Name of the field <see cref="XpSearchIndexingStrategy"/> writes the item's display name to.
     /// Present on every document regardless of content type, which is what makes a generic
-    /// "search the title" query and the federated-hits suggester possible.
+    /// "search the title" query and the document suggester possible.
     /// </summary>
     public const string TitleField = "Title";
 
@@ -46,7 +46,7 @@ public sealed class IndexSchemaProvider : IIndexSchemaProvider
     /// <returns>The base fields, in projection order.</returns>
     public static IReadOnlyList<SchemaField> BaseFields() =>
     [
-        // objectID is a reserved member of the hit, so ID is never projected as an attribute.
+        // The result id is a member of its own, so ID is never projected as an attribute.
         new SchemaField(BaseDocumentProperties.ID, SearchFieldKind.Keyword, Searchable: false, Facetable: false, Sortable: false, Retrievable: false),
         new SchemaField(TitleField, SearchFieldKind.Text, Searchable: true, Facetable: false, Sortable: true, Retrievable: true, Boost: 2f),
         new SchemaField(BaseDocumentProperties.CONTENT_TYPE_NAME, SearchFieldKind.Keyword, Searchable: false, Facetable: true, Sortable: false, Retrievable: true),

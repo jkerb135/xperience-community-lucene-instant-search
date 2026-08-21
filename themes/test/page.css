@@ -42,12 +42,12 @@ h1 {
 }
 
 /* the autocomplete popup is absolutely positioned; reserve room so the demo does not overlap */
-.fx--autocomplete .xps-autocomplete {
+.fx--autocomplete .xps-suggestions {
   margin-bottom: 24rem;
 }
 
 /* the fixtures use a transparent 1px gif for the image slot; tint it so the slot is visible */
-.fx .xps-hit__image {
+.fx .xps-result__image {
   background: #dcdcdc;
 }
 

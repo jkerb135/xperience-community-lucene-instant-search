@@ -4,7 +4,7 @@ using XpSearch.Core.Pipeline;
 namespace XpSearch.Core.Abstractions;
 
 /// <summary>
-/// Produces the HTML-safe snippets that land in <c>Hit._highlights</c>.
+/// Produces the HTML-safe snippets that land in <c>Result.highlights</c>.
 /// </summary>
 public interface IHighlighter
 {

@@ -13,8 +13,8 @@ using XpSearch.Core.Indexing;
 namespace XpSearch.Core.Pipeline.Stages;
 
 /// <summary>
-/// Projects the materialized page onto the response DTO: hits with their retrieved attributes,
-/// facet counts, paging figures and, when asked for, the ranking explanation.
+/// Projects the materialized page onto the response DTO: results with their retrieved fields,
+/// facet values, paging figures and, when asked for, the ranking explanation.
 /// </summary>
 public sealed class ProjectResponseStage : ISearchStage
 {
@@ -27,26 +27,26 @@ public sealed class ProjectResponseStage : ISearchStage
         ArgumentNullException.ThrowIfNull(context);
 
         bool explain = context.Request.Explain ?? false;
-        var hits = new Hit[context.Documents.Count];
+        var results = new Result[context.Documents.Count];
 
-        for (int i = 0; i < hits.Length; i++)
+        for (int i = 0; i < results.Length; i++)
         {
             var scored = context.Documents[i];
 
-            hits[i] = new Hit
+            results[i] = new Result
             {
-                ObjectId = ResolveObjectId(scored.Document),
+                Id = ResolveResultId(scored.Document),
                 Score = scored.Score,
                 Attributes = ProjectAttributes(context, scored.Document),
                 Highlights = i < context.Highlights.Count ? context.Highlights[i] : null,
-                RankingInfo = explain
+                Ranking = explain
                     ? new RankingInfo
                     {
                         BaseScore = scored.Score,
 
                         // Boost rules are Phase 5; until then nothing has changed the score.
-                        AppliedBoosts = [],
-                        Position = ((long)context.Page * context.HitsPerPage) + i + 1
+                        Boosts = [],
+                        Position = ((long)(context.Page - 1) * context.PageSize) + i + 1
                     }
                     : null
             };
@@ -54,14 +54,14 @@ public sealed class ProjectResponseStage : ISearchStage
 
         context.Response = new SearchResponse
         {
-            Hits = hits,
-            Facets = context.FacetCounts,
+            Results = results,
+            Facets = context.FacetValues,
             Page = context.Page,
-            HitsPerPage = context.HitsPerPage,
-            NbHits = context.TotalHits,
-            NbPages = context.HitsPerPage <= 0
+            PageSize = context.PageSize,
+            Total = context.Total,
+            TotalPages = context.PageSize <= 0
                 ? 0
-                : (long)Math.Ceiling(context.TotalHits / (double)context.HitsPerPage),
+                : (long)Math.Ceiling(context.Total / (double)context.PageSize),
             QueryId = string.IsNullOrWhiteSpace(context.Request.QueryId)
                 ? Guid.NewGuid().ToString()
                 : context.Request.QueryId
@@ -78,7 +78,7 @@ public sealed class ProjectResponseStage : ISearchStage
     /// itself does not, so a hand-written strategy may leave it out. The fallback composes the two
     /// fields the integration always adds, which is exactly the pair it deletes documents by.
     /// </remarks>
-    private static string ResolveObjectId(Document document)
+    private static string ResolveResultId(Document document)
     {
         string? id = document.Get(BaseDocumentProperties.ID);
 
@@ -87,7 +87,7 @@ public sealed class ProjectResponseStage : ISearchStage
             return id;
         }
 
-        return XpSearchIndexingStrategy.ComposeObjectId(
+        return XpSearchIndexingStrategy.ComposeResultId(
             document.Get(BaseDocumentProperties.ITEM_GUID) ?? string.Empty,
             document.Get(BaseDocumentProperties.LANGUAGE_NAME) ?? string.Empty);
     }
@@ -96,15 +96,15 @@ public sealed class ProjectResponseStage : ISearchStage
     {
         var attributes = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
 
-        var wanted = context.AttributesToRetrieve.Count > 0
-            ? context.AttributesToRetrieve.Select(context.Schema.Find).OfType<SchemaField>()
+        var wanted = context.Fields.Count > 0
+            ? context.Fields.Select(context.Schema.Find).OfType<SchemaField>()
             : context.Schema.Fields.Where(field => field.Retrievable);
 
         foreach (var field in wanted)
         {
             if (string.Equals(field.Name, BaseDocumentProperties.ID, StringComparison.Ordinal))
             {
-                // objectID is a reserved member of the hit, never an extension-data attribute.
+                // The result id is a member of its own, never one of the projected attributes.
                 continue;
             }
 

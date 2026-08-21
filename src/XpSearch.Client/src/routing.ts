@@ -1,8 +1,9 @@
 /**
  * URL routing (spec 5.5): state <-> query params, back/forward through `popstate`, and the
- * shared `createURL` every connector hands to its renderer so links stay crawlable.
+ * shared `urlFor` every behaviour hands to its renderer so links stay crawlable.
  */
-import type { NumericOperator, NumericRefinement, RoutingOptions, SearchState } from './types';
+import { FIRST_PAGE } from './state';
+import type { NumericFilter, NumericOperator, RoutingOptions, SearchState } from './types';
 
 /** Params the default mapping owns. A facet attribute with one of these names cannot be routed. */
 const QUERY_PARAM = 'q';
@@ -10,34 +11,27 @@ const PAGE_PARAM = 'page';
 const SORT_PARAM = 'sort';
 const RESERVED = new Set([QUERY_PARAM, PAGE_PARAM, SORT_PARAM]);
 
-/** `price<=50` is routed as `price_lte=50`; the suffix is what makes the URL readable. */
-const OPERATOR_SUFFIX: Record<NumericOperator, string> = {
-  '<': 'lt',
-  '<=': 'lte',
-  '=': 'eq',
-  '>=': 'gte',
-  '>': 'gt',
-};
-const SUFFIX_OPERATOR = new Map<string, NumericOperator>(
-  Object.entries(OPERATOR_SUFFIX).map(([operator, suffix]) => [suffix, operator as NumericOperator])
-);
+/** `price lte 50` is routed as `price_lte=50`; the suffix is the contract's own operator name. */
+const OPERATORS = new Set<string>(['lt', 'lte', 'eq', 'ne', 'gte', 'gt']);
 
 /**
- * Default state -> params mapping. `page` is one-based in the URL and zero-based in state;
- * defaults (empty query, first page, `relevance`) are omitted so a pristine URL stays clean.
- * Facet values are `encodeURIComponent`-escaped before being comma-joined, so a value that
- * itself contains a comma round-trips.
+ * Default state -> params mapping. `page` is one-based in state and in the URL; defaults (empty
+ * query, first page, `relevance`) are omitted so a pristine URL stays clean. Facet values are
+ * `encodeURIComponent`-escaped before being comma-joined, so a value that itself contains a
+ * comma round-trips. An `and` attribute keeps its operator in a `<attribute>_op` param.
  */
 export function defaultStateToRoute(state: SearchState): Record<string, string | string[]> {
   const route: Record<string, string | string[]> = {};
   if (state.query !== '') route[QUERY_PARAM] = state.query;
-  if (state.page > 0) route[PAGE_PARAM] = String(state.page + 1);
+  if (state.page > FIRST_PAGE) route[PAGE_PARAM] = String(state.page);
   if (state.sort !== 'relevance') route[SORT_PARAM] = state.sort;
-  for (const [attribute, values] of Object.entries(state.facetFilters)) {
-    if (values.length > 0) route[attribute] = values.map(encodeURIComponent).join(',');
+  for (const facet of state.filters.facets) {
+    if (facet.values.length === 0) continue;
+    route[facet.attribute] = facet.values.map(encodeURIComponent).join(',');
+    if (facet.operator === 'and') route[`${facet.attribute}_op`] = 'and';
   }
-  for (const numeric of state.numericFilters) {
-    const key = `${numeric.attribute}_${OPERATOR_SUFFIX[numeric.operator]}`;
+  for (const numeric of state.filters.numeric) {
+    const key = `${numeric.attribute}_${numeric.operator}`;
     const value = String(numeric.value);
     const existing = route[key];
     route[key] = existing === undefined ? value : [...(Array.isArray(existing) ? existing : [existing]), value];
@@ -47,32 +41,45 @@ export function defaultStateToRoute(state: SearchState): Record<string, string |
 
 /** Default params -> state mapping; the inverse of {@link defaultStateToRoute}. */
 export function defaultRouteToState(route: Record<string, string[]>): Partial<SearchState> {
-  const facetFilters: Record<string, string[]> = {};
-  const numericFilters: NumericRefinement[] = [];
-  for (const [key, values] of Object.entries(route)) {
-    if (RESERVED.has(key) || values.length === 0) continue;
+  const values = new Map<string, string[]>();
+  const operators = new Map<string, 'and' | 'or'>();
+  const numeric: NumericFilter[] = [];
+  for (const [key, raw] of Object.entries(route)) {
+    if (RESERVED.has(key) || raw.length === 0) continue;
     const separator = key.lastIndexOf('_');
-    const operator = separator > 0 ? SUFFIX_OPERATOR.get(key.slice(separator + 1)) : undefined;
-    if (operator !== undefined && values.every((v) => v !== '' && !Number.isNaN(Number(v)))) {
-      for (const value of values) {
-        numericFilters.push({ attribute: key.slice(0, separator), operator, value: Number(value) });
+    const suffix = separator > 0 ? key.slice(separator + 1) : '';
+    if (suffix === 'op') {
+      if (raw[0] === 'and' || raw[0] === 'or') operators.set(key.slice(0, separator), raw[0]);
+      continue;
+    }
+    if (OPERATORS.has(suffix) && raw.every((v) => v !== '' && !Number.isNaN(Number(v)))) {
+      for (const value of raw) {
+        numeric.push({
+          attribute: key.slice(0, separator),
+          operator: suffix as NumericOperator,
+          value: Number(value),
+        });
       }
       continue;
     }
-    const parsed = values
+    const parsed = raw
       .flatMap((value) => value.split(','))
       .filter((value) => value !== '')
       .map(decodeURIComponent);
-    if (parsed.length > 0) facetFilters[key] = parsed;
+    if (parsed.length > 0) values.set(key, parsed);
   }
+  const facets = [...values].map(([attribute, selected]) => {
+    const operator = operators.get(attribute);
+    return { attribute, values: selected, ...(operator === undefined ? {} : { operator }) };
+  });
   const page = Number(route[PAGE_PARAM]?.[0]);
+  const hasFilters = facets.length > 0 || numeric.length > 0;
   // Absent params are left out rather than defaulted, so `initialState` still applies to them.
   return {
     ...(route[QUERY_PARAM]?.[0] === undefined ? {} : { query: route[QUERY_PARAM][0] }),
-    ...(Number.isFinite(page) && page > 1 ? { page: page - 1 } : {}),
+    ...(Number.isFinite(page) && page > FIRST_PAGE ? { page } : {}),
     ...(route[SORT_PARAM]?.[0] === undefined ? {} : { sort: route[SORT_PARAM][0] }),
-    ...(Object.keys(facetFilters).length > 0 ? { facetFilters } : {}),
-    ...(numericFilters.length > 0 ? { numericFilters } : {}),
+    ...(hasFilters ? { filters: { facets, numeric } } : {}),
   };
 }
 
@@ -81,12 +88,12 @@ export interface Router {
   read(): Partial<SearchState>;
   /** Writes `state` to the address bar. Replaces when only the query changed, pushes otherwise. */
   write(state: SearchState, previous: SearchState): void;
-  createURL(state: SearchState): string;
+  urlFor(state: SearchState): string;
   listen(onPop: (state: Partial<SearchState>) => void): () => void;
 }
 
 interface RouterOptions extends RoutingOptions {
-  /** When false the router still builds URLs (for `createURL`) but never touches history. */
+  /** When false the router still builds URLs (for `urlFor`) but never touches history. */
   enabled: boolean;
 }
 
@@ -120,7 +127,7 @@ export function createRouter(options: RouterOptions): Router {
 
   return {
     read,
-    createURL(state) {
+    urlFor(state) {
       return toURL(state).toString();
     },
     write(state, previous) {
@@ -131,8 +138,7 @@ export function createRouter(options: RouterOptions): Router {
         state.query !== previous.query &&
         state.page === previous.page &&
         state.sort === previous.sort &&
-        JSON.stringify(state.facetFilters) === JSON.stringify(previous.facetFilters) &&
-        JSON.stringify(state.numericFilters) === JSON.stringify(previous.numericFilters);
+        JSON.stringify(state.filters) === JSON.stringify(previous.filters);
       // Typing into the search box should not fill the back stack with one entry per keystroke.
       if (onlyQueryChanged) win!.history.replaceState(null, '', url);
       else win!.history.pushState(null, '', url);

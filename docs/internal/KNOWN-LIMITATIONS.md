@@ -3,33 +3,32 @@
 Intentional simplifications, one entry each: where it lives, what was simplified, the ceiling it hits,
 and how to lift it.
 
-## `connectAutocomplete` and `connectHierarchicalMenu` in `XpSearch.Client/src/connectors.ts`
+## `withSuggestions` and `withCategoryTree` in `XpSearch.Client/src/behaviors.ts`
 
-- **Simplified:** eight of the ten connectors spec 5.7 lists are published; these two are not exported at
-  all. `connectAutocomplete` needs the `/suggest` semantics (query suggestions vs federated hits, and the
-  stale-response and keyboard policy) that are still open decision 6 in the spec, and
-  `connectHierarchicalMenu` needs hierarchical facet semantics, which depend on the faceting approach of
+- **Simplified:** eight of the ten behaviours spec 5.7 lists are published; these two are not exported at
+  all. `withSuggestions` needs the `/suggest` semantics (query suggestions vs document suggestions, and
+  the stale-response and keyboard policy) that are still open decision 6 in the spec, and
+  `withCategoryTree` needs hierarchical facet semantics, which depend on the faceting approach of
   ADR-0001. The transport half of autocomplete exists already: `SearchClient.suggest()`.
-- **Ceiling:** the `autocomplete`, `hierarchicalMenu` and taxonomy-navigation widgets cannot be built
+- **Ceiling:** the `suggestions`, `categoryTree` and taxonomy-navigation widgets cannot be built
   yet, and a developer who needs either has to call `SearchClient.suggest()` and drive
-  `helper.setQuery()` by hand.
-- **Upgrade path:** add the two connector files once those decisions land; both are additive, so neither
+  `actions.setQuery()` by hand.
+- **Upgrade path:** add the two behaviour files once those decisions land; both are additive, so neither
   is a breaking change.
 
-## `searchable` in `XpSearch.Client/src/widgets/refinementList.ts`
+## `searchable` in `XpSearch.Client/src/widgets/facetList.ts`
 
 - **Simplified:** `searchable: true` renders a facet-search input that filters the values **already
   rendered**, in the browser, by case-insensitive substring. There is no facet-search endpoint in the
-  JSON contract (spec §4.2 has no equivalent of Algolia's `searchForFacetValues`), so there is nothing
-  server-side to call.
+  JSON contract (there is no facet-value search route), so there is nothing server-side to call.
 - **Ceiling:** a visitor cannot find a value that falls outside `limit`/`showMoreLimit`, or one the
   current query returned no documents for. On an attribute with hundreds of values the control looks
   like it is broken.
 - **Upgrade path:** add a facet-search route to the contract (a coordinated contract change), give
-  `connectRefinementList` a `searchForFacetValues` render-state member, and have the widget call it
-  instead of filtering locally; the markup and the option name do not change.
+  `withFacetList` a `searchFacetValues` render-state member, and have the widget call it instead of
+  filtering locally; the markup and the option name do not change.
 
-## The loading template in `XpSearch.Client/src/widgets/hits.ts`
+## The loading template in `XpSearch.Client/src/widgets/results.ts`
 
 - **Simplified:** `templates.loading` (and the default skeleton rows) render only while a **first**
   search is in flight *and* a render happens during it — in practice, once the instance's stall
@@ -44,30 +43,31 @@ and how to lift it.
 
 ## Widget renderers not shipped, in `XpSearch.Client/src/widgets/index.ts`
 
-- **Simplified:** `autocomplete`, `rangeSlider`, `hierarchicalMenu` and `infiniteHits` have a markup
+- **Simplified:** `suggestions`, `rangeFilter`, `categoryTree` and `loadMore` have a markup
   contract in `themes/MARKUP.md` and a fixture, but no default renderer. Three of them have no
-  connector either (see the entry above); `rangeSlider` has `connectRange` but inherits its
+  behaviour either (see the entry above); `rangeFilter` has `withRange` but inherits its
   hand-configured bounds.
-- **Ceiling:** a project needing any of the four writes the renderer itself against the connector, or
+- **Ceiling:** a project needing any of the four writes the renderer itself against the behaviour, or
   waits. `FIRST_PARTY_WIDGET_TYPES` still reserves the four names, so a `.xps-mount` naming one is a
   console error and a skipped widget, not a silent no-op.
 - **Upgrade path:** add the renderer next to the others and put it in `DEFAULT_WIDGETS`; the markup,
   the CSS and the fixtures are already in place, so each is additive.
 
-## `connectRange` in `XpSearch.Client/src/connectors/range.ts`
+## `withRange` in `XpSearch.Client/src/behaviors/range.ts`
 
-- **Simplified:** the control's bounds come from `widgetParams.min`/`max`, and `canRefine` is false
+- **Simplified:** the control's bounds come from `params.min`/`max`, and `canApply` is false
   without them, because the JSON contract carries no numeric facet statistics — there is nowhere for a
   server-computed min/max to arrive.
 - **Ceiling:** a range slider over an unknown corpus has to be hand-configured, and its ends do not
   follow the current result set.
 - **Upgrade path:** add facet statistics to `SearchResponse` (a contract change, so a coordinated event)
-  and read them in the connector, keeping the params as an override.
+  and read them in the behaviour, keeping the params as an override.
 
 ## Default route mapping in `XpSearch.Client/src/routing.ts`
 
 - **Simplified:** `defaultStateToRoute` owns the params `q`, `page` and `sort`, one param per facet
-  attribute, and `<attribute>_<lt|lte|eq|gte|gt>` for numeric refinements. A facet attribute called `q`,
+  attribute, `<attribute>_op` for a non-default facet operator, and
+  `<attribute>_<lt|lte|eq|ne|gte|gt>` for numeric filters. A facet attribute called `q`,
   `page`, `sort` or `price_lte` collides with the mapping and will not round-trip, and two instances with
   `routing: true` on one page fight over the same params.
 - **Ceiling:** those attribute names, and multi-instance routing, need the
@@ -98,20 +98,6 @@ and how to lift it.
 - **Upgrade path:** drop the `NoWarn` when Kentico.Xperience.Lucene moves to a stable Lucene.Net release,
   and let the warning fail the build again.
 
-## `Hit.Attributes` in `XpSearch.Core/Contract/Hit.cs`
-
-- **Simplified:** `Hit` is generated from `contract/xpsearch-api.schema.json` like every other contract
-  type, but quicktype's C# backend ignores the schema's `additionalProperties`, so the open half of the
-  object — every non-reserved attribute a query retrieves — is hand-written as a `[JsonExtensionData]`
-  property on a partial class next to the generated file. The TypeScript side needs no such help.
-- **Ceiling:** one member of the contract exists in two places. If quicktype ever stops emitting `Hit` as
-  a `partial class`, the hand-written half silently stops applying and hits lose their attributes; the
-  `contract:check` script asserts against exactly that, plus the property names and the extension data
-  attribute, so the failure is loud rather than silent. Reading an attribute in C# costs a dictionary
-  lookup and a `JsonElement` unwrap.
-- **Upgrade path:** delete `Contract/Hit.cs` and its assertions in `scripts/contract.mjs` if quicktype
-  learns to emit `[JsonExtensionData]` for `additionalProperties`; otherwise leave it.
-
 ## `csharpEdits` in `XpSearch.Client/scripts/contract.mjs`
 
 - **Simplified:** even with `--features attributes-only`, quicktype's C# output publishes types that are
@@ -128,9 +114,9 @@ and how to lift it.
   the helper converters, or `--features types-only`); or, if the list ever grows past a handful, generate
   the C# from the schema with a small emitter of our own instead.
 
-## `SuggestMode.QuerySuggestions` in `XpSearch.Core/Search/FederatedHitsSuggestService.cs`
+## `SuggestMode.QuerySuggestions` in `XpSearch.Core/Search/DocumentSuggestService.cs`
 
-- **Simplified:** spec §4.3 asks for two autocomplete modes. Only federated hits (a prefix match on the
+- **Simplified:** spec §4.3 asks for two autocomplete modes. Only document suggestions (a prefix match on the
   index's suggest field, `Title` by default) is implemented. An index configured for query suggestions gets
   an empty `suggestions` array and a logged warning.
 - **Ceiling:** query suggestions need a store of previously issued queries and their frequencies, which is
@@ -140,14 +126,14 @@ and how to lift it.
   the implementation per index in `AddXpSearch`; the `SuggestMode` option and the `ISuggestService`
   interface are already the seam.
 
-## `RankingInfo.AppliedBoosts` in `XpSearch.Core/Pipeline/Stages/ProjectResponseStage.cs`
+## `RankingInfo.Boosts` in `XpSearch.Core/Pipeline/Stages/ProjectResponseStage.cs`
 
-- **Simplified:** `explain=true` returns `_rankingInfo` with the raw Lucene score as `baseScore`, the
-  one-based position, and an always-empty `appliedBoosts`.
-- **Ceiling:** the admin query tester (spec §8.4) can show why a hit scored what it scored, but not why it
-  moved — because nothing moves it yet. `_score` and `baseScore` are therefore always identical.
+- **Simplified:** `explain=true` returns `ranking` with the raw Lucene score as `baseScore`, the
+  one-based position, and an always-empty `boosts`.
+- **Ceiling:** the admin query tester (spec §8.4) can show why a result scored what it scored, but not why it
+  moved — because nothing moves it yet. `score` and `baseScore` are therefore always identical.
 - **Upgrade path:** the Phase 5 boost and pin/bury stages occupy `SearchStageOrder.BoostRules` (700) and
-  `SearchStageOrder.PinnedAndBuried` (900); each appends its own description to the hit's `appliedBoosts`
+  `SearchStageOrder.PinnedAndBuried` (900); each appends its own description to the result's `ranking.boosts`
   as it changes a score or a position.
 
 ## Language as a document field, in `XpSearch.Core/Pipeline/Stages/BuildQueryStage.cs`
@@ -224,7 +210,7 @@ and how to lift it.
   re-opens braces inside a declaration value, a named colour outside the list (`rebeccapurple`), an
   `url()` data-URI containing a colour, or a class written into the DOM by JavaScript rather than a
   fixture, all pass unnoticed. The class-parity check compares literal strings, so it cannot know
-  that `.xps-hits__item` in a fixture and `.xps-hits__item` in `MARKUP.md` mean the same element —
+  that `.xps-results__item` in a fixture and `.xps-results__item` in `MARKUP.md` mean the same element —
   only that both exist.
 - **Upgrade path:** if the ruleset ever needs to reason about specificity or cascade layers, replace
   the tokenizer with `postcss` and keep the same five assertions; the checks are independent of how

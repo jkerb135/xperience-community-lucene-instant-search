@@ -1,6 +1,6 @@
 # ADR-0008: Query pipeline, caching and the Lucene seams
 
-- **Status:** accepted
+- **Status:** accepted; amended by ADR-0010 (the DTOs the pipeline maps onto are renamed and reshaped; the stage order, the caching and the Lucene seams are unchanged)
 - **Date:** 2026-08-21
 - **Spec reference:** §4.2–§4.7, §13.2, §13.6
 

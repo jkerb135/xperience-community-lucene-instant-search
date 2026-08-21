@@ -1,23 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import {
-  addNumericRefinement,
-  clearRefinements,
+  clearFilters,
   createState,
   createStore,
-  parseNumericFilter,
+  facetOperator,
+  facetValues,
+  setFacetOperator,
+  setNumericFilter,
   setPage,
   setQuery,
   stateFromWireFragment,
   stateToWireFragment,
-  toggleFacetRefinement,
+  toggleFacet,
 } from './state';
 
 describe('SearchState', () => {
   it('is frozen, so a widget cannot write to it', () => {
-    const state = createState({ facetFilters: { tags: ['coffee'] } });
+    const state = createState({ filters: { facets: [{ attribute: 'tags', values: ['coffee'] }], numeric: [] } });
     expect(Object.isFrozen(state)).toBe(true);
-    expect(Object.isFrozen(state.facetFilters)).toBe(true);
-    expect(Object.isFrozen(state.facetFilters['tags'])).toBe(true);
+    expect(Object.isFrozen(state.filters)).toBe(true);
+    expect(Object.isFrozen(state.filters.facets)).toBe(true);
+    expect(Object.isFrozen(state.filters.facets[0]!.values)).toBe(true);
     expect(() => {
       (state as { query: string }).query = 'nope';
     }).toThrow();
@@ -31,79 +34,85 @@ describe('SearchState', () => {
     expect(second.query).toBe('espresso');
   });
 
-  it('resets to the first page on every refinement but setPage', () => {
+  it('counts pages from one', () => {
+    expect(createState().page).toBe(1);
+    expect(setPage(createState(), 0).page).toBe(1);
+  });
+
+  it('resets to the first page on every filter change but setPage', () => {
     const paged = setPage(createState(), 4);
-    expect(setQuery(paged, 'x').page).toBe(0);
-    expect(toggleFacetRefinement(paged, 'tags', 'coffee').page).toBe(0);
+    expect(setQuery(paged, 'x').page).toBe(1);
+    expect(toggleFacet(paged, 'tags', 'coffee').page).toBe(1);
     expect(setPage(paged, 2).page).toBe(2);
   });
 
   it('toggles a facet value off and drops the empty attribute', () => {
-    const on = toggleFacetRefinement(createState(), 'tags', 'coffee');
-    expect(on.facetFilters).toEqual({ tags: ['coffee'] });
-    expect(toggleFacetRefinement(on, 'tags', 'coffee').facetFilters).toEqual({});
+    const on = toggleFacet(createState(), 'tags', 'coffee');
+    expect(on.filters.facets).toEqual([{ attribute: 'tags', values: ['coffee'] }]);
+    expect(toggleFacet(on, 'tags', 'coffee').filters.facets).toEqual([]);
+  });
+
+  it('keeps the declared operator on the attribute it applies to', () => {
+    let state = setFacetOperator(createState(), 'tags', 'and');
+    state = toggleFacet(state, 'tags', 'coffee');
+    expect(facetOperator(state, 'tags')).toBe('and');
+    expect(facetOperator(state, 'contentType')).toBe('or');
+    expect(state.filters.facets[0]).toEqual({ attribute: 'tags', values: ['coffee'], operator: 'and' });
   });
 
   it('clears one attribute, facet and numeric alike', () => {
-    let state = toggleFacetRefinement(createState(), 'tags', 'coffee');
-    state = toggleFacetRefinement(state, 'contentType', 'Article');
-    state = addNumericRefinement(state, 'price', '<=', 50);
-    const cleared = clearRefinements(state, 'tags');
-    expect(cleared.facetFilters).toEqual({ contentType: ['Article'] });
-    expect(clearRefinements(state, 'price').numericFilters).toEqual([]);
-    expect(clearRefinements(state).facetFilters).toEqual({});
+    let state = toggleFacet(createState(), 'tags', 'coffee');
+    state = toggleFacet(state, 'contentType', 'Article');
+    state = setNumericFilter(state, 'price', 'lte', 50);
+    const cleared = clearFilters(state, 'tags');
+    expect(cleared.filters.facets).toEqual([{ attribute: 'contentType', values: ['Article'] }]);
+    expect(clearFilters(state, 'price').filters.numeric).toEqual([]);
+    expect(clearFilters(state).filters).toEqual({ facets: [], numeric: [] });
+  });
+
+  it('replaces a bound on the same attribute and operator instead of stacking it', () => {
+    let state = setNumericFilter(createState(), 'price', 'lte', 50);
+    state = setNumericFilter(state, 'price', 'lte', 20);
+    state = setNumericFilter(state, 'price', 'gte', 5);
+    expect(state.filters.numeric).toEqual([
+      { attribute: 'price', operator: 'lte', value: 20 },
+      { attribute: 'price', operator: 'gte', value: 5 },
+    ]);
+  });
+
+  it('reads the selected values of one attribute', () => {
+    const state = toggleFacet(createState(), 'tags', 'coffee');
+    expect(facetValues(state, 'tags')).toEqual(['coffee']);
+    expect(facetValues(state, 'contentType')).toEqual([]);
   });
 });
 
-describe('wire serialization (spec 4.2)', () => {
-  it('puts an "or" attribute in one inner array and an "and" attribute in one array per value', () => {
-    let state = toggleFacetRefinement(createState(), 'contentType', 'Article');
-    state = toggleFacetRefinement(state, 'contentType', 'Product');
-    state = toggleFacetRefinement(state, 'tags', 'coffee');
-    state = toggleFacetRefinement(state, 'tags', 'brewing');
+describe('wire serialization (contract 4.2)', () => {
+  it('sends the filters exactly as the state holds them', () => {
+    let state = toggleFacet(createState(), 'contentType', 'Article');
+    state = toggleFacet(state, 'contentType', 'Product');
+    state = setFacetOperator(state, 'tags', 'and');
+    state = toggleFacet(state, 'tags', 'coffee');
+    state = setNumericFilter(state, 'price', 'lte', 50);
 
-    const wire = stateToWireFragment(state, { contentType: 'or', tags: 'and' });
-    expect(wire.facetFilters).toEqual([
-      ['contentType:Article', 'contentType:Product'],
-      ['tags:coffee'],
-      ['tags:brewing'],
-    ]);
-  });
-
-  it('defaults an attribute with no declared operator to OR', () => {
-    let state = toggleFacetRefinement(createState(), 'tags', 'coffee');
-    state = toggleFacetRefinement(state, 'tags', 'milk');
-    expect(stateToWireFragment(state).facetFilters).toEqual([['tags:coffee', 'tags:milk']]);
-  });
-
-  it('writes numeric filters in the schema grammar', () => {
-    let state = addNumericRefinement(createState(), 'price', '<=', 50);
-    state = addNumericRefinement(state, 'publishedAt', '>=', 1700000000);
-    expect(stateToWireFragment(state).numericFilters).toEqual([
-      'price<=50',
-      'publishedAt>=1700000000',
-    ]);
-    for (const filter of stateToWireFragment(state).numericFilters ?? []) {
-      expect(filter).toMatch(/^[A-Za-z_][\w.]*\s*(<=|>=|<|>|=|!=)\s*-?\d+(\.\d+)?$/);
-    }
+    expect(stateToWireFragment(state).filters).toEqual({
+      facets: [
+        { attribute: 'contentType', values: ['Article', 'Product'] },
+        { attribute: 'tags', values: ['coffee'], operator: 'and' },
+      ],
+      numeric: [{ attribute: 'price', operator: 'lte', value: 50 }],
+    });
   });
 
   it('omits empty collections and always carries query, page and sort', () => {
-    expect(stateToWireFragment(createState())).toEqual({ query: '', page: 0, sort: 'relevance' });
+    expect(stateToWireFragment(createState())).toEqual({ query: '', page: 1, sort: 'relevance' });
   });
 
   it('round-trips through the wire fragment', () => {
-    let state = toggleFacetRefinement(createState({ query: 'espresso', sort: 'price_asc' }), 'tags', 'coffee');
-    state = addNumericRefinement(state, 'price', '>', 10);
+    let state = toggleFacet(createState({ query: 'espresso', sort: 'price_asc' }), 'tags', 'coffee');
+    state = setNumericFilter(state, 'price', 'gt', 10);
     state = setPage(state, 2);
     expect(stateFromWireFragment(stateToWireFragment(state))).toEqual(state);
-  });
-
-  it('parses the numeric grammar and rejects anything off it', () => {
-    expect(parseNumericFilter('price<=50')).toEqual({ attribute: 'price', operator: '<=', value: 50 });
-    expect(parseNumericFilter('price <= -1.5')).toEqual({ attribute: 'price', operator: '<=', value: -1.5 });
-    expect(parseNumericFilter('price<=abc')).toBeNull();
-    expect(parseNumericFilter('1price<=5')).toBeNull();
   });
 });
 

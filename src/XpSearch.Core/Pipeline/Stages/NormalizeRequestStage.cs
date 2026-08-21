@@ -1,19 +1,19 @@
 using Microsoft.Extensions.Options;
 
 using XpSearch.Core.Abstractions;
-using XpSearch.Core.Filters;
+using XpSearch.Core.Contract;
 using XpSearch.Core.Options;
 
 namespace XpSearch.Core.Pipeline.Stages;
 
 /// <summary>
 /// Validates and normalizes the request (spec §4.4, first stage): trims and length-caps the query
-/// text, resolves paging, and parses every filter against the index schema so that a bad request
-/// fails here with a field-keyed 400 rather than deep inside Lucene.
+/// text, resolves paging, and validates every filter against the index schema so that a bad request
+/// fails here with a 400 keyed by the offending JSON path rather than deep inside Lucene.
 /// </summary>
 public sealed class NormalizeRequestStage : ISearchStage
 {
-    private const long ContractMaxHitsPerPage = 1000;
+    private const long ContractMaxPageSize = 1000;
 
     private readonly XpSearchOptions options;
 
@@ -37,15 +37,19 @@ public sealed class NormalizeRequestStage : ISearchStage
 
         context.QueryText = Normalize(request.Query, options.MaxQueryLength);
         context.Page = ValidatePage(request.Page);
-        context.HitsPerPage = ValidateHitsPerPage(request.HitsPerPage);
-        ValidateResultWindow(context.Page, context.HitsPerPage);
+        context.PageSize = ValidatePageSize(request.PageSize);
+        ValidateResultWindow(context.Page, context.PageSize);
 
-        context.RequestedFacets = FacetFilterParser.ParseRequestedFacets(request.Facets, context.Schema);
-        context.FacetFilters = FacetFilterParser.ParseAll(request.FacetFilters, context.Schema);
-        context.NumericFilters = NumericFilterParser.ParseAll(request.NumericFilters, context.Schema);
-        context.SortField = SortKeyParser.Parse(request.Sort, context.Schema, out bool descending);
+        context.RequestedFacets = ValidateFacets(request.Facets, context.Schema);
+        context.FacetFilters = ValidateFacetFilters(request.Filters?.Facets, context.Schema);
+        context.NumericFilters = ValidateNumericFilters(request.Filters?.Numeric, context.Schema);
+        context.SortField = SortKeyParser.Parse(
+            request.Sort,
+            context.Schema,
+            (IReadOnlyDictionary<string, SortKey>)options.Indexes[request.Index].SortKeys,
+            out bool descending);
         context.SortDescending = descending;
-        context.AttributesToRetrieve = ValidateAttributes(request.AttributesToRetrieve, context.Schema);
+        context.Fields = ValidateFields(request.Fields, context.Schema);
         ValidateHighlightFields(request.Highlight?.Fields, context.Schema);
 
         return Task.CompletedTask;
@@ -67,70 +71,133 @@ public sealed class NormalizeRequestStage : ISearchStage
         return normalized.Length > maxLength ? normalized[..maxLength] : normalized;
     }
 
-    private int ValidatePage(long? page)
+    private static int ValidatePage(long? page)
     {
         if (page is null)
         {
-            return 0;
+            return 1;
         }
 
-        if (page < 0 || page > int.MaxValue)
+        if (page < 1 || page > int.MaxValue)
         {
-            throw new SearchValidationException("page", "page must be zero or greater.");
+            throw new SearchValidationException("page", "page must be one or greater.");
         }
 
         return (int)page.Value;
     }
 
-    private int ValidateHitsPerPage(long? hitsPerPage)
+    private int ValidatePageSize(long? pageSize)
     {
-        if (hitsPerPage is null)
+        if (pageSize is null)
         {
-            return options.DefaultHitsPerPage;
+            return options.DefaultPageSize;
         }
 
-        if (hitsPerPage < 1 || hitsPerPage > ContractMaxHitsPerPage)
+        if (pageSize < 1 || pageSize > ContractMaxPageSize)
         {
             throw new SearchValidationException(
-                "hitsPerPage",
-                $"hitsPerPage must be between 1 and {ContractMaxHitsPerPage}.");
+                "pageSize",
+                $"pageSize must be between 1 and {ContractMaxPageSize}.");
         }
 
         // The contract ceiling is rejected above; the configured ceiling is clamped, and the clamped
         // value is what the response reports back.
-        return (int)Math.Min(hitsPerPage.Value, options.MaxHitsPerPage);
+        return (int)Math.Min(pageSize.Value, options.MaxPageSize);
     }
 
-    private void ValidateResultWindow(int page, int hitsPerPage)
+    private void ValidateResultWindow(int page, int pageSize)
     {
-        long window = (long)(page + 1) * hitsPerPage;
+        long window = (long)page * pageSize;
 
         if (window > options.MaxResultWindow)
         {
             throw new SearchValidationException(
                 "page",
-                $"page multiplied by hitsPerPage must not exceed {options.MaxResultWindow} results.");
+                $"page multiplied by pageSize must not exceed {options.MaxResultWindow} results.");
         }
     }
 
-    private static IReadOnlyList<string> ValidateAttributes(string[]? attributes, IndexSchema schema)
+    private static IReadOnlyList<string> ValidateFacets(string[]? facets, IndexSchema schema)
     {
-        if (attributes is null)
+        var names = new List<string>();
+
+        for (int i = 0; i < (facets?.Length ?? 0); i++)
         {
-            return [];
+            names.Add(FacetableField(facets![i], schema, $"facets[{i}]").Name);
         }
 
-        var resolved = new List<string>(attributes.Length);
+        return names;
+    }
 
-        foreach (string attribute in attributes)
+    private static IReadOnlyList<FacetFilter> ValidateFacetFilters(FacetFilter[]? filters, IndexSchema schema)
+    {
+        var validated = new List<FacetFilter>();
+
+        for (int i = 0; i < (filters?.Length ?? 0); i++)
         {
-            var field = schema.Find(attribute);
+            var entry = filters![i];
+            var field = FacetableField(entry?.Attribute, schema, $"filters.facets[{i}].attribute");
 
-            if (field is null || !field.Retrievable)
+            if (entry!.Values is null || entry.Values.Length == 0)
+            {
+                // Nothing selected on that attribute refines nothing; dropping it here keeps the
+                // query stages from having to special-case an empty OR clause.
+                continue;
+            }
+
+            validated.Add(new FacetFilter
+            {
+                Attribute = field.Name,
+                Values = entry.Values,
+                Operator = entry.Operator
+            });
+        }
+
+        return validated;
+    }
+
+    private static IReadOnlyList<NumericFilter> ValidateNumericFilters(NumericFilter[]? filters, IndexSchema schema)
+    {
+        var validated = new List<NumericFilter>();
+
+        for (int i = 0; i < (filters?.Length ?? 0); i++)
+        {
+            var entry = filters![i];
+            string path = $"filters.numeric[{i}].attribute";
+            var field = Field(entry?.Attribute, schema, path);
+
+            if (field.Kind is not (SearchFieldKind.Number or SearchFieldKind.Date))
             {
                 throw new SearchValidationException(
-                    "attributesToRetrieve",
-                    $"'{attribute}' is not a retrievable attribute of index '{schema.IndexName}'.");
+                    path,
+                    $"'{entry!.Attribute}' is not a numeric attribute of index '{schema.IndexName}'.");
+            }
+
+            validated.Add(new NumericFilter
+            {
+                Attribute = field.Name,
+                Operator = entry!.Operator,
+                Value = entry.Value
+            });
+        }
+
+        return validated;
+    }
+
+    private static IReadOnlyList<string> ValidateFields(string[]? fields, IndexSchema schema)
+    {
+        var resolved = new List<string>();
+
+        for (int i = 0; i < (fields?.Length ?? 0); i++)
+        {
+            string path = $"fields[{i}]";
+            var field = Field(fields![i], schema, path);
+
+            if (!field.Retrievable)
+            {
+                throw new SearchValidationException(
+                    path,
+                    $"'{fields[i]}' is not a retrievable field of index '{schema.IndexName}'.");
             }
 
             resolved.Add(field.Name);
@@ -141,16 +208,30 @@ public sealed class NormalizeRequestStage : ISearchStage
 
     private static void ValidateHighlightFields(string[]? fields, IndexSchema schema)
     {
-        foreach (string field in fields ?? [])
+        for (int i = 0; i < (fields?.Length ?? 0); i++)
         {
-            var schemaField = schema.Find(field);
+            string path = $"highlight.fields[{i}]";
+            var field = Field(fields![i], schema, path);
 
-            if (schemaField is null || !schemaField.Retrievable)
+            if (!field.Retrievable)
             {
                 throw new SearchValidationException(
-                    "highlight.fields",
-                    $"'{field}' is not a retrievable attribute of index '{schema.IndexName}' and cannot be highlighted.");
+                    path,
+                    $"'{fields[i]}' is not a retrievable field of index '{schema.IndexName}' and cannot be highlighted.");
             }
         }
+    }
+
+    private static SchemaField Field(string? name, IndexSchema schema, string path) =>
+        (name is null ? null : schema.Find(name))
+            ?? throw new SearchValidationException(path, $"'{name}' is not an attribute of index '{schema.IndexName}'.");
+
+    private static SchemaField FacetableField(string? name, IndexSchema schema, string path)
+    {
+        var field = Field(name, schema, path);
+
+        return field.Facetable
+            ? field
+            : throw new SearchValidationException(path, $"'{name}' is not a facetable attribute of index '{schema.IndexName}'.");
     }
 }

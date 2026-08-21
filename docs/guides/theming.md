@@ -38,7 +38,7 @@ to `.xps`. Every widget root carries both `xps` and its own class, so widgets ar
 wherever they land:
 
 ```html
-<div class="xps xps-hits">…</div>
+<div class="xps xps-results">…</div>
 ```
 
 Wrapping your whole search page in a single `.xps` element also works and is the cheaper place to
@@ -60,11 +60,11 @@ Every one of these is declared on `.xps` in `default.css` with the default shown
 
 | Variable | Default | Drives |
 |---|---|---|
-| `--xps-color-accent` | `#0b5fff` | Links and hit titles, the current pagination page, the primary button, chip tint, the active autocomplete option, checkbox and range `accent-color`, the `<mark>` highlight, the focus ring colour. |
-| `--xps-color-text` | `#111` | Body text inside widgets, pagination links, hierarchical-menu links, the autocomplete panel's shadow tint. |
-| `--xps-color-muted` | `#666` | Facet counts, hit metadata, stats, placeholders, group titles, empty states, the skeleton tint. |
-| `--xps-color-surface` | `#fff` | Input, button and autocomplete-panel backgrounds; the text colour on accent-filled elements. |
-| `--xps-color-border` | `#e2e2e2` | Every border and the autocomplete footer rule. |
+| `--xps-color-accent` | `#0b5fff` | Links and result titles, the current pagination page, the primary button, chip tint, the active suggestions option, checkbox and range `accent-color`, the `<mark>` highlight, the focus ring colour. |
+| `--xps-color-text` | `#111` | Body text inside widgets, pagination links, category-tree links, the suggestions panel's shadow tint. |
+| `--xps-color-muted` | `#666` | Facet counts, result metadata, result stats, placeholders, group titles, empty states, the skeleton tint. |
+| `--xps-color-surface` | `#fff` | Input, button and suggestions-panel backgrounds; the text colour on accent-filled elements. |
+| `--xps-color-border` | `#e2e2e2` | Every border and the suggestions footer rule. |
 | `--xps-radius` | `6px` | Corner radius on inputs, buttons, chips, the panel and hit images. Derived values (`calc(--xps-radius / 2)`) round the skeletons and highlights. |
 | `--xps-space` | `0.75rem` | The whole spacing rhythm — gaps and padding are `var(--xps-space)`, `calc(var(--xps-space) / 2)` or `calc(var(--xps-space) * 2)`. **Also declared by `shell.css`**, so structure keeps its rhythm when the theme is not loaded. |
 | `--xps-font` | `inherit` | `font-family` on `.xps`, and nothing else. The widgets never set a font size in absolute units; sizes are `em`-relative to your text. |
@@ -107,7 +107,7 @@ own selector instead — that is the same thing with your trigger:
 border. It is safe to load on any site. It provides:
 
 - **Layout** for every widget: flex rows and columns, wrapping clusters, the facet-count column,
-  the absolutely-positioned autocomplete panel, the nested hierarchical-menu indentation.
+  the absolutely-positioned suggestions panel, the nested category-tree indentation.
 - **Spacing rhythm** from `--xps-space` (which it declares itself, defaulting to `0.75rem`).
 - **A visible focus ring** — `2px solid currentColor` with a `2px` offset on `:focus-visible`.
   Nothing in either stylesheet ever sets `outline: none`.
@@ -131,7 +131,7 @@ state is `themes/fixtures/`, which is what to copy from when writing your rules.
 
 Two things shell deliberately leaves to you, because both require a colour:
 
-- `.xps-autocomplete__panel` has position but no surface. Give it a `background-color` (and
+- `.xps-suggestions__panel` has position but no surface. Give it a `background-color` (and
   usually a border or shadow), or the popup will be see-through over the page behind it.
 - `mark.xps-highlight` keeps the browser's default yellow. Restyle it to match your palette.
 
@@ -141,7 +141,7 @@ State is always in the DOM, so you can style it without JavaScript: `--selected`
 
 ### Utilities for custom widgets
 
-A custom widget built on a connector (see [custom-widgets](custom-widgets.md)) inherits the reset
+A custom widget built on a behaviour (see [custom-widgets](custom-widgets.md)) inherits the reset
 and the focus ring as soon as its root carries `xps`. These classes are part of the supported
 surface:
 
@@ -156,10 +156,10 @@ surface:
 | `xps-highlight` | The class on `<mark>` elements emitted by the `highlight` template helper. |
 
 ```js
-widgetParams.container.innerHTML = `
+params.container.innerHTML = `
   <div class="xps xps-stack">
     <div class="xps-cluster">
-      <button class="xps-button" type="button">Refine</button>
+      <button class="xps-button" type="button">Apply</button>
       <span class="xps-chip">
         <span class="xps-chip__label">Espresso</span>
         <button class="xps-chip__remove" type="button" aria-label="Remove filter Espresso">×</button>
@@ -196,13 +196,13 @@ agreeing about a class name.
 Firefox 113+ — all shipped in 2023). Because those functions wrap a `var()`, a browser older than
 that computes the declaration to `unset` rather than falling back to a previous value: the tint
 simply does not paint. Nothing becomes unreadable — text, borders and layout are unaffected — but
-in a pre-2023 browser the `<mark>` highlight, the chip fill, the active autocomplete option and
+in a pre-2023 browser the `<mark>` highlight, the chip fill, the active suggestions option and
 button hovers lose their background. If you must support one, add the flat colours yourself:
 
 ```css
 .xps-highlight { background-color: #cfe0ff; }
 .xps-chip { background-color: #f2f6ff; }
-.xps-autocomplete__option--active { background-color: #eaf1ff; }
+.xps-suggestions__option--active { background-color: #eaf1ff; }
 ```
 
 `shell.css` needs nothing newer than `:focus-visible`. Custom properties and logical properties

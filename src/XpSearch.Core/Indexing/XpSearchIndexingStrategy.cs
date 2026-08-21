@@ -66,15 +66,15 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
         this.logger = logger;
     }
 
-    /// <summary>Composes the stable identifier a hit is addressed by.</summary>
+    /// <summary>Composes the stable identifier a result is addressed by.</summary>
     /// <param name="itemGuid">The item GUID the integration indexes the document under.</param>
     /// <param name="languageName">Code name of the language variant.</param>
-    /// <returns>The <c>objectID</c> value.</returns>
+    /// <returns>The result <c>id</c> value.</returns>
     /// <remarks>
     /// The Lucene integration deletes and replaces documents by the pair (item GUID, language), so the
     /// same pair is what uniquely addresses one indexed document.
     /// </remarks>
-    public static string ComposeObjectId(string itemGuid, string languageName) => $"{itemGuid}:{languageName}";
+    public static string ComposeResultId(string itemGuid, string languageName) => $"{itemGuid}:{languageName}";
 
     /// <inheritdoc />
     public override async Task<Document?> MapToLuceneDocumentOrNull(IIndexEventItemModel item)
@@ -97,7 +97,7 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
 
         var document = new Document
         {
-            new StringField(BaseDocumentProperties.ID, ComposeObjectId(item.ItemGuid.ToString(), item.LanguageName), Field.Store.YES),
+            new StringField(BaseDocumentProperties.ID, ComposeResultId(item.ItemGuid.ToString(), item.LanguageName), Field.Store.YES),
             new FacetField(BaseDocumentProperties.CONTENT_TYPE_NAME, item.ContentTypeName),
             new FacetField(BaseDocumentProperties.LANGUAGE_NAME, item.LanguageName)
         };
@@ -185,6 +185,13 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
             document.Add(new FacetField(field.Name, tag.Name));
             document.Add(new StringField(field.Name, tag.Name, Field.Store.YES));
             document.Add(new TextField(LuceneFieldNames.SearchFieldName(field), tag.Title ?? tag.Name, Field.Store.NO));
+
+            // The pair, verbatim and un-analyzed, so the query side can read every code name's
+            // title straight out of the term dictionary and put it in the facet value's label.
+            document.Add(new StringField(
+                LuceneFieldNames.LabelFieldName(field),
+                LuceneFieldNames.ComposeLabel(tag.Name, tag.Title ?? tag.Name),
+                Field.Store.NO));
         }
     }
 

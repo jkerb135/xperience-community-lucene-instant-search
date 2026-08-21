@@ -9,7 +9,7 @@ public static class WebUrl
     /// <summary>
     /// Turns <c>~/products/x</c> into <c>/products/x</c> and leaves root-relative and absolute URLs
     /// alone. <c>IWebPageUrlRetriever.Retrieve(...).RelativePath</c> returns the <c>~/</c> form, which
-    /// a browser cannot follow, so it must never reach a hit.
+    /// a browser cannot follow, so it must never reach a result.
     /// </summary>
     /// <param name="url">The URL to normalize.</param>
     /// <returns>A root-relative or absolute URL; an empty string stays empty.</returns>

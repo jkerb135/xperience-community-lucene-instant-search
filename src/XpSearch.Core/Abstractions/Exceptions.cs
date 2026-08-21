@@ -23,7 +23,7 @@ public sealed class IndexNotFoundException : Exception
 public sealed class SearchValidationException : Exception
 {
     /// <summary>Initializes a new instance of the <see cref="SearchValidationException"/> class.</summary>
-    /// <param name="field">JSON field name the error belongs to, for example <c>numericFilters</c>.</param>
+    /// <param name="field">JSON field name the error belongs to, for example <c>filters.numeric[0].attribute</c>.</param>
     /// <param name="message">Human-readable description of the problem. Must not leak internals.</param>
     public SearchValidationException(string field, string message)
         : base(message) => Errors = new Dictionary<string, string[]>(StringComparer.Ordinal) { [field] = [message] };

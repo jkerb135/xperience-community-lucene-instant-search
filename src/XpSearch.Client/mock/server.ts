@@ -12,7 +12,10 @@ import { pathToFileURL } from 'node:url';
 import { API_VERSION, API_VERSION_HEADER, EVENTS_ROUTE, QUERY_ROUTE, SUGGEST_ROUTE } from '../src/contract/constants.ts';
 import type {
   EventRequest,
-  Hit,
+  FacetFilter,
+  FacetValue,
+  NumericFilter,
+  Result,
   SearchRequest,
   SearchResponse,
   SuggestRequest,
@@ -20,7 +23,7 @@ import type {
 } from '../src/contract/generated.ts';
 
 interface Doc {
-  objectID: string;
+  id: string;
   title: string;
   content: string;
   url: string;
@@ -48,11 +51,24 @@ const TOPICS = [
 /** 2023-11-14T22:13:20Z, so `publishedAt` values are realistic epoch seconds. */
 const EPOCH = 1_700_000_000;
 
+/**
+ * The display title of each tag, keyed by its code name — what an Xperience taxonomy carries and
+ * what the server puts in `facets[].label`, so a facet list never shows a code name.
+ */
+const TAG_LABELS: Record<string, string> = {
+  coffee: 'Coffee',
+  brewing: 'Brewing',
+  espresso: 'Espresso',
+  beans: 'Beans',
+  grinder: 'Grinders',
+  milk: 'Milk drinks',
+};
+
 /** 54 documents: 3 content types, 6 tags, 2 languages, a price and a publish date. */
 export const CORPUS: Doc[] = Array.from({ length: 54 }, (_, i) => {
   const topic = TOPICS[i % TOPICS.length]!;
   return {
-    objectID: `doc-${i + 1}`,
+    id: `doc-${i + 1}`,
     title: `${topic} ${i + 1}`,
     content: `A guide to ${topic.toLowerCase()}. ${TAGS[i % TAGS.length]} and ${TAGS[(i + 2) % TAGS.length]} for every barista.`,
     url: `/docs/${topic.toLowerCase().replace(/\s+/g, '-')}-${i + 1}`,
@@ -77,6 +93,9 @@ const numberOf = (doc: Doc, attribute: string): number | undefined => {
   return typeof value === 'number' ? value : undefined;
 };
 
+const labelOf = (attribute: string, value: string): string =>
+  attribute === 'tags' ? (TAG_LABELS[value] ?? value) : value;
+
 const tokens = (query: string): string[] =>
   query.toLowerCase().split(/\s+/).filter((t) => t !== '');
 
@@ -93,34 +112,30 @@ function score(doc: Doc, query: string): number {
   return total;
 }
 
-/** `["contentType:Article","contentType:Product"]` — one group, ORed. */
-function matchesFacetGroup(doc: Doc, group: string[]): boolean {
-  return group.some((entry) => {
-    const separator = entry.indexOf(':');
-    if (separator <= 0) return false;
-    return attributeOf(doc, entry.slice(0, separator)).includes(entry.slice(separator + 1));
-  });
+/** One `filters.facets` entry: `or` matches any selected value, `and` requires all of them. */
+function matchesFacet(doc: Doc, filter: FacetFilter): boolean {
+  const values = attributeOf(doc, filter.attribute);
+  return (filter.operator ?? 'or') === 'and'
+    ? filter.values.every((value) => values.includes(value))
+    : filter.values.some((value) => values.includes(value));
 }
 
-function matchesNumeric(doc: Doc, filter: string): boolean {
-  const match = /^([A-Za-z_][\w.]*)\s*(<=|>=|<|>|=|!=)\s*(-?\d+(?:\.\d+)?)$/.exec(filter);
-  if (!match) return false;
-  const value = numberOf(doc, match[1]!);
+function matchesNumeric(doc: Doc, filter: NumericFilter): boolean {
+  const value = numberOf(doc, filter.attribute);
   if (value === undefined) return false;
-  const bound = Number(match[3]);
-  switch (match[2]) {
-    case '<':
-      return value < bound;
-    case '<=':
-      return value <= bound;
-    case '>':
-      return value > bound;
-    case '>=':
-      return value >= bound;
-    case '=':
-      return value === bound;
+  switch (filter.operator) {
+    case 'lt':
+      return value < filter.value;
+    case 'lte':
+      return value <= filter.value;
+    case 'gt':
+      return value > filter.value;
+    case 'gte':
+      return value >= filter.value;
+    case 'eq':
+      return value === filter.value;
     default:
-      return value !== bound;
+      return value !== filter.value;
   }
 }
 
@@ -150,58 +165,62 @@ function sortDocs(docs: Array<{ doc: Doc; score: number }>, sort: string | undef
     case 'price_desc':
       docs.sort((a, b) => b.doc.price - a.doc.price);
       break;
-    case 'date_desc':
+    case 'newest':
       docs.sort((a, b) => b.doc.publishedAt - a.doc.publishedAt);
       break;
     default:
-      docs.sort((a, b) => b.score - a.score || a.doc.objectID.localeCompare(b.doc.objectID));
+      docs.sort((a, b) => b.score - a.score || a.doc.id.localeCompare(b.doc.id));
   }
 }
 
 /** Runs one query against the corpus. Exported so tests can assert without HTTP. */
 export function query(request: SearchRequest): SearchResponse {
   const started = Date.now();
-  const groups = request.facetFilters ?? [];
-  const numeric = request.numericFilters ?? [];
+  const facetEntries = request.filters?.facets ?? [];
+  const numeric = request.filters?.numeric ?? [];
   const base = CORPUS.filter(
     (doc) =>
       score(doc, request.query ?? '') > 0 &&
       (request.language === undefined || doc.language === request.language) &&
       numeric.every((filter) => matchesNumeric(doc, filter))
   );
-  const matched = base.filter((doc) => groups.every((group) => matchesFacetGroup(doc, group)));
+  const matched = base.filter((doc) => facetEntries.every((filter) => matchesFacet(doc, filter)));
 
-  // Disjunctive faceting: a value's count ignores the filters on its own attribute, so an
-  // `or` refinement list keeps showing the alternatives the user can still pick.
-  const facets: Record<string, Record<string, number>> = {};
+  // Disjunctive faceting: a value's count ignores the filter on its own attribute, so an
+  // `or` facet list keeps showing the alternatives the user can still pick.
+  const facets: Record<string, FacetValue[]> = {};
   for (const attribute of request.facets ?? []) {
-    const others = groups.filter((group) => !group.some((entry) => entry.startsWith(`${attribute}:`)));
-    const counts: Record<string, number> = {};
-    for (const doc of base.filter((d) => others.every((group) => matchesFacetGroup(d, group)))) {
-      for (const value of attributeOf(doc, attribute)) counts[value] = (counts[value] ?? 0) + 1;
+    const others = facetEntries.filter((filter) => filter.attribute !== attribute);
+    const counts = new Map<string, number>();
+    for (const doc of base.filter((d) => others.every((filter) => matchesFacet(d, filter)))) {
+      for (const value of attributeOf(doc, attribute)) {
+        counts.set(value, (counts.get(value) ?? 0) + 1);
+      }
     }
-    facets[attribute] = counts;
+    // Count descending, then value ascending — the order the contract promises.
+    facets[attribute] = [...counts]
+      .map(([value, count]) => ({ value, label: labelOf(attribute, value), count }))
+      .sort((a, b) => b.count - a.count || (a.value < b.value ? -1 : a.value > b.value ? 1 : 0));
   }
 
   const scored = matched.map((doc) => ({ doc, score: score(doc, request.query ?? '') }));
   sortDocs(scored, request.sort);
 
-  const hitsPerPage = Math.min(Math.max(request.hitsPerPage ?? 20, 1), 1000);
-  const page = Math.max(request.page ?? 0, 0);
-  const window = scored.slice(page * hitsPerPage, page * hitsPerPage + hitsPerPage);
+  const pageSize = Math.min(Math.max(request.pageSize ?? 20, 1), 1000);
+  const page = Math.max(request.page ?? 1, 1);
+  const window = scored.slice((page - 1) * pageSize, page * pageSize);
 
   const preTag = request.highlight?.preTag ?? '<mark>';
   const postTag = request.highlight?.postTag ?? '</mark>';
   const snippetLength = request.highlight?.snippetLength ?? 200;
 
-  const hits: Hit[] = window.map(({ doc, score: hitScore }, index) => {
+  const results: Result[] = window.map(({ doc, score: resultScore }, index) => {
     const source = doc as unknown as Record<string, unknown>;
-    const projected: Record<string, unknown> = {};
-    const attributes = request.attributesToRetrieve ?? Object.keys(source);
-    for (const attribute of attributes) {
-      if (attribute !== 'objectID' && attribute in source) projected[attribute] = source[attribute];
+    const attributes: Record<string, unknown> = {};
+    for (const field of request.fields ?? Object.keys(source)) {
+      if (field !== 'id' && field in source) attributes[field] = source[field];
     }
-    const hit: Hit = { objectID: doc.objectID, ...projected, _score: hitScore };
+    const result: Result = { id: doc.id, attributes, score: resultScore };
     const fields = request.highlight?.fields ?? [];
     if (fields.length > 0 && (request.query ?? '') !== '') {
       const highlights: Record<string, string> = {};
@@ -211,33 +230,33 @@ export function query(request: SearchRequest): SearchResponse {
           highlights[field] = highlight(value, request.query ?? '', preTag, postTag, snippetLength);
         }
       }
-      hit._highlights = highlights;
+      result.highlights = highlights;
     }
     if (request.explain) {
-      hit._rankingInfo = {
-        baseScore: hitScore,
-        appliedBoosts: [],
-        position: page * hitsPerPage + index + 1,
+      result.ranking = {
+        baseScore: resultScore,
+        boosts: [],
+        position: (page - 1) * pageSize + index + 1,
       };
     }
-    return hit;
+    return result;
   });
 
   return {
-    hits,
+    results,
     facets,
     page,
-    hitsPerPage,
-    nbHits: scored.length,
-    nbPages: Math.ceil(scored.length / hitsPerPage),
-    processingTimeMs: Date.now() - started,
+    pageSize,
+    total: scored.length,
+    totalPages: Math.ceil(scored.length / pageSize),
+    tookMs: Date.now() - started,
     queryId: request.queryId ?? randomUUID(),
   };
 }
 
 export function suggest(request: SuggestRequest): SuggestResponse {
   const prefix = (request.query ?? '').toLowerCase();
-  const maxItems = request.maxItems ?? 5;
+  const limit = request.limit ?? 5;
   if (prefix === '') return { suggestions: [] };
   const seen = new Set<string>();
   const suggestions = CORPUS.filter((doc) => doc.title.toLowerCase().startsWith(prefix))
@@ -246,8 +265,12 @@ export function suggest(request: SuggestRequest): SuggestResponse {
       seen.add(doc.title);
       return true;
     })
-    .slice(0, maxItems)
-    .map((doc) => ({ text: doc.title, url: doc.url }));
+    .slice(0, limit)
+    .map((doc) => ({
+      text: doc.title,
+      url: doc.url,
+      result: { id: doc.id, attributes: { title: doc.title, url: doc.url } },
+    }));
   return { suggestions };
 }
 
@@ -297,7 +320,7 @@ export function handleApiRequest(req: IncomingMessage, res: ServerResponse): voi
         send(res, 200, suggest(body as SuggestRequest));
       } else if (path === EVENTS_ROUTE) {
         const event = body as EventRequest;
-        if (!event?.objectID || !event?.queryId) send(res, 400, { title: 'objectID and queryId are required', status: 400 });
+        if (!event?.resultId || !event?.queryId) send(res, 400, { title: 'resultId and queryId are required', status: 400 });
         else send(res, 202);
       } else {
         send(res, 404, { title: 'Not found', status: 404 });

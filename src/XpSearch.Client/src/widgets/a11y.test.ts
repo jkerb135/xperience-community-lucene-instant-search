@@ -15,18 +15,18 @@ import { describe, expect, it, vi } from 'vitest';
 import axe from 'axe-core';
 import { API_VERSION_HEADER } from '../contract/constants';
 import { query } from '../../mock/server.ts';
-import { xpsearch } from '../instance';
-import type { InstantSearch } from '../types';
+import { createSearch } from '../instance';
+import type { SearchInstance } from '../types';
 import {
-  clearRefinements,
-  currentRefinements,
-  hits,
+  clearFilters,
+  activeFilters,
+  results,
   pagination,
-  refinementList,
+  facetList,
   searchBox,
-  sortBy,
-  stats,
-  toggleRefinement,
+  sortSelect,
+  resultStats,
+  toggleFilter,
 } from './index';
 
 const AXE_OPTIONS: axe.RunOptions = {
@@ -41,32 +41,32 @@ const fetchFn = (async (_url: string, init: RequestInit) =>
     headers: { [API_VERSION_HEADER]: '1' },
   })) as unknown as typeof fetch;
 
-function page(): InstantSearch {
+function page(): SearchInstance {
   document.body.innerHTML = `<main>
     <h1>Search</h1>
-    <div id="box"></div><div id="sort"></div><div id="stats"></div>
+    <div id="box"></div><div id="sort"></div><div id="resultStats"></div>
     <div id="facet"></div><div id="toggle"></div><div id="chips"></div><div id="clear"></div>
     <div id="results"></div><div id="pages"></div>
   </main>`;
 
-  const search = xpsearch({
+  const search = createSearch({
     index: 'site-content',
     fetchFn,
     debounceMs: 0,
-    initialState: { hitsPerPage: 5 },
+    initialState: { pageSize: 5 },
     highlight: { fields: ['title', 'content'] },
   });
   search.addWidgets([
     searchBox({ container: '#box', showSubmit: true }),
-    sortBy({
+    sortSelect({
       container: '#sort',
       items: [
         { label: 'Relevance', value: 'relevance' },
         { label: 'Newest first', value: 'date_desc' },
       ],
     }),
-    stats({ container: '#stats' }),
-    refinementList({
+    resultStats({ container: '#resultStats' }),
+    facetList({
       container: '#facet',
       attribute: 'contentType',
       label: 'Content type',
@@ -74,13 +74,13 @@ function page(): InstantSearch {
       showMore: true,
       limit: 2,
     }),
-    toggleRefinement({ container: '#toggle', attribute: 'language', value: 'en', label: 'English' }),
-    currentRefinements({
+    toggleFilter({ container: '#toggle', attribute: 'language', value: 'en', label: 'English' }),
+    activeFilters({
       container: '#chips',
       attributeLabels: { contentType: 'Content type' },
     }),
-    clearRefinements({ container: '#clear' }),
-    hits({ container: '#results' }),
+    clearFilters({ container: '#clear' }),
+    results({ container: '#results' }),
     pagination({ container: '#pages', padding: 2 }),
   ]);
   search.start();
@@ -97,8 +97,8 @@ const violations = async (): Promise<string[]> => {
 describe('accessibility (axe-core)', () => {
   it('reports no violations for the nine widgets with results', async () => {
     const search = page();
-    search.helper.setQuery('espresso').search();
-    await vi.waitFor(() => expect(search.results?.nbHits).toBeGreaterThan(0), { timeout: 3000 });
+    search.actions.setQuery('espresso').search();
+    await vi.waitFor(() => expect(search.results?.total).toBeGreaterThan(0), { timeout: 3000 });
 
     expect(await violations()).toEqual([]);
     search.dispose();
@@ -106,18 +106,18 @@ describe('accessibility (axe-core)', () => {
 
   it('reports no violations with refinements applied and with no results', async () => {
     const search = page();
-    search.helper
+    search.actions
       .setQuery('espresso')
-      .toggleFacetRefinement('contentType', 'Article')
-      .toggleFacetRefinement('language', 'en')
+      .toggleFacet('contentType', 'Article')
+      .toggleFacet('language', 'en')
       .search();
     await vi.waitFor(() => expect(search.results).not.toBeNull(), { timeout: 3000 });
     expect(document.querySelectorAll('.xps-chip').length).toBeGreaterThan(0);
     expect(await violations()).toEqual([]);
 
-    search.helper.setQuery('zzzz-no-such-term').search();
-    await vi.waitFor(() => expect(search.results?.nbHits).toBe(0), { timeout: 3000 });
-    expect(document.querySelector('.xps-hits--empty')).not.toBeNull();
+    search.actions.setQuery('zzzz-no-such-term').search();
+    await vi.waitFor(() => expect(search.results?.total).toBe(0), { timeout: 3000 });
+    expect(document.querySelector('.xps-results--empty')).not.toBeNull();
     expect(await violations()).toEqual([]);
     search.dispose();
   }, 20_000);

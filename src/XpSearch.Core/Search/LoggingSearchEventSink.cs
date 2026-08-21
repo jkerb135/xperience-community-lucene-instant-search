@@ -31,11 +31,10 @@ public sealed class LoggingSearchEventSink : ISearchEventSink
         ArgumentNullException.ThrowIfNull(request);
 
         logger.LogDebug(
-            "Search event {EventType} for {ObjectId} on query {QueryId} (index {Index}, position {Position}).",
-            request.EventType,
-            request.ObjectId,
+            "Search event {EventType} for result {ResultId} on query {QueryId} (position {Position}).",
+            request.Type,
+            request.ResultId,
             request.QueryId,
-            request.Index,
             request.Position);
 
         return Task.CompletedTask;

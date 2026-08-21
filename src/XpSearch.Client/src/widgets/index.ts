@@ -1,38 +1,38 @@
 /**
  * The widgets shipped with the library (spec 5.3). Every one of them is
- * `connector + default renderer` over the public connector API — the dogfooding rule of
+ * `behaviour + default renderer` over the public behaviour API — the dogfooding rule of
  * spec 5.7 — and every one emits the markup contract in `themes/MARKUP.md`.
  */
 import type { MountConfig, MountWidgetFactory } from '../bootstrap';
 import type { Widget } from '../types';
-import { clearRefinements, currentRefinements } from './currentRefinements';
-import { hits } from './hits';
+import { clearFilters, activeFilters } from './activeFilters';
+import { results } from './results';
 import { pagination } from './pagination';
-import { refinementList } from './refinementList';
+import { facetList } from './facetList';
 import { searchBox } from './searchBox';
-import { sortBy } from './sortBy';
-import { stats } from './stats';
-import { toggleRefinement } from './toggleRefinement';
+import { sortSelect } from './sortSelect';
+import { resultStats } from './resultStats';
+import { toggleFilter } from './toggleFilter';
 
-export { clearRefinements, currentRefinements } from './currentRefinements';
+export { clearFilters, activeFilters } from './activeFilters';
 export type {
-  ClearRefinementsWidgetParams,
-  CurrentRefinementsWidgetParams,
-} from './currentRefinements';
-export { hits } from './hits';
-export type { HitsTemplates, HitsWidgetParams } from './hits';
+  ClearFiltersWidgetParams,
+  ActiveFiltersWidgetParams,
+} from './activeFilters';
+export { results } from './results';
+export type { ResultsTemplates, ResultsWidgetParams } from './results';
 export { pagination } from './pagination';
 export type { PaginationWidgetParams } from './pagination';
-export { refinementList } from './refinementList';
-export type { RefinementListWidgetParams } from './refinementList';
+export { facetList } from './facetList';
+export type { FacetListWidgetParams } from './facetList';
 export { searchBox } from './searchBox';
 export type { SearchBoxWidgetParams } from './searchBox';
-export { sortBy } from './sortBy';
-export type { SortByWidgetParams } from './sortBy';
-export { stats } from './stats';
-export type { StatsWidgetParams } from './stats';
-export { toggleRefinement } from './toggleRefinement';
-export type { ToggleRefinementWidgetParams } from './toggleRefinement';
+export { sortSelect } from './sortSelect';
+export type { SortSelectWidgetParams } from './sortSelect';
+export { resultStats } from './resultStats';
+export type { ResultStatsWidgetParams } from './resultStats';
+export { toggleFilter } from './toggleFilter';
+export type { ToggleFilterWidgetParams } from './toggleFilter';
 
 /**
  * `data-xps-config` is JSON: its shape is only known at runtime, so the one cast in this file
@@ -49,12 +49,12 @@ const fromMount =
 /** Resolved by `data-xps-widget` unless `registerWidgetType` overrode the name (spec 7.1). */
 export const DEFAULT_WIDGETS: Readonly<Record<string, MountWidgetFactory>> = {
   searchBox: fromMount(searchBox),
-  hits: fromMount(hits),
-  refinementList: fromMount(refinementList),
+  results: fromMount(results),
+  facetList: fromMount(facetList),
   pagination: fromMount(pagination),
-  stats: fromMount(stats),
-  sortBy: fromMount(sortBy),
-  clearRefinements: fromMount(clearRefinements),
-  currentRefinements: fromMount(currentRefinements),
-  toggleRefinement: fromMount(toggleRefinement),
+  resultStats: fromMount(resultStats),
+  sortSelect: fromMount(sortSelect),
+  clearFilters: fromMount(clearFilters),
+  activeFilters: fromMount(activeFilters),
+  toggleFilter: fromMount(toggleFilter),
 };

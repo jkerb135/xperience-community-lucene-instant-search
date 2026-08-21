@@ -14,7 +14,7 @@ function response(body: Partial<SearchResponse>, init: ResponseInit = {}): Respo
 }
 
 const ok = (queryId: string): Response =>
-  response({ hits: [], page: 0, hitsPerPage: 20, nbHits: 0, nbPages: 0, processingTimeMs: 1, queryId });
+  response({ results: [], page: 1, pageSize: 20, total: 0, totalPages: 0, tookMs: 1, queryId });
 
 describe('SearchClient', () => {
   it('debounces: three keystrokes make one request and only the last answer is delivered', async () => {
@@ -93,7 +93,7 @@ describe('SearchClient', () => {
   it('surfaces a contract-version mismatch without throwing, once per version', async () => {
     const errors: Error[] = [];
     const fetchFn = vi.fn(async () =>
-      response({ hits: [], page: 0, hitsPerPage: 20, nbHits: 0, nbPages: 0, processingTimeMs: 1 }, {
+      response({ results: [], page: 1, pageSize: 20, total: 0, totalPages: 0, tookMs: 1 }, {
         headers: { [API_VERSION_HEADER]: '2' },
       })
     );
@@ -117,7 +117,7 @@ describe('SearchClient', () => {
       onError: (error) => errors.push(error),
     });
     expect(() =>
-      client.sendEvent({ eventType: 'click', objectID: 'doc-1', queryId: 'q1', position: 1 })
+      client.sendEvent({ type: 'click', resultId: 'doc-1', queryId: 'q1', position: 1 })
     ).not.toThrow();
     await vi.waitFor(() => expect(errors).toHaveLength(1));
   });

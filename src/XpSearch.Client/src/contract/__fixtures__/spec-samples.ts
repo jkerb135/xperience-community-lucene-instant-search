@@ -1,7 +1,7 @@
 /**
- * The request and response samples from the specification (§4.2), typed against the generated
- * contract. `npm run typecheck` is the test: it fails if the generated types and the samples
- * disagree. The same two payloads back the C# round-trip tests in
+ * The request and response samples from the contract amendment (ADR-0010, §4.2), typed against
+ * the generated contract. `npm run typecheck` is the test: it fails if the generated types and
+ * the samples disagree. The same two payloads back the C# round-trip tests in
  * `XpSearch.Core.Tests/Contract/Fixtures/`.
  */
 import type { SearchRequest, SearchResponse } from '../generated.js';
@@ -9,14 +9,19 @@ import type { SearchRequest, SearchResponse } from '../generated.js';
 export const specSearchRequest: SearchRequest = {
   index: 'site-content',
   query: 'espresso',
-  page: 0,
-  hitsPerPage: 20,
-  facets: ['contentType', 'tags', 'language'],
-  facetFilters: [
-    ['contentType:Article', 'contentType:Product'],
-    ['tags:coffee'],
-  ],
-  numericFilters: ['price<=50', 'publishedAt>=1700000000'],
+  page: 1,
+  pageSize: 20,
+  facets: ['contentType', 'tags'],
+  filters: {
+    facets: [
+      { attribute: 'contentType', values: ['Article', 'Product'], operator: 'or' },
+      { attribute: 'tags', values: ['coffee'] },
+    ],
+    numeric: [
+      { attribute: 'price', operator: 'lte', value: 50 },
+      { attribute: 'publishedAt', operator: 'gte', value: 1700000000 },
+    ],
+  },
   sort: 'relevance',
   highlight: {
     fields: ['title', 'content'],
@@ -24,40 +29,49 @@ export const specSearchRequest: SearchRequest = {
     postTag: '</mark>',
     snippetLength: 200,
   },
-  attributesToRetrieve: ['title', 'url', 'summary', 'image'],
+  fields: ['title', 'url', 'summary', 'image'],
   language: 'en',
   queryId: 'generated-guid',
+  explain: false,
 };
 
 export const specSearchResponse: SearchResponse = {
-  hits: [
+  results: [
     {
-      objectID: 'web-page-42-en',
-      // title, url and summary are retrieved attributes, not reserved members: they type-check
-      // only because Hit is an open object.
-      title: 'Espresso Basics',
-      url: '/articles/espresso-basics',
-      summary: '...',
-      _score: 8.42,
-      _highlights: {
+      id: 'web-page-42-en',
+      score: 8.42,
+      // title, url and summary are retrieved document fields: they live in `attributes`, the
+      // only open object in the contract, and can never collide with a member beside it.
+      attributes: {
+        title: 'Espresso Basics',
+        url: '/articles/espresso-basics',
+        summary: '...',
+      },
+      highlights: {
         title: '<mark>Espresso</mark> Basics',
         content: '...brewing <mark>espresso</mark> requires...',
       },
-      _rankingInfo: {
-        baseScore: 6.10,
-        appliedBoosts: ['freshness:+1.2', 'rule:pin-espresso-guide'],
+      ranking: {
+        baseScore: 6.1,
+        boosts: ['freshness:+1.2', 'rule:pin-espresso-guide'],
         position: 1,
       },
     },
   ],
   facets: {
-    contentType: { Article: 34, Product: 12 },
-    tags: { coffee: 40, brewing: 18 },
+    contentType: [
+      { value: 'Article', label: 'Article', count: 34 },
+      { value: 'Product', label: 'Product', count: 12 },
+    ],
+    tags: [
+      { value: 'coffee', label: 'Coffee', count: 40 },
+      { value: 'brewing', label: 'Brewing', count: 18 },
+    ],
   },
-  page: 0,
-  hitsPerPage: 20,
-  nbHits: 46,
-  nbPages: 3,
-  processingTimeMs: 14,
+  page: 1,
+  pageSize: 20,
+  total: 46,
+  totalPages: 3,
+  tookMs: 14,
   queryId: 'generated-guid',
 };

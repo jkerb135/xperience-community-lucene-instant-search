@@ -116,9 +116,9 @@ public static class XpSearchEndpoints
             return errors;
         }
 
-        if (string.IsNullOrWhiteSpace(request.ObjectId))
+        if (string.IsNullOrWhiteSpace(request.ResultId))
         {
-            errors["objectID"] = ["objectID is required."];
+            errors["resultId"] = ["resultId is required."];
         }
 
         if (string.IsNullOrWhiteSpace(request.QueryId))
@@ -126,7 +126,7 @@ public static class XpSearchEndpoints
             errors["queryId"] = ["queryId is required."];
         }
 
-        if (request.EventType == EventType.Click && request.Position is null or < 1)
+        if (request.Type == EventType.Click && request.Position is null or < 1)
         {
             errors["position"] = ["position is required for a click event and must be one or greater."];
         }

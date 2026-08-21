@@ -48,24 +48,24 @@
     <li><em>searchBox</em> — type in the input, <kbd>Tab</kbd> to the clear button (announced
       “Clear the search query”), <kbd>Enter</kbd> resets it. The hidden reset in the empty variant
       must be skipped by <kbd>Tab</kbd>.</li>
-    <li><em>autocomplete</em> — the open fixture is static markup, so check the wiring instead:
+    <li><em>suggestions</em> — the open fixture is static markup, so check the wiring instead:
       the input is <code>role="combobox"</code> with <code>aria-expanded="true"</code>,
       <code>aria-controls</code> pointing at the listbox and <code>aria-activedescendant</code>
-      pointing at the option carrying <code>xps-autocomplete__option--active</code>. Options must
+      pointing at the option carrying <code>xps-suggestions__option--active</code>. Options must
       never take DOM focus.</li>
-    <li><em>refinementList / toggleRefinement</em> — <kbd>Space</kbd> toggles each checkbox; the
+    <li><em>facetList / toggleFilter</em> — <kbd>Space</kbd> toggles each checkbox; the
       disabled row is skipped by <kbd>Tab</kbd>; the whole label row is a hit area.</li>
     <li><em>pagination</em> — every enabled control is a link and reachable; the disabled first/prev
       controls are <code>&lt;span aria-disabled="true"&gt;</code> and are correctly skipped; the
       current page carries <code>aria-current="page"</code>.</li>
-    <li><em>sortBy</em> — <kbd>Tab</kbd> to the select, change it with the arrow keys.</li>
-    <li><em>currentRefinements</em> — <kbd>Tab</kbd> to each chip's remove button; its accessible
+    <li><em>sortSelect</em> — <kbd>Tab</kbd> to the select, change it with the arrow keys.</li>
+    <li><em>activeFilters</em> — <kbd>Tab</kbd> to each chip's remove button; its accessible
       name says which filter it removes, not just “×”.</li>
     <li><em>rangeSlider</em> — arrow keys move each native range input by one step,
       <kbd>Home</kbd>/<kbd>End</kbd> jump to the ends; the numeric inputs accept typing.</li>
-    <li><em>hierarchicalMenu</em> — every level is reachable; the selected path carries
+    <li><em>categoryTree</em> — every level is reachable; the selected path carries
       <code>aria-current="true"</code>.</li>
-    <li><em>infiniteHits</em> — the load-more button is reachable and stays in the DOM (disabled)
+    <li><em>loadMore</em> — the load-more button is reachable and stays in the DOM (disabled)
       when exhausted, so focus is never destroyed.</li>
     <li>Turn on “reduce motion” in the OS: the skeleton pulse in the loading fixtures must stop.</li>
   </ol>

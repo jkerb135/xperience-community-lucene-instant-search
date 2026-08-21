@@ -74,7 +74,7 @@ public sealed class SearchPipeline : ISearchPipeline
         var response = context.Response
             ?? throw new InvalidOperationException("The search pipeline produced no response; a stage removed or replaced the projection stage.");
 
-        response.ProcessingTimeMs = stopwatch.ElapsedMilliseconds;
+        response.TookMs = stopwatch.ElapsedMilliseconds;
 
         return response;
     }

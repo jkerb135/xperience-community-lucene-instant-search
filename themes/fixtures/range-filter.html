@@ -1,0 +1,45 @@
+<!-- rangeSlider — two native <input type="range"> plus two numeric inputs. No custom slider:
+     the native control is keyboard-operable and screen-reader-announced for free. -->
+
+<div class="xps xps-range-filter">
+  <h3 class="xps-range-filter__title" id="xps-search-1-price-title">Price</h3>
+  <div class="xps-range-filter__track" role="group" aria-labelledby="xps-search-1-price-title">
+    <label class="xps-sr-only" for="xps-search-1-price-range-min">Minimum price</label>
+    <input class="xps-range-filter__range xps-range-filter__range--min"
+           id="xps-search-1-price-range-min"
+           type="range" min="0" max="500" step="5" value="50"
+           aria-describedby="xps-search-1-price-values">
+    <label class="xps-sr-only" for="xps-search-1-price-range-max">Maximum price</label>
+    <input class="xps-range-filter__range xps-range-filter__range--max"
+           id="xps-search-1-price-range-max"
+           type="range" min="0" max="500" step="5" value="300"
+           aria-describedby="xps-search-1-price-values">
+  </div>
+  <div class="xps-range-filter__inputs">
+    <label class="xps-range-filter__input-label" for="xps-search-1-price-input-min">From</label>
+    <input class="xps-range-filter__input" id="xps-search-1-price-input-min" type="number" min="0" max="500" step="5" value="50" inputmode="numeric">
+    <span class="xps-range-filter__separator" aria-hidden="true">&ndash;</span>
+    <label class="xps-range-filter__input-label" for="xps-search-1-price-input-max">To</label>
+    <input class="xps-range-filter__input" id="xps-search-1-price-input-max" type="number" min="0" max="500" step="5" value="300" inputmode="numeric">
+  </div>
+  <p class="xps-range-filter__values" id="xps-search-1-price-values">50 to 300</p>
+</div>
+
+<!-- no refinable range in the current results -->
+<div class="xps xps-range-filter xps-range-filter--disabled">
+  <h3 class="xps-range-filter__title" id="xps-search-2-price-title">Price</h3>
+  <div class="xps-range-filter__track" role="group" aria-labelledby="xps-search-2-price-title">
+    <label class="xps-sr-only" for="xps-search-2-price-range-min">Minimum price</label>
+    <input class="xps-range-filter__range xps-range-filter__range--min" id="xps-search-2-price-range-min" type="range" min="0" max="0" value="0" disabled>
+    <label class="xps-sr-only" for="xps-search-2-price-range-max">Maximum price</label>
+    <input class="xps-range-filter__range xps-range-filter__range--max" id="xps-search-2-price-range-max" type="range" min="0" max="0" value="0" disabled>
+  </div>
+  <div class="xps-range-filter__inputs">
+    <label class="xps-range-filter__input-label" for="xps-search-2-price-input-min">From</label>
+    <input class="xps-range-filter__input" id="xps-search-2-price-input-min" type="number" value="" disabled>
+    <span class="xps-range-filter__separator" aria-hidden="true">&ndash;</span>
+    <label class="xps-range-filter__input-label" for="xps-search-2-price-input-max">To</label>
+    <input class="xps-range-filter__input" id="xps-search-2-price-input-max" type="number" value="" disabled>
+  </div>
+  <p class="xps-range-filter__values" id="xps-search-2-price-values">No price range in these results.</p>
+</div>

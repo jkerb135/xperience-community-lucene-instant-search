@@ -33,13 +33,18 @@ public static class SearchCacheKey
             request.Index,
             Query = normalizedQuery,
             request.Page,
-            request.HitsPerPage,
+            request.PageSize,
             request.Facets,
-            request.FacetFilters,
-            request.NumericFilters,
+            Filters = request.Filters is null
+                ? null
+                : new object[]
+                {
+                    request.Filters.Facets ?? [],
+                    request.Filters.Numeric ?? []
+                },
             request.Sort,
             request.Language,
-            request.AttributesToRetrieve,
+            request.Fields,
             request.Explain,
             Highlight = request.Highlight is null
                 ? null

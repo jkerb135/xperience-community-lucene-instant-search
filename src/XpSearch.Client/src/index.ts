@@ -1,11 +1,11 @@
 /**
  * `@yourco/xperience-search` — the core entry point (spec 5.2).
- * The connectors live at `@yourco/xperience-search/connectors`.
+ * The behaviours live at `@yourco/xperience-search/behaviors`.
  */
-import { xpsearch } from './instance';
+import { createSearch } from './instance';
 
-export { xpsearch };
-export default xpsearch;
+export { createSearch };
+export default createSearch;
 
 export { SearchClient, SearchError } from './client';
 export type { SearchClientOptions } from './client';
@@ -18,27 +18,27 @@ export {
 export type { MountConfig, MountWidgetFactory } from './bootstrap';
 export { defaultRouteToState, defaultStateToRoute } from './routing';
 export {
-  clearRefinements,
-  currentRefinements,
-  hits,
+  activeFilters,
+  clearFilters,
+  facetList,
   pagination,
-  refinementList,
+  results,
+  resultStats,
   searchBox,
-  sortBy,
-  stats,
-  toggleRefinement,
+  sortSelect,
+  toggleFilter,
 } from './widgets';
 export type {
-  ClearRefinementsWidgetParams,
-  CurrentRefinementsWidgetParams,
-  HitsTemplates,
-  HitsWidgetParams,
+  ActiveFiltersWidgetParams,
+  ClearFiltersWidgetParams,
+  FacetListWidgetParams,
   PaginationWidgetParams,
-  RefinementListWidgetParams,
+  ResultsTemplates,
+  ResultsWidgetParams,
+  ResultStatsWidgetParams,
   SearchBoxWidgetParams,
-  SortByWidgetParams,
-  StatsWidgetParams,
-  ToggleRefinementWidgetParams,
+  SortSelectWidgetParams,
+  ToggleFilterWidgetParams,
 } from './widgets';
 export { escapeHtml, formatNumber, highlight, html, render, TemplateResult } from './templates/html';
 export type { Renderable, TemplateHelpers } from './templates/html';
@@ -61,21 +61,23 @@ export type {
   Suggestion,
 } from './contract/generated';
 export type {
+  FacetFilter,
   FacetOperator,
-  Hit,
+  FacetValue,
   InitOptions,
-  InstantSearch,
-  InstantSearch as XpSearch,
+  NumericFilter,
   NumericOperator,
-  NumericRefinement,
   RenderArgs,
   RenderOptions,
+  Result,
   RoutingOptions,
+  SearchActions,
   SearchEvents,
-  SearchHelper,
+  SearchInstance,
   SearchResults,
   SearchState,
   SearchStatus,
+  StateFilters,
   Widget,
   WidgetFactory,
   XpSearchOptions,
