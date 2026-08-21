@@ -125,9 +125,9 @@ Gzipped: `shell.css` ~2.2 KB, `default.css` ~1.5 KB.
 ### Using shell on its own
 
 Load `shell.css`, skip `default.css`, and style the documented classes from your own design
-system. The full class list, with the ARIA attributes and state modifiers each widget emits, is in
-[`themes/MARKUP.md`](../../themes/MARKUP.md); the hand-written markup for every widget and every
-state is in `themes/fixtures/`, which is what you should copy from when writing your rules.
+system. The full class list, with the ARIA attributes and state modifiers each widget emits, is
+`themes/MARKUP.md` in the library repository; the hand-written markup for every widget and every
+state is `themes/fixtures/`, which is what to copy from when writing your rules.
 
 Two things shell deliberately leaves to you, because both require a colour:
 
