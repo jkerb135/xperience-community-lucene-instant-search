@@ -1,0 +1,124 @@
+using Lucene.Net.Analysis;
+using Lucene.Net.Documents;
+using Lucene.Net.Facet;
+using Lucene.Net.Search;
+
+using XpSearch.Core.Abstractions;
+using XpSearch.Core.Contract;
+using XpSearch.Core.Filters;
+
+namespace XpSearch.Core.Pipeline;
+
+/// <summary>One document that matched, as it came back from Lucene.</summary>
+/// <param name="Document">The stored fields of the document.</param>
+/// <param name="Score">The raw Lucene score, before any Phase 5 boost.</param>
+public sealed record ScoredDocument(Document Document, float Score);
+
+/// <summary>
+/// The mutable state a search request carries through <see cref="ISearchPipeline"/>. Every stage
+/// reads what earlier stages produced and writes what later stages consume.
+/// </summary>
+public sealed class SearchContext
+{
+    /// <summary>Initializes a new instance of the <see cref="SearchContext"/> class.</summary>
+    /// <param name="request">The deserialized request, as received.</param>
+    /// <param name="schema">Schema of the index being searched.</param>
+    /// <param name="analyzer">The index's own analyzer, used for both parsing and highlighting.</param>
+    /// <param name="facetsConfig">The index's facet configuration, or <see langword="null"/> when it has no taxonomy.</param>
+    /// <param name="cancellationToken">Cancellation token of the HTTP request.</param>
+    public SearchContext(
+        SearchRequest request,
+        IndexSchema schema,
+        Analyzer analyzer,
+        FacetsConfig? facetsConfig,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        Request = request;
+        Schema = schema ?? throw new ArgumentNullException(nameof(schema));
+        Analyzer = analyzer ?? throw new ArgumentNullException(nameof(analyzer));
+        FacetsConfig = facetsConfig;
+        CancellationToken = cancellationToken;
+        QueryText = request.Query ?? string.Empty;
+    }
+
+    /// <summary>Gets the request as received. Normalized values live on this context, not on it.</summary>
+    public SearchRequest Request { get; }
+
+    /// <summary>Gets the schema of the index being searched.</summary>
+    public IndexSchema Schema { get; }
+
+    /// <summary>Gets the analyzer of the index being searched.</summary>
+    public Analyzer Analyzer { get; }
+
+    /// <summary>Gets the facet configuration of the index, or <see langword="null"/> when it has no taxonomy sidecar.</summary>
+    public FacetsConfig? FacetsConfig { get; }
+
+    /// <summary>Gets the cancellation token of the HTTP request.</summary>
+    public CancellationToken CancellationToken { get; }
+
+    /// <summary>Gets or sets the normalized free-text query: trimmed, lowercased and length-capped.</summary>
+    public string QueryText { get; set; }
+
+    /// <summary>Gets or sets the zero-based page number, after validation.</summary>
+    public int Page { get; set; }
+
+    /// <summary>Gets or sets the page size, after validation and server-side clamping.</summary>
+    public int HitsPerPage { get; set; }
+
+    /// <summary>Gets or sets the facet dimensions counts were requested for.</summary>
+    public IReadOnlyList<string> RequestedFacets { get; set; } = [];
+
+    /// <summary>Gets or sets the parsed facet refinements: outer list ANDed, inner list ORed.</summary>
+    public IReadOnlyList<IReadOnlyList<FacetRefinement>> FacetFilters { get; set; } = [];
+
+    /// <summary>Gets or sets the parsed numeric refinements, all ANDed.</summary>
+    public IReadOnlyList<NumericFilter> NumericFilters { get; set; } = [];
+
+    /// <summary>Gets or sets the field to sort on, or <see langword="null"/> for relevance ordering.</summary>
+    public SchemaField? SortField { get; set; }
+
+    /// <summary>Gets or sets a value indicating whether the sort is descending.</summary>
+    public bool SortDescending { get; set; }
+
+    /// <summary>Gets or sets the attributes to project onto each hit; empty means every retrievable attribute.</summary>
+    public IReadOnlyList<string> AttributesToRetrieve { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets the query everything else wraps: free text, language filter and any refinement
+    /// that could not be expressed as a drill-down.
+    /// </summary>
+    public Query BaseQuery { get; set; } = new MatchAllDocsQuery();
+
+    /// <summary>
+    /// Gets the drill-down refinements, keyed by facet dimension. Executed through
+    /// <see cref="DrillSideways"/> so counts for a drilled dimension stay "what if I picked another value".
+    /// </summary>
+    public IDictionary<string, IReadOnlyList<string>> DrillDown { get; } =
+        new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+
+    /// <summary>Gets or sets the total number of matching documents across all pages.</summary>
+    public int TotalHits { get; set; }
+
+    /// <summary>Gets or sets the documents of the requested page, in ranked order.</summary>
+    public IReadOnlyList<ScoredDocument> Documents { get; set; } = [];
+
+    /// <summary>Gets or sets the raw facet counts produced by the search, before projection.</summary>
+    public Lucene.Net.Facet.Facets? Facets { get; set; }
+
+    /// <summary>
+    /// Gets or sets the projected facet counts: requested dimensions only, non-zero values only.
+    /// <see langword="null"/> when the request asked for no facets.
+    /// </summary>
+    public Dictionary<string, Dictionary<string, long>>? FacetCounts { get; set; }
+
+    /// <summary>
+    /// Gets or sets the highlighted snippets, one entry per document in <see cref="Documents"/> and in
+    /// the same order. An entry is <see langword="null"/> when nothing was highlighted for it.
+    /// </summary>
+    public IReadOnlyList<Dictionary<string, string>?> Highlights { get; set; } = [];
+
+    /// <summary>Gets or sets the response under construction. The projection stage creates it.</summary>
+    public SearchResponse? Response { get; set; }
+}
