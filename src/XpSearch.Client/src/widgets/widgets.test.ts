@@ -8,52 +8,66 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mountAll } from '../bootstrap';
 import { API_VERSION_HEADER, EVENTS_ROUTE } from '../contract/constants';
 import type { SearchRequest, SearchResponse } from '../contract/generated';
-import { xpsearch } from '../instance';
-import type { InstantSearch, Widget } from '../types';
+import { createSearch } from '../instance';
+import type { SearchInstance, Widget } from '../types';
 import { html } from '../templates/html';
 import {
-  clearRefinements,
-  currentRefinements,
-  hits,
+  clearFilters,
+  activeFilters,
+  results,
   pagination,
-  refinementList,
+  facetList,
   searchBox,
-  sortBy,
-  stats,
-  toggleRefinement,
+  sortSelect,
+  resultStats,
+  toggleFilter,
 } from './index';
 
 const RESPONSE: SearchResponse = {
-  hits: [
+  results: [
     {
-      objectID: 'doc-1',
-      title: 'Choosing an espresso machine',
-      url: '/blog/choosing-an-espresso-machine',
-      content: 'A dual-boiler espresso machine holds temperature.',
-      contentType: 'Article',
-      image: '/img/1.png',
-      _highlights: {
+      id: 'doc-1',
+      attributes: {
+        title: 'Choosing an espresso machine',
+        url: '/blog/choosing-an-espresso-machine',
+        content: 'A dual-boiler espresso machine holds temperature.',
+        contentType: 'Article',
+        image: '/img/1.png',
+      },
+      highlights: {
         title: 'Choosing an <mark>espresso</mark> machine',
         content: 'A dual-boiler <mark>espresso</mark> machine holds temperature.',
       },
     },
-    { objectID: 'doc-2', title: 'Rocket Appartamento', url: '/products/rocket', contentType: 'Product' },
-    { objectID: 'doc-3', title: 'Descaling <b>your</b> machine', url: '/support/descaling' },
+    {
+      id: 'doc-2',
+      attributes: { title: 'Rocket Appartamento', url: '/products/rocket', contentType: 'Product' },
+    },
+    {
+      id: 'doc-3',
+      attributes: { title: 'Descaling <b>your</b> machine', url: '/support/descaling' },
+    },
   ],
-  facets: { contentType: { Article: 24, Product: 11, Event: 0 } },
-  page: 0,
-  hitsPerPage: 5,
-  nbHits: 46,
-  nbPages: 9,
-  processingTimeMs: 14,
+  facets: {
+    contentType: [
+      { value: 'Article', label: 'Article', count: 24 },
+      { value: 'Product', label: 'Product', count: 11 },
+      { value: 'Event', label: 'Event', count: 0 },
+    ],
+  },
+  page: 1,
+  pageSize: 5,
+  total: 46,
+  totalPages: 9,
+  tookMs: 14,
   queryId: 'q-1',
 };
 
 const calls: Array<{ url: string; body: Record<string, unknown> }> = [];
 /** Every instance a test starts, so none of them leaks into the next test's `calls`. */
-const started: InstantSearch[] = [];
+const started: SearchInstance[] = [];
 
-function start(widgets: Widget[], response: SearchResponse = RESPONSE): InstantSearch {
+function start(widgets: Widget[], response: SearchResponse = RESPONSE): SearchInstance {
   const fetchFn = (async (url: string, init: RequestInit) => {
     calls.push({ url: String(url), body: JSON.parse(String(init.body)) as Record<string, unknown> });
     return new Response(JSON.stringify(response), {
@@ -62,7 +76,7 @@ function start(widgets: Widget[], response: SearchResponse = RESPONSE): InstantS
     });
   }) as unknown as typeof fetch;
 
-  const search = xpsearch({
+  const search = createSearch({
     index: 'site-content',
     fetchFn,
     debounceMs: 0,
@@ -75,7 +89,7 @@ function start(widgets: Widget[], response: SearchResponse = RESPONSE): InstantS
 }
 
 /** Waits for the response to have reached the widgets. */
-const settled = (search: InstantSearch): Promise<void> =>
+const settled = (search: SearchInstance): Promise<void> =>
   vi.waitFor(() => expect(search.results).not.toBeNull()) as Promise<void>;
 
 const container = (id: string): HTMLElement => {
@@ -87,10 +101,10 @@ const container = (id: string): HTMLElement => {
 
 const classesOf = (element: Element | null | undefined): string[] => [...(element?.classList ?? [])];
 
-/** The stats template separates the number from "ms" with a non-breaking space. */
+/** The resultStats template separates the number from "ms" with a non-breaking space. */
 const text = (element: Element | null | undefined): string => (element?.textContent ?? '').replace(/ /g, ' ');
 
-let search: InstantSearch | undefined;
+let search: SearchInstance | undefined;
 
 beforeEach(() => {
   calls.length = 0;
@@ -183,7 +197,7 @@ describe('searchBox', () => {
     expect(search?.state.query).toBe('');
     expect(input.value).toBe('');
 
-    search?.helper.setQuery('cold brew').search();
+    search?.actions.setQuery('cold brew').search();
     await vi.waitFor(() => expect(input.value).toBe('cold brew'));
   });
 
@@ -206,7 +220,7 @@ describe('searchBox', () => {
         headers: { [API_VERSION_HEADER]: '1' },
       });
     }) as unknown as typeof fetch;
-    search = xpsearch({ index: 'i', fetchFn: slow, debounceMs: 0, stalledSearchDelayMs: 1 });
+    search = createSearch({ index: 'i', fetchFn: slow, debounceMs: 0, stalledSearchDelayMs: 1 });
     search.addWidgets([searchBox({ container: host })]);
     search.start();
     started.push(search);
@@ -216,69 +230,69 @@ describe('searchBox', () => {
   });
 });
 
-describe('hits', () => {
+describe('results', () => {
   const mount = (params: Record<string, unknown> = {}, response = RESPONSE): HTMLElement => {
     const host = container('results');
-    search = start([hits({ container: host, ...params })], response);
-    return host.querySelector('.xps-hits') as HTMLElement;
+    search = start([results({ container: host, ...params })], response);
+    return host.querySelector('.xps-results') as HTMLElement;
   };
 
   it('renders the contract markup for a result list', async () => {
     const root = mount();
     await settled(search!);
-    expect(classesOf(root)).toEqual(['xps', 'xps-hits']);
+    expect(classesOf(root)).toEqual(['xps', 'xps-results']);
 
-    const status = root.querySelector('.xps-hits__status') as HTMLElement;
-    expect(classesOf(status)).toEqual(['xps-hits__status', 'xps-sr-only']);
+    const status = root.querySelector('.xps-results__status') as HTMLElement;
+    expect(classesOf(status)).toEqual(['xps-results__status', 'xps-sr-only']);
     expect(status.getAttribute('role')).toBe('status');
     expect(status.tagName).toBe('P');
 
-    const list = root.querySelector('.xps-hits__list') as HTMLElement;
+    const list = root.querySelector('.xps-results__list') as HTMLElement;
     expect(list.tagName).toBe('OL');
-    const items = root.querySelectorAll('.xps-hits__item');
+    const items = root.querySelectorAll('.xps-results__item');
     expect(items.length).toBe(3);
     expect(items[0]?.firstElementChild?.tagName).toBe('ARTICLE');
 
     const first = items[0] as HTMLElement;
-    expect(classesOf(first.querySelector('article'))).toEqual(['xps-hit']);
-    expect(classesOf(first.querySelector('.xps-hit__image'))).toEqual(['xps-hit__image']);
-    expect(first.querySelector('.xps-hit__image')?.getAttribute('alt')).toBe('');
-    expect(first.querySelector('.xps-hit__title')?.tagName).toBe('H3');
-    const link = first.querySelector('.xps-hit__link') as HTMLAnchorElement;
+    expect(classesOf(first.querySelector('article'))).toEqual(['xps-result']);
+    expect(classesOf(first.querySelector('.xps-result__image'))).toEqual(['xps-result__image']);
+    expect(first.querySelector('.xps-result__image')?.getAttribute('alt')).toBe('');
+    expect(first.querySelector('.xps-result__title')?.tagName).toBe('H3');
+    const link = first.querySelector('.xps-result__link') as HTMLAnchorElement;
     expect(link.getAttribute('href')).toBe('/blog/choosing-an-espresso-machine');
     expect(link.querySelector('mark')?.className).toBe('xps-highlight');
-    expect(first.querySelector('.xps-hit__snippet')?.tagName).toBe('P');
-    expect(first.querySelector('.xps-hit__meta-item')?.textContent).toBe('Article');
+    expect(first.querySelector('.xps-result__snippet')?.tagName).toBe('P');
+    expect(first.querySelector('.xps-result__meta-item')?.textContent).toBe('Article');
 
     // No image and no highlight: the media block and the snippet are omitted, not emptied.
     const third = items[2] as HTMLElement;
-    expect(third.querySelector('.xps-hit__media')).toBeNull();
-    expect(third.querySelector('.xps-hit__link')?.textContent).toBe('Descaling <b>your</b> machine');
+    expect(third.querySelector('.xps-result__media')).toBeNull();
+    expect(third.querySelector('.xps-result__link')?.textContent).toBe('Descaling <b>your</b> machine');
   });
 
   it('announces the count in the live region, and only when it changes', async () => {
     const root = mount();
-    search?.helper.setQuery('espresso');
+    search?.actions.setQuery('espresso');
     await settled(search!);
-    const status = root.querySelector('.xps-hits__status') as HTMLElement;
+    const status = root.querySelector('.xps-results__status') as HTMLElement;
     expect(status.textContent).toBe('46 results for “espresso”');
 
     const before = status;
     const spy = vi.spyOn(status, 'textContent', 'set');
-    search?.helper.setPage(0).search();
+    search?.actions.setPage(1).search();
     await vi.waitFor(() => expect(calls.length).toBeGreaterThan(1));
-    expect(root.querySelector('.xps-hits__status')).toBe(before);
+    expect(root.querySelector('.xps-results__status')).toBe(before);
     expect(spy).not.toHaveBeenCalled();
   });
 
   it('renders the empty state', async () => {
-    const root = mount({}, { ...RESPONSE, hits: [], nbHits: 0, nbPages: 0 });
-    search?.helper.setQuery('xyzzy');
+    const root = mount({}, { ...RESPONSE, results: [], total: 0, totalPages: 0 });
+    search?.actions.setQuery('xyzzy');
     await settled(search!);
-    expect(classesOf(root)).toEqual(['xps', 'xps-hits', 'xps-hits--empty']);
-    expect(root.querySelector('.xps-hits__list')).toBeNull();
-    expect(root.querySelector('.xps-hits__empty')?.textContent).toContain('No results for');
-    expect(root.querySelector('.xps-hits__status')?.textContent).toBe('No results for “xyzzy”');
+    expect(classesOf(root)).toEqual(['xps', 'xps-results', 'xps-results--empty']);
+    expect(root.querySelector('.xps-results__list')).toBeNull();
+    expect(root.querySelector('.xps-results__empty')?.textContent).toContain('No results for');
+    expect(root.querySelector('.xps-results__status')?.textContent).toBe('No results for “xyzzy”');
   });
 
   it('renders skeletons once a first search outlives the stall threshold', async () => {
@@ -290,87 +304,87 @@ describe('hits', () => {
         headers: { [API_VERSION_HEADER]: '1' },
       });
     }) as unknown as typeof fetch;
-    search = xpsearch({ index: 'i', fetchFn: slow, debounceMs: 0, stalledSearchDelayMs: 1 });
-    search.addWidgets([hits({ container: host })]);
+    search = createSearch({ index: 'i', fetchFn: slow, debounceMs: 0, stalledSearchDelayMs: 1 });
+    search.addWidgets([results({ container: host })]);
     search.start();
     started.push(search);
 
-    const root = host.querySelector('.xps-hits') as HTMLElement;
-    await vi.waitFor(() => expect(classesOf(root)).toContain('xps-hits--loading'));
+    const root = host.querySelector('.xps-results') as HTMLElement;
+    await vi.waitFor(() => expect(classesOf(root)).toContain('xps-results--loading'));
     expect(root.getAttribute('aria-busy')).toBe('true');
-    const skeletons = root.querySelectorAll('.xps-hit--skeleton');
+    const skeletons = root.querySelectorAll('.xps-result--skeleton');
     expect(skeletons.length).toBe(3);
     expect(skeletons[0]?.getAttribute('aria-hidden')).toBe('true');
-    expect(root.querySelector('.xps-hits__status')?.textContent).toBe('Searching…');
+    expect(root.querySelector('.xps-results__status')?.textContent).toBe('Searching…');
     await settled(search);
-    expect(root.querySelectorAll('.xps-hit--skeleton').length).toBe(0);
+    expect(root.querySelectorAll('.xps-result--skeleton').length).toBe(0);
   });
 
   it('applies transformItems and custom templates', async () => {
     const root = mount({
-      transformItems: (items: Array<{ title: string }>) => items.slice(0, 1),
+      transformItems: (items: Array<{ attributes: { title: string } }>) => items.slice(0, 1),
       templates: {
-        item: (hit: { title: string }, tools: { html: typeof html }) =>
-          tools.html`<article class="xps-hit"><span>${hit.title}</span></article>`,
+        item: (result: { attributes: { title: string } }, tools: { html: typeof html }) =>
+          tools.html`<article class="xps-result"><span>${result.attributes.title}</span></article>`,
       },
     });
     await settled(search!);
-    expect(root.querySelectorAll('.xps-hits__item').length).toBe(1);
+    expect(root.querySelectorAll('.xps-results__item').length).toBe(1);
     expect(root.querySelector('span')?.textContent).toBe('Choosing an espresso machine');
   });
 
-  it('sends a click event with the objectID and one-based position', async () => {
+  it('sends a click event with the id and one-based position', async () => {
     const root = mount();
     await settled(search!);
-    (root.querySelectorAll('.xps-hit__link')[1] as HTMLAnchorElement).click();
+    (root.querySelectorAll('.xps-result__link')[1] as HTMLAnchorElement).click();
     await vi.waitFor(() => expect(calls.some((call) => call.url.endsWith(EVENTS_ROUTE))).toBe(true));
     const event = calls.find((call) => call.url.endsWith(EVENTS_ROUTE))?.body;
     expect(event).toMatchObject({
-      eventType: 'click',
-      objectID: 'doc-2',
+      type: 'click',
+      resultId: 'doc-2',
       position: 2,
       queryId: 'q-1',
     });
   });
 });
 
-describe('refinementList', () => {
+describe('facetList', () => {
   const mount = (params: Record<string, unknown> = {}): HTMLElement => {
     const host = container('facet');
     search = start([
-      refinementList({ container: host, attribute: 'contentType', label: 'Content type', ...params }),
+      facetList({ container: host, attribute: 'contentType', label: 'Content type', ...params }),
     ]);
-    return host.querySelector('.xps-refinement-list') as HTMLElement;
+    return host.querySelector('.xps-facet-list') as HTMLElement;
   };
 
   it('renders the contract markup with real checkboxes', async () => {
     const root = mount();
     await settled(search!);
-    expect(classesOf(root)).toEqual(['xps', 'xps-refinement-list']);
+    expect(classesOf(root)).toEqual(['xps', 'xps-facet-list']);
 
-    const title = root.querySelector('.xps-refinement-list__title') as HTMLElement;
-    const list = root.querySelector('.xps-refinement-list__list') as HTMLElement;
+    const title = root.querySelector('.xps-facet-list__title') as HTMLElement;
+    const list = root.querySelector('.xps-facet-list__list') as HTMLElement;
     expect(title.tagName).toBe('H3');
     expect(title.textContent).toBe('Content type');
     expect(list.tagName).toBe('UL');
     expect(list.getAttribute('aria-labelledby')).toBe(title.id);
 
-    const items = [...root.querySelectorAll('.xps-refinement-list__item')];
-    expect(items.map((item) => item.querySelector('.xps-refinement-list__value')?.textContent)).toEqual(
+    const items = [...root.querySelectorAll('.xps-facet-list__item')];
+    expect(items.map((item) => item.querySelector('.xps-facet-list__value')?.textContent)).toEqual(
       ['Article', 'Product', 'Event']
     );
-    expect(items.map((item) => item.querySelector('.xps-refinement-list__count')?.textContent)).toEqual(
+    expect(items.map((item) => item.querySelector('.xps-facet-list__count')?.textContent)).toEqual(
       ['24', '11', '0']
     );
     const checkbox = items[0]?.querySelector('input') as HTMLInputElement;
     expect(checkbox.type).toBe('checkbox');
     expect(checkbox.name).toBe('contentType');
     expect(checkbox.value).toBe('Article');
-    expect(checkbox.closest('label')?.className).toBe('xps-refinement-list__label');
-    // A value nothing matches any more is a disabled row (fixture: canRefine=false).
+    expect(checkbox.closest('label')?.className).toBe('xps-facet-list__label');
+    // A value nothing matches any more is a disabled row (fixture: canApply=false).
     expect(classesOf(items[2])).toEqual([
-      'xps-refinement-list__item',
-      'xps-refinement-list__item--disabled',
+      'xps-facet-list__item',
+      'xps-facet-list__item--disabled',
     ]);
     expect((items[2]?.querySelector('input') as HTMLInputElement).disabled).toBe(true);
   });
@@ -379,67 +393,67 @@ describe('refinementList', () => {
     const root = mount();
     await settled(search!);
     (root.querySelector('input') as HTMLInputElement).click();
-    expect(search?.state.facetFilters['contentType']).toEqual(['Article']);
+    expect(search?.state.filters.facets[0]?.values).toEqual(['Article']);
     await vi.waitFor(() =>
-      expect(classesOf(root.querySelector('.xps-refinement-list__item'))).toContain(
-        'xps-refinement-list__item--selected'
+      expect(classesOf(root.querySelector('.xps-facet-list__item'))).toContain(
+        'xps-facet-list__item--selected'
       )
     );
     expect((root.querySelector('input') as HTMLInputElement).checked).toBe(true);
   });
 
-  it('orders items with sortBy', async () => {
+  it('orders items with sortSelect', async () => {
     const root = mount({ sortBy: ['name:asc'] });
     await settled(search!);
     expect(
-      [...root.querySelectorAll('.xps-refinement-list__value')].map((node) => node.textContent)
+      [...root.querySelectorAll('.xps-facet-list__value')].map((node) => node.textContent)
     ).toEqual(['Article', 'Event', 'Product']);
   });
 
   it('toggles show more with aria-expanded and keeps the button in the DOM', async () => {
     const root = mount({ showMore: true, limit: 1 });
     await settled(search!);
-    const button = root.querySelector('.xps-refinement-list__show-more') as HTMLButtonElement;
+    const button = root.querySelector('.xps-facet-list__show-more') as HTMLButtonElement;
     expect(button.getAttribute('aria-expanded')).toBe('false');
     expect(button.textContent).toBe('Show more');
-    expect(root.querySelectorAll('.xps-refinement-list__item').length).toBe(1);
+    expect(root.querySelectorAll('.xps-facet-list__item').length).toBe(1);
 
     button.click();
     expect(button.getAttribute('aria-expanded')).toBe('true');
     expect(button.textContent).toBe('Show less');
-    expect(root.querySelectorAll('.xps-refinement-list__item').length).toBe(3);
-    expect(root.querySelector('.xps-refinement-list__show-more')).toBe(button);
+    expect(root.querySelectorAll('.xps-facet-list__item').length).toBe(3);
+    expect(root.querySelector('.xps-facet-list__show-more')).toBe(button);
   });
 
   it('disables show more when there is nothing more to show', async () => {
     const root = mount({ showMore: true, limit: 10 });
     await settled(search!);
-    const button = root.querySelector('.xps-refinement-list__show-more') as HTMLButtonElement;
+    const button = root.querySelector('.xps-facet-list__show-more') as HTMLButtonElement;
     expect(button.disabled).toBe(true);
-    expect(classesOf(button)).toContain('xps-refinement-list__show-more--disabled');
+    expect(classesOf(button)).toContain('xps-facet-list__show-more--disabled');
   });
 
   it('filters client-side when searchable, and keeps focus in the search input', async () => {
     const root = mount({ searchable: true });
     await settled(search!);
-    expect(classesOf(root)).toContain('xps-refinement-list--searchable');
-    const field = root.querySelector('.xps-refinement-list__search-input') as HTMLInputElement;
+    expect(classesOf(root)).toContain('xps-facet-list--searchable');
+    const field = root.querySelector('.xps-facet-list__search-input') as HTMLInputElement;
     expect(field.type).toBe('search');
-    expect(root.querySelector('.xps-refinement-list__search label')?.className).toBe('xps-sr-only');
+    expect(root.querySelector('.xps-facet-list__search label')?.className).toBe('xps-sr-only');
 
     field.focus();
     field.value = 'art';
     field.dispatchEvent(new Event('input', { bubbles: true }));
     expect(document.activeElement).toBe(field);
-    const values = [...root.querySelectorAll('.xps-refinement-list__value')];
+    const values = [...root.querySelectorAll('.xps-facet-list__value')];
     expect(values.length).toBe(1);
     expect(values[0]?.innerHTML).toBe('<mark class="xps-highlight">Art</mark>icle');
-    expect((root.querySelector('.xps-refinement-list__no-results') as HTMLElement).hidden).toBe(true);
+    expect((root.querySelector('.xps-facet-list__no-results') as HTMLElement).hidden).toBe(true);
 
     field.value = 'zzz';
     field.dispatchEvent(new Event('input', { bubbles: true }));
-    expect((root.querySelector('.xps-refinement-list__list') as HTMLElement).hidden).toBe(true);
-    const none = root.querySelector('.xps-refinement-list__no-results') as HTMLElement;
+    expect((root.querySelector('.xps-facet-list__list') as HTMLElement).hidden).toBe(true);
+    const none = root.querySelector('.xps-facet-list__no-results') as HTMLElement;
     expect(none.hidden).toBe(false);
     expect(none.getAttribute('role')).toBe('status');
   });
@@ -486,9 +500,9 @@ describe('pagination', () => {
     );
   });
 
-  it('gives every link the href createURL produces', async () => {
+  it('gives every link the href urlFor produces', async () => {
     const host = container('pages');
-    search = xpsearch({
+    search = createSearch({
       index: 'i',
       routing: true,
       fetchFn: (async () =>
@@ -509,7 +523,7 @@ describe('pagination', () => {
     for (const link of links) {
       const page = Number(link.dataset['xpsPage']);
       expect(link.getAttribute('href')).toBe(
-        search.createURL({ ...search.state, page })
+        search.urlFor({ ...search.state, page })
       );
     }
     expect(links[1]?.getAttribute('href')).toContain('page=2');
@@ -522,7 +536,7 @@ describe('pagination', () => {
     const event = new MouseEvent('click', { bubbles: true, cancelable: true });
     link.dispatchEvent(event);
     expect(event.defaultPrevented).toBe(true);
-    expect(search?.state.page).toBe(2);
+    expect(search?.state.page).toBe(3);
   });
 
   it('hides itself when there is only one page', async () => {
@@ -531,47 +545,47 @@ describe('pagination', () => {
     expect(root.hidden).toBe(false);
 
     const host = container('pages-2');
-    search = start([pagination({ container: host })], { ...RESPONSE, nbPages: 1, nbHits: 3 });
+    search = start([pagination({ container: host })], { ...RESPONSE, totalPages: 1, total: 3 });
     await settled(search);
     expect((host.querySelector('.xps-pagination') as HTMLElement).hidden).toBe(true);
   });
 });
 
-describe('stats', () => {
+describe('resultStats', () => {
   it('renders the default text and the time element', async () => {
-    const host = container('stats');
-    search = start([stats({ container: host })]);
-    const root = host.querySelector('.xps-stats') as HTMLElement;
-    expect(classesOf(root)).toEqual(['xps', 'xps-stats', 'xps-stats--empty']);
+    const host = container('resultStats');
+    search = start([resultStats({ container: host })]);
+    const root = host.querySelector('.xps-result-stats') as HTMLElement;
+    expect(classesOf(root)).toEqual(['xps', 'xps-result-stats', 'xps-result-stats--empty']);
     expect(root.textContent).toBe('Type to search.');
 
     await settled(search);
-    expect(classesOf(root)).toEqual(['xps', 'xps-stats']);
-    const line = root.querySelector('.xps-stats__text') as HTMLElement;
+    expect(classesOf(root)).toEqual(['xps', 'xps-result-stats']);
+    const line = root.querySelector('.xps-result-stats__text') as HTMLElement;
     expect(line.tagName).toBe('SPAN');
     expect(text(line)).toBe('46 results in 14 ms');
-    expect(text(root.querySelector('.xps-stats__time'))).toBe('14 ms');
-    // The count lives in a live region on `hits` only (spec 5.6).
+    expect(text(root.querySelector('.xps-result-stats__time'))).toBe('14 ms');
+    // The count lives in a live region on `results` only (spec 5.6).
     expect(root.getAttribute('role')).toBeNull();
     expect(root.getAttribute('aria-live')).toBeNull();
   });
 
   it('accepts templates.text', async () => {
-    const host = container('stats');
+    const host = container('resultStats');
     search = start([
-      stats({
+      resultStats({
         container: host,
         templates: {
-          text: (data, tools) => tools.html`<b>${tools.formatNumber(data.nbHits)}</b>`,
+          text: (data, tools) => tools.html`<b>${tools.formatNumber(data.total)}</b>`,
         },
       }),
     ]);
     await settled(search);
-    expect(host.querySelector('.xps-stats__text')?.innerHTML).toBe('<b>46</b>');
+    expect(host.querySelector('.xps-result-stats__text')?.innerHTML).toBe('<b>46</b>');
   });
 });
 
-describe('sortBy', () => {
+describe('sortSelect', () => {
   const items = [
     { label: 'Relevance', value: 'relevance' },
     { label: 'Newest first', value: 'date_desc' },
@@ -579,12 +593,12 @@ describe('sortBy', () => {
 
   it('renders a labelled native select and refines on change', async () => {
     const host = container('sort');
-    search = start([sortBy({ container: host, items })]);
-    const root = host.querySelector('.xps-sort-by') as HTMLElement;
-    expect(classesOf(root)).toEqual(['xps', 'xps-sort-by']);
+    search = start([sortSelect({ container: host, items })]);
+    const root = host.querySelector('.xps-sort-select') as HTMLElement;
+    expect(classesOf(root)).toEqual(['xps', 'xps-sort-select']);
     const label = root.querySelector('label') as HTMLLabelElement;
     const select = root.querySelector('select') as HTMLSelectElement;
-    expect(classesOf(label)).toEqual(['xps-sort-by__label']);
+    expect(classesOf(label)).toEqual(['xps-sort-select__label']);
     expect(label.htmlFor).toBe(select.id);
     expect(select.name).toBe('sort');
     expect([...select.options].map((option) => option.value)).toEqual(['relevance', 'date_desc']);
@@ -599,46 +613,46 @@ describe('sortBy', () => {
   });
 });
 
-describe('clearRefinements', () => {
+describe('clearFilters', () => {
   it('is disabled with nothing to clear and clears every refinement', async () => {
     const host = container('clear');
-    search = start([clearRefinements({ container: host })]);
-    const root = host.querySelector('.xps-clear-refinements') as HTMLElement;
+    search = start([clearFilters({ container: host })]);
+    const root = host.querySelector('.xps-clear-filters') as HTMLElement;
     const button = root.querySelector('button') as HTMLButtonElement;
-    expect(classesOf(root)).toEqual(['xps', 'xps-clear-refinements', 'xps-clear-refinements--disabled']);
-    expect(classesOf(button)).toEqual(['xps-button', 'xps-clear-refinements__button']);
+    expect(classesOf(root)).toEqual(['xps', 'xps-clear-filters', 'xps-clear-filters--disabled']);
+    expect(classesOf(button)).toEqual(['xps-button', 'xps-clear-filters__button']);
     expect(button.type).toBe('button');
     expect(button.disabled).toBe(true);
 
-    search.helper.toggleFacetRefinement('contentType', 'Article').search();
+    search.actions.toggleFacet('contentType', 'Article').search();
     await vi.waitFor(() => expect(button.disabled).toBe(false));
-    expect(classesOf(root)).toEqual(['xps', 'xps-clear-refinements']);
+    expect(classesOf(root)).toEqual(['xps', 'xps-clear-filters']);
 
     button.click();
-    expect(search.state.facetFilters).toEqual({});
+    expect(search.state.filters.facets).toEqual([]);
     await vi.waitFor(() => expect(button.disabled).toBe(true));
     expect(root.querySelector('button')).toBe(button);
   });
 });
 
-describe('currentRefinements', () => {
+describe('activeFilters', () => {
   it('renders a removable chip per refinement', async () => {
     const host = container('chips');
     search = start([
-      currentRefinements({ container: host, attributeLabels: { contentType: 'Content type' } }),
+      activeFilters({ container: host, attributeLabels: { contentType: 'Content type' } }),
     ]);
-    const root = host.querySelector('.xps-current-refinements') as HTMLElement;
-    expect(classesOf(root)).toEqual(['xps', 'xps-current-refinements', 'xps-current-refinements--empty']);
-    const list = root.querySelector('.xps-current-refinements__list') as HTMLElement;
-    const title = root.querySelector('.xps-current-refinements__title') as HTMLElement;
+    const root = host.querySelector('.xps-active-filters') as HTMLElement;
+    expect(classesOf(root)).toEqual(['xps', 'xps-active-filters', 'xps-active-filters--empty']);
+    const list = root.querySelector('.xps-active-filters__list') as HTMLElement;
+    const title = root.querySelector('.xps-active-filters__title') as HTMLElement;
     expect(list.tagName).toBe('UL');
     expect(list.children.length).toBe(0);
     expect(list.getAttribute('aria-labelledby')).toBe(title.id);
-    expect(classesOf(title)).toEqual(['xps-current-refinements__title', 'xps-sr-only']);
+    expect(classesOf(title)).toEqual(['xps-active-filters__title', 'xps-sr-only']);
 
-    search.helper.toggleFacetRefinement('contentType', 'Article').search();
+    search.actions.toggleFacet('contentType', 'Article').search();
     await vi.waitFor(() => expect(root.querySelectorAll('.xps-chip').length).toBe(1));
-    expect(classesOf(root)).toEqual(['xps', 'xps-current-refinements']);
+    expect(classesOf(root)).toEqual(['xps', 'xps-active-filters']);
     const chip = root.querySelector('.xps-chip') as HTMLElement;
     expect(chip.querySelector('.xps-chip__attribute')?.textContent).toBe('Content type');
     expect(chip.querySelector('.xps-chip__label')?.textContent).toBe('Content type Article');
@@ -646,46 +660,46 @@ describe('currentRefinements', () => {
     expect(remove.getAttribute('aria-label')).toBe('Remove filter Content type: Article');
 
     remove.click();
-    expect(search.state.facetFilters['contentType']).toBeUndefined();
+    expect(search.state.filters.facets).toEqual([]);
     await vi.waitFor(() => expect(root.querySelectorAll('.xps-chip').length).toBe(0));
   });
 
   it('labels a numeric refinement with its operator', async () => {
     const host = container('chips');
-    search = start([currentRefinements({ container: host })]);
-    search.helper.setNumericRefinement('price', '<=', 50).search();
+    search = start([activeFilters({ container: host })]);
+    search.actions.setNumericFilter('price', 'lte', 50).search();
     await vi.waitFor(() => expect(host.querySelectorAll('.xps-chip').length).toBe(1));
-    expect(host.querySelector('.xps-chip__label')?.textContent).toBe('price <= 50');
+    expect(host.querySelector('.xps-chip__label')?.textContent).toBe('price lte 50');
   });
 });
 
-describe('toggleRefinement', () => {
+describe('toggleFilter', () => {
   it('renders one real checkbox and refines on change', async () => {
     const host = container('toggle');
     search = start([
-      toggleRefinement({ container: host, attribute: 'contentType', value: 'Article', label: 'Articles only' }),
+      toggleFilter({ container: host, attribute: 'contentType', value: 'Article', label: 'Articles only' }),
     ]);
-    const root = host.querySelector('.xps-toggle-refinement') as HTMLElement;
+    const root = host.querySelector('.xps-toggle-filter') as HTMLElement;
     await settled(search);
     const checkbox = root.querySelector('input') as HTMLInputElement;
     expect(checkbox.type).toBe('checkbox');
-    expect(checkbox.closest('label')?.className).toBe('xps-toggle-refinement__label');
-    expect(root.querySelector('.xps-toggle-refinement__value')?.textContent).toBe('Articles only');
-    expect(root.querySelector('.xps-toggle-refinement__count')?.textContent).toBe('24');
+    expect(checkbox.closest('label')?.className).toBe('xps-toggle-filter__label');
+    expect(root.querySelector('.xps-toggle-filter__value')?.textContent).toBe('Articles only');
+    expect(root.querySelector('.xps-toggle-filter__count')?.textContent).toBe('24');
     expect(checkbox.disabled).toBe(false);
 
     checkbox.click();
-    expect(search.state.facetFilters['contentType']).toEqual(['Article']);
+    expect(search.state.filters.facets[0]?.values).toEqual(['Article']);
     await vi.waitFor(() => expect(checkbox.checked).toBe(true));
     expect(root.querySelector('input')).toBe(checkbox);
   });
 
   it('disables itself when no document carries the value', async () => {
     const host = container('toggle');
-    search = start([toggleRefinement({ container: host, attribute: 'contentType', value: 'Event' })]);
+    search = start([toggleFilter({ container: host, attribute: 'contentType', value: 'Event' })]);
     await settled(search);
-    const root = host.querySelector('.xps-toggle-refinement') as HTMLElement;
-    expect(classesOf(root)).toContain('xps-toggle-refinement--disabled');
+    const root = host.querySelector('.xps-toggle-filter') as HTMLElement;
+    expect(classesOf(root)).toContain('xps-toggle-filter--disabled');
     expect((root.querySelector('input') as HTMLInputElement).disabled).toBe(true);
   });
 });
@@ -695,14 +709,14 @@ describe('the .xps-mount bootstrap', () => {
     const config = JSON.stringify({ index: 'site-content', searchOnInitialLoad: false });
     const mounts: Array<[string, Record<string, unknown>]> = [
       ['searchBox', {}],
-      ['hits', {}],
-      ['refinementList', { attribute: 'contentType' }],
+      ['results', {}],
+      ['facetList', { attribute: 'contentType' }],
       ['pagination', {}],
-      ['stats', {}],
-      ['sortBy', { items: [{ label: 'Relevance', value: 'relevance' }] }],
-      ['clearRefinements', {}],
-      ['currentRefinements', {}],
-      ['toggleRefinement', { attribute: 'contentType', value: 'Article' }],
+      ['resultStats', {}],
+      ['sortSelect', { items: [{ label: 'Relevance', value: 'relevance' }] }],
+      ['clearFilters', {}],
+      ['activeFilters', {}],
+      ['toggleFilter', { attribute: 'contentType', value: 'Article' }],
     ];
     document.body.innerHTML = mounts
       .map(
@@ -717,14 +731,14 @@ describe('the .xps-mount bootstrap', () => {
     expect(roots.length).toBe(9);
     expect(roots.map((root) => [...root.classList][1])).toEqual([
       'xps-search-box',
-      'xps-hits',
-      'xps-refinement-list',
+      'xps-results',
+      'xps-facet-list',
       'xps-pagination',
-      'xps-stats',
-      'xps-sort-by',
-      'xps-clear-refinements',
-      'xps-current-refinements',
-      'xps-toggle-refinement',
+      'xps-result-stats',
+      'xps-sort-select',
+      'xps-clear-filters',
+      'xps-active-filters',
+      'xps-toggle-filter',
     ]);
     instances[0]?.dispose();
   });
@@ -733,10 +747,10 @@ describe('the .xps-mount bootstrap', () => {
 describe('two instances on one page', () => {
   it('do not interfere (spec 12)', async () => {
     const one = container('one');
-    const oneStats = container('one-stats');
+    const oneStats = container('one-resultStats');
     const two = container('two');
-    const first = start([searchBox({ container: one }), stats({ container: oneStats })]);
-    const second = start([searchBox({ container: two })], { ...RESPONSE, nbHits: 7 });
+    const first = start([searchBox({ container: one }), resultStats({ container: oneStats })]);
+    const second = start([searchBox({ container: two })], { ...RESPONSE, total: 7 });
     await settled(first);
     await settled(second);
 
@@ -746,15 +760,15 @@ describe('two instances on one page', () => {
     expect(second.state.query).toBe('espresso');
     expect(first.state.query).toBe('');
     expect((one.querySelector('input') as HTMLInputElement).value).toBe('');
-    expect(text(oneStats.querySelector('.xps-stats__text'))).toBe('46 results in 14 ms');
-    expect(second.results?.nbHits).toBe(7);
+    expect(text(oneStats.querySelector('.xps-result-stats__text'))).toBe('46 results in 14 ms');
+    expect(second.results?.total).toBe(7);
   });
 });
 
 describe('request parameters', () => {
-  it('asks the server for the facet a refinementList needs', async () => {
+  it('asks the server for the facet a facetList needs', async () => {
     const host = container('facet');
-    search = start([refinementList({ container: host, attribute: 'tags' })]);
+    search = start([facetList({ container: host, attribute: 'tags' })]);
     await settled(search);
     expect((calls[0]?.body as unknown as SearchRequest).facets).toEqual(['tags']);
   });

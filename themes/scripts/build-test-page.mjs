@@ -10,9 +10,9 @@ const themes = join(dirname(fileURLToPath(import.meta.url)), '..');
 const checkOnly = process.argv.includes('--check');
 
 const ORDER = [
-  'search-box', 'autocomplete', 'stats', 'sort-by', 'hits', 'refinement-list',
-  'toggle-refinement', 'current-refinements', 'clear-refinements', 'pagination',
-  'range-slider', 'hierarchical-menu', 'infinite-hits', 'utilities', 'mount',
+  'search-box', 'suggestions', 'result-stats', 'sort-select', 'results', 'facet-list',
+  'toggle-filter', 'active-filters', 'clear-filters', 'pagination',
+  'range-filter', 'category-tree', 'load-more', 'utilities', 'mount',
 ];
 
 const SECTIONS = {

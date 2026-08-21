@@ -1,9 +1,9 @@
-<!-- currentRefinements — removable chips, one per active refinement value -->
+<!-- activeFilters — removable chips, one per active filter value -->
 
-<div class="xps xps-current-refinements">
-  <h3 class="xps-current-refinements__title xps-sr-only" id="xps-search-1-current-refinements-title">Active filters</h3>
-  <ul class="xps-current-refinements__list" aria-labelledby="xps-search-1-current-refinements-title">
-    <li class="xps-current-refinements__item">
+<div class="xps xps-active-filters">
+  <h3 class="xps-active-filters__title xps-sr-only" id="xps-search-1-active-filters-title">Active filters</h3>
+  <ul class="xps-active-filters__list" aria-labelledby="xps-search-1-active-filters-title">
+    <li class="xps-active-filters__item">
       <span class="xps-chip">
         <span class="xps-chip__label"><span class="xps-chip__attribute">Content type</span> Article</span>
         <button class="xps-chip__remove" type="button" aria-label="Remove filter Content type: Article">
@@ -11,7 +11,7 @@
         </button>
       </span>
     </li>
-    <li class="xps-current-refinements__item">
+    <li class="xps-active-filters__item">
       <span class="xps-chip">
         <span class="xps-chip__label"><span class="xps-chip__attribute">Tags</span> espresso</span>
         <button class="xps-chip__remove" type="button" aria-label="Remove filter Tags: espresso">
@@ -19,7 +19,7 @@
         </button>
       </span>
     </li>
-    <li class="xps-current-refinements__item">
+    <li class="xps-active-filters__item">
       <span class="xps-chip">
         <span class="xps-chip__label"><span class="xps-chip__attribute">Price</span> 50 to 300</span>
         <button class="xps-chip__remove" type="button" aria-label="Remove filter Price: 50 to 300">
@@ -30,8 +30,8 @@
   </ul>
 </div>
 
-<!-- nothing refined: the widget renders an empty list rather than disappearing, so layout is stable -->
-<div class="xps xps-current-refinements xps-current-refinements--empty">
-  <h3 class="xps-current-refinements__title xps-sr-only" id="xps-search-2-current-refinements-title">Active filters</h3>
-  <ul class="xps-current-refinements__list" aria-labelledby="xps-search-2-current-refinements-title"></ul>
+<!-- nothing filtered: the widget renders an empty list rather than disappearing, so layout is stable -->
+<div class="xps xps-active-filters xps-active-filters--empty">
+  <h3 class="xps-active-filters__title xps-sr-only" id="xps-search-2-active-filters-title">Active filters</h3>
+  <ul class="xps-active-filters__list" aria-labelledby="xps-search-2-active-filters-title"></ul>
 </div>

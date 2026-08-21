@@ -24,743 +24,743 @@
 
     <section class="fx fx--search-box">
       <h2>search-box</h2>
-      <!-- searchBox — states: default (filled, reset + submit shown), empty (reset hidden), no-submit, stalled -->      
-            
-      <form class="xps xps-search-box" role="search" action="/search" method="get" novalidate>      
-        <label class="xps-search-box__label xps-sr-only" for="xps-search-1-search-box-input">Search this site</label>      
-        <div class="xps-search-box__field">      
-          <input class="xps-search-box__input"      
-                 id="xps-search-1-search-box-input"      
-                 type="search"      
-                 name="q"      
-                 value="espresso machine"      
-                 placeholder="Search…"      
-                 autocomplete="off"      
-                 autocapitalize="off"      
-                 autocorrect="off"      
-                 spellcheck="false">      
-          <span class="xps-search-box__loading xps-skeleton" aria-hidden="true"></span>      
-          <button class="xps-button xps-search-box__reset" type="reset" aria-label="Clear the search query">      
-            <span aria-hidden="true">&times;</span>      
-          </button>      
-          <button class="xps-button xps-search-box__submit" type="submit" aria-label="Submit the search query">      
-            <span aria-hidden="true">&rarr;</span>      
-          </button>      
-        </div>      
-      </form>      
-            
-      <!-- empty query: the reset button is present but hidden, no submit button, visible label -->      
-      <form class="xps xps-search-box" role="search" action="/search" method="get" novalidate>      
-        <label class="xps-search-box__label" for="xps-search-2-search-box-input">Search this site</label>      
-        <div class="xps-search-box__field">      
-          <input class="xps-search-box__input"      
-                 id="xps-search-2-search-box-input"      
-                 type="search"      
-                 name="q"      
-                 value=""      
-                 placeholder="Search…"      
-                 autocomplete="off">      
-          <span class="xps-search-box__loading xps-skeleton" aria-hidden="true"></span>      
-          <button class="xps-button xps-search-box__reset" type="reset" aria-label="Clear the search query" hidden>      
-            <span aria-hidden="true">&times;</span>      
-          </button>      
-        </div>      
-      </form>      
-            
-      <!-- stalled: a search has been in flight longer than the stall threshold -->      
-      <form class="xps xps-search-box xps-search-box--stalled" role="search" action="/search" method="get" novalidate>      
-        <label class="xps-search-box__label xps-sr-only" for="xps-search-3-search-box-input">Search this site</label>      
-        <div class="xps-search-box__field">      
-          <input class="xps-search-box__input"      
-                 id="xps-search-3-search-box-input"      
-                 type="search"      
-                 name="q"      
-                 value="cold brew"      
-                 placeholder="Search…"      
-                 autocomplete="off">      
-          <span class="xps-search-box__loading xps-skeleton" aria-hidden="true"></span>      
-          <button class="xps-button xps-search-box__reset" type="reset" aria-label="Clear the search query">      
-            <span aria-hidden="true">&times;</span>      
-          </button>      
-        </div>      
+      <!-- searchBox — states: default (filled, reset + submit shown), empty (reset hidden), no-submit, stalled -->
+      
+      <form class="xps xps-search-box" role="search" action="/search" method="get" novalidate>
+        <label class="xps-search-box__label xps-sr-only" for="xps-search-1-search-box-input">Search this site</label>
+        <div class="xps-search-box__field">
+          <input class="xps-search-box__input"
+                 id="xps-search-1-search-box-input"
+                 type="search"
+                 name="q"
+                 value="espresso machine"
+                 placeholder="Search…"
+                 autocomplete="off"
+                 autocapitalize="off"
+                 autocorrect="off"
+                 spellcheck="false">
+          <span class="xps-search-box__loading xps-skeleton" aria-hidden="true"></span>
+          <button class="xps-button xps-search-box__reset" type="reset" aria-label="Clear the search query">
+            <span aria-hidden="true">&times;</span>
+          </button>
+          <button class="xps-button xps-search-box__submit" type="submit" aria-label="Submit the search query">
+            <span aria-hidden="true">&rarr;</span>
+          </button>
+        </div>
+      </form>
+      
+      <!-- empty query: the reset button is present but hidden, no submit button, visible label -->
+      <form class="xps xps-search-box" role="search" action="/search" method="get" novalidate>
+        <label class="xps-search-box__label" for="xps-search-2-search-box-input">Search this site</label>
+        <div class="xps-search-box__field">
+          <input class="xps-search-box__input"
+                 id="xps-search-2-search-box-input"
+                 type="search"
+                 name="q"
+                 value=""
+                 placeholder="Search…"
+                 autocomplete="off">
+          <span class="xps-search-box__loading xps-skeleton" aria-hidden="true"></span>
+          <button class="xps-button xps-search-box__reset" type="reset" aria-label="Clear the search query" hidden>
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+      </form>
+      
+      <!-- stalled: a search has been in flight longer than the stall threshold -->
+      <form class="xps xps-search-box xps-search-box--stalled" role="search" action="/search" method="get" novalidate>
+        <label class="xps-search-box__label xps-sr-only" for="xps-search-3-search-box-input">Search this site</label>
+        <div class="xps-search-box__field">
+          <input class="xps-search-box__input"
+                 id="xps-search-3-search-box-input"
+                 type="search"
+                 name="q"
+                 value="cold brew"
+                 placeholder="Search…"
+                 autocomplete="off">
+          <span class="xps-search-box__loading xps-skeleton" aria-hidden="true"></span>
+          <button class="xps-button xps-search-box__reset" type="reset" aria-label="Clear the search query">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
       </form>
     </section>
 
-    <section class="fx fx--autocomplete">
-      <h2>autocomplete</h2>
-      <!-- autocomplete — WAI-ARIA 1.2 combobox with a listbox popup      
-           https://www.w3.org/WAI/ARIA/apg/patterns/combobox/      
-           States: open with an active option and a federated hits group, closed, open-but-empty. -->      
-            
-      <div class="xps xps-autocomplete xps-autocomplete--open">      
-        <form class="xps-autocomplete__form" role="search" action="/search" method="get" novalidate>      
-          <label class="xps-autocomplete__label xps-sr-only" for="xps-search-1-autocomplete-input">Search this site</label>      
-          <div class="xps-autocomplete__field">      
-            <input class="xps-autocomplete__input"      
-                   id="xps-search-1-autocomplete-input"      
-                   type="text"      
-                   name="q"      
-                   value="esp"      
-                   role="combobox"      
-                   aria-expanded="true"      
-                   aria-controls="xps-search-1-autocomplete-listbox"      
-                   aria-activedescendant="xps-search-1-autocomplete-option-1"      
-                   aria-autocomplete="list"      
-                   autocomplete="off"      
-                   autocapitalize="off"      
-                   autocorrect="off"      
-                   spellcheck="false"      
-                   placeholder="Search…">      
-            <button class="xps-button xps-autocomplete__reset" type="reset" aria-label="Clear the search query">      
-              <span aria-hidden="true">&times;</span>      
-            </button>      
-          </div>      
-        </form>      
-        <div class="xps-autocomplete__panel">      
-          <ul class="xps-autocomplete__list"      
-              id="xps-search-1-autocomplete-listbox"      
-              role="listbox"      
-              aria-label="Search suggestions">      
-            <li class="xps-autocomplete__group" role="group" aria-labelledby="xps-search-1-autocomplete-group-suggestions">      
-              <div class="xps-autocomplete__group-title" id="xps-search-1-autocomplete-group-suggestions">Suggestions</div>      
-              <div class="xps-autocomplete__option"      
-                   role="option"      
-                   id="xps-search-1-autocomplete-option-0"      
-                   aria-selected="false">      
-                <span class="xps-autocomplete__option-title"><mark class="xps-highlight">esp</mark>resso machine</span>      
-              </div>      
-              <div class="xps-autocomplete__option xps-autocomplete__option--active"      
-                   role="option"      
-                   id="xps-search-1-autocomplete-option-1"      
-                   aria-selected="true">      
-                <span class="xps-autocomplete__option-title"><mark class="xps-highlight">esp</mark>resso grinder</span>      
-              </div>      
-            </li>      
-            <li class="xps-autocomplete__group" role="group" aria-labelledby="xps-search-1-autocomplete-group-pages">      
-              <div class="xps-autocomplete__group-title" id="xps-search-1-autocomplete-group-pages">Pages</div>      
-              <div class="xps-autocomplete__option"      
-                   role="option"      
-                   id="xps-search-1-autocomplete-option-2"      
-                   aria-selected="false">      
-                <span class="xps-autocomplete__option-title">Choosing an <mark class="xps-highlight">esp</mark>resso machine</span>      
-                <span class="xps-autocomplete__option-meta">Article &middot; 12 March 2026</span>      
-              </div>      
-              <div class="xps-autocomplete__option"      
-                   role="option"      
-                   id="xps-search-1-autocomplete-option-3"      
-                   aria-selected="false">      
-                <span class="xps-autocomplete__option-title">Rocket Appartamento</span>      
-                <span class="xps-autocomplete__option-meta">Product</span>      
-              </div>      
-            </li>      
-          </ul>      
-          <div class="xps-autocomplete__footer">      
-            <a class="xps-autocomplete__see-all" href="/search?q=esp">See all results for “esp”</a>      
-          </div>      
-        </div>      
-      </div>      
-            
-      <!-- closed: the panel keeps its markup but is hidden, and aria-expanded is false -->      
-      <div class="xps xps-autocomplete">      
-        <form class="xps-autocomplete__form" role="search" action="/search" method="get" novalidate>      
-          <label class="xps-autocomplete__label xps-sr-only" for="xps-search-2-autocomplete-input">Search this site</label>      
-          <div class="xps-autocomplete__field">      
-            <input class="xps-autocomplete__input"      
-                   id="xps-search-2-autocomplete-input"      
-                   type="text"      
-                   name="q"      
-                   value=""      
-                   role="combobox"      
-                   aria-expanded="false"      
-                   aria-controls="xps-search-2-autocomplete-listbox"      
-                   aria-autocomplete="list"      
-                   autocomplete="off"      
-                   placeholder="Search…">      
-            <button class="xps-button xps-autocomplete__reset" type="reset" aria-label="Clear the search query" hidden>      
-              <span aria-hidden="true">&times;</span>      
-            </button>      
-          </div>      
-        </form>      
-        <div class="xps-autocomplete__panel" hidden>      
-          <ul class="xps-autocomplete__list" id="xps-search-2-autocomplete-listbox" role="listbox" aria-label="Search suggestions"></ul>      
-        </div>      
-      </div>      
-            
-      <!-- open with no suggestions -->      
-      <div class="xps xps-autocomplete xps-autocomplete--open">      
-        <form class="xps-autocomplete__form" role="search" action="/search" method="get" novalidate>      
-          <label class="xps-autocomplete__label xps-sr-only" for="xps-search-3-autocomplete-input">Search this site</label>      
-          <div class="xps-autocomplete__field">      
-            <input class="xps-autocomplete__input"      
-                   id="xps-search-3-autocomplete-input"      
-                   type="text"      
-                   name="q"      
-                   value="xyzzy"      
-                   role="combobox"      
-                   aria-expanded="true"      
-                   aria-controls="xps-search-3-autocomplete-listbox"      
-                   aria-autocomplete="list"      
-                   autocomplete="off"      
-                   placeholder="Search…">      
-            <button class="xps-button xps-autocomplete__reset" type="reset" aria-label="Clear the search query">      
-              <span aria-hidden="true">&times;</span>      
-            </button>      
-          </div>      
-        </form>      
-        <div class="xps-autocomplete__panel">      
-          <ul class="xps-autocomplete__list" id="xps-search-3-autocomplete-listbox" role="listbox" aria-label="Search suggestions"></ul>      
-          <p class="xps-autocomplete__empty" role="status">No suggestions for “xyzzy”.</p>      
-        </div>      
+    <section class="fx fx--suggestions">
+      <h2>suggestions</h2>
+      <!-- suggestions — WAI-ARIA 1.2 combobox with a listbox popup
+           https://www.w3.org/WAI/ARIA/apg/patterns/combobox/
+           States: open with an active option and a matching-documents group, closed, open-but-empty. -->
+      
+      <div class="xps xps-suggestions xps-suggestions--open">
+        <form class="xps-suggestions__form" role="search" action="/search" method="get" novalidate>
+          <label class="xps-suggestions__label xps-sr-only" for="xps-search-1-suggestions-input">Search this site</label>
+          <div class="xps-suggestions__field">
+            <input class="xps-suggestions__input"
+                   id="xps-search-1-suggestions-input"
+                   type="text"
+                   name="q"
+                   value="esp"
+                   role="combobox"
+                   aria-expanded="true"
+                   aria-controls="xps-search-1-suggestions-listbox"
+                   aria-activedescendant="xps-search-1-suggestions-option-1"
+                   aria-autocomplete="list"
+                   autocomplete="off"
+                   autocapitalize="off"
+                   autocorrect="off"
+                   spellcheck="false"
+                   placeholder="Search…">
+            <button class="xps-button xps-suggestions__reset" type="reset" aria-label="Clear the search query">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+        </form>
+        <div class="xps-suggestions__panel">
+          <ul class="xps-suggestions__list"
+              id="xps-search-1-suggestions-listbox"
+              role="listbox"
+              aria-label="Search suggestions">
+            <li class="xps-suggestions__group" role="group" aria-labelledby="xps-search-1-suggestions-group-suggestions">
+              <div class="xps-suggestions__group-title" id="xps-search-1-suggestions-group-suggestions">Suggestions</div>
+              <div class="xps-suggestions__option"
+                   role="option"
+                   id="xps-search-1-suggestions-option-0"
+                   aria-selected="false">
+                <span class="xps-suggestions__option-title"><mark class="xps-highlight">esp</mark>resso machine</span>
+              </div>
+              <div class="xps-suggestions__option xps-suggestions__option--active"
+                   role="option"
+                   id="xps-search-1-suggestions-option-1"
+                   aria-selected="true">
+                <span class="xps-suggestions__option-title"><mark class="xps-highlight">esp</mark>resso grinder</span>
+              </div>
+            </li>
+            <li class="xps-suggestions__group" role="group" aria-labelledby="xps-search-1-suggestions-group-pages">
+              <div class="xps-suggestions__group-title" id="xps-search-1-suggestions-group-pages">Pages</div>
+              <div class="xps-suggestions__option"
+                   role="option"
+                   id="xps-search-1-suggestions-option-2"
+                   aria-selected="false">
+                <span class="xps-suggestions__option-title">Choosing an <mark class="xps-highlight">esp</mark>resso machine</span>
+                <span class="xps-suggestions__option-meta">Article &middot; 12 March 2026</span>
+              </div>
+              <div class="xps-suggestions__option"
+                   role="option"
+                   id="xps-search-1-suggestions-option-3"
+                   aria-selected="false">
+                <span class="xps-suggestions__option-title">Rocket Appartamento</span>
+                <span class="xps-suggestions__option-meta">Product</span>
+              </div>
+            </li>
+          </ul>
+          <div class="xps-suggestions__footer">
+            <a class="xps-suggestions__see-all" href="/search?q=esp">See all results for “esp”</a>
+          </div>
+        </div>
+      </div>
+      
+      <!-- closed: the panel keeps its markup but is hidden, and aria-expanded is false -->
+      <div class="xps xps-suggestions">
+        <form class="xps-suggestions__form" role="search" action="/search" method="get" novalidate>
+          <label class="xps-suggestions__label xps-sr-only" for="xps-search-2-suggestions-input">Search this site</label>
+          <div class="xps-suggestions__field">
+            <input class="xps-suggestions__input"
+                   id="xps-search-2-suggestions-input"
+                   type="text"
+                   name="q"
+                   value=""
+                   role="combobox"
+                   aria-expanded="false"
+                   aria-controls="xps-search-2-suggestions-listbox"
+                   aria-autocomplete="list"
+                   autocomplete="off"
+                   placeholder="Search…">
+            <button class="xps-button xps-suggestions__reset" type="reset" aria-label="Clear the search query" hidden>
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+        </form>
+        <div class="xps-suggestions__panel" hidden>
+          <ul class="xps-suggestions__list" id="xps-search-2-suggestions-listbox" role="listbox" aria-label="Search suggestions"></ul>
+        </div>
+      </div>
+      
+      <!-- open with no suggestions -->
+      <div class="xps xps-suggestions xps-suggestions--open">
+        <form class="xps-suggestions__form" role="search" action="/search" method="get" novalidate>
+          <label class="xps-suggestions__label xps-sr-only" for="xps-search-3-suggestions-input">Search this site</label>
+          <div class="xps-suggestions__field">
+            <input class="xps-suggestions__input"
+                   id="xps-search-3-suggestions-input"
+                   type="text"
+                   name="q"
+                   value="xyzzy"
+                   role="combobox"
+                   aria-expanded="true"
+                   aria-controls="xps-search-3-suggestions-listbox"
+                   aria-autocomplete="list"
+                   autocomplete="off"
+                   placeholder="Search…">
+            <button class="xps-button xps-suggestions__reset" type="reset" aria-label="Clear the search query">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+        </form>
+        <div class="xps-suggestions__panel">
+          <ul class="xps-suggestions__list" id="xps-search-3-suggestions-listbox" role="listbox" aria-label="Search suggestions"></ul>
+          <p class="xps-suggestions__empty" role="status">No suggestions for “xyzzy”.</p>
+        </div>
       </div>
     </section>
 
-    <section class="fx fx--stats">
-      <h2>stats</h2>
-      <!-- stats — the visual count line. The live announcement lives on .xps-hits__status, not here,      
-           so a page with both widgets announces the count once. -->      
-            
-      <div class="xps xps-stats">      
-        <span class="xps-stats__text">46 results in <span class="xps-stats__time">14&nbsp;ms</span></span>      
-      </div>      
-            
-      <!-- no query yet -->      
-      <div class="xps xps-stats xps-stats--empty">      
-        <span class="xps-stats__text">Type to search.</span>      
+    <section class="fx fx--result-stats">
+      <h2>result-stats</h2>
+      <!-- stats — the visual count line. The live announcement lives on .xps-results__status, not here,
+           so a page with both widgets announces the count once. -->
+      
+      <div class="xps xps-result-stats">
+        <span class="xps-result-stats__text">46 results in <span class="xps-result-stats__time">14&nbsp;ms</span></span>
+      </div>
+      
+      <!-- no query yet -->
+      <div class="xps xps-result-stats xps-result-stats--empty">
+        <span class="xps-result-stats__text">Type to search.</span>
       </div>
     </section>
 
-    <section class="fx fx--sort-by">
-      <h2>sort-by</h2>
-      <!-- sortBy — native select with a visible label -->      
-            
-      <div class="xps xps-sort-by">      
-        <label class="xps-sort-by__label" for="xps-search-1-sort-by-select">Sort by</label>      
-        <select class="xps-sort-by__select" id="xps-search-1-sort-by-select" name="sort">      
-          <option value="relevance" selected>Relevance</option>      
-          <option value="date_desc">Newest first</option>      
-          <option value="date_asc">Oldest first</option>      
-        </select>      
-      </div>      
-            
-      <!-- label hidden from sighted users but still associated -->      
-      <div class="xps xps-sort-by">      
-        <label class="xps-sort-by__label xps-sr-only" for="xps-search-2-sort-by-select">Sort by</label>      
-        <select class="xps-sort-by__select" id="xps-search-2-sort-by-select" name="sort">      
-          <option value="relevance">Relevance</option>      
-          <option value="date_desc" selected>Newest first</option>      
-        </select>      
+    <section class="fx fx--sort-select">
+      <h2>sort-select</h2>
+      <!-- sortBy — native select with a visible label -->
+      
+      <div class="xps xps-sort-select">
+        <label class="xps-sort-select__label" for="xps-search-1-sort-select-select">Sort by</label>
+        <select class="xps-sort-select__select" id="xps-search-1-sort-select-select" name="sort">
+          <option value="relevance" selected>Relevance</option>
+          <option value="date_desc">Newest first</option>
+          <option value="date_asc">Oldest first</option>
+        </select>
+      </div>
+      
+      <!-- label hidden from sighted users but still associated -->
+      <div class="xps xps-sort-select">
+        <label class="xps-sort-select__label xps-sr-only" for="xps-search-2-sort-select-select">Sort by</label>
+        <select class="xps-sort-select__select" id="xps-search-2-sort-select-select" name="sort">
+          <option value="relevance">Relevance</option>
+          <option value="date_desc" selected>Newest first</option>
+        </select>
       </div>
     </section>
 
-    <section class="fx fx--hits">
-      <h2>hits</h2>
-      <!-- hits — states: results (default item template), empty, loading (skeletons) -->      
-            
-      <div class="xps xps-hits">      
-        <p class="xps-hits__status xps-sr-only" role="status">3 results for “espresso machine”</p>      
-        <ol class="xps-hits__list">      
-          <li class="xps-hits__item">      
-            <article class="xps-hit">      
-              <div class="xps-hit__media">      
-                <img class="xps-hit__image" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" width="96" height="96">      
-              </div>      
-              <div class="xps-hit__body">      
-                <h3 class="xps-hit__title">      
-                  <a class="xps-hit__link" href="/blog/choosing-an-espresso-machine">Choosing an <mark class="xps-highlight">espresso</mark> <mark class="xps-highlight">machine</mark></a>      
-                </h3>      
-                <p class="xps-hit__snippet">A dual-boiler <mark class="xps-highlight">espresso</mark> <mark class="xps-highlight">machine</mark> holds brew and steam temperature independently, which is what lets you pull a shot and steam milk without waiting.</p>      
-                <ul class="xps-hit__meta">      
-                  <li class="xps-hit__meta-item">Article</li>      
-                  <li class="xps-hit__meta-item">12 March 2026</li>      
-                </ul>      
-              </div>      
-            </article>      
-          </li>      
-          <li class="xps-hits__item">      
-            <article class="xps-hit">      
-              <div class="xps-hit__body">      
-                <h3 class="xps-hit__title">      
-                  <a class="xps-hit__link" href="/products/rocket-appartamento">Rocket Appartamento</a>      
-                </h3>      
-                <p class="xps-hit__snippet">A heat-exchanger <mark class="xps-highlight">machine</mark> for the home barista who has run out of counter space.</p>      
-                <ul class="xps-hit__meta">      
-                  <li class="xps-hit__meta-item">Product</li>      
-                </ul>      
-              </div>      
-            </article>      
-          </li>      
-          <li class="xps-hits__item">      
-            <article class="xps-hit">      
-              <div class="xps-hit__body">      
-                <h3 class="xps-hit__title">      
-                  <a class="xps-hit__link" href="/support/descaling">Descaling your <mark class="xps-highlight">machine</mark></a>      
-                </h3>      
-                <p class="xps-hit__snippet">Scale is the single largest cause of warranty claims. Descale every 300 litres, or every three months on hard water.</p>      
-                <ul class="xps-hit__meta">      
-                  <li class="xps-hit__meta-item">Support</li>      
-                  <li class="xps-hit__meta-item">2 January 2026</li>      
-                </ul>      
-              </div>      
-            </article>      
-          </li>      
-        </ol>      
-      </div>      
-            
-      <!-- empty -->      
-      <div class="xps xps-hits xps-hits--empty">      
-        <p class="xps-hits__status xps-sr-only" role="status">No results for “xyzzy”</p>      
-        <div class="xps-hits__empty">      
-          <p>No results for <strong>xyzzy</strong>.</p>      
-          <p>Try fewer words, or clear some filters.</p>      
-        </div>      
-      </div>      
-            
-      <!-- loading: three skeleton hits, announced as busy -->      
-      <div class="xps xps-hits xps-hits--loading" aria-busy="true">      
-        <p class="xps-hits__status xps-sr-only" role="status">Searching…</p>      
-        <ol class="xps-hits__list">      
-          <li class="xps-hits__item">      
-            <article class="xps-hit xps-hit--skeleton" aria-hidden="true">      
-              <div class="xps-hit__media"><span class="xps-skeleton xps-skeleton--block"></span></div>      
-              <div class="xps-hit__body">      
-                <span class="xps-skeleton xps-skeleton--title"></span>      
-                <span class="xps-skeleton xps-skeleton--text"></span>      
-                <span class="xps-skeleton xps-skeleton--text"></span>      
-              </div>      
-            </article>      
-          </li>      
-          <li class="xps-hits__item">      
-            <article class="xps-hit xps-hit--skeleton" aria-hidden="true">      
-              <div class="xps-hit__media"><span class="xps-skeleton xps-skeleton--block"></span></div>      
-              <div class="xps-hit__body">      
-                <span class="xps-skeleton xps-skeleton--title"></span>      
-                <span class="xps-skeleton xps-skeleton--text"></span>      
-              </div>      
-            </article>      
-          </li>      
-        </ol>      
+    <section class="fx fx--results">
+      <h2>results</h2>
+      <!-- results — states: results (default item template), empty, loading (skeletons) -->
+      
+      <div class="xps xps-results">
+        <p class="xps-results__status xps-sr-only" role="status">3 results for “espresso machine”</p>
+        <ol class="xps-results__list">
+          <li class="xps-results__item">
+            <article class="xps-result">
+              <div class="xps-result__media">
+                <img class="xps-result__image" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" width="96" height="96">
+              </div>
+              <div class="xps-result__body">
+                <h3 class="xps-result__title">
+                  <a class="xps-result__link" href="/blog/choosing-an-espresso-machine">Choosing an <mark class="xps-highlight">espresso</mark> <mark class="xps-highlight">machine</mark></a>
+                </h3>
+                <p class="xps-result__snippet">A dual-boiler <mark class="xps-highlight">espresso</mark> <mark class="xps-highlight">machine</mark> holds brew and steam temperature independently, which is what lets you pull a shot and steam milk without waiting.</p>
+                <ul class="xps-result__meta">
+                  <li class="xps-result__meta-item">Article</li>
+                  <li class="xps-result__meta-item">12 March 2026</li>
+                </ul>
+              </div>
+            </article>
+          </li>
+          <li class="xps-results__item">
+            <article class="xps-result">
+              <div class="xps-result__body">
+                <h3 class="xps-result__title">
+                  <a class="xps-result__link" href="/products/rocket-appartamento">Rocket Appartamento</a>
+                </h3>
+                <p class="xps-result__snippet">A heat-exchanger <mark class="xps-highlight">machine</mark> for the home barista who has run out of counter space.</p>
+                <ul class="xps-result__meta">
+                  <li class="xps-result__meta-item">Product</li>
+                </ul>
+              </div>
+            </article>
+          </li>
+          <li class="xps-results__item">
+            <article class="xps-result">
+              <div class="xps-result__body">
+                <h3 class="xps-result__title">
+                  <a class="xps-result__link" href="/support/descaling">Descaling your <mark class="xps-highlight">machine</mark></a>
+                </h3>
+                <p class="xps-result__snippet">Scale is the single largest cause of warranty claims. Descale every 300 litres, or every three months on hard water.</p>
+                <ul class="xps-result__meta">
+                  <li class="xps-result__meta-item">Support</li>
+                  <li class="xps-result__meta-item">2 January 2026</li>
+                </ul>
+              </div>
+            </article>
+          </li>
+        </ol>
+      </div>
+      
+      <!-- empty -->
+      <div class="xps xps-results xps-results--empty">
+        <p class="xps-results__status xps-sr-only" role="status">No results for “xyzzy”</p>
+        <div class="xps-results__empty">
+          <p>No results for <strong>xyzzy</strong>.</p>
+          <p>Try fewer words, or clear some filters.</p>
+        </div>
+      </div>
+      
+      <!-- loading: three skeleton results, announced as busy -->
+      <div class="xps xps-results xps-results--loading" aria-busy="true">
+        <p class="xps-results__status xps-sr-only" role="status">Searching…</p>
+        <ol class="xps-results__list">
+          <li class="xps-results__item">
+            <article class="xps-result xps-result--skeleton" aria-hidden="true">
+              <div class="xps-result__media"><span class="xps-skeleton xps-skeleton--block"></span></div>
+              <div class="xps-result__body">
+                <span class="xps-skeleton xps-skeleton--title"></span>
+                <span class="xps-skeleton xps-skeleton--text"></span>
+                <span class="xps-skeleton xps-skeleton--text"></span>
+              </div>
+            </article>
+          </li>
+          <li class="xps-results__item">
+            <article class="xps-result xps-result--skeleton" aria-hidden="true">
+              <div class="xps-result__media"><span class="xps-skeleton xps-skeleton--block"></span></div>
+              <div class="xps-result__body">
+                <span class="xps-skeleton xps-skeleton--title"></span>
+                <span class="xps-skeleton xps-skeleton--text"></span>
+              </div>
+            </article>
+          </li>
+        </ol>
       </div>
     </section>
 
-    <section class="fx fx--refinement-list">
-      <h2>refinement-list</h2>
-      <!-- refinementList — states: selected, unselected, disabled (canRefine=false), searchable variant, show-more -->      
-            
-      <div class="xps xps-refinement-list">      
-        <h3 class="xps-refinement-list__title" id="xps-search-1-content-type-title">Content type</h3>      
-        <ul class="xps-refinement-list__list" aria-labelledby="xps-search-1-content-type-title">      
-          <li class="xps-refinement-list__item xps-refinement-list__item--selected">      
-            <label class="xps-refinement-list__label">      
-              <input class="xps-refinement-list__checkbox" type="checkbox" name="contentType" value="Article" checked>      
-              <span class="xps-refinement-list__value">Article</span>      
-              <span class="xps-refinement-list__count">24</span>      
-            </label>      
-          </li>      
-          <li class="xps-refinement-list__item">      
-            <label class="xps-refinement-list__label">      
-              <input class="xps-refinement-list__checkbox" type="checkbox" name="contentType" value="Product">      
-              <span class="xps-refinement-list__value">Product</span>      
-              <span class="xps-refinement-list__count">11</span>      
-            </label>      
-          </li>      
-          <li class="xps-refinement-list__item xps-refinement-list__item--disabled">      
-            <label class="xps-refinement-list__label">      
-              <input class="xps-refinement-list__checkbox" type="checkbox" name="contentType" value="Event" disabled>      
-              <span class="xps-refinement-list__value">Event</span>      
-              <span class="xps-refinement-list__count">0</span>      
-            </label>      
-          </li>      
-        </ul>      
-        <button class="xps-button xps-refinement-list__show-more" type="button" aria-expanded="false">Show more</button>      
-      </div>      
-            
-      <!-- searchable variant, show-more expanded and exhausted -->      
-      <div class="xps xps-refinement-list xps-refinement-list--searchable">      
-        <h3 class="xps-refinement-list__title" id="xps-search-2-tags-title">Tags</h3>      
-        <div class="xps-refinement-list__search">      
-          <label class="xps-sr-only" for="xps-search-2-tags-search">Search in Tags</label>      
-          <input class="xps-refinement-list__search-input" id="xps-search-2-tags-search" type="search" value="es" placeholder="Search in Tags" autocomplete="off">      
-        </div>      
-        <ul class="xps-refinement-list__list" aria-labelledby="xps-search-2-tags-title">      
-          <li class="xps-refinement-list__item xps-refinement-list__item--selected">      
-            <label class="xps-refinement-list__label">      
-              <input class="xps-refinement-list__checkbox" type="checkbox" name="tags" value="espresso" checked>      
-              <span class="xps-refinement-list__value"><mark class="xps-highlight">es</mark>presso</span>      
-              <span class="xps-refinement-list__count">18</span>      
-            </label>      
-          </li>      
-          <li class="xps-refinement-list__item">      
-            <label class="xps-refinement-list__label">      
-              <input class="xps-refinement-list__checkbox" type="checkbox" name="tags" value="descaling">      
-              <span class="xps-refinement-list__value">d<mark class="xps-highlight">es</mark>caling</span>      
-              <span class="xps-refinement-list__count">4</span>      
-            </label>      
-          </li>      
-        </ul>      
-        <button class="xps-button xps-refinement-list__show-more xps-refinement-list__show-more--disabled" type="button" aria-expanded="true" disabled>Show less</button>      
-      </div>      
-            
-      <!-- searchable variant with no matches -->      
-      <div class="xps xps-refinement-list xps-refinement-list--searchable">      
-        <h3 class="xps-refinement-list__title" id="xps-search-3-tags-title">Tags</h3>      
-        <div class="xps-refinement-list__search">      
-          <label class="xps-sr-only" for="xps-search-3-tags-search">Search in Tags</label>      
-          <input class="xps-refinement-list__search-input" id="xps-search-3-tags-search" type="search" value="zzz" placeholder="Search in Tags" autocomplete="off">      
-        </div>      
-        <p class="xps-refinement-list__no-results" role="status">No matching filters.</p>      
+    <section class="fx fx--facet-list">
+      <h2>facet-list</h2>
+      <!-- facetList — states: selected, unselected, disabled (canApply=false), searchable variant, show-more -->
+      
+      <div class="xps xps-facet-list">
+        <h3 class="xps-facet-list__title" id="xps-search-1-content-type-title">Content type</h3>
+        <ul class="xps-facet-list__list" aria-labelledby="xps-search-1-content-type-title">
+          <li class="xps-facet-list__item xps-facet-list__item--selected">
+            <label class="xps-facet-list__label">
+              <input class="xps-facet-list__checkbox" type="checkbox" name="contentType" value="Article" checked>
+              <span class="xps-facet-list__value">Article</span>
+              <span class="xps-facet-list__count">24</span>
+            </label>
+          </li>
+          <li class="xps-facet-list__item">
+            <label class="xps-facet-list__label">
+              <input class="xps-facet-list__checkbox" type="checkbox" name="contentType" value="Product">
+              <span class="xps-facet-list__value">Product</span>
+              <span class="xps-facet-list__count">11</span>
+            </label>
+          </li>
+          <li class="xps-facet-list__item xps-facet-list__item--disabled">
+            <label class="xps-facet-list__label">
+              <input class="xps-facet-list__checkbox" type="checkbox" name="contentType" value="Event" disabled>
+              <span class="xps-facet-list__value">Event</span>
+              <span class="xps-facet-list__count">0</span>
+            </label>
+          </li>
+        </ul>
+        <button class="xps-button xps-facet-list__show-more" type="button" aria-expanded="false">Show more</button>
+      </div>
+      
+      <!-- searchable variant, show-more expanded and exhausted -->
+      <div class="xps xps-facet-list xps-facet-list--searchable">
+        <h3 class="xps-facet-list__title" id="xps-search-2-tags-title">Tags</h3>
+        <div class="xps-facet-list__search">
+          <label class="xps-sr-only" for="xps-search-2-tags-search">Search in Tags</label>
+          <input class="xps-facet-list__search-input" id="xps-search-2-tags-search" type="search" value="es" placeholder="Search in Tags" autocomplete="off">
+        </div>
+        <ul class="xps-facet-list__list" aria-labelledby="xps-search-2-tags-title">
+          <li class="xps-facet-list__item xps-facet-list__item--selected">
+            <label class="xps-facet-list__label">
+              <input class="xps-facet-list__checkbox" type="checkbox" name="tags" value="espresso" checked>
+              <span class="xps-facet-list__value"><mark class="xps-highlight">es</mark>presso</span>
+              <span class="xps-facet-list__count">18</span>
+            </label>
+          </li>
+          <li class="xps-facet-list__item">
+            <label class="xps-facet-list__label">
+              <input class="xps-facet-list__checkbox" type="checkbox" name="tags" value="descaling">
+              <span class="xps-facet-list__value">d<mark class="xps-highlight">es</mark>caling</span>
+              <span class="xps-facet-list__count">4</span>
+            </label>
+          </li>
+        </ul>
+        <button class="xps-button xps-facet-list__show-more xps-facet-list__show-more--disabled" type="button" aria-expanded="true" disabled>Show less</button>
+      </div>
+      
+      <!-- searchable variant with no matches -->
+      <div class="xps xps-facet-list xps-facet-list--searchable">
+        <h3 class="xps-facet-list__title" id="xps-search-3-tags-title">Tags</h3>
+        <div class="xps-facet-list__search">
+          <label class="xps-sr-only" for="xps-search-3-tags-search">Search in Tags</label>
+          <input class="xps-facet-list__search-input" id="xps-search-3-tags-search" type="search" value="zzz" placeholder="Search in Tags" autocomplete="off">
+        </div>
+        <p class="xps-facet-list__no-results" role="status">No matching filters.</p>
       </div>
     </section>
 
-    <section class="fx fx--toggle-refinement">
-      <h2>toggle-refinement</h2>
-      <!-- toggleRefinement — a single boolean facet. A real checkbox, not a styled div. -->      
-            
-      <div class="xps xps-toggle-refinement">      
-        <label class="xps-toggle-refinement__label">      
-          <input class="xps-toggle-refinement__checkbox" type="checkbox" name="inStock" value="true" checked>      
-          <span class="xps-toggle-refinement__value">In stock only</span>      
-          <span class="xps-toggle-refinement__count">128</span>      
-        </label>      
-      </div>      
-            
-      <div class="xps xps-toggle-refinement xps-toggle-refinement--disabled">      
-        <label class="xps-toggle-refinement__label">      
-          <input class="xps-toggle-refinement__checkbox" type="checkbox" name="onSale" value="true" disabled>      
-          <span class="xps-toggle-refinement__value">On sale</span>      
-          <span class="xps-toggle-refinement__count">0</span>      
-        </label>      
+    <section class="fx fx--toggle-filter">
+      <h2>toggle-filter</h2>
+      <!-- toggleFilter — a single boolean facet. A real checkbox, not a styled div. -->
+      
+      <div class="xps xps-toggle-filter">
+        <label class="xps-toggle-filter__label">
+          <input class="xps-toggle-filter__checkbox" type="checkbox" name="inStock" value="true" checked>
+          <span class="xps-toggle-filter__value">In stock only</span>
+          <span class="xps-toggle-filter__count">128</span>
+        </label>
+      </div>
+      
+      <div class="xps xps-toggle-filter xps-toggle-filter--disabled">
+        <label class="xps-toggle-filter__label">
+          <input class="xps-toggle-filter__checkbox" type="checkbox" name="onSale" value="true" disabled>
+          <span class="xps-toggle-filter__value">On sale</span>
+          <span class="xps-toggle-filter__count">0</span>
+        </label>
       </div>
     </section>
 
-    <section class="fx fx--current-refinements">
-      <h2>current-refinements</h2>
-      <!-- currentRefinements — removable chips, one per active refinement value -->      
-            
-      <div class="xps xps-current-refinements">      
-        <h3 class="xps-current-refinements__title xps-sr-only" id="xps-search-1-current-refinements-title">Active filters</h3>      
-        <ul class="xps-current-refinements__list" aria-labelledby="xps-search-1-current-refinements-title">      
-          <li class="xps-current-refinements__item">      
-            <span class="xps-chip">      
-              <span class="xps-chip__label"><span class="xps-chip__attribute">Content type</span> Article</span>      
-              <button class="xps-chip__remove" type="button" aria-label="Remove filter Content type: Article">      
-                <span aria-hidden="true">&times;</span>      
-              </button>      
-            </span>      
-          </li>      
-          <li class="xps-current-refinements__item">      
-            <span class="xps-chip">      
-              <span class="xps-chip__label"><span class="xps-chip__attribute">Tags</span> espresso</span>      
-              <button class="xps-chip__remove" type="button" aria-label="Remove filter Tags: espresso">      
-                <span aria-hidden="true">&times;</span>      
-              </button>      
-            </span>      
-          </li>      
-          <li class="xps-current-refinements__item">      
-            <span class="xps-chip">      
-              <span class="xps-chip__label"><span class="xps-chip__attribute">Price</span> 50 to 300</span>      
-              <button class="xps-chip__remove" type="button" aria-label="Remove filter Price: 50 to 300">      
-                <span aria-hidden="true">&times;</span>      
-              </button>      
-            </span>      
-          </li>      
-        </ul>      
-      </div>      
-            
-      <!-- nothing refined: the widget renders an empty list rather than disappearing, so layout is stable -->      
-      <div class="xps xps-current-refinements xps-current-refinements--empty">      
-        <h3 class="xps-current-refinements__title xps-sr-only" id="xps-search-2-current-refinements-title">Active filters</h3>      
-        <ul class="xps-current-refinements__list" aria-labelledby="xps-search-2-current-refinements-title"></ul>      
+    <section class="fx fx--active-filters">
+      <h2>active-filters</h2>
+      <!-- activeFilters — removable chips, one per active filter value -->
+      
+      <div class="xps xps-active-filters">
+        <h3 class="xps-active-filters__title xps-sr-only" id="xps-search-1-active-filters-title">Active filters</h3>
+        <ul class="xps-active-filters__list" aria-labelledby="xps-search-1-active-filters-title">
+          <li class="xps-active-filters__item">
+            <span class="xps-chip">
+              <span class="xps-chip__label"><span class="xps-chip__attribute">Content type</span> Article</span>
+              <button class="xps-chip__remove" type="button" aria-label="Remove filter Content type: Article">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </span>
+          </li>
+          <li class="xps-active-filters__item">
+            <span class="xps-chip">
+              <span class="xps-chip__label"><span class="xps-chip__attribute">Tags</span> espresso</span>
+              <button class="xps-chip__remove" type="button" aria-label="Remove filter Tags: espresso">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </span>
+          </li>
+          <li class="xps-active-filters__item">
+            <span class="xps-chip">
+              <span class="xps-chip__label"><span class="xps-chip__attribute">Price</span> 50 to 300</span>
+              <button class="xps-chip__remove" type="button" aria-label="Remove filter Price: 50 to 300">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </span>
+          </li>
+        </ul>
+      </div>
+      
+      <!-- nothing filtered: the widget renders an empty list rather than disappearing, so layout is stable -->
+      <div class="xps xps-active-filters xps-active-filters--empty">
+        <h3 class="xps-active-filters__title xps-sr-only" id="xps-search-2-active-filters-title">Active filters</h3>
+        <ul class="xps-active-filters__list" aria-labelledby="xps-search-2-active-filters-title"></ul>
       </div>
     </section>
 
-    <section class="fx fx--clear-refinements">
-      <h2>clear-refinements</h2>
-      <!-- clearRefinements — states: enabled (filters active), disabled (nothing to clear) -->      
-            
-      <div class="xps xps-clear-refinements">      
-        <button class="xps-button xps-clear-refinements__button" type="button">Clear filters</button>      
-      </div>      
-            
-      <div class="xps xps-clear-refinements xps-clear-refinements--disabled">      
-        <button class="xps-button xps-clear-refinements__button" type="button" disabled>Clear filters</button>      
+    <section class="fx fx--clear-filters">
+      <h2>clear-filters</h2>
+      <!-- clearFilters — states: enabled (filters active), disabled (nothing to clear) -->
+      
+      <div class="xps xps-clear-filters">
+        <button class="xps-button xps-clear-filters__button" type="button">Clear filters</button>
+      </div>
+      
+      <div class="xps xps-clear-filters xps-clear-filters--disabled">
+        <button class="xps-button xps-clear-filters__button" type="button" disabled>Clear filters</button>
       </div>
     </section>
 
     <section class="fx fx--pagination">
       <h2>pagination</h2>
-      <!-- pagination — states: first/prev disabled on page 1, current page, ellipsis padding, last page -->      
-            
-      <nav class="xps xps-pagination" aria-label="Search results pages">      
-        <ul class="xps-pagination__list">      
-          <li class="xps-pagination__item xps-pagination__item--first xps-pagination__item--disabled">      
-            <span class="xps-pagination__link" aria-disabled="true"><span aria-hidden="true">&laquo;</span><span class="xps-sr-only">First page</span></span>      
-          </li>      
-          <li class="xps-pagination__item xps-pagination__item--previous xps-pagination__item--disabled">      
-            <span class="xps-pagination__link" aria-disabled="true"><span aria-hidden="true">&lsaquo;</span><span class="xps-sr-only">Previous page</span></span>      
-          </li>      
-          <li class="xps-pagination__item xps-pagination__item--page xps-pagination__item--current">      
-            <a class="xps-pagination__link" href="?q=espresso&amp;page=1" aria-current="page"><span class="xps-sr-only">Page </span>1</a>      
-          </li>      
-          <li class="xps-pagination__item xps-pagination__item--page">      
-            <a class="xps-pagination__link" href="?q=espresso&amp;page=2"><span class="xps-sr-only">Page </span>2</a>      
-          </li>      
-          <li class="xps-pagination__item xps-pagination__item--page">      
-            <a class="xps-pagination__link" href="?q=espresso&amp;page=3"><span class="xps-sr-only">Page </span>3</a>      
-          </li>      
-          <li class="xps-pagination__item xps-pagination__item--ellipsis">      
-            <span class="xps-pagination__ellipsis" aria-hidden="true">&hellip;</span>      
-          </li>      
-          <li class="xps-pagination__item xps-pagination__item--page">      
-            <a class="xps-pagination__link" href="?q=espresso&amp;page=9"><span class="xps-sr-only">Page </span>9</a>      
-          </li>      
-          <li class="xps-pagination__item xps-pagination__item--next">      
-            <a class="xps-pagination__link" href="?q=espresso&amp;page=2"><span aria-hidden="true">&rsaquo;</span><span class="xps-sr-only">Next page</span></a>      
-          </li>      
-          <li class="xps-pagination__item xps-pagination__item--last">      
-            <a class="xps-pagination__link" href="?q=espresso&amp;page=9"><span aria-hidden="true">&raquo;</span><span class="xps-sr-only">Last page</span></a>      
-          </li>      
-        </ul>      
-      </nav>      
-            
-      <!-- middle of the range: every control enabled, ellipsis on both sides, padding=1 -->      
-      <nav class="xps xps-pagination" aria-label="Search results pages">      
-        <ul class="xps-pagination__list">      
-          <li class="xps-pagination__item xps-pagination__item--first">      
-            <a class="xps-pagination__link" href="?q=espresso&amp;page=1"><span aria-hidden="true">&laquo;</span><span class="xps-sr-only">First page</span></a>      
-          </li>      
-          <li class="xps-pagination__item xps-pagination__item--previous">      
-            <a class="xps-pagination__link" href="?q=espresso&amp;page=4"><span aria-hidden="true">&lsaquo;</span><span class="xps-sr-only">Previous page</span></a>      
-          </li>      
-          <li class="xps-pagination__item xps-pagination__item--page">      
-            <a class="xps-pagination__link" href="?q=espresso&amp;page=1"><span class="xps-sr-only">Page </span>1</a>      
-          </li>      
-          <li class="xps-pagination__item xps-pagination__item--ellipsis">      
-            <span class="xps-pagination__ellipsis" aria-hidden="true">&hellip;</span>      
-          </li>      
-          <li class="xps-pagination__item xps-pagination__item--page">      
-            <a class="xps-pagination__link" href="?q=espresso&amp;page=4"><span class="xps-sr-only">Page </span>4</a>      
-          </li>      
-          <li class="xps-pagination__item xps-pagination__item--page xps-pagination__item--current">      
-            <a class="xps-pagination__link" href="?q=espresso&amp;page=5" aria-current="page"><span class="xps-sr-only">Page </span>5</a>      
-          </li>      
-          <li class="xps-pagination__item xps-pagination__item--page">      
-            <a class="xps-pagination__link" href="?q=espresso&amp;page=6"><span class="xps-sr-only">Page </span>6</a>      
-          </li>      
-          <li class="xps-pagination__item xps-pagination__item--ellipsis">      
-            <span class="xps-pagination__ellipsis" aria-hidden="true">&hellip;</span>      
-          </li>      
-          <li class="xps-pagination__item xps-pagination__item--page">      
-            <a class="xps-pagination__link" href="?q=espresso&amp;page=9"><span class="xps-sr-only">Page </span>9</a>      
-          </li>      
-          <li class="xps-pagination__item xps-pagination__item--next">      
-            <a class="xps-pagination__link" href="?q=espresso&amp;page=6"><span aria-hidden="true">&rsaquo;</span><span class="xps-sr-only">Next page</span></a>      
-          </li>      
-          <li class="xps-pagination__item xps-pagination__item--last">      
-            <a class="xps-pagination__link" href="?q=espresso&amp;page=9"><span aria-hidden="true">&raquo;</span><span class="xps-sr-only">Last page</span></a>      
-          </li>      
-        </ul>      
+      <!-- pagination — states: first/prev disabled on page 1, current page, ellipsis padding, last page -->
+      
+      <nav class="xps xps-pagination" aria-label="Search results pages">
+        <ul class="xps-pagination__list">
+          <li class="xps-pagination__item xps-pagination__item--first xps-pagination__item--disabled">
+            <span class="xps-pagination__link" aria-disabled="true"><span aria-hidden="true">&laquo;</span><span class="xps-sr-only">First page</span></span>
+          </li>
+          <li class="xps-pagination__item xps-pagination__item--previous xps-pagination__item--disabled">
+            <span class="xps-pagination__link" aria-disabled="true"><span aria-hidden="true">&lsaquo;</span><span class="xps-sr-only">Previous page</span></span>
+          </li>
+          <li class="xps-pagination__item xps-pagination__item--page xps-pagination__item--current">
+            <a class="xps-pagination__link" href="?q=espresso&amp;page=1" aria-current="page"><span class="xps-sr-only">Page </span>1</a>
+          </li>
+          <li class="xps-pagination__item xps-pagination__item--page">
+            <a class="xps-pagination__link" href="?q=espresso&amp;page=2"><span class="xps-sr-only">Page </span>2</a>
+          </li>
+          <li class="xps-pagination__item xps-pagination__item--page">
+            <a class="xps-pagination__link" href="?q=espresso&amp;page=3"><span class="xps-sr-only">Page </span>3</a>
+          </li>
+          <li class="xps-pagination__item xps-pagination__item--ellipsis">
+            <span class="xps-pagination__ellipsis" aria-hidden="true">&hellip;</span>
+          </li>
+          <li class="xps-pagination__item xps-pagination__item--page">
+            <a class="xps-pagination__link" href="?q=espresso&amp;page=9"><span class="xps-sr-only">Page </span>9</a>
+          </li>
+          <li class="xps-pagination__item xps-pagination__item--next">
+            <a class="xps-pagination__link" href="?q=espresso&amp;page=2"><span aria-hidden="true">&rsaquo;</span><span class="xps-sr-only">Next page</span></a>
+          </li>
+          <li class="xps-pagination__item xps-pagination__item--last">
+            <a class="xps-pagination__link" href="?q=espresso&amp;page=9"><span aria-hidden="true">&raquo;</span><span class="xps-sr-only">Last page</span></a>
+          </li>
+        </ul>
+      </nav>
+      
+      <!-- middle of the range: every control enabled, ellipsis on both sides, padding=1 -->
+      <nav class="xps xps-pagination" aria-label="Search results pages">
+        <ul class="xps-pagination__list">
+          <li class="xps-pagination__item xps-pagination__item--first">
+            <a class="xps-pagination__link" href="?q=espresso&amp;page=1"><span aria-hidden="true">&laquo;</span><span class="xps-sr-only">First page</span></a>
+          </li>
+          <li class="xps-pagination__item xps-pagination__item--previous">
+            <a class="xps-pagination__link" href="?q=espresso&amp;page=4"><span aria-hidden="true">&lsaquo;</span><span class="xps-sr-only">Previous page</span></a>
+          </li>
+          <li class="xps-pagination__item xps-pagination__item--page">
+            <a class="xps-pagination__link" href="?q=espresso&amp;page=1"><span class="xps-sr-only">Page </span>1</a>
+          </li>
+          <li class="xps-pagination__item xps-pagination__item--ellipsis">
+            <span class="xps-pagination__ellipsis" aria-hidden="true">&hellip;</span>
+          </li>
+          <li class="xps-pagination__item xps-pagination__item--page">
+            <a class="xps-pagination__link" href="?q=espresso&amp;page=4"><span class="xps-sr-only">Page </span>4</a>
+          </li>
+          <li class="xps-pagination__item xps-pagination__item--page xps-pagination__item--current">
+            <a class="xps-pagination__link" href="?q=espresso&amp;page=5" aria-current="page"><span class="xps-sr-only">Page </span>5</a>
+          </li>
+          <li class="xps-pagination__item xps-pagination__item--page">
+            <a class="xps-pagination__link" href="?q=espresso&amp;page=6"><span class="xps-sr-only">Page </span>6</a>
+          </li>
+          <li class="xps-pagination__item xps-pagination__item--ellipsis">
+            <span class="xps-pagination__ellipsis" aria-hidden="true">&hellip;</span>
+          </li>
+          <li class="xps-pagination__item xps-pagination__item--page">
+            <a class="xps-pagination__link" href="?q=espresso&amp;page=9"><span class="xps-sr-only">Page </span>9</a>
+          </li>
+          <li class="xps-pagination__item xps-pagination__item--next">
+            <a class="xps-pagination__link" href="?q=espresso&amp;page=6"><span aria-hidden="true">&rsaquo;</span><span class="xps-sr-only">Next page</span></a>
+          </li>
+          <li class="xps-pagination__item xps-pagination__item--last">
+            <a class="xps-pagination__link" href="?q=espresso&amp;page=9"><span aria-hidden="true">&raquo;</span><span class="xps-sr-only">Last page</span></a>
+          </li>
+        </ul>
       </nav>
     </section>
 
-    <section class="fx fx--range-slider">
-      <h2>range-slider</h2>
-      <!-- rangeSlider — two native <input type="range"> plus two numeric inputs. No custom slider:      
-           the native control is keyboard-operable and screen-reader-announced for free. -->      
-            
-      <div class="xps xps-range-slider">      
-        <h3 class="xps-range-slider__title" id="xps-search-1-price-title">Price</h3>      
-        <div class="xps-range-slider__track" role="group" aria-labelledby="xps-search-1-price-title">      
-          <label class="xps-sr-only" for="xps-search-1-price-range-min">Minimum price</label>      
-          <input class="xps-range-slider__range xps-range-slider__range--min"      
-                 id="xps-search-1-price-range-min"      
-                 type="range" min="0" max="500" step="5" value="50"      
-                 aria-describedby="xps-search-1-price-values">      
-          <label class="xps-sr-only" for="xps-search-1-price-range-max">Maximum price</label>      
-          <input class="xps-range-slider__range xps-range-slider__range--max"      
-                 id="xps-search-1-price-range-max"      
-                 type="range" min="0" max="500" step="5" value="300"      
-                 aria-describedby="xps-search-1-price-values">      
-        </div>      
-        <div class="xps-range-slider__inputs">      
-          <label class="xps-range-slider__input-label" for="xps-search-1-price-input-min">From</label>      
-          <input class="xps-range-slider__input" id="xps-search-1-price-input-min" type="number" min="0" max="500" step="5" value="50" inputmode="numeric">      
-          <span class="xps-range-slider__separator" aria-hidden="true">&ndash;</span>      
-          <label class="xps-range-slider__input-label" for="xps-search-1-price-input-max">To</label>      
-          <input class="xps-range-slider__input" id="xps-search-1-price-input-max" type="number" min="0" max="500" step="5" value="300" inputmode="numeric">      
-        </div>      
-        <p class="xps-range-slider__values" id="xps-search-1-price-values">50 to 300</p>      
-      </div>      
-            
-      <!-- no refinable range in the current results -->      
-      <div class="xps xps-range-slider xps-range-slider--disabled">      
-        <h3 class="xps-range-slider__title" id="xps-search-2-price-title">Price</h3>      
-        <div class="xps-range-slider__track" role="group" aria-labelledby="xps-search-2-price-title">      
-          <label class="xps-sr-only" for="xps-search-2-price-range-min">Minimum price</label>      
-          <input class="xps-range-slider__range xps-range-slider__range--min" id="xps-search-2-price-range-min" type="range" min="0" max="0" value="0" disabled>      
-          <label class="xps-sr-only" for="xps-search-2-price-range-max">Maximum price</label>      
-          <input class="xps-range-slider__range xps-range-slider__range--max" id="xps-search-2-price-range-max" type="range" min="0" max="0" value="0" disabled>      
-        </div>      
-        <div class="xps-range-slider__inputs">      
-          <label class="xps-range-slider__input-label" for="xps-search-2-price-input-min">From</label>      
-          <input class="xps-range-slider__input" id="xps-search-2-price-input-min" type="number" value="" disabled>      
-          <span class="xps-range-slider__separator" aria-hidden="true">&ndash;</span>      
-          <label class="xps-range-slider__input-label" for="xps-search-2-price-input-max">To</label>      
-          <input class="xps-range-slider__input" id="xps-search-2-price-input-max" type="number" value="" disabled>      
-        </div>      
-        <p class="xps-range-slider__values" id="xps-search-2-price-values">No price range in these results.</p>      
+    <section class="fx fx--range-filter">
+      <h2>range-filter</h2>
+      <!-- rangeSlider — two native <input type="range"> plus two numeric inputs. No custom slider:
+           the native control is keyboard-operable and screen-reader-announced for free. -->
+      
+      <div class="xps xps-range-filter">
+        <h3 class="xps-range-filter__title" id="xps-search-1-price-title">Price</h3>
+        <div class="xps-range-filter__track" role="group" aria-labelledby="xps-search-1-price-title">
+          <label class="xps-sr-only" for="xps-search-1-price-range-min">Minimum price</label>
+          <input class="xps-range-filter__range xps-range-filter__range--min"
+                 id="xps-search-1-price-range-min"
+                 type="range" min="0" max="500" step="5" value="50"
+                 aria-describedby="xps-search-1-price-values">
+          <label class="xps-sr-only" for="xps-search-1-price-range-max">Maximum price</label>
+          <input class="xps-range-filter__range xps-range-filter__range--max"
+                 id="xps-search-1-price-range-max"
+                 type="range" min="0" max="500" step="5" value="300"
+                 aria-describedby="xps-search-1-price-values">
+        </div>
+        <div class="xps-range-filter__inputs">
+          <label class="xps-range-filter__input-label" for="xps-search-1-price-input-min">From</label>
+          <input class="xps-range-filter__input" id="xps-search-1-price-input-min" type="number" min="0" max="500" step="5" value="50" inputmode="numeric">
+          <span class="xps-range-filter__separator" aria-hidden="true">&ndash;</span>
+          <label class="xps-range-filter__input-label" for="xps-search-1-price-input-max">To</label>
+          <input class="xps-range-filter__input" id="xps-search-1-price-input-max" type="number" min="0" max="500" step="5" value="300" inputmode="numeric">
+        </div>
+        <p class="xps-range-filter__values" id="xps-search-1-price-values">50 to 300</p>
+      </div>
+      
+      <!-- no refinable range in the current results -->
+      <div class="xps xps-range-filter xps-range-filter--disabled">
+        <h3 class="xps-range-filter__title" id="xps-search-2-price-title">Price</h3>
+        <div class="xps-range-filter__track" role="group" aria-labelledby="xps-search-2-price-title">
+          <label class="xps-sr-only" for="xps-search-2-price-range-min">Minimum price</label>
+          <input class="xps-range-filter__range xps-range-filter__range--min" id="xps-search-2-price-range-min" type="range" min="0" max="0" value="0" disabled>
+          <label class="xps-sr-only" for="xps-search-2-price-range-max">Maximum price</label>
+          <input class="xps-range-filter__range xps-range-filter__range--max" id="xps-search-2-price-range-max" type="range" min="0" max="0" value="0" disabled>
+        </div>
+        <div class="xps-range-filter__inputs">
+          <label class="xps-range-filter__input-label" for="xps-search-2-price-input-min">From</label>
+          <input class="xps-range-filter__input" id="xps-search-2-price-input-min" type="number" value="" disabled>
+          <span class="xps-range-filter__separator" aria-hidden="true">&ndash;</span>
+          <label class="xps-range-filter__input-label" for="xps-search-2-price-input-max">To</label>
+          <input class="xps-range-filter__input" id="xps-search-2-price-input-max" type="number" value="" disabled>
+        </div>
+        <p class="xps-range-filter__values" id="xps-search-2-price-values">No price range in these results.</p>
       </div>
     </section>
 
-    <section class="fx fx--hierarchical-menu">
-      <h2>hierarchical-menu</h2>
-      <!-- hierarchicalMenu — nested lists, one level per taxonomy depth.      
-           aria-current="true" marks the selected node on every level of the open path. -->      
-            
-      <nav class="xps xps-hierarchical-menu" aria-label="Categories">      
-        <h3 class="xps-hierarchical-menu__title">Categories</h3>      
-        <ul class="xps-hierarchical-menu__list xps-hierarchical-menu__list--lvl0">      
-          <li class="xps-hierarchical-menu__item xps-hierarchical-menu__item--parent xps-hierarchical-menu__item--selected">      
-            <a class="xps-hierarchical-menu__link" href="?category=Coffee" aria-current="true">      
-              <span class="xps-hierarchical-menu__value">Coffee</span>      
-              <span class="xps-hierarchical-menu__count">42</span>      
-            </a>      
-            <ul class="xps-hierarchical-menu__list xps-hierarchical-menu__list--lvl1">      
-              <li class="xps-hierarchical-menu__item xps-hierarchical-menu__item--parent xps-hierarchical-menu__item--selected">      
-                <a class="xps-hierarchical-menu__link" href="?category=Coffee%20%3E%20Machines" aria-current="true">      
-                  <span class="xps-hierarchical-menu__value">Machines</span>      
-                  <span class="xps-hierarchical-menu__count">18</span>      
-                </a>      
-                <ul class="xps-hierarchical-menu__list xps-hierarchical-menu__list--lvl2">      
-                  <li class="xps-hierarchical-menu__item">      
-                    <a class="xps-hierarchical-menu__link" href="?category=Coffee%20%3E%20Machines%20%3E%20Espresso">      
-                      <span class="xps-hierarchical-menu__value">Espresso</span>      
-                      <span class="xps-hierarchical-menu__count">11</span>      
-                    </a>      
-                  </li>      
-                  <li class="xps-hierarchical-menu__item">      
-                    <a class="xps-hierarchical-menu__link" href="?category=Coffee%20%3E%20Machines%20%3E%20Filter">      
-                      <span class="xps-hierarchical-menu__value">Filter</span>      
-                      <span class="xps-hierarchical-menu__count">7</span>      
-                    </a>      
-                  </li>      
-                </ul>      
-              </li>      
-              <li class="xps-hierarchical-menu__item">      
-                <a class="xps-hierarchical-menu__link" href="?category=Coffee%20%3E%20Grinders">      
-                  <span class="xps-hierarchical-menu__value">Grinders</span>      
-                  <span class="xps-hierarchical-menu__count">24</span>      
-                </a>      
-              </li>      
-            </ul>      
-          </li>      
-          <li class="xps-hierarchical-menu__item">      
-            <a class="xps-hierarchical-menu__link" href="?category=Tea">      
-              <span class="xps-hierarchical-menu__value">Tea</span>      
-              <span class="xps-hierarchical-menu__count">9</span>      
-            </a>      
-          </li>      
-          <li class="xps-hierarchical-menu__item xps-hierarchical-menu__item--disabled">      
-            <span class="xps-hierarchical-menu__link" aria-disabled="true">      
-              <span class="xps-hierarchical-menu__value">Accessories</span>      
-              <span class="xps-hierarchical-menu__count">0</span>      
-            </span>      
-          </li>      
-        </ul>      
+    <section class="fx fx--category-tree">
+      <h2>category-tree</h2>
+      <!-- categoryTree — nested lists, one level per taxonomy depth.
+           aria-current="true" marks the selected node on every level of the open path. -->
+      
+      <nav class="xps xps-category-tree" aria-label="Categories">
+        <h3 class="xps-category-tree__title">Categories</h3>
+        <ul class="xps-category-tree__list xps-category-tree__list--lvl0">
+          <li class="xps-category-tree__item xps-category-tree__item--parent xps-category-tree__item--selected">
+            <a class="xps-category-tree__link" href="?category=Coffee" aria-current="true">
+              <span class="xps-category-tree__value">Coffee</span>
+              <span class="xps-category-tree__count">42</span>
+            </a>
+            <ul class="xps-category-tree__list xps-category-tree__list--lvl1">
+              <li class="xps-category-tree__item xps-category-tree__item--parent xps-category-tree__item--selected">
+                <a class="xps-category-tree__link" href="?category=Coffee%20%3E%20Machines" aria-current="true">
+                  <span class="xps-category-tree__value">Machines</span>
+                  <span class="xps-category-tree__count">18</span>
+                </a>
+                <ul class="xps-category-tree__list xps-category-tree__list--lvl2">
+                  <li class="xps-category-tree__item">
+                    <a class="xps-category-tree__link" href="?category=Coffee%20%3E%20Machines%20%3E%20Espresso">
+                      <span class="xps-category-tree__value">Espresso</span>
+                      <span class="xps-category-tree__count">11</span>
+                    </a>
+                  </li>
+                  <li class="xps-category-tree__item">
+                    <a class="xps-category-tree__link" href="?category=Coffee%20%3E%20Machines%20%3E%20Filter">
+                      <span class="xps-category-tree__value">Filter</span>
+                      <span class="xps-category-tree__count">7</span>
+                    </a>
+                  </li>
+                </ul>
+              </li>
+              <li class="xps-category-tree__item">
+                <a class="xps-category-tree__link" href="?category=Coffee%20%3E%20Grinders">
+                  <span class="xps-category-tree__value">Grinders</span>
+                  <span class="xps-category-tree__count">24</span>
+                </a>
+              </li>
+            </ul>
+          </li>
+          <li class="xps-category-tree__item">
+            <a class="xps-category-tree__link" href="?category=Tea">
+              <span class="xps-category-tree__value">Tea</span>
+              <span class="xps-category-tree__count">9</span>
+            </a>
+          </li>
+          <li class="xps-category-tree__item xps-category-tree__item--disabled">
+            <span class="xps-category-tree__link" aria-disabled="true">
+              <span class="xps-category-tree__value">Accessories</span>
+              <span class="xps-category-tree__count">0</span>
+            </span>
+          </li>
+        </ul>
       </nav>
     </section>
 
-    <section class="fx fx--infinite-hits">
-      <h2>infinite-hits</h2>
-      <!-- infiniteHits — the same .xps-hit item template, plus a load-more button and an      
-           intersection-observer sentinel. The button is the keyboard path; the sentinel is the scroll path. -->      
-            
-      <div class="xps xps-infinite-hits">      
-        <p class="xps-infinite-hits__status xps-sr-only" role="status">Showing 2 of 46 results</p>      
-        <ol class="xps-infinite-hits__list">      
-          <li class="xps-infinite-hits__item">      
-            <article class="xps-hit">      
-              <div class="xps-hit__body">      
-                <h3 class="xps-hit__title">      
-                  <a class="xps-hit__link" href="/blog/choosing-an-espresso-machine">Choosing an <mark class="xps-highlight">espresso</mark> machine</a>      
-                </h3>      
-                <p class="xps-hit__snippet">A dual-boiler machine holds brew and steam temperature independently.</p>      
-              </div>      
-            </article>      
-          </li>      
-          <li class="xps-infinite-hits__item">      
-            <article class="xps-hit">      
-              <div class="xps-hit__body">      
-                <h3 class="xps-hit__title">      
-                  <a class="xps-hit__link" href="/products/rocket-appartamento">Rocket Appartamento</a>      
-                </h3>      
-                <p class="xps-hit__snippet">A heat-exchanger machine for the home barista.</p>      
-              </div>      
-            </article>      
-          </li>      
-        </ol>      
-        <div class="xps-infinite-hits__sentinel" aria-hidden="true"></div>      
-        <button class="xps-button xps-infinite-hits__load-more" type="button">Load more results</button>      
-      </div>      
-            
-      <!-- every result loaded: the button stays in the DOM, disabled, so focus is never destroyed -->      
-      <div class="xps xps-infinite-hits xps-infinite-hits--exhausted">      
-        <p class="xps-infinite-hits__status xps-sr-only" role="status">Showing all 2 results</p>      
-        <ol class="xps-infinite-hits__list">      
-          <li class="xps-infinite-hits__item">      
-            <article class="xps-hit">      
-              <div class="xps-hit__body">      
-                <h3 class="xps-hit__title"><a class="xps-hit__link" href="/support/descaling">Descaling your machine</a></h3>      
-                <p class="xps-hit__snippet">Descale every 300 litres, or every three months on hard water.</p>      
-              </div>      
-            </article>      
-          </li>      
-        </ol>      
-        <div class="xps-infinite-hits__sentinel" aria-hidden="true"></div>      
-        <button class="xps-button xps-infinite-hits__load-more" type="button" disabled>No more results</button>      
+    <section class="fx fx--load-more">
+      <h2>load-more</h2>
+      <!-- loadMore — the same .xps-result item template, plus a load-more button and an
+           intersection-observer sentinel. The button is the keyboard path; the sentinel is the scroll path. -->
+      
+      <div class="xps xps-load-more">
+        <p class="xps-load-more__status xps-sr-only" role="status">Showing 2 of 46 results</p>
+        <ol class="xps-load-more__list">
+          <li class="xps-load-more__item">
+            <article class="xps-result">
+              <div class="xps-result__body">
+                <h3 class="xps-result__title">
+                  <a class="xps-result__link" href="/blog/choosing-an-espresso-machine">Choosing an <mark class="xps-highlight">espresso</mark> machine</a>
+                </h3>
+                <p class="xps-result__snippet">A dual-boiler machine holds brew and steam temperature independently.</p>
+              </div>
+            </article>
+          </li>
+          <li class="xps-load-more__item">
+            <article class="xps-result">
+              <div class="xps-result__body">
+                <h3 class="xps-result__title">
+                  <a class="xps-result__link" href="/products/rocket-appartamento">Rocket Appartamento</a>
+                </h3>
+                <p class="xps-result__snippet">A heat-exchanger machine for the home barista.</p>
+              </div>
+            </article>
+          </li>
+        </ol>
+        <div class="xps-load-more__sentinel" aria-hidden="true"></div>
+        <button class="xps-button xps-load-more__load-more" type="button">Load more results</button>
+      </div>
+      
+      <!-- every result loaded: the button stays in the DOM, disabled, so focus is never destroyed -->
+      <div class="xps xps-load-more xps-load-more--exhausted">
+        <p class="xps-load-more__status xps-sr-only" role="status">Showing all 2 results</p>
+        <ol class="xps-load-more__list">
+          <li class="xps-load-more__item">
+            <article class="xps-result">
+              <div class="xps-result__body">
+                <h3 class="xps-result__title"><a class="xps-result__link" href="/support/descaling">Descaling your machine</a></h3>
+                <p class="xps-result__snippet">Descale every 300 litres, or every three months on hard water.</p>
+              </div>
+            </article>
+          </li>
+        </ol>
+        <div class="xps-load-more__sentinel" aria-hidden="true"></div>
+        <button class="xps-button xps-load-more__load-more" type="button" disabled>No more results</button>
       </div>
     </section>
 
     <section class="fx fx--utilities">
       <h2>utilities</h2>
-      <!-- Shell utilities available to custom widgets (spec 5.7). Nothing here is widget-specific:      
-           a custom connector renderer can reach for these and inherit accessible defaults. -->      
-            
-      <div class="xps xps-stack">      
-        <h3>Custom widget: recently viewed</h3>      
-            
-        <!-- .xps-cluster: inline row that wraps, gap = --xps-space -->      
-        <div class="xps-cluster">      
-          <button class="xps-button" type="button">Refine</button>      
-          <button class="xps-button xps-button--primary" type="button">Apply</button>      
-          <button class="xps-button" type="button" disabled>Unavailable</button>      
-          <span class="xps-chip">      
-            <span class="xps-chip__label">Espresso</span>      
-            <button class="xps-chip__remove" type="button" aria-label="Remove filter Espresso">      
-              <span aria-hidden="true">&times;</span>      
-            </button>      
-          </span>      
-        </div>      
-            
-        <!-- .xps-skeleton: structural placeholder, currentColor at low opacity -->      
-        <div class="xps-stack">      
-          <span class="xps-skeleton xps-skeleton--title"></span>      
-          <span class="xps-skeleton xps-skeleton--text"></span>      
-          <span class="xps-skeleton xps-skeleton--block"></span>      
-        </div>      
-            
-        <!-- .xps-sr-only: visible to assistive technology only -->      
-        <p><span class="xps-sr-only">Announced but not shown.</span>Highlighted term: <mark class="xps-highlight">espresso</mark>.</p>      
+      <!-- Shell utilities available to custom widgets (spec 5.7). Nothing here is widget-specific:
+           a custom behaviour renderer can reach for these and inherit accessible defaults. -->
+      
+      <div class="xps xps-stack">
+        <h3>Custom widget: recently viewed</h3>
+      
+        <!-- .xps-cluster: inline row that wraps, gap = --xps-space -->
+        <div class="xps-cluster">
+          <button class="xps-button" type="button">Apply</button>
+          <button class="xps-button xps-button--primary" type="button">Apply</button>
+          <button class="xps-button" type="button" disabled>Unavailable</button>
+          <span class="xps-chip">
+            <span class="xps-chip__label">Espresso</span>
+            <button class="xps-chip__remove" type="button" aria-label="Remove filter Espresso">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </span>
+        </div>
+      
+        <!-- .xps-skeleton: structural placeholder, currentColor at low opacity -->
+        <div class="xps-stack">
+          <span class="xps-skeleton xps-skeleton--title"></span>
+          <span class="xps-skeleton xps-skeleton--text"></span>
+          <span class="xps-skeleton xps-skeleton--block"></span>
+        </div>
+      
+        <!-- .xps-sr-only: visible to assistive technology only -->
+        <p><span class="xps-sr-only">Announced but not shown.</span>Highlighted term: <mark class="xps-highlight">espresso</mark>.</p>
       </div>
     </section>
 
     <section class="fx fx--mount">
       <h2>mount</h2>
-      <!-- Page Builder mount point (spec 7.1). The bootstrap renders the widget inside it;      
-           nothing is styled on .xps-mount, so an empty or failed mount never disturbs the page. -->      
-            
-      <div class="xps-mount"      
-           data-xps-widget="refinementList"      
-           data-xps-instance="search-1"      
+      <!-- Page Builder mount point (spec 7.1). The bootstrap renders the widget inside it;
+           nothing is styled on .xps-mount, so an empty or failed mount never disturbs the page. -->
+      
+      <div class="xps-mount"
+           data-xps-widget="facetList"
+           data-xps-instance="search-1"
            data-xps-config='{"attribute":"contentType","limit":10,"showMore":true}'></div>
     </section>
 

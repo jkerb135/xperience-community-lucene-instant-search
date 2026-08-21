@@ -1,16 +1,16 @@
 /**
- * `searchBox` — `connectSearchBox` plus the default renderer (spec 5.3).
+ * `searchBox` — `withSearchBox` plus the default renderer (spec 5.3).
  * Markup: `themes/fixtures/search-box.html`. A11y: spec 5.6 — `role="search"`, an associated
  * label, `aria-label` on the reset button.
  */
-import { connectSearchBox } from '../connectors/searchBox';
+import { withSearchBox } from '../behaviors/searchBox';
 import { html, render } from '../templates/html';
 import type { Widget } from '../types';
 import { createRoot, idBase, resolveContainer } from './dom';
 
 export type SearchBoxWidgetParams = {
   container: string | HTMLElement;
-  /** Intercepts a refinement before it reaches the state (spec 5.3). */
+  /** Intercepts a query before it reaches the state (spec 5.3). */
   queryHook?: (query: string, search: (value: string) => void) => void;
   placeholder?: string;
   /** Text of the always-rendered `<label>`. */
@@ -29,10 +29,10 @@ export function searchBox(params: SearchBoxWidgetParams): Widget {
   let root: HTMLElement | undefined;
   let input: HTMLInputElement | undefined;
   let reset: HTMLElement | undefined;
-  let refine: (query: string) => void = () => {};
+  let apply: (query: string) => void = () => {};
   let clear: () => void = () => {};
 
-  const widget = connectSearchBox<SearchBoxWidgetParams>(
+  const widget = withSearchBox<SearchBoxWidgetParams>(
     (options, isFirstRender) => {
       const {
         placeholder = 'Search…',
@@ -41,8 +41,8 @@ export function searchBox(params: SearchBoxWidgetParams): Widget {
         showReset = true,
         showSubmit = false,
         autofocus = false,
-      } = options.widgetParams;
-      refine = options.refine;
+      } = options.params;
+      apply = options.apply;
       clear = options.clear;
 
       if (isFirstRender) {
@@ -65,10 +65,10 @@ export function searchBox(params: SearchBoxWidgetParams): Widget {
         input = root.querySelector<HTMLInputElement>('.xps-search-box__input') ?? undefined;
         reset = root.querySelector<HTMLElement>('.xps-search-box__reset') ?? undefined;
 
-        root.addEventListener('input', () => refine(input?.value ?? ''));
+        root.addEventListener('input', () => apply(input?.value ?? ''));
         root.addEventListener('submit', (event) => {
           event.preventDefault();
-          refine(input?.value ?? '');
+          apply(input?.value ?? '');
         });
         root.addEventListener('reset', (event) => {
           // The native reset would restore the *initial* value, not an empty one.
@@ -81,7 +81,7 @@ export function searchBox(params: SearchBoxWidgetParams): Widget {
       }
 
       if (!root || !input || !reset) return;
-      root.classList.toggle('xps-search-box--stalled', options.isSearchStalled);
+      root.classList.toggle('xps-search-box--stalled', options.isStalled);
       // Only assign when it actually differs: assigning moves the caret to the end.
       if (input.value !== options.query) input.value = options.query;
       reset.hidden = !showReset || options.query === '';
