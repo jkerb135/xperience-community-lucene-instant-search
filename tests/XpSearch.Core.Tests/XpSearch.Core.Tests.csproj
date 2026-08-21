@@ -10,6 +10,11 @@
 
   <ItemGroup>
     <None Update="Contract\Fixtures\*.json" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Fixtures\ClassFormDefinitions\*.xml" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
   <ItemGroup>
@@ -22,6 +27,8 @@
     <PackageReference Include="NUnit3TestAdapter" />
     <PackageReference Include="NUnit.Analyzers" />
     <PackageReference Include="NSubstitute" />
+    <PackageReference Include="Lucene.Net.Facet" />
+    <PackageReference Include="Lucene.Net.Analysis.Common" />
   </ItemGroup>
 
 </Project>

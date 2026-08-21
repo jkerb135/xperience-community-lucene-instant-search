@@ -247,6 +247,43 @@ Failures are [RFC 9457 Problem Details](https://learn.microsoft.com/aspnet/core/
 Read `status` and `title`; `errors` is present for validation failures and keyed by the offending JSON
 field. The version header is on error responses too.
 
+### Filters, sorting and schema
+
+The contract fixes the *shape* of `facetFilters`, `numericFilters` and `sort`; what an index accepts in
+them comes from its schema, which the [indexing strategy](indexing-strategy.md) derives from the content
+types the index covers. `IIndexSchemaProvider.GetSchemaAsync(indexName, cancellationToken)` returns that
+list with a `Searchable` / `Facetable` / `Sortable` / `Retrievable` flag per field.
+
+**`facets` and `facetFilters`** accept attributes the schema marks facetable — in practice, Xperience
+Taxonomy fields plus `ContentTypeName` and `LanguageName`. Values are tag code names. Anything else is a
+`400` keyed `facets` or `facetFilters`. Only the first `attribute:value` colon separates, so a code name
+may itself contain one.
+
+**`numericFilters`** accept attributes the schema marks numeric — integer, decimal and date fields. A date
+is compared as Unix epoch seconds. A filter on a non-numeric attribute is a `400` keyed `numericFilters`,
+as is anything that does not match the grammar.
+
+**`sort`** is either the literal `relevance` (the default, score descending) or a sortable attribute with
+an `_asc` or `_desc` suffix: `Price_desc`, `Title_asc`. There is no separate sort-key configuration —
+the suffix is the convention. Anything else is a `400` keyed `sort`.
+
+**`hitsPerPage`** above the contract's ceiling of 1000 is a `400`; above the server's configured ceiling
+(`XpSearchOptions.MaxHitsPerPage`, 100 by default) it is silently clamped, and the response reports the
+clamped value. Deep paging is bounded too: `(page + 1) * hitsPerPage` must not exceed
+`XpSearchOptions.MaxResultWindow` (10000 by default), because Lucene ranks every document up to that
+depth.
+
+**`language`** filters on the language field the Lucene integration writes to every document. One index
+holds every language; whether a per-language index is the better model is not decided yet, so treat this
+as filtering, not as index selection.
+
+**`attributesToRetrieve`** accepts attributes the schema marks retrievable. Omit it and every retrievable
+attribute is returned. `objectID` is always returned and is never an attribute.
+
+**`highlight.fields`** accepts retrievable attributes. The stored value is HTML-encoded before the
+highlight tags are inserted, so a snippet is safe to render as HTML and markup in the source content comes
+back escaped.
+
 ### Why the payloads look like Algolia
 
 `objectID`, `nbHits`, `nbPages`, `hitsPerPage`, `facetFilters`, `_highlights` — the naming is Algolia's on

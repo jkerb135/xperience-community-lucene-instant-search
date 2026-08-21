@@ -8,6 +8,11 @@ Breaking changes to the public connector API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- Fixed: fields a content type inherits from a reusable field schema are detected, so a taxonomy that
+  reaches a type only through a schema (`ProductFieldTags` and `ProductFieldCategory` on Dancing Goat's
+  products) becomes a facet like any other. A name defined by both the content type and one of its
+  schemas keeps the content type's field and logs a warning.
+
 - Added: the nine default widgets (spec §5.3) — `searchBox`, `hits`, `refinementList`, `pagination`,
   `stats`, `sortBy`, `clearRefinements`, `currentRefinements`, `toggleRefinement` — each a connector
   plus a renderer over the public API, the escaping-by-default `html`/`highlight`/`formatNumber`
@@ -25,3 +30,8 @@ Breaking changes to the public connector API (spec §5.7) or the JSON contract
 - Added: the JSON search contract is frozen — `contract/xpsearch-api.schema.json` generates the C#
   (`XpSearch.Core.Contract`) and TypeScript (`@yourco/xperience-search`) types for `/api/xpsearch/query`,
   `/suggest` and `/events`, versioned by the `X-XpSearch-Api-Version` response header (ADR-0006).
+- Added: `XpSearch.Core` serves the contract — an ordered, injectable query pipeline behind
+  `POST /api/xpsearch/query`, `/suggest` and `/events`, with taxonomy facets and drill-sideways counts,
+  facet and numeric filters, sorting, XSS-safe highlighting, a short-TTL response cache invalidated on
+  index writes, and `XpSearchIndexingStrategy`, which binds Xperience taxonomies as facets with no
+  per-content-type code (spec §4, ADR-0008).

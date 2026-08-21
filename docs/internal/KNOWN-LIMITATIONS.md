@@ -128,6 +128,92 @@ and how to lift it.
   the helper converters, or `--features types-only`); or, if the list ever grows past a handful, generate
   the C# from the schema with a small emitter of our own instead.
 
+## `SuggestMode.QuerySuggestions` in `XpSearch.Core/Search/FederatedHitsSuggestService.cs`
+
+- **Simplified:** spec §4.3 asks for two autocomplete modes. Only federated hits (a prefix match on the
+  index's suggest field, `Title` by default) is implemented. An index configured for query suggestions gets
+  an empty `suggestions` array and a logged warning.
+- **Ceiling:** query suggestions need a store of previously issued queries and their frequencies, which is
+  Phase 6 (spec §13.6). Until then the mode exists as configuration and does nothing, so a project that
+  sets it silently loses autocomplete apart from the warning.
+- **Upgrade path:** when the Phase 6 analytics store lands, add a `QuerySuggestionsSuggestService` and pick
+  the implementation per index in `AddXpSearch`; the `SuggestMode` option and the `ISuggestService`
+  interface are already the seam.
+
+## `RankingInfo.AppliedBoosts` in `XpSearch.Core/Pipeline/Stages/ProjectResponseStage.cs`
+
+- **Simplified:** `explain=true` returns `_rankingInfo` with the raw Lucene score as `baseScore`, the
+  one-based position, and an always-empty `appliedBoosts`.
+- **Ceiling:** the admin query tester (spec §8.4) can show why a hit scored what it scored, but not why it
+  moved — because nothing moves it yet. `_score` and `baseScore` are therefore always identical.
+- **Upgrade path:** the Phase 5 boost and pin/bury stages occupy `SearchStageOrder.BoostRules` (700) and
+  `SearchStageOrder.PinnedAndBuried` (900); each appends its own description to the hit's `appliedBoosts`
+  as it changes a score or a position.
+
+## Language as a document field, in `XpSearch.Core/Pipeline/Stages/BuildQueryStage.cs`
+
+- **Simplified:** a request's `language` becomes a term filter on `BaseDocumentProperties.LANGUAGE_NAME`.
+  One index holds every language variant, which is how the Lucene integration indexes by default.
+- **Ceiling:** every language shares one analyzer and one set of term statistics, so relevance scoring is
+  blended across languages and language-specific stemming is impossible. This is **not** a decision on spec
+  §13.2 (multilingual strategy); it is the current behaviour, chosen because it is what the integration
+  gives us for free.
+- **Upgrade path:** whatever §13.2 resolves to. If it becomes one index per language, `language` selects an
+  index instead of filtering inside one, and the filter clause in `BuildQueryStage` is removed.
+
+## Schema detection in `XpSearch.Core/Indexing/FormInfoContentTypeFieldSource.cs`
+
+- **Simplified:** fields are detected from `DataClassInfo.ClassFormDefinition` via `FormInfo.GetFields`, and
+  mapped by their field data type. Data types with no obvious search meaning (assets, references, booleans,
+  GUIDs, XML) are dropped. Reusable field schema fields are **not** in a content type's own class form
+  definition — verified against a Dancing Goat database, where `DancingGoat.ProductCoffee` holds only
+  `<schema guid="fe13f703-…"/>` — so the source reads a second class, `CMS.ContentItemCommonData`, and
+  merges in every field whose `kxp_schema_identifier` property matches one of the GUIDs the content type
+  references. Kentico's own helper for this (`ReusableFieldSchemasHelper.CopySchemas`) is `internal`, and
+  `IReusableFieldSchemaManager` lives in a `.Internal` namespace, so the merge is done here over the two
+  public `FormInfo` objects instead.
+- **Ceiling:** two class queries per content type instead of one, and the merge re-implements a rule that
+  belongs to the platform: if Xperience ever stores schema fields somewhere other than
+  `CMS.ContentItemCommonData`, or renames the `kxp_schema_identifier` property, detection silently loses
+  every schema field again. A name defined by both a content type and one of its schemas is a configuration
+  error: the content type's field is kept and the schema field dropped with an `ILogger` warning, rather
+  than being merged or erroring out. The data type mapping is still fixed — a project that wants a boolean
+  indexed must override it by hand. Reusable items indexed through `FindItemsToReindex` need nothing extra:
+  `XpSearchIndexingStrategy` does not override it, and every item resolves its fields through the same
+  `IContentTypeFieldSource.GetFields(item.ContentTypeName)` call, so it takes exactly this path.
+- **Upgrade path:** drop the merge and call the platform helper if Kentico makes
+  `ReusableFieldSchemasHelper` (or an equivalent) public. `IContentTypeFieldSource` remains the seam.
+
+## Schema resolution per uncached request, in `XpSearch.Core/Pipeline/SearchPipeline.cs`
+
+- **Simplified:** `IIndexSchemaProvider.GetSchemaAsync` is called on every request that misses the response
+  cache, and its default implementation queries `CMS_Class` for each of the index's content types.
+- **Ceiling:** a cold cache costs one class query per content type per search. With the default 60 second
+  response TTL that is bounded, but a high-cardinality query mix keeps hitting it.
+- **Upgrade path:** decorate `IIndexSchemaProvider` with an `IProgressiveCache` entry keyed by index name,
+  dependent on `cms.class|all`, so a content type change still invalidates it.
+
+## `FacetsConfig` accumulation in `XpSearch.Core/Indexing/XpSearchIndexingStrategy.cs`
+
+- **Simplified:** the strategy registers a taxonomy dimension as multi-valued the first time it maps a
+  document that has one, and `FacetsConfigFactory` returns that same accumulating instance. This works
+  because the task processor maps documents before the client asks for the configuration and builds them.
+- **Ceiling:** in a process that has never indexed anything, the configuration is empty. Querying still
+  works — an unregistered dimension falls back to `FacetsConfig`'s defaults, which is what drill-down and
+  counting need — but it means the configuration is not a static description of the index.
+- **Upgrade path:** give the strategy the index's content types (through `IIndexContentTypeSource`) and
+  register every taxonomy dimension up front in the constructor.
+
+## Field renaming is not supported, in `XpSearch.Core/Indexing/XpSearchIndexingOptions.cs`
+
+- **Simplified:** spec §4.5f asks for exclude, rename and boost. `Exclude` and `Configure` are implemented;
+  `Configure` can change every flag and the boost, but `SchemaField.Name` is both the content type field the
+  value is read from and the Lucene field it is written to, so changing it breaks the read. The guide says
+  so instead of the code preventing it.
+- **Ceiling:** a project that wants a shorter attribute name on the wire has to add a second field in an
+  override of `MapToLuceneDocumentOrNull`, or rename in its own client code.
+- **Upgrade path:** add a source-field name to `SchemaField` that defaults to `Name`, read values by the
+  source name in the strategy, and index and project by `Name`.
 ## `check.mjs` in `themes/scripts/check.mjs`
 
 - **Simplified:** the theme self-check tokenizes CSS with a regex (`([^{}]+)\{([^{}]*)\}`) and HTML
