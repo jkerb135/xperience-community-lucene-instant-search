@@ -4,13 +4,42 @@
   "private": true,
   "type": "module",
   "description": "Xperience Search JavaScript client.",
+  "sideEffects": false,
+  "main": "./dist/xpsearch.umd.js",
+  "module": "./dist/xpsearch.mjs",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/xpsearch.mjs",
+      "default": "./dist/xpsearch.umd.js"
+    },
+    "./connectors": {
+      "types": "./dist/types/connectors.d.ts",
+      "import": "./dist/connectors.mjs",
+      "default": "./dist/connectors.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "contract:gen": "node scripts/contract.mjs",
     "contract:check": "node scripts/contract.mjs --check",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "rollup -c && tsc -p tsconfig.build.json",
+    "size": "node scripts/size.mjs",
+    "mock": "node mock/server.ts"
   },
   "devDependencies": {
+    "@types/node": "26.2.0",
+    "esbuild": "0.28.2",
+    "jsdom": "30.0.1",
     "quicktype": "26.0.0",
-    "typescript": "7.0.2"
+    "rollup": "4.62.5",
+    "typescript": "7.0.2",
+    "vitest": "4.1.11"
   }
 }

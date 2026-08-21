@@ -1,0 +1,7 @@
+{
+  "note": "Gzip budgets for spec 5.9 (<20 KB for core + the six default widgets). Core keeps half of it; the widgets in js-widgets get the rest.",
+  "budgets": {
+    "esm": { "pattern": "^(xpsearch|connectors|shared-[^.]+)\\.mjs$", "limitBytes": 10240 },
+    "umd": { "pattern": "^xpsearch\\.umd\\.js$", "limitBytes": 12288 }
+  }
+}
