@@ -12,3 +12,6 @@ tests/performance/corpora/*.json
 
 # Claude Code agent worktrees
 .claude/worktrees/
+
+# Copied from src/XpSearch.Client/dist and themes/src by the XpSearch.Widgets build
+src/XpSearch.Widgets/wwwroot/

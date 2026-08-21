@@ -56,7 +56,11 @@ public sealed class IndexSchemaProvider : IIndexSchemaProvider
         new SchemaField(TitleField, SearchFieldKind.Text, Searchable: true, Facetable: false, Sortable: true, Retrievable: true, Boost: 2f),
         new SchemaField(BaseDocumentProperties.CONTENT_TYPE_NAME, SearchFieldKind.Keyword, Searchable: false, Facetable: true, Sortable: false, Retrievable: true),
         new SchemaField(BaseDocumentProperties.LANGUAGE_NAME, SearchFieldKind.Keyword, Searchable: false, Facetable: true, Sortable: false, Retrievable: true),
-        new SchemaField(BaseDocumentProperties.URL, SearchFieldKind.Keyword, Searchable: false, Facetable: false, Sortable: false, Retrievable: true)
+        new SchemaField(BaseDocumentProperties.URL, SearchFieldKind.Keyword, Searchable: false, Facetable: false, Sortable: false, Retrievable: true),
+
+        // Facetable so a query can filter to one provenance; facet *counts* are only collected for
+        // taxonomy dimensions, so asking for "_source" in `facets` returns no counts.
+        new SchemaField(LuceneFieldNames.SourceField, SearchFieldKind.Keyword, Searchable: false, Facetable: true, Sortable: false, Retrievable: true)
     ];
 
     /// <inheritdoc />

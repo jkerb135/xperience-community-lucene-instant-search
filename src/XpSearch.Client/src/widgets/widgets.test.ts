@@ -570,6 +570,39 @@ describe('resultStats', () => {
     expect(root.getAttribute('aria-live')).toBeNull();
   });
 
+  it('accepts a string textTemplate with placeholders, escaping the template and the values', async () => {
+    const host = container('resultStats');
+    search = start([
+      resultStats({
+        container: host,
+        textTemplate: '<b>{total}</b> hits for "{query}" in {tookMs} ms - page {page} of {totalPages}',
+      }),
+    ]);
+    search.actions.setQuery('espresso & <cream>');
+    await settled(search);
+
+    const line = host.querySelector('.xps-result-stats__text') as HTMLElement;
+    expect(text(line)).toBe(
+      '<b>46</b> hits for "espresso & <cream>" in 14 ms - page 1 of 9'
+    );
+    // Escaped, so neither the editor's template nor the visitor's query can inject markup.
+    expect(line.innerHTML).toContain('&lt;b&gt;46&lt;/b&gt;');
+    expect(line.querySelector('b')).toBeNull();
+  });
+
+  it('lets templates.text win over textTemplate', async () => {
+    const host = container('resultStats');
+    search = start([
+      resultStats({
+        container: host,
+        textTemplate: '{total} from the string template',
+        templates: { text: (data, tools) => tools.html`<b>${tools.formatNumber(data.total)}</b>` },
+      }),
+    ]);
+    await settled(search);
+    expect(host.querySelector('.xps-result-stats__text')?.innerHTML).toBe('<b>46</b>');
+  });
+
   it('accepts templates.text', async () => {
     const host = container('resultStats');
     search = start([

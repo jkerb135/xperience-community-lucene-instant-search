@@ -208,7 +208,11 @@ const help = createSearch({ index: 'help-centre' });
 ```
 
 With Page Builder markup this is automatic: mounts are grouped by `data-xps-instance`, one instance per
-group (see [Custom widgets](custom-widgets.md)).
+group. The options of a group are **merged** from the `data-xps-instance-config` of every mount in it, so
+an option only one widget carries (for example the Page Builder results widget's `initialState.pageSize`
+and `fields`) applies whatever the widget order is. The first definition of a key wins, and a mount that
+gives the same key a different value logs one `console.warn` naming the key and the instance. See
+[Page Builder widgets](page-builder-widgets.md) and [Custom widgets](custom-widgets.md).
 
 ### Run it against the mock server
 

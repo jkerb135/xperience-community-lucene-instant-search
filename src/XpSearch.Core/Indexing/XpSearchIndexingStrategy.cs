@@ -266,7 +266,12 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
         {
             new StringField(BaseDocumentProperties.ID, ComposeResultId(item.ItemGuid.ToString(), item.LanguageName), Field.Store.YES),
             new FacetField(BaseDocumentProperties.CONTENT_TYPE_NAME, item.ContentTypeName),
-            new FacetField(BaseDocumentProperties.LANGUAGE_NAME, item.LanguageName)
+            new FacetField(BaseDocumentProperties.LANGUAGE_NAME, item.LanguageName),
+
+            // Provenance marker (spec §10.2): pushed documents carry their own source, so a scoped
+            // clear and the ingestion status counts can separate Xperience content from the rest.
+            // Written once per document, before any flattened or contributed field is added.
+            new StringField(LuceneFieldNames.SourceField, LuceneFieldNames.XperienceSource, Field.Store.YES)
         };
 
         AddText(document, IndexSchemaProvider.TitleField, item.Name, sortable: true);

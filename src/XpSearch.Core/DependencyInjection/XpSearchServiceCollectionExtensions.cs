@@ -83,7 +83,8 @@ public static class XpSearchServiceCollectionExtensions
             provider.GetRequiredService<ISearchCache>(),
             provider.GetRequiredService<Options.IOptions<XpSearchOptions>>()));
 
-        services.DecorateLuceneClient();
+        services.DecorateLuceneClient<CacheEvictingLuceneClient>(
+            (provider, inner) => new CacheEvictingLuceneClient(inner, provider.GetRequiredService<ISearchCache>()));
 
         return services;
     }
@@ -119,27 +120,49 @@ public static class XpSearchServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Puts <see cref="CacheEvictingLuceneClient"/> in front of whatever <see cref="ILuceneClient"/> is
-    /// already registered, so index writes drop this library's cached responses.
+    /// Puts a decorator in front of whatever <see cref="ILuceneClient"/> is already registered, so this
+    /// library can observe the integration's index writes
+    /// (https://docs.kentico.com/documentation/developers-and-admins/customization/decorate-system-services).
     /// </summary>
+    /// <typeparam name="TDecorator">The decorator type, which also identifies the decoration: applying the same one twice is a no-op.</typeparam>
+    /// <param name="services">The service collection. <c>AddKenticoLucene</c> must already have been called on it.</param>
+    /// <param name="decorate">Builds the decorator from the container and the previously registered client.</param>
+    /// <returns>The same collection, for chaining.</returns>
     /// <remarks>
     /// The previous descriptor is captured from the collection instead of resolved from the container,
-    /// so the decoration behaves the same whichever container the host uses.
+    /// so the decoration behaves the same whichever container the host uses, and decorations stack in
+    /// registration order.
     /// </remarks>
-    private static void DecorateLuceneClient(this IServiceCollection services)
+    public static IServiceCollection DecorateLuceneClient<TDecorator>(
+        this IServiceCollection services,
+        Func<IServiceProvider, ILuceneClient, TDecorator> decorate)
+        where TDecorator : class, ILuceneClient
     {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(decorate);
+
         var existing = services.LastOrDefault(descriptor => descriptor.ServiceType == typeof(ILuceneClient));
 
-        if (existing is null || existing.ImplementationType == typeof(CacheEvictingLuceneClient))
+        if (existing is null || services.Any(descriptor => descriptor.ServiceType == typeof(DecorationMarker<TDecorator>)))
         {
-            return;
+            return services;
         }
 
+        services.AddSingleton<DecorationMarker<TDecorator>>();
         services.Remove(existing);
         services.Add(new ServiceDescriptor(
             typeof(ILuceneClient),
-            provider => new CacheEvictingLuceneClient(Instantiate(provider, existing), provider.GetRequiredService<ISearchCache>()),
+            provider => decorate(provider, Instantiate(provider, existing)),
             existing.Lifetime));
+
+        return services;
+    }
+
+    /// <summary>Records that a decorator has been applied, so a second call cannot double-wrap the client.</summary>
+    /// <typeparam name="TDecorator">The decorator type.</typeparam>
+    private sealed class DecorationMarker<TDecorator>
+        where TDecorator : class, ILuceneClient
+    {
     }
 
     private static ILuceneClient Instantiate(IServiceProvider provider, ServiceDescriptor descriptor)
