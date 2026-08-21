@@ -203,7 +203,7 @@ describe('searchBox', () => {
 
   it('routes the query through queryHook', () => {
     const form = mount({
-      queryHook: (query: string, refine: (value: string) => void) => refine(query.trim()),
+      queryHook: (query: string, apply: (value: string) => void) => apply(query.trim()),
     });
     const input = form.querySelector('input') as HTMLInputElement;
     input.value = '  latte  ';

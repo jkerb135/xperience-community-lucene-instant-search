@@ -1,6 +1,6 @@
 /**
  * The widgets shipped with the library (spec 5.3). Every one of them is
- * `connector + default renderer` over the public connector API — the dogfooding rule of
+ * `behaviour + default renderer` over the public behaviour API — the dogfooding rule of
  * spec 5.7 — and every one emits the markup contract in `themes/MARKUP.md`.
  */
 import type { MountConfig, MountWidgetFactory } from '../bootstrap';

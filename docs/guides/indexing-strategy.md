@@ -47,7 +47,7 @@ Every document gets these fields whatever its content type:
 
 | Field | Kind | Flags | Where it comes from |
 |---|---|---|---|
-| `ID` | keyword | — | `{itemGuid}:{languageName}`, surfaced as the hit's `objectID` |
+| `ID` | keyword | — | `{itemGuid}:{languageName}`, surfaced as the result's `id` |
 | `Title` | text | searchable, sortable, retrievable | the content item's name; boosted ×2 |
 | `ContentTypeName` | keyword | facetable, retrievable | the Lucene integration |
 | `LanguageName` | keyword | facetable, retrievable | the Lucene integration |
@@ -113,15 +113,19 @@ That is all a request needs to use it:
 {
   "index": "MySiteIndex",
   "facets": ["ProductFieldTags"],
-  "facetFilters": [["ProductFieldTags:espresso-machines"]]
+  "filters": { "facets": [{ "attribute": "ProductFieldTags", "values": ["espresso-machines"] }] }
 }
 ```
 
-Facet values are tag **code names**, because they are stable across language variants and renames. A
-single group refining a single dimension is executed as a Lucene drill-down through `DrillSideways`, so
-the counts you get back for that dimension still include the values the visitor could switch to — which
-is what a refinement list needs. A group that spans dimensions, or a second group on an already-drilled
-dimension, falls back to an ordinary boolean filter.
+Facet values are tag **code names**, because they are stable across language variants and renames; the
+tag **title** comes back as the facet value's `label`, so a widget never has to display a code name. The
+strategy writes both, as a `<dimension>_label` term per tag, and the query side reads the map straight
+out of the term dictionary.
+
+An `or` entry on a single dimension is executed as a Lucene drill-down through `DrillSideways`, so the
+counts you get back for that dimension still include the values the visitor could switch to — which is
+what a facet list needs. An `and` entry, or a second entry on an already-drilled dimension, falls back to
+an ordinary boolean filter.
 
 ### Overriding a field
 

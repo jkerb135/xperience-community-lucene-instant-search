@@ -1,6 +1,6 @@
 # ADR-0009: Widget rendering — templating, focus and the accessibility gate
 
-- **Status:** accepted
+- **Status:** accepted; amended by ADR-0010 (widget and class names follow the owned contract; the templating, focus and accessibility decisions are unchanged)
 - **Date:** 2026-08-21
 - **Spec reference:** §5.3, §5.4, §5.6, §5.7, §5.9, §9.1, §12
 

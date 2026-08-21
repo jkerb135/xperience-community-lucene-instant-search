@@ -1,18 +1,18 @@
 ## Custom widgets
 
-Build any search UI on the public API without forking the library. A **connector** supplies the
-behaviour — state subscription, data shaping, refinement dispatch, URL building — and you supply the
-rendering. The widgets shipped with Xperience Search are written the same way, on the same connectors,
+Build any search UI on the public API without forking the library. A **behaviour** supplies the
+mechanics — state subscription, data shaping, filter dispatch, URL building — and you supply the
+rendering. The widgets shipped with Xperience Search are written the same way, on the same behaviours,
 so anything they can do, your control can do.
 
 ### A dropdown facet in 40 lines
 
 ```js
-import { connectRefinementList } from '@yourco/xperience-search/connectors';
+import { withFacetList } from '@yourco/xperience-search/behaviors';
 
-export const dropdownFacet = connectRefinementList((renderOptions, isFirstRender) => {
-  const { items, refine, widgetParams } = renderOptions;
-  const { container, label = 'Filter', allLabel = 'All' } = widgetParams;
+export const dropdownFacet = withFacetList((renderOptions, isFirstRender) => {
+  const { items, apply, params } = renderOptions;
+  const { container, label = 'Filter', allLabel = 'All' } = params;
 
   if (isFirstRender) {
     container.innerHTML = `
@@ -20,9 +20,9 @@ export const dropdownFacet = connectRefinementList((renderOptions, isFirstRender
       <select class="xps-dropdown__select" id="${container.id}-select"></select>`;
 
     container.querySelector('select').addEventListener('change', (event) => {
-      const current = renderOptions.items.find((item) => item.isRefined);
-      if (current) refine(current.value);              // clear the previous one (single select)
-      if (event.target.value) refine(event.target.value);
+      const current = renderOptions.items.find((item) => item.isActive);
+      if (current) apply(current.value);              // clear the previous one (single select)
+      if (event.target.value) apply(event.target.value);
     });
   }
 
@@ -30,10 +30,10 @@ export const dropdownFacet = connectRefinementList((renderOptions, isFirstRender
   select.innerHTML =
     `<option value="">${allLabel}</option>` +
     items.map((item) => `
-      <option value="${item.value}" ${item.isRefined ? 'selected' : ''}>
+      <option value="${item.value}" ${item.isActive ? 'selected' : ''}>
         ${item.label} (${item.count})
       </option>`).join('');
-  select.value = items.find((item) => item.isRefined)?.value ?? '';
+  select.value = items.find((item) => item.isActive)?.value ?? '';
 });
 ```
 
@@ -50,16 +50,17 @@ search.addWidgets([
 ```
 
 No fetch, no request building, no facet-count math, no URL sync, no debouncing, no state management.
-The connector supplied `items` and `refine`; everything else is inherited.
+The behaviour supplied `items` and `apply`; everything else is inherited. `item.label` is already the
+display text the server chose — the taxonomy tag title, not its code name.
 
 > The event handler is registered once and reads `renderOptions.items` at click time, because
-> `renderOptions` is rebuilt on every render — capture the connector's actions, not its data.
+> `renderOptions` is rebuilt on every render — capture the behaviour's actions, not its data.
 
-### How a connector works
+### How a behaviour works
 
 ```js
-const myWidget = connectX(renderFn, unmountFn?);   // -> a widget factory
-search.addWidgets([myWidget(widgetParams)]);       // -> a widget
+const myWidget = withX(renderFn, unmountFn?);      // -> a widget factory
+search.addWidgets([myWidget(params)]);             // -> a widget
 ```
 
 `renderFn(renderOptions, isFirstRender)` runs once on `init` with `isFirstRender: true` and
@@ -68,47 +69,47 @@ carries:
 
 | Member | Meaning |
 |---|---|
-| `widgetParams` | Exactly what you passed to the factory. |
+| `params` | Exactly what you passed to the factory. |
 | `results` | The last `SearchResults`, or `null` before the first response. |
 | `state` | The current `SearchState`. Frozen — never write to it. |
-| `helper` | The `SearchHelper`; see [JavaScript client](js-client.md). |
-| `instantSearchInstance` | The instance, for `createURL()`, `sendEvent()` and the event bus. |
+| `actions` | The `SearchActions`; see [JavaScript client](js-client.md). |
+| `search` | The instance, for `urlFor()`, `sendEvent()` and the event bus. |
 
-plus the connector's own data and actions:
+plus the behaviour's own data and actions:
 
-| Connector | `widgetParams` | Render state |
+| Behaviour | `params` | Render state |
 |---|---|---|
-| `connectSearchBox` | `queryHook?` | `query`, `refine(q)`, `clear()`, `isSearchStalled` |
-| `connectHits` | `transformItems?` | `hits`, `results`, `sendEvent(type, hit, position?)` |
-| `connectRefinementList` | `attribute`, `operator?`, `limit?`, `showMore?`, `showMoreLimit?`, `sortBy?`, `transformItems?` | `items[{ label, value, count, isRefined }]`, `refine(value)`, `createURL(value)`, `canRefine`, `canToggleShowMore`, `isShowingMore`, `toggleShowMore()`, `sendEvent` |
-| `connectPagination` | `padding?`, `totalPages?` | `pages`, `currentRefinement`, `nbPages`, `nbHits`, `isFirstPage`, `isLastPage`, `canRefine`, `refine(page)`, `createURL(page)` |
-| `connectStats` | — | `nbHits`, `processingTimeMS`, `query`, `page`, `nbPages`, `hitsPerPage`, `hasResults` |
-| `connectSortBy` | `items` | `options`, `currentRefinement`, `canRefine`, `refine(value)`, `createURL(value)` |
-| `connectCurrentRefinements` | `includedAttributes?`, `excludedAttributes?`, `transformItems?` | `items[{ attribute, type, value, operator?, label, refine(), createURL() }]`, `canRefine`, `clearAll()`, `createClearAllURL()` |
-| `connectRange` | `attribute`, `min?`, `max?` | `start`, `range`, `canRefine`, `refine([min, max])` |
+| `withSearchBox` | `queryHook?` | `query`, `apply(q)`, `clear()`, `isStalled` |
+| `withResults` | `transformItems?` | `items`, `results`, `sendEvent(type, result, position?)` |
+| `withFacetList` | `attribute`, `operator?`, `limit?`, `showMore?`, `showMoreLimit?`, `sortBy?`, `transformItems?` | `items[{ label, value, count, isActive }]`, `apply(value)`, `urlFor(value)`, `canApply`, `canToggleShowMore`, `isShowingMore`, `toggleShowMore()`, `sendEvent` |
+| `withPagination` | `padding?`, `maxPages?` | `pages`, `current`, `totalPages`, `total`, `isFirstPage`, `isLastPage`, `canApply`, `apply(page)`, `urlFor(page)` |
+| `withResultStats` | — | `total`, `tookMs`, `query`, `page`, `totalPages`, `pageSize`, `hasResults` |
+| `withSortSelect` | `items` | `options`, `current`, `canApply`, `apply(value)`, `urlFor(value)` |
+| `withActiveFilters` | `includedAttributes?`, `excludedAttributes?`, `transformItems?` | `items[{ attribute, type, value, operator?, label, apply(), urlFor() }]`, `canApply`, `clearAll()`, `clearAllUrl()` |
+| `withRange` | `attribute`, `min?`, `max?` | `start`, `range`, `canApply`, `apply([min, max])` |
 
-Page numbers are zero-based everywhere, like the JSON contract. `connectRefinementList` declares its
-attribute to the request, so facet counts arrive without extra configuration, and it declares its
-`operator`, so `'and'` and `'or'` reach the wire correctly.
+Page numbers are one-based everywhere, like the JSON contract. `withFacetList` declares its attribute to
+the request, so facet counts arrive without extra configuration, and it declares its `operator`, so
+`'and'` and `'or'` reach the wire correctly.
 
-Accessibility state is handed to you rather than derived: `isRefined` for `aria-pressed`/`aria-current`,
-`canRefine` for `disabled`, `isSearchStalled` for a spinner or an `aria-busy` region.
+Accessibility state is handed to you rather than derived: `isActive` for `aria-pressed`/`aria-current`,
+`canApply` for `disabled`, `isStalled` for a spinner or an `aria-busy` region.
 
-`connectAutocomplete` and `connectHierarchicalMenu` are not published yet — see
+`withSuggestions` and `withCategoryTree` are not published yet — see
 [KNOWN-LIMITATIONS](../internal/KNOWN-LIMITATIONS.md).
 
 ### TypeScript
 
-Connectors are generic over your widget params (and, for hits, over your document shape), so nothing in
-a custom widget needs an `any` or an import from an internal path:
+Behaviours are generic over your widget params (and, for results, over your document shape), so nothing
+in a custom widget needs an `any` or an import from an internal path:
 
 ```ts
-import { connectRefinementList, connectHits } from '@yourco/xperience-search/connectors';
+import { withFacetList, withResults } from '@yourco/xperience-search/behaviors';
 
-const dropdownFacet = connectRefinementList<{ container: HTMLElement; label?: string }>(
-  ({ items, refine, widgetParams }) => {
-    widgetParams.container.textContent = `${widgetParams.label ?? 'Filter'}: ${items.length}`;
-    if (items[0]) refine(items[0].value);
+const dropdownFacet = withFacetList<{ container: HTMLElement; label?: string }>(
+  ({ items, apply, params }) => {
+    params.container.textContent = `${params.label ?? 'Filter'}: ${items.length}`;
+    if (items[0]) apply(items[0].value);
   }
 );
 
@@ -117,43 +118,46 @@ interface Product extends Record<string, unknown> {
   price: number;
 }
 
-const productHits = connectHits<Product>(({ hits }) => {
-  for (const hit of hits) console.log(hit.title, hit.price.toFixed(2), hit.objectID);
+const productResults = withResults<Product>(({ items }) => {
+  for (const result of items) {
+    console.log(result.attributes.title, result.attributes.price.toFixed(2), result.id);
+  }
 });
 ```
 
-`Hit<TItem>` is the generated contract `Hit` — `objectID`, `_score`, `_highlights`, `_rankingInfo` —
-intersected with your document shape, so reserved members and your own attributes are both typed.
+`Result<TAttributes>` is the generated contract `Result` — `id`, `score`, `highlights`, `ranking` — with
+your document shape applied to `attributes`, so the contract members and your own fields are both typed
+and neither can shadow the other.
 
 ### Fully custom widgets
 
-When no connector models the UI, implement the lifecycle interface directly. Every member is optional.
+When no behaviour models the UI, implement the lifecycle interface directly. Every member is optional.
 
 ```js
 search.addWidgets([{
   $$type: 'myCompany.recentSearches',            // used in error messages
 
   // Contribute to the outgoing request; applied in widget-add order.
-  getSearchParameters(state) { return { ...state, hitsPerPage: 5 }; },
-  getRequestParameters(request) { return { ...request, facets: [...(request.facets ?? []), 'tags'] }; },
+  prepareState(state) { return { ...state, pageSize: 5 }; },
+  prepareRequest(request) { return { ...request, facets: [...(request.facets ?? []), 'tags'] }; },
 
-  init({ state, helper, instantSearchInstance }) { /* once, before the first search */ },
-  render({ results, state, helper, isFirstRender }) { /* after every response and state change */ },
+  init({ state, actions, search }) { /* once, before the first search */ },
+  render({ results, state, actions, isFirstRender }) { /* after every response and state change */ },
   dispose() { /* remove listeners */ },
 }]);
 ```
 
-`getSearchParameters(state)` shapes the state that becomes the request; `getRequestParameters(request)`
-sets request fields that are not state (`facets`, `highlight`, `attributesToRetrieve`). `render` runs
-after every response and again on every state change with the previous `results`, so controls update
-the moment they are clicked rather than when the network answers.
+`prepareState(state)` shapes the state that becomes the request; `prepareRequest(request)` sets request
+fields that are not state (`facets`, `highlight`, `fields`). `render` runs after every response and
+again on every state change with the previous `results`, so controls update the moment they are clicked
+rather than when the network answers.
 
-Widgets never talk to each other and never write to state: `helper` is the only sanctioned mutation
+Widgets never talk to each other and never write to state: `actions` is the only sanctioned mutation
 path, and the state object is frozen so a stray assignment throws instead of silently diverging.
 
 ### Error isolation
 
-Each widget's `init`, `render`, `getSearchParameters` and `dispose` is wrapped. A widget that throws is
+Each widget's `init`, `render`, `prepareState` and `dispose` is wrapped. A widget that throws is
 logged with `console.error`, reported on the `error` event with its `$$type`, and skipped — every other
 widget on the page still renders and search keeps working.
 
@@ -174,7 +178,7 @@ registerWidgetType('myCompany.dropdownFacet', (config) => dropdownFacet(config))
 
 The factory receives the parsed `data-xps-config` plus `container`, the mount element itself. The
 bootstrap scans for `.xps-mount`, groups the elements by `data-xps-instance` (default `"default"`),
-builds one `xpsearch()` instance per group and starts it:
+builds one `createSearch()` instance per group and starts it:
 
 ```html
 <div class="xps-mount"
@@ -195,15 +199,14 @@ builds one `xpsearch()` instance per group and starts it:
 ### Guardrails
 
 - **Namespace your identifiers.** `registerWidgetType` rejects an id without a dot. Bare names
-  (`searchBox`, `hits`, `refinementList`, `pagination`, `stats`, `sortBy`, `autocomplete`,
-  `clearRefinements`, `currentRefinements`, `rangeSlider`, `hierarchicalMenu`, `infiniteHits`,
-  `toggleRefinement`) are reserved for the built-ins so a future release never collides with your
-  control.
-- **Accessibility is yours, but scaffolded.** Use real form controls, and take `isRefined`, `canRefine`
-  and `isSearchStalled` from the connector instead of deriving them.
+  (`searchBox`, `results`, `facetList`, `pagination`, `resultStats`, `sortSelect`, `clearFilters`,
+  `activeFilters`, `toggleFilter`, `suggestions`, `rangeFilter`, `categoryTree`, `loadMore`) are
+  reserved for the built-ins so a future release never collides with your control.
+- **Accessibility is yours, but scaffolded.** Use real form controls, and take `isActive`, `canApply`
+  and `isStalled` from the behaviour instead of deriving them.
 - **The shell CSS is available to you.** Layout primitives, focus rings and skeleton classes are
   documented utilities — see [Theming](theming.md).
-- **The connector API is semver-major.** `RenderOptions`, `SearchHelper` and the widget lifecycle only
+- **The behaviour API is semver-major.** `RenderOptions`, `SearchActions` and the widget lifecycle only
   break on a major version.
 
 ### Page Builder widgets in C#
@@ -216,5 +219,6 @@ bootstrap does the rest.
 
 ### Related pages
 
-- [JavaScript client](js-client.md) — options, the helper, routing, the event bus, the mock server.
+- [JavaScript client](js-client.md) — options, the actions, routing, the event bus, the mock server.
 - [Search API](search-api.md) — the JSON contract behind `results`.
+- [Migrating from Algolia](migrating-from-algolia.md) — the name-by-name map, verb by verb.

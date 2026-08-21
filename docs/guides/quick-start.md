@@ -68,8 +68,8 @@ Add the two calls from the sample above to `Program.cs`. Order matters:
   `WebApplication` returned by `builder.Build()` is one. If your host maps endpoints itself, call
   `endpoints.MapXpSearch()` instead; it does the same thing.
 
-`AddXpSearch()` also has a no-argument overload if the defaults suit you: a 60 second cache, 20 hits per
-page, a server ceiling of 100, and federated-hits autocomplete.
+`AddXpSearch()` also has a no-argument overload if the defaults suit you: a 60 second cache, 20 results
+per page, a server ceiling of 100, and document suggestions for autocomplete.
 
 ### 3. Add the indexing strategy
 
@@ -96,7 +96,7 @@ curl -sS -X POST http://localhost:5000/api/xpsearch/query \
   -d '{
         "index": "MySiteIndex",
         "query": "espresso",
-        "hitsPerPage": 5,
+        "pageSize": 5,
         "facets": ["ContentTypeName"],
         "highlight": { "fields": ["Body"] }
       }'
@@ -104,31 +104,38 @@ curl -sS -X POST http://localhost:5000/api/xpsearch/query \
 
 ```jsonc
 {
-  "hits": [
+  "results": [
     {
-      "objectID": "6f1a…:en",
-      "Title": "Espresso Basics",
-      "Url": "/articles/espresso-basics",
-      "_score": 1.42,
-      "_highlights": { "Body": "Brewing <mark>espresso</mark> requires pressure" }
+      "id": "6f1a…:en",
+      "score": 1.42,
+      "attributes": {
+        "Title": "Espresso Basics",
+        "Url": "/articles/espresso-basics"
+      },
+      "highlights": { "Body": "Brewing <mark>espresso</mark> requires pressure" }
     }
   ],
-  "facets": { "ContentTypeName": { "Article": 4, "Product": 3 } },
-  "page": 0,
-  "hitsPerPage": 5,
-  "nbHits": 5,
-  "nbPages": 1,
-  "processingTimeMs": 3,
+  "facets": {
+    "ContentTypeName": [
+      { "value": "Article", "label": "Article", "count": 4 },
+      { "value": "Product", "label": "Product", "count": 3 }
+    ]
+  },
+  "page": 1,
+  "pageSize": 5,
+  "total": 5,
+  "totalPages": 1,
+  "tookMs": 3,
   "queryId": "0f2f…"
 }
 ```
 
-Every response also carries `X-XpSearch-Api-Version: 1`. Attribute names in a hit are the names of your
-content type's fields, plus `Title`, `Url`, `ContentTypeName` and `LanguageName`, which every document
-carries. To find out what an index exposes without guessing, `IIndexSchemaProvider.GetSchemaAsync` returns
+Every response also carries `X-XpSearch-Api-Version: 1`. The keys inside `attributes` are the names of
+your content type's fields, plus `Title`, `Url`, `ContentTypeName` and `LanguageName`, which every
+document carries. To find out what an index exposes without guessing, `IIndexSchemaProvider.GetSchemaAsync` returns
 the field list with its `Searchable` / `Facetable` / `Sortable` / `Retrievable` flags.
 
-### 6. Refine
+### 6. Filter
 
 ```bash
 curl -sS -X POST http://localhost:5000/api/xpsearch/query \
@@ -136,22 +143,27 @@ curl -sS -X POST http://localhost:5000/api/xpsearch/query \
   -d '{
         "index": "MySiteIndex",
         "query": "",
-        "facetFilters": [["Category:coffee", "Category:equipment"], ["Tags:brewing"]],
-        "numericFilters": ["Price<=200"],
+        "filters": {
+          "facets": [
+            { "attribute": "Category", "values": ["coffee", "equipment"] },
+            { "attribute": "Tags", "values": ["brewing"] }
+          ],
+          "numeric": [{ "attribute": "Price", "operator": "lte", "value": 200 }]
+        },
         "sort": "Price_desc"
       }'
 ```
 
-The outer array of `facetFilters` is ANDed and each inner array is ORed, so that reads "(coffee OR
-equipment) AND brewing". `sort` is either `relevance` or a sortable attribute suffixed `_asc` or `_desc`.
-Both are covered in [Search API](search-api.md).
+Entries in `filters.facets` are ANDed and the values inside one entry are ORed by default, so that reads
+"(coffee OR equipment) AND brewing". `sort` is `relevance`, a sort key configured for the index, or a
+sortable attribute suffixed `_asc` or `_desc`. Both are covered in [Search API](search-api.md).
 
 ### 7. Autocomplete
 
 ```bash
 curl -sS -X POST http://localhost:5000/api/xpsearch/suggest \
   -H 'Content-Type: application/json' \
-  -d '{ "index": "MySiteIndex", "query": "espr", "maxItems": 5 }'
+  -d '{ "index": "MySiteIndex", "query": "espr", "limit": 5 }'
 ```
 
 This prefix-matches the index's suggest field (`Title` by default) and returns the matching documents, so

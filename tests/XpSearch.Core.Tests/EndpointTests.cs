@@ -58,7 +58,7 @@ internal sealed class EndpointTests
         builder.Services.AddSingleton<ISearchStage>(new HighlightStage(new LuceneHighlighter()));
         builder.Services.AddSingleton<ISearchStage, ProjectResponseStage>();
         builder.Services.AddSingleton<ISearchPipeline, SearchPipeline>();
-        builder.Services.AddSingleton<ISuggestService, FederatedHitsSuggestService>();
+        builder.Services.AddSingleton<ISuggestService, DocumentSuggestService>();
         builder.Services.AddSingleton<ISearchEventSink, LoggingSearchEventSink>();
 
         app = builder.Build();
@@ -180,7 +180,7 @@ internal sealed class EndpointTests
     }
 
     [Test]
-    public async Task Suggest_PrefixMatchesTitlesAndReturnsFederatedHits()
+    public async Task Suggest_PrefixMatchesTitlesAndReturnsDocuments()
     {
         var response = await client.PostAsJsonAsync(
             ContractConstants.SuggestRoute,

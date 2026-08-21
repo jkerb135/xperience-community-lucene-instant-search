@@ -26,23 +26,23 @@ namespace XpSearch.Core.Search;
 /// The other mode, query suggestions from logged popular queries, depends on the Phase 6 analytics
 /// store (spec §13.6). An index configured for it gets an empty list and a logged warning.
 /// </remarks>
-public sealed class FederatedHitsSuggestService : ISuggestService
+public sealed class DocumentSuggestService : ISuggestService
 {
     private readonly ILuceneIndexAccessor accessor;
     private readonly IIndexSchemaProvider schemaProvider;
     private readonly XpSearchOptions options;
-    private readonly ILogger<FederatedHitsSuggestService> logger;
+    private readonly ILogger<DocumentSuggestService> logger;
 
-    /// <summary>Initializes a new instance of the <see cref="FederatedHitsSuggestService"/> class.</summary>
+    /// <summary>Initializes a new instance of the <see cref="DocumentSuggestService"/> class.</summary>
     /// <param name="accessor">The Lucene seam.</param>
     /// <param name="schemaProvider">Supplies the schema of the index being suggested from.</param>
     /// <param name="options">The configured search options.</param>
     /// <param name="logger">Logger.</param>
-    public FederatedHitsSuggestService(
+    public DocumentSuggestService(
         ILuceneIndexAccessor accessor,
         IIndexSchemaProvider schemaProvider,
         IOptions<XpSearchOptions> options,
-        ILogger<FederatedHitsSuggestService> logger)
+        ILogger<DocumentSuggestService> logger)
     {
         ArgumentNullException.ThrowIfNull(accessor);
         ArgumentNullException.ThrowIfNull(schemaProvider);

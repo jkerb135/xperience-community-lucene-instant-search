@@ -9,7 +9,7 @@ public enum SuggestMode
     /// Prefix-match the index's suggest field and return the top matching documents, for a dropdown
     /// that shows actual results. This is the default and the only mode implemented in Phase 1.
     /// </summary>
-    FederatedHits,
+    Documents,
 
     /// <summary>
     /// Suggest previously logged popular queries. Requires the Phase 6 analytics store; until then
@@ -41,11 +41,11 @@ public sealed class XpSearchIndexOptions
     /// </remarks>
     public IDictionary<string, SortKey> SortKeys { get; } = new Dictionary<string, SortKey>(StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>Gets or sets how <c>/suggest</c> answers for this index. Defaults to <see cref="SuggestMode.FederatedHits"/>.</summary>
-    public SuggestMode SuggestMode { get; set; } = SuggestMode.FederatedHits;
+    /// <summary>Gets or sets how <c>/suggest</c> answers for this index. Defaults to <see cref="SuggestMode.Documents"/>.</summary>
+    public SuggestMode SuggestMode { get; set; } = SuggestMode.Documents;
 
     /// <summary>
-    /// Gets or sets the field federated-hits suggestions prefix-match and display.
+    /// Gets or sets the field document suggestions prefix-match and display.
     /// Defaults to <c>Title</c>, the field <c>XpSearchIndexingStrategy</c> writes page titles to.
     /// </summary>
     public string SuggestField { get; set; } = "Title";

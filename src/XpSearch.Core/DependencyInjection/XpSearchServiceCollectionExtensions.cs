@@ -63,7 +63,7 @@ public static class XpSearchServiceCollectionExtensions
         services.TryAddSingleton<IFacetProvider, TaxonomyFacetProvider>();
         services.TryAddSingleton<IHighlighter, LuceneHighlighter>();
         services.TryAddSingleton<ISearchCache, ProgressiveSearchCache>();
-        services.TryAddSingleton<ISuggestService, FederatedHitsSuggestService>();
+        services.TryAddSingleton<ISuggestService, DocumentSuggestService>();
         services.TryAddSingleton<ISearchEventSink, LoggingSearchEventSink>();
         services.TryAddSingleton<XpSearchIndexingStrategy>();
 

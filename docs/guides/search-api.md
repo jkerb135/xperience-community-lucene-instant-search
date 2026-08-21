@@ -1,31 +1,30 @@
 ## Search API
 
 The JSON contract for Xperience Search: three POST endpoints, one request and one response type each,
-and no versioned routes. Field names deliberately mirror Algolia's, so a team migrating off Algolia can
-swap the transport and keep most of its UI code — see [Algolia shape](#why-the-payloads-look-like-algolia).
+and no versioned routes. The names and shapes are this product's own — chosen for Xperience's content
+model, not copied from anyone. Arriving from a hosted search service? Read
+[Migrating from Algolia](migrating-from-algolia.md), which maps their concepts onto these ones.
 
-> **Status:** the contract types and constants ship today (`XpSearch.Core.Contract`, and
-> `@yourco/xperience-search`); the endpoints that serve them land with the query pipeline. Every payload
-> on this page is a fixture in the round-trip tests, so it is the exact shape the types accept.
+> **Status:** the contract types, the constants and the query pipeline that serves them all ship today
+> (`XpSearch.Core`, and `@yourco/xperience-search`). Every payload on this page is a fixture in the
+> round-trip tests, so it is the exact shape the types accept.
 
 ### Calling the search endpoint
 
 ```js
-// Today these live at src/contract/constants.ts in @yourco/xperience-search;
-// the package entry points that re-export them ship with the client library.
-import { QUERY_ROUTE, API_VERSION_HEADER } from './contract/constants.js';
+import { QUERY_ROUTE, API_VERSION_HEADER } from '@yourco/xperience-search';
 
 const response = await fetch(QUERY_ROUTE, {                 // '/api/xpsearch/query'
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ index: 'site-content', query: 'espresso', hitsPerPage: 20 }),
+  body: JSON.stringify({ index: 'site-content', query: 'espresso', page: 1, pageSize: 20 }),
 });
 
 console.log(response.headers.get(API_VERSION_HEADER));      // '1'
 
-const results = await response.json();
-for (const hit of results.hits) {
-  console.log(hit.objectID, hit.title, hit._score);         // title is a retrieved attribute, not a reserved member
+const body = await response.json();
+for (const result of body.results) {
+  console.log(result.id, result.attributes.title, result.score);
 }
 ```
 
@@ -50,14 +49,19 @@ change is a new major of `YourCo.Xperience.Search.Core` and of `@yourco/xperienc
 {
   "index": "site-content",
   "query": "espresso",
-  "page": 0,
-  "hitsPerPage": 20,
-  "facets": ["contentType", "tags", "language"],
-  "facetFilters": [
-    ["contentType:Article", "contentType:Product"],
-    ["tags:coffee"]
-  ],
-  "numericFilters": ["price<=50", "publishedAt>=1700000000"],
+  "page": 1,
+  "pageSize": 20,
+  "facets": ["contentType", "tags"],
+  "filters": {
+    "facets": [
+      { "attribute": "contentType", "values": ["Article", "Product"], "operator": "or" },
+      { "attribute": "tags", "values": ["coffee"] }
+    ],
+    "numeric": [
+      { "attribute": "price", "operator": "lte", "value": 50 },
+      { "attribute": "publishedAt", "operator": "gte", "value": 1700000000 }
+    ]
+  },
   "sort": "relevance",
   "highlight": {
     "fields": ["title", "content"],
@@ -65,9 +69,10 @@ change is a new major of `YourCo.Xperience.Search.Core` and of `@yourco/xperienc
     "postTag": "</mark>",
     "snippetLength": 200
   },
-  "attributesToRetrieve": ["title", "url", "summary", "image"],
+  "fields": ["title", "url", "summary", "image"],
   "language": "en",
-  "queryId": "generated-guid"
+  "queryId": "generated-guid",
+  "explain": false
 }
 ```
 
@@ -77,16 +82,16 @@ change is a new major of `YourCo.Xperience.Search.Core` and of `@yourco/xperienc
 |---|---|---|
 | `index` | — | Required. Code name of the Lucene index. |
 | `query` | `""` | Empty string matches all documents. |
-| `page` | `0` | Zero-based. |
-| `hitsPerPage` | `20` | Contract ceiling 1000; the effective maximum is enforced server-side and may be lower. |
-| `facets` | — | Attributes to count. Counts come back in `facets`. |
-| `facetFilters` | — | Outer array ANDed, inner arrays ORed. |
-| `numericFilters` | — | ANDed. |
-| `sort` | `"relevance"` | `"relevance"` or a sort key configured for the index. |
+| `page` | `1` | One-based. `0` is a `400`. |
+| `pageSize` | `20` | Contract ceiling 1000; the effective maximum is enforced server-side and may be lower. |
+| `facets` | — | Attributes to count. Values come back in `facets`. |
+| `filters.facets` | — | One entry per attribute, ANDed. |
+| `filters.numeric` | — | ANDed. |
+| `sort` | `"relevance"` | `"relevance"` or a sort key the index accepts. |
 | `highlight.fields` | — | Fields to snippet. |
 | `highlight.preTag` / `postTag` | `<mark>` / `</mark>` | Inserted after HTML-encoding, so snippets are safe to render. |
 | `highlight.snippetLength` | `200` | Characters. |
-| `attributesToRetrieve` | — | Omit for the index's default projection. `objectID` is always returned. |
+| `fields` | — | Omit for the index's default projection. The result `id` is always returned. |
 | `language` | — | Omit to use the current request's language. |
 | `queryId` | — | Omit and the server generates one. |
 | `explain` | `false` | See [the explain flag](#the-explain-flag). |
@@ -95,134 +100,162 @@ And the response:
 
 ```json
 {
-  "hits": [
+  "results": [
     {
-      "objectID": "web-page-42-en",
-      "title": "Espresso Basics",
-      "url": "/articles/espresso-basics",
-      "summary": "...",
-      "_score": 8.42,
-      "_highlights": {
+      "id": "web-page-42-en",
+      "score": 8.42,
+      "attributes": {
+        "title": "Espresso Basics",
+        "url": "/articles/espresso-basics",
+        "summary": "..."
+      },
+      "highlights": {
         "title": "<mark>Espresso</mark> Basics",
         "content": "...brewing <mark>espresso</mark> requires..."
       },
-      "_rankingInfo": {
+      "ranking": {
         "baseScore": 6.1,
-        "appliedBoosts": ["freshness:+1.2", "rule:pin-espresso-guide"],
+        "boosts": ["freshness:+1.2", "rule:pin-espresso-guide"],
         "position": 1
       }
     }
   ],
   "facets": {
-    "contentType": { "Article": 34, "Product": 12 },
-    "tags": { "coffee": 40, "brewing": 18 }
+    "contentType": [
+      { "value": "Article", "label": "Article", "count": 34 },
+      { "value": "Product", "label": "Product", "count": 12 }
+    ],
+    "tags": [
+      { "value": "coffee", "label": "Coffee", "count": 40 },
+      { "value": "brewing", "label": "Brewing", "count": 18 }
+    ]
   },
-  "page": 0,
-  "hitsPerPage": 20,
-  "nbHits": 46,
-  "nbPages": 3,
-  "processingTimeMs": 14,
+  "page": 1,
+  "pageSize": 20,
+  "total": 46,
+  "totalPages": 3,
+  "tookMs": 14,
   "queryId": "generated-guid"
 }
 ```
 
-`nbHits` is the total across all pages, `nbPages` the page count, `processingTimeMs` the server-side time
-excluding the network. `facets` only contains the attributes you asked for, and within them only values
-with a non-zero count in the current result set — a value that no longer matches disappears rather than
-coming back as `0`.
+`total` is the number of matching documents across all pages, `totalPages` the page count, `tookMs` the
+server-side time excluding the network.
 
-#### A hit is an open object
+#### A result is a closed object
 
-Only `objectID` (required) and the underscore-prefixed members `_score`, `_highlights` and `_rankingInfo`
-are reserved by the contract. Everything else on a hit — `title`, `url`, `summary`, `image` — is a
-retrieved document attribute, decided by `attributesToRetrieve` and the index configuration. `url` is a
-convention, not a contract member: an index that projects no link simply has no `url` on its hits.
+`id`, `score`, `attributes`, `highlights` and `ranking` are the only members a result ever has. Every
+retrieved document field lives inside `attributes`, so a document with a field called `score` or `id`
+cannot shadow anything. Which fields appear is decided by `fields` and the index configuration; `url` is a
+convention, not a contract member, so an index that projects no link simply has no `url` attribute.
 
-- TypeScript: `Hit` has an index signature, so `hit.title` and `hit.url` are `unknown` and need narrowing,
-  while `hit.objectID` is `string`.
-- C#: `Hit` exposes the attributes through `[JsonExtensionData]`, as
-  `Dictionary<string, JsonElement> Attributes` — `hit.Attributes["url"].GetString()`.
+- TypeScript: `Result<TAttributes>` is generic over the attribute bag, so
+  `createSearch<{ title: string }>` gives you `result.attributes.title` typed and `result.id` as `string`.
+- C#: `Result.Attributes` is a plain `Dictionary<string, JsonElement>` —
+  `result.Attributes["url"].GetString()`.
 
 Any attribute holding a link is always root-relative (`/articles/espresso-basics`) or absolute
 (`https://example.com/articles/espresso-basics`). It is never the app-relative `~/…` form Xperience's URL
-retriever returns: the server resolves that before the hit reaches the wire, so a JS client can use the
+retriever returns: the server resolves that before the result reaches the wire, so a JS client can use the
 value as-is. The same rule holds for `Suggestion.url`, which *is* a contract member.
 
-#### Filter grammars
+#### Facets are ordered arrays with labels
 
-`facetFilters` is an array of arrays of `"attribute:value"` strings. The outer array is ANDed, each inner
-array is ORed:
+`facets` is keyed by attribute, and each entry is a list, not a map:
 
 ```json
-[["contentType:Article", "contentType:Product"], ["tags:coffee"]]
+"tags": [{ "value": "coffee", "label": "Coffee", "count": 40 }]
 ```
 
-means *(Article OR Product) AND coffee* — the usual refinement-list behaviour, where picking two values of
-the same facet widens the result and picking values of two facets narrows it.
+- `value` is what you send back in `filters.facets` — for a taxonomy dimension, the tag **code name**.
+- `label` is what you display — for a taxonomy dimension, the tag **title**. For any other attribute it
+  equals `value`.
+- The list is ordered by `count` descending, then by `value` ascending, so a facet list is stable between
+  searches without client-side sorting.
 
-`numericFilters` is a flat array of comparisons, all ANDed:
+Only the attributes you asked for appear, and within them only values with a non-zero count in the current
+result set — a value that no longer matches disappears rather than coming back as `0`.
 
+#### Filters
+
+`filters.facets` is one entry per attribute. Entries are ANDed; the values inside one entry combine
+according to its `operator`:
+
+```json
+{ "facets": [
+  { "attribute": "contentType", "values": ["Article", "Product"] },
+  { "attribute": "tags", "values": ["coffee"] }
+] }
 ```
-attribute operator number
+
+means *(Article OR Product) AND coffee* — the usual facet-list behaviour, where picking two values of the
+same facet widens the result and picking values of two facets narrows it. `"operator": "and"` inverts the
+inner rule: every listed value must be present on the document.
+
+`filters.numeric` is a flat array of comparisons, all ANDed:
+
+```json
+{ "numeric": [{ "attribute": "price", "operator": "lte", "value": 50 }] }
 ```
 
-- `attribute` starts with a letter or underscore and may contain word characters and dots (`price`,
-  `product.rating`).
-- `operator` is one of `<=`, `>=`, `<`, `>`, `=`, `!=`.
-- `number` is an optionally negative integer or decimal. Whitespace around the operator is allowed.
-- Dates are compared as Unix epoch seconds: `publishedAt>=1700000000`.
+`operator` is one of `lt`, `lte`, `eq`, `ne`, `gte`, `gt`. Dates compare as Unix epoch seconds. There is no
+string grammar and therefore nothing to escape; a bad entry is a `400` keyed by its own JSON path, for
+example `filters.numeric[0].attribute`.
 
 #### The explain flag
 
-Send `"explain": true` and every hit carries `_rankingInfo`:
+Send `"explain": true` and every result carries `ranking`:
 
 ```json
 { "index": "site-content", "query": "espresso", "explain": true }
 ```
 
 ```json
-"_rankingInfo": {
+"ranking": {
   "baseScore": 6.1,
-  "appliedBoosts": ["freshness:+1.2", "rule:pin-espresso-guide"],
+  "boosts": ["freshness:+1.2", "rule:pin-espresso-guide"],
   "position": 1
 }
 ```
 
-`baseScore` is the Lucene score before boosts, `appliedBoosts` lists the boosts and rules that changed the
-score or the position in application order, and `position` is the one-based rank across all pages. Without
-`explain`, `_rankingInfo` is absent — not `null`. The admin query tester uses this flag; it is equally
-useful from `curl` when a result is ranked in a way nobody can explain.
+`baseScore` is the Lucene score before boosts, `boosts` lists the boosts and rules that changed the score
+or the position in application order, and `position` is the one-based rank across all pages. Without
+`explain`, `ranking` is absent — not `null`. The admin query tester uses this flag; it is equally useful
+from `curl` when a result is ranked in a way nobody can explain.
 
 ### `POST /api/xpsearch/suggest`
 
 ```json
-{ "index": "site-content", "query": "esp", "maxItems": 5, "language": "en" }
+{ "index": "site-content", "query": "esp", "limit": 5, "language": "en" }
 ```
 
 ```json
 {
   "suggestions": [
     { "text": "espresso" },
-    { "text": "espresso machine", "url": "/products/espresso-machine" }
+    {
+      "text": "Espresso machine",
+      "url": "/products/espresso-machine",
+      "result": { "id": "web-page-7-en", "attributes": { "title": "Espresso machine" } }
+    }
   ]
 }
 ```
 
-`index` and `query` are required; `maxItems` defaults to 5. A suggestion always has `text`; `hits` (an
-array of the same open `Hit` objects) and `url` are present only for indexes configured in federated-hits
-mode. Whether an index answers with query suggestions or with federated hits is per-index server
-configuration, not a request field, so the same client code works for both.
+`index` and `query` are required; `limit` defaults to 5. A suggestion always has `text`; `url` and
+`result` are present only for indexes configured to suggest documents. Whether an index answers with query
+suggestions or with matching documents is per-index server configuration, not a request field, so the same
+client code works for both.
 
 ### `POST /api/xpsearch/events`
 
 ```json
-{ "eventType": "click", "queryId": "generated-guid", "objectID": "web-page-42-en", "position": 1, "index": "site-content" }
+{ "type": "click", "queryId": "generated-guid", "resultId": "web-page-42-en", "position": 1 }
 ```
 
-The endpoint answers `202 Accepted` with an empty body — there is no event response type. `eventType` is
-`"click"` or `"conversion"`; `queryId` and `objectID` are required; `position` is the one-based position in
-the result list and is required for `click` and ignored for `conversion`; `index` is optional and resolved
-from `queryId` when omitted.
+The endpoint answers `202 Accepted` with an empty body — there is no event response type. `type` is
+`"click"` or `"conversion"`; `queryId` and `resultId` are required; `position` is the one-based position in
+the result list and is required for `click` and ignored for `conversion`.
 
 The `queryId` from the search response is what correlates a click back to the search that produced it,
 which is what makes click-through rate per query meaningful. A `202` means the event was accepted, not that
@@ -236,40 +269,50 @@ Failures are [RFC 9457 Problem Details](https://learn.microsoft.com/aspnet/core/
 ```json
 {
   "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
-  "title": "One or more validation errors occurred.",
+  "title": "The request is not valid.",
   "status": 400,
   "errors": {
-    "index": ["The index field is required."]
+    "filters.numeric[0].attribute": ["'Title' is not a numeric attribute of index 'site-content'."]
   }
 }
 ```
 
-Read `status` and `title`; `errors` is present for validation failures and keyed by the offending JSON
-field. The version header is on error responses too.
+Read `status` and `title`; `errors` is present for validation failures and keyed by the **JSON path** of
+the offending field, so a client can point at the exact entry that was wrong. The version header is on
+error responses too.
 
 ### Filters, sorting and schema
 
-The contract fixes the *shape* of `facetFilters`, `numericFilters` and `sort`; what an index accepts in
-them comes from its schema, which the [indexing strategy](indexing-strategy.md) derives from the content
-types the index covers. `IIndexSchemaProvider.GetSchemaAsync(indexName, cancellationToken)` returns that
-list with a `Searchable` / `Facetable` / `Sortable` / `Retrievable` flag per field.
+The contract fixes the *shape* of `filters` and `sort`; what an index accepts in them comes from its
+schema, which the [indexing strategy](indexing-strategy.md) derives from the content types the index
+covers. `IIndexSchemaProvider.GetSchemaAsync(indexName, cancellationToken)` returns that list with a
+`Searchable` / `Facetable` / `Sortable` / `Retrievable` flag per field.
 
-**`facets` and `facetFilters`** accept attributes the schema marks facetable — in practice, Xperience
-Taxonomy fields plus `ContentTypeName` and `LanguageName`. Values are tag code names. Anything else is a
-`400` keyed `facets` or `facetFilters`. Only the first `attribute:value` colon separates, so a code name
-may itself contain one.
+**`facets` and `filters.facets`** accept attributes the schema marks facetable — in practice, Xperience
+Taxonomy fields plus `ContentTypeName` and `LanguageName`. Values are tag code names; the tag title comes
+back as the facet value's `label`. Anything else is a `400` keyed `facets[i]` or
+`filters.facets[i].attribute`.
 
-**`numericFilters`** accept attributes the schema marks numeric — integer, decimal and date fields. A date
-is compared as Unix epoch seconds. A filter on a non-numeric attribute is a `400` keyed `numericFilters`,
-as is anything that does not match the grammar.
+**`filters.numeric`** accepts attributes the schema marks numeric — integer, decimal and date fields. A
+date is compared as Unix epoch seconds. A filter on a non-numeric attribute is a `400` keyed
+`filters.numeric[i].attribute`.
 
-**`sort`** is either the literal `relevance` (the default, score descending) or a sortable attribute with
-an `_asc` or `_desc` suffix: `Price_desc`, `Title_asc`. There is no separate sort-key configuration —
-the suffix is the convention. Anything else is a `400` keyed `sort`.
+**`sort`** is either the literal `relevance` (the default, score descending), a sort key configured for the
+index, or a sortable attribute with an `_asc` or `_desc` suffix: `Price_desc`, `Title_asc`. Configured keys
+are checked first:
 
-**`hitsPerPage`** above the contract's ceiling of 1000 is a `400`; above the server's configured ceiling
-(`XpSearchOptions.MaxHitsPerPage`, 100 by default) it is silently clamped, and the response reports the
-clamped value. Deep paging is bounded too: `(page + 1) * hitsPerPage` must not exceed
+```csharp
+services.AddXpSearch(options =>
+{
+    options.Indexes["site-content"].SortKeys["newest"] = new SortKey("PublishedAt", Descending: true);
+});
+```
+
+lets a request send `"sort": "newest"`. Anything else is a `400` keyed `sort`.
+
+**`pageSize`** above the contract's ceiling of 1000 is a `400`; above the server's configured ceiling
+(`XpSearchOptions.MaxPageSize`, 100 by default) it is silently clamped, and the response reports the
+clamped value. Deep paging is bounded too: `page * pageSize` must not exceed
 `XpSearchOptions.MaxResultWindow` (10000 by default), because Lucene ranks every document up to that
 depth.
 
@@ -277,18 +320,17 @@ depth.
 holds every language; whether a per-language index is the better model is not decided yet, so treat this
 as filtering, not as index selection.
 
-**`attributesToRetrieve`** accepts attributes the schema marks retrievable. Omit it and every retrievable
-attribute is returned. `objectID` is always returned and is never an attribute.
+**`fields`** accepts attributes the schema marks retrievable. Omit it and every retrievable attribute is
+returned. The result `id` is always returned and is never an attribute.
 
 **`highlight.fields`** accepts retrievable attributes. The stored value is HTML-encoded before the
 highlight tags are inserted, so a snippet is safe to render as HTML and markup in the source content comes
 back escaped.
 
-### Why the payloads look like Algolia
+### One schema, two type sets
 
-`objectID`, `nbHits`, `nbPages`, `hitsPerPage`, `facetFilters`, `_highlights` — the naming is Algolia's on
-purpose. It is a migration path: a site already running an Algolia-driven UI can point the transport at
-`/api/xpsearch/query` and keep most of its rendering, refinement and pagination code. It also means the
-mental model, the docs and the InstantSearch-shaped widget layer all agree. The contract is generated from
-`contract/xpsearch-api.schema.json`, which is the single source of truth for both the C# and the
-TypeScript types; changing a field there is a coordinated, semver-major event.
+Both the C# DTOs (`XpSearch.Core.Contract`) and the TypeScript types (`@yourco/xperience-search`) are
+generated from `contract/xpsearch-api.schema.json`. That file is the single source of truth: changing a
+field there regenerates both sides, and `npm run contract:check` fails the build if a committed type set
+has drifted from it. A field change is therefore a coordinated, semver-major event — which is exactly why
+the shape is ours to choose rather than a copy of someone else's.

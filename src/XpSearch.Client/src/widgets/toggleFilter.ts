@@ -22,7 +22,7 @@ export type ToggleFilterWidgetParams = {
   showCount?: boolean;
 };
 
-/** High enough that the toggled value is never cut off by the connector's default limit. */
+/** High enough that the toggled value is never cut off by the behaviour's default limit. */
 const ALL_VALUES = 1000;
 
 export function toggleFilter(params: ToggleFilterWidgetParams): Widget {

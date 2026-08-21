@@ -176,7 +176,7 @@ function sortDocs(docs: Array<{ doc: Doc; score: number }>, sort: string | undef
 /** Runs one query against the corpus. Exported so tests can assert without HTTP. */
 export function query(request: SearchRequest): SearchResponse {
   const started = Date.now();
-  const facetFilters = request.filters?.facets ?? [];
+  const facetEntries = request.filters?.facets ?? [];
   const numeric = request.filters?.numeric ?? [];
   const base = CORPUS.filter(
     (doc) =>
@@ -184,13 +184,13 @@ export function query(request: SearchRequest): SearchResponse {
       (request.language === undefined || doc.language === request.language) &&
       numeric.every((filter) => matchesNumeric(doc, filter))
   );
-  const matched = base.filter((doc) => facetFilters.every((filter) => matchesFacet(doc, filter)));
+  const matched = base.filter((doc) => facetEntries.every((filter) => matchesFacet(doc, filter)));
 
   // Disjunctive faceting: a value's count ignores the filter on its own attribute, so an
   // `or` facet list keeps showing the alternatives the user can still pick.
   const facets: Record<string, FacetValue[]> = {};
   for (const attribute of request.facets ?? []) {
-    const others = facetFilters.filter((filter) => filter.attribute !== attribute);
+    const others = facetEntries.filter((filter) => filter.attribute !== attribute);
     const counts = new Map<string, number>();
     for (const doc of base.filter((d) => others.every((filter) => matchesFacet(d, filter)))) {
       for (const value of attributeOf(doc, attribute)) {

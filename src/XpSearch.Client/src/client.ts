@@ -105,7 +105,7 @@ export class SearchClient {
     });
   }
 
-  /** Autocomplete. Not debounced and not cancelled — `connectAutocomplete` owns that policy. */
+  /** Autocomplete. Not debounced and not cancelled — the suggestions behaviour owns that policy. */
   suggest(request: SuggestRequest): Promise<SuggestResponse> {
     return this.#send<SuggestResponse>(this.#options.suggestEndpoint, request);
   }
