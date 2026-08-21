@@ -1,10 +1,14 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
     <RootNamespace>XpSearch.Widgets</RootNamespace>
     <AssemblyName>XpSearch.Widgets</AssemblyName>
     <PackageId>YourCo.Xperience.Search.Widgets</PackageId>
     <IsPackable>true</IsPackable>
+    <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
+    <!-- Explicit so the served path is identical whether the library is consumed as a project
+         reference or as the NuGet package (the SDK default is _content/$(PackageId)). -->
+    <StaticWebAssetBasePath>_content/YourCo.Xperience.Search.Widgets</StaticWebAssetBasePath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,5 +18,26 @@
   <ItemGroup>
     <PackageReference Include="Kentico.Xperience.WebApp" />
   </ItemGroup>
+
+  <!-- The JS bundle and the two stylesheets are built outside MSBuild, so they are copied into
+       wwwroot/ (gitignored) before static web asset discovery and shipped as Razor Class Library
+       static web assets: a NuGet package cannot write into the host's ~/wwwroot/PageBuilder/Public/
+       (https://docs.kentico.com/documentation/developers-and-admins/development/builders/bundle-static-assets-of-builder-components).
+       The Content items are added inside the target because on a clean checkout the files do not
+       exist yet when the project is evaluated, so the SDK's wwwroot glob would miss them. -->
+  <Target Name="CopyXpSearchClientAssets" BeforeTargets="ResolveStaticWebAssetsInputs;BeforeBuild">
+    <PropertyGroup>
+      <XpSearchBundle>$(MSBuildThisFileDirectory)..\XpSearch.Client\dist\xpsearch.umd.js</XpSearchBundle>
+      <XpSearchThemeDir>$(MSBuildThisFileDirectory)..\..\themes\src</XpSearchThemeDir>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(XpSearchBundle)')"
+           Text="XpSearch.Widgets needs the JavaScript bundle: run 'npm ci &amp;&amp; npm run build' in src/XpSearch.Client (expected $(XpSearchBundle))." />
+    <Copy SourceFiles="$(XpSearchBundle);$(XpSearchThemeDir)\shell.css;$(XpSearchThemeDir)\default.css"
+          DestinationFolder="$(MSBuildThisFileDirectory)wwwroot\xpsearch"
+          SkipUnchangedFiles="true" />
+    <ItemGroup>
+      <Content Include="wwwroot\xpsearch\*" Exclude="@(Content)" />
+    </ItemGroup>
+  </Target>
 
 </Project>

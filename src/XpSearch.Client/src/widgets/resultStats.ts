@@ -13,9 +13,29 @@ export type ResultStatsWidgetParams = {
   templates?: {
     text?: (data: ResultStatsRenderState, helpers: TemplateHelpers) => Renderable;
   };
+  /**
+   * A plain-text alternative to `templates.text`, for callers that can only supply a string - the
+   * Page Builder stats widget's "Text template" property. Placeholders: `{total}`, `{tookMs}`,
+   * `{query}`, `{page}`, `{totalPages}`. The template and every substituted value are escaped, so
+   * markup typed into it is shown, not rendered. `templates.text` wins when both are given.
+   */
+  textTemplate?: string;
   /** Shown before the first response. */
   emptyText?: string;
 };
+
+const PLACEHOLDER = /\{(total|tookMs|query|page|totalPages)\}/g;
+
+const fromTextTemplate = (
+  template: string,
+  data: ResultStatsRenderState,
+  tools: TemplateHelpers
+): string =>
+  template.replace(PLACEHOLDER, (_match, key: string) =>
+    key === 'query'
+      ? data.query
+      : tools.formatNumber(data[key as 'total' | 'tookMs' | 'page' | 'totalPages'])
+  );
 
 const defaultText = (data: ResultStatsRenderState, tools: TemplateHelpers): Renderable =>
   html`${tools.formatNumber(data.total)} results in <span class="xps-result-stats__time">${tools.formatNumber(
@@ -30,7 +50,10 @@ export function resultStats(params: ResultStatsWidgetParams): Widget {
     (options, isFirstRender) => {
       if (isFirstRender) root = createRoot(container, 'div', 'xps xps-result-stats');
       if (!root) return;
-      const template = options.params.templates?.text ?? defaultText;
+      const { textTemplate } = options.params;
+      const template: (data: ResultStatsRenderState, tools: TemplateHelpers) => Renderable =
+        options.params.templates?.text ??
+        (textTemplate ? (data, tools) => fromTextTemplate(textTemplate, data, tools) : defaultText);
       const empty = !options.hasResults;
       root.classList.toggle('xps-result-stats--empty', empty);
       render(

@@ -8,6 +8,35 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Added:** the Page Builder widgets (spec §7) in `YourCo.Xperience.Search.Widgets` — seven
+  view-component widgets (`XpSearch.SearchBox`, `.Results`, `.FacetList`, `.Pagination`, `.ResultStats`,
+  `.SortSelect`, `.Suggestions`) that each render one configured `.xps-mount` element and self-assemble
+  by `data-xps-instance`, the `XpSearchMountWidgetViewComponent<TProperties>` base class and
+  `XpSearchMountWidgetProperties` (`Index`, `InstanceId` = `"default"`) third parties subclass, the
+  `IXpSearchMountRenderer` seam, the editor-only unconfigured instruction block (invisible on a live
+  page), `[RegisterSearchResultTemplate]` with `ISearchResultTemplateRegistry` behind the Results
+  widget's template drop-down, sort-option validation against `XpSearchIndexOptions.SortKeys` and the
+  `_asc`/`_desc` convention, `services.AddXpSearchWidgets()`, and `<xps-search-assets />` /
+  `@Html.XpSearchAssets()` serving the bundle and both stylesheets as Razor Class Library static web
+  assets under `_content/YourCo.Xperience.Search.Widgets/xpsearch/` (ADR-0012).
+- **Added:** `FacetAttributeConfigurator` in `YourCo.Xperience.Search.Admin`, registered as
+  `xpsearch.facetAttribute`, which fills a facet widget's attribute drop-down from the selected index's
+  facetable schema fields and hides it until an index is chosen (spec §7.4). It is referenced by string
+  identifier, so widget properties stay free of a dependency on `Kentico.Xperience.Admin`, and the pieces
+  it shares with the widgets — `XpSearch.Core.XpSearchConstants` and
+  `XpSearch.Core.Facets.FacetAttributeOptions` — live in Core, so `Admin` and `Widgets` stay independent
+  of each other (spec §2.2).
+- **Changed:** `mountAll()` now **merges** the `data-xps-instance-config` objects of every mount in a
+  `data-xps-instance` group instead of using the first one that names an `index`. The first definition of
+  a key wins and a mount that disagrees logs one `console.warn` naming the key and the instance, so the
+  results widget's page size and retrieved fields apply wherever an editor placed it. Markup whose mounts
+  already agreed is unaffected.
+- **Added:** `resultStats` takes a string `textTemplate` with `{total}`, `{tookMs}`, `{query}`, `{page}`
+  and `{totalPages}` placeholders (template and values escaped; `templates.text` still wins), which is
+  what the Page Builder stats widget's **Text template** property emits.
+- **Added:** `docs/guides/page-builder-widgets.md`, the C# half of `docs/guides/custom-widgets.md`, and
+  ADR-0012.
+
 - **Changed (breaking):** the wire contract and the JavaScript API are owned by this product rather
   than modelled on Algolia and InstantSearch (ADR-0010). `SearchRequest` takes a one-based `page`,
   `pageSize`, `fields` and structured `filters` (`{ facets: [{ attribute, values, operator }],
