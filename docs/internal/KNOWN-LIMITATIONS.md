@@ -45,3 +45,45 @@ and how to lift it.
 - **Upgrade path:** drop an edit as soon as quicktype offers the behaviour directly (an option to suppress
   the helper converters, or `--features types-only`); or, if the list ever grows past a handful, generate
   the C# from the schema with a small emitter of our own instead.
+
+## `check.mjs` in `themes/scripts/check.mjs`
+
+- **Simplified:** the theme self-check tokenizes CSS with a regex (`([^{}]+)\{([^{}]*)\}`) and HTML
+  with `class="…"` matching instead of parsing either. It sees flat declaration blocks, skips the
+  at-rule wrappers it cannot nest into, and treats a colour as "a hex literal, a `rgb(`-family
+  function, or one of ~20 named colours".
+- **Ceiling:** a colour smuggled in through a nested at-rule's own prelude, a `@supports` block that
+  re-opens braces inside a declaration value, a named colour outside the list (`rebeccapurple`), an
+  `url()` data-URI containing a colour, or a class written into the DOM by JavaScript rather than a
+  fixture, all pass unnoticed. The class-parity check compares literal strings, so it cannot know
+  that `.xps-hits__item` in a fixture and `.xps-hits__item` in `MARKUP.md` mean the same element —
+  only that both exist.
+- **Upgrade path:** if the ruleset ever needs to reason about specificity or cascade layers, replace
+  the tokenizer with `postcss` and keep the same five assertions; the checks are independent of how
+  the file is parsed.
+
+## `color-mix()` in `themes/src/default.css`
+
+- **Simplified:** every tint and hover state (`.xps-highlight`, `.xps-chip`, `.xps-button:hover`,
+  `.xps-autocomplete__option--active`, the panel shadow) is derived with
+  `color-mix(in srgb, var(--xps-color-…) N%, …)` rather than being given its own custom property.
+  That keeps the variable block exactly as spec §6 froze it — eight properties, no more.
+- **Ceiling:** `color-mix()` shipped across browsers in 2023 (Chrome/Edge 111, Safari 16.2,
+  Firefox 113). Because the mixes wrap a `var()`, an older browser makes the declaration invalid at
+  computed-value time — it computes to `unset`, so no earlier declaration in the same rule can act
+  as a fallback and the tint simply does not paint. Layout and text stay correct; the `<mark>`
+  highlight and chip fills go plain. Documented, with the three-line workaround, in
+  `docs/guides/theming.md`.
+- **Upgrade path:** if a client needs a pre-2023 browser, add `--xps-color-highlight`,
+  `--xps-color-hover` and `--xps-color-chip` to the variable block with flat defaults and use them
+  directly — a spec §6 amendment, not a code change.
+
+## `xps-autocomplete__panel` surface in `themes/src/shell.css`
+
+- **Simplified:** shell positions the autocomplete popup but gives it no background, because the
+  §6 rule "no colours beyond `currentColor`" leaves it nothing to paint with.
+- **Ceiling:** a site that loads `shell.css` alone gets a see-through popup overlapping the page
+  behind it until it sets a `background-color` on `.xps-autocomplete__panel`. Stated in the theming
+  guide and in `themes/MARKUP.md`, but nothing enforces it.
+- **Upgrade path:** none wanted — the alternative is shell shipping a colour, which is the rule
+  that keeps it safe to load on any site.

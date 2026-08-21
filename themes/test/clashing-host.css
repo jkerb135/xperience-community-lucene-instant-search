@@ -1,0 +1,60 @@
+/* A deliberately hostile host site stylesheet, loaded AFTER shell.css.
+   Nothing here knows about xps-; it is the kind of blunt global CSS that ships on real sites.
+   Section (c) of the verification page passes if the widgets remain usable under it. */
+
+* {
+  box-sizing: content-box;
+}
+
+body {
+  font-size: 20px;
+}
+
+button {
+  padding: 14px 22px !important;
+  font-size: 18px;
+  background: #ffcc00 !important;
+  color: #660000 !important;
+  border: 3px double #660000;
+  border-radius: 0;
+  text-transform: uppercase;
+}
+
+input,
+select {
+  font-size: 18px;
+  padding: 10px;
+  border: 3px dotted #009999;
+  background: #f0fff0 !important;
+}
+
+ul,
+ol {
+  list-style: square inside;
+  padding-left: 40px;
+  margin: 24px 0;
+}
+
+li {
+  margin: 8px 0;
+}
+
+a {
+  color: #cc0066 !important;
+  text-decoration: underline overline !important;
+}
+
+mark {
+  background: #00ff00 !important;
+  color: #000 !important;
+  padding: 4px;
+}
+
+h3 {
+  font-size: 28px;
+  margin: 20px 0;
+}
+
+img {
+  border: 5px ridge #999;
+}

@@ -1,0 +1,504 @@
+/* xperience-search — shell.css
+ * Structure only: layout, spacing rhythm, focus rings, screen-reader utilities, skeletons.
+ * No colours beyond currentColor, no fonts, no borders. A site with its own design system
+ * loads this file and nothing else. Every selector is scoped to an xps- token so nothing
+ * in the stylesheet can reach the host page.
+ * Markup contract: themes/MARKUP.md
+ */
+
+/* --------------------------------------------------------------------------
+ * Scoped reset
+ * ------------------------------------------------------------------------ */
+
+.xps {
+  /* The one structural variable. default.css re-declares it with the same value;
+     a site using shell alone still gets a spacing rhythm. */
+  --xps-space: 0.75rem;
+}
+
+.xps,
+.xps *,
+.xps *::before,
+.xps *::after {
+  box-sizing: border-box;
+}
+
+/* Widgets toggle optional parts with the `hidden` attribute; the display rules
+   below would otherwise win over the UA default. */
+.xps [hidden] {
+  display: none !important;
+}
+
+.xps ul,
+.xps ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.xps h3,
+.xps p {
+  margin: 0;
+}
+
+.xps input,
+.xps button,
+.xps select,
+.xps textarea {
+  font: inherit;
+  color: inherit;
+}
+
+.xps button {
+  cursor: pointer;
+}
+
+.xps :disabled,
+.xps [aria-disabled="true"] {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.xps img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* --------------------------------------------------------------------------
+ * Focus. Never removed, only replaced — the ring is drawn in the inherited
+ * text colour so it is visible on any host background.
+ * ------------------------------------------------------------------------ */
+
+.xps:focus-visible,
+.xps :focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+ * Utilities (documented for custom widgets, spec 5.7)
+ * ------------------------------------------------------------------------ */
+
+.xps-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Vertical rhythm: children separated by one --xps-space. */
+.xps-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--xps-space);
+}
+
+/* Horizontal rhythm: inline row that wraps. */
+.xps-cluster {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--xps-space);
+}
+
+.xps-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--xps-space) / 2);
+  min-height: 2.25rem;
+  padding: calc(var(--xps-space) / 2) var(--xps-space);
+}
+
+.xps-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--xps-space) / 2);
+  padding: calc(var(--xps-space) / 4) calc(var(--xps-space) / 2);
+}
+
+.xps-chip__label {
+  display: inline-flex;
+  gap: calc(var(--xps-space) / 4);
+}
+
+.xps-chip__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  line-height: 1;
+}
+
+.xps-skeleton {
+  display: block;
+  width: 100%;
+  height: 1em;
+  background-color: currentColor;
+  opacity: 0.12;
+  animation: xps-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.xps-skeleton--title {
+  height: 1.4em;
+  width: 60%;
+}
+
+.xps-skeleton--text {
+  height: 0.9em;
+}
+
+.xps-skeleton--block {
+  height: 6rem;
+}
+
+@keyframes xps-skeleton-pulse {
+  50% {
+    opacity: 0.05;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .xps-skeleton {
+    animation: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * searchBox
+ * ------------------------------------------------------------------------ */
+
+.xps-search-box {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--xps-space) / 2);
+}
+
+.xps-search-box__field {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--xps-space) / 2);
+}
+
+.xps-search-box__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 2.25rem;
+  padding: calc(var(--xps-space) / 2);
+}
+
+.xps-search-box__loading {
+  display: none;
+  flex: 0 0 auto;
+  width: 1em;
+  height: 1em;
+}
+
+.xps-search-box--stalled .xps-search-box__loading {
+  display: block;
+}
+
+.xps-search-box__reset,
+.xps-search-box__submit {
+  flex: 0 0 auto;
+}
+
+/* --------------------------------------------------------------------------
+ * hits / infiniteHits
+ * ------------------------------------------------------------------------ */
+
+.xps-hits,
+.xps-infinite-hits {
+  display: flex;
+  flex-direction: column;
+  gap: var(--xps-space);
+}
+
+.xps-hits__list,
+.xps-infinite-hits__list {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--xps-space) * 2);
+}
+
+.xps-hits__empty {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--xps-space) / 2);
+}
+
+.xps-hit {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--xps-space);
+}
+
+.xps-hit__media {
+  flex: 0 0 auto;
+  width: 6rem;
+}
+
+.xps-hit__image {
+  display: block;
+}
+
+.xps-hit__body {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--xps-space) / 2);
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.xps-hit__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--xps-space);
+}
+
+.xps-hit--skeleton .xps-hit__body {
+  gap: calc(var(--xps-space) / 2);
+  width: 100%;
+}
+
+.xps-infinite-hits__sentinel {
+  height: 1px;
+}
+
+.xps-infinite-hits__load-more {
+  align-self: flex-start;
+}
+
+/* --------------------------------------------------------------------------
+ * refinementList / toggleRefinement
+ * ------------------------------------------------------------------------ */
+
+.xps-refinement-list {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--xps-space) / 2);
+}
+
+.xps-refinement-list__search-input {
+  width: 100%;
+  min-height: 2.25rem;
+  padding: calc(var(--xps-space) / 2);
+}
+
+.xps-refinement-list__list {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--xps-space) / 2);
+}
+
+.xps-refinement-list__label,
+.xps-toggle-refinement__label {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--xps-space) / 2);
+  cursor: pointer;
+}
+
+.xps-refinement-list__item--disabled .xps-refinement-list__label,
+.xps-toggle-refinement--disabled .xps-toggle-refinement__label {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.xps-refinement-list__checkbox,
+.xps-toggle-refinement__checkbox {
+  flex: 0 0 auto;
+}
+
+.xps-refinement-list__value,
+.xps-toggle-refinement__value {
+  min-width: 0;
+}
+
+.xps-refinement-list__count,
+.xps-toggle-refinement__count {
+  margin-inline-start: auto;
+}
+
+.xps-refinement-list__show-more {
+  align-self: flex-start;
+}
+
+/* --------------------------------------------------------------------------
+ * pagination
+ * ------------------------------------------------------------------------ */
+
+.xps-pagination__list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--xps-space) / 2);
+}
+
+.xps-pagination__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  padding: 0 calc(var(--xps-space) / 2);
+}
+
+.xps-pagination__ellipsis {
+  display: inline-flex;
+  justify-content: center;
+  min-width: 1.5rem;
+}
+
+/* --------------------------------------------------------------------------
+ * stats / sortBy / clearRefinements / currentRefinements
+ * ------------------------------------------------------------------------ */
+
+.xps-stats {
+  display: flex;
+  align-items: baseline;
+  gap: calc(var(--xps-space) / 2);
+}
+
+.xps-sort-by {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--xps-space) / 2);
+}
+
+.xps-sort-by__select {
+  min-height: 2.25rem;
+  padding: calc(var(--xps-space) / 4) calc(var(--xps-space) / 2);
+}
+
+.xps-current-refinements__list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--xps-space) / 2);
+}
+
+/* --------------------------------------------------------------------------
+ * autocomplete — combobox with a listbox popup
+ * https://www.w3.org/WAI/ARIA/apg/patterns/combobox/
+ * ------------------------------------------------------------------------ */
+
+.xps-autocomplete {
+  position: relative;
+  display: block;
+}
+
+.xps-autocomplete__field {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--xps-space) / 2);
+}
+
+.xps-autocomplete__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 2.25rem;
+  padding: calc(var(--xps-space) / 2);
+}
+
+.xps-autocomplete__panel {
+  position: absolute;
+  inset-inline: 0;
+  top: 100%;
+  z-index: 20;
+  max-height: 60vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.xps-autocomplete__group-title {
+  padding: calc(var(--xps-space) / 2) var(--xps-space);
+}
+
+.xps-autocomplete__option {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--xps-space) / 4);
+  padding: calc(var(--xps-space) / 2) var(--xps-space);
+  cursor: pointer;
+}
+
+.xps-autocomplete__empty,
+.xps-autocomplete__footer {
+  padding: calc(var(--xps-space) / 2) var(--xps-space);
+}
+
+/* --------------------------------------------------------------------------
+ * rangeSlider
+ * ------------------------------------------------------------------------ */
+
+.xps-range-slider {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--xps-space) / 2);
+}
+
+.xps-range-slider__track {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--xps-space) / 4);
+}
+
+.xps-range-slider__range {
+  width: 100%;
+  margin: 0;
+}
+
+.xps-range-slider__inputs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--xps-space) / 2);
+}
+
+.xps-range-slider__input {
+  width: 6rem;
+  min-height: 2.25rem;
+  padding: calc(var(--xps-space) / 4) calc(var(--xps-space) / 2);
+}
+
+/* --------------------------------------------------------------------------
+ * hierarchicalMenu
+ * ------------------------------------------------------------------------ */
+
+.xps-hierarchical-menu {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--xps-space) / 2);
+}
+
+.xps-hierarchical-menu__list {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--xps-space) / 4);
+}
+
+.xps-hierarchical-menu__item > .xps-hierarchical-menu__list {
+  margin-top: calc(var(--xps-space) / 4);
+  padding-inline-start: var(--xps-space);
+}
+
+.xps-hierarchical-menu__link {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--xps-space) / 2);
+  padding: calc(var(--xps-space) / 4) 0;
+}
+
+.xps-hierarchical-menu__count {
+  margin-inline-start: auto;
+}

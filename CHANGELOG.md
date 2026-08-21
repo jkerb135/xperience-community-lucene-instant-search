@@ -8,6 +8,11 @@ Breaking changes to the public connector API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- Added: the theme layer (spec §6) — `themes/src/shell.css` (structure only) and
+  `themes/src/default.css` (opt-in, CSS-variable driven), the frozen `xps-` markup contract in
+  `themes/MARKUP.md` with a fixture per widget, the three-way verification page in `themes/test/`,
+  and `npm run check` to keep the stylesheets, fixtures and contract honest.
+
 - Added: the JSON search contract is frozen — `contract/xpsearch-api.schema.json` generates the C#
   (`XpSearch.Core.Contract`) and TypeScript (`@yourco/xperience-search`) types for `/api/xpsearch/query`,
   `/suggest` and `/events`, versioned by the `X-XpSearch-Api-Version` response header (ADR-0006).

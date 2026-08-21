@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>xperience-search — theme verification</title>
+  <link rel="stylesheet" href="page.css">
+  <style>
+    .sections { display: grid; gap: 1.5rem; }
+    .sections iframe { width: 100%; height: 80vh; border: 1px solid #bbb; }
+    .walk li { margin: 0.35rem 0; }
+    kbd { font: inherit; border: 1px solid #999; border-radius: 3px; padding: 0 0.25em; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>xperience-search — theme verification (spec §6)</h1>
+
+  <p class="note">
+    Every widget fixture from <code>themes/fixtures/</code>, rendered three times. Each section is a
+    separate document in an iframe so the three stylesheet combinations cannot contaminate one
+    another. Open this file straight from disk — no server, no build step. Regenerate the sections
+    after editing a fixture with <code>npm run build:test</code>.
+  </p>
+
+  <h2>What to look for</h2>
+  <ol>
+    <li><strong>(a) shell only</strong> — every widget is laid out and legible using the host page's
+      own colours and fonts. Nothing looks designed, nothing looks broken.</li>
+    <li><strong>(b) shell + default</strong> — the same markup, themed. Change a variable in
+      <code>src/default.css</code> (say <code>--xps-color-accent</code>) and everything follows.</li>
+    <li><strong>(c) shell + hostile host</strong> — <code>clashing-host.css</code> loads after shell
+      with <code>!important</code> colours, global <code>button</code>/<code>input</code>/<code>ul</code>/<code>a</code>/<code>mark</code>
+      rules and <code>* { box-sizing: content-box }</code>. Widgets absorb the host's palette but stay
+      usable: nothing overflows, no control becomes unreachable.</li>
+    <li><strong>Leakage</strong> — the pink-bordered “host page sample” block appears at the top and
+      bottom of all three sections, outside every <code>.xps</code> element. It must render
+      identically in (a) and (b). If it differs, a widget stylesheet has leaked.</li>
+  </ol>
+
+  <h2>Keyboard walk-through (do this in every section)</h2>
+  <p class="note">Click into the iframe first, then walk the whole section with the keyboard only —
+    no mouse. Every step below must be possible, and the focused element must always be visibly
+    ringed (shell draws a 2px <code>currentColor</code> outline on <code>:focus-visible</code>).</p>
+  <ol class="walk">
+    <li><kbd>Tab</kbd> from the top and keep going to the bottom of the section: you should never
+      lose the focus ring, and never land on a control that does nothing.</li>
+    <li><em>searchBox</em> — type in the input, <kbd>Tab</kbd> to the clear button (announced
+      “Clear the search query”), <kbd>Enter</kbd> resets it. The hidden reset in the empty variant
+      must be skipped by <kbd>Tab</kbd>.</li>
+    <li><em>autocomplete</em> — the open fixture is static markup, so check the wiring instead:
+      the input is <code>role="combobox"</code> with <code>aria-expanded="true"</code>,
+      <code>aria-controls</code> pointing at the listbox and <code>aria-activedescendant</code>
+      pointing at the option carrying <code>xps-autocomplete__option--active</code>. Options must
+      never take DOM focus.</li>
+    <li><em>refinementList / toggleRefinement</em> — <kbd>Space</kbd> toggles each checkbox; the
+      disabled row is skipped by <kbd>Tab</kbd>; the whole label row is a hit area.</li>
+    <li><em>pagination</em> — every enabled control is a link and reachable; the disabled first/prev
+      controls are <code>&lt;span aria-disabled="true"&gt;</code> and are correctly skipped; the
+      current page carries <code>aria-current="page"</code>.</li>
+    <li><em>sortBy</em> — <kbd>Tab</kbd> to the select, change it with the arrow keys.</li>
+    <li><em>currentRefinements</em> — <kbd>Tab</kbd> to each chip's remove button; its accessible
+      name says which filter it removes, not just “×”.</li>
+    <li><em>rangeSlider</em> — arrow keys move each native range input by one step,
+      <kbd>Home</kbd>/<kbd>End</kbd> jump to the ends; the numeric inputs accept typing.</li>
+    <li><em>hierarchicalMenu</em> — every level is reachable; the selected path carries
+      <code>aria-current="true"</code>.</li>
+    <li><em>infiniteHits</em> — the load-more button is reachable and stays in the DOM (disabled)
+      when exhausted, so focus is never destroyed.</li>
+    <li>Turn on “reduce motion” in the OS: the skeleton pulse in the loading fixtures must stop.</li>
+  </ol>
+
+  <div class="sections">
+    <div>
+      <h2>(a) shell.css only</h2>
+      <iframe src="section-shell.html" title="Widgets with shell.css only"></iframe>
+    </div>
+    <div>
+      <h2>(b) shell.css + default.css</h2>
+      <iframe src="section-default.html" title="Widgets with shell.css and default.css"></iframe>
+    </div>
+    <div>
+      <h2>(c) shell.css + clashing-host.css</h2>
+      <iframe src="section-clashing.html" title="Widgets with shell.css and a clashing host stylesheet"></iframe>
+    </div>
+  </div>
+
+  <p class="note">Each iframe scrolls independently; open a section directly
+    (<a href="section-shell.html">a</a>, <a href="section-default.html">b</a>,
+    <a href="section-clashing.html">c</a>) for a full-height view.</p>
+</main>
+</body>
+</html>

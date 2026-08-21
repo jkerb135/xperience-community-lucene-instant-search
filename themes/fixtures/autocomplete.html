@@ -1,0 +1,124 @@
+<!-- autocomplete — WAI-ARIA 1.2 combobox with a listbox popup
+     https://www.w3.org/WAI/ARIA/apg/patterns/combobox/
+     States: open with an active option and a federated hits group, closed, open-but-empty. -->
+
+<div class="xps xps-autocomplete xps-autocomplete--open">
+  <form class="xps-autocomplete__form" role="search" action="/search" method="get" novalidate>
+    <label class="xps-autocomplete__label xps-sr-only" for="xps-search-1-autocomplete-input">Search this site</label>
+    <div class="xps-autocomplete__field">
+      <input class="xps-autocomplete__input"
+             id="xps-search-1-autocomplete-input"
+             type="text"
+             name="q"
+             value="esp"
+             role="combobox"
+             aria-expanded="true"
+             aria-controls="xps-search-1-autocomplete-listbox"
+             aria-activedescendant="xps-search-1-autocomplete-option-1"
+             aria-autocomplete="list"
+             autocomplete="off"
+             autocapitalize="off"
+             autocorrect="off"
+             spellcheck="false"
+             placeholder="Search…">
+      <button class="xps-button xps-autocomplete__reset" type="reset" aria-label="Clear the search query">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+  </form>
+  <div class="xps-autocomplete__panel">
+    <ul class="xps-autocomplete__list"
+        id="xps-search-1-autocomplete-listbox"
+        role="listbox"
+        aria-label="Search suggestions">
+      <li class="xps-autocomplete__group" role="group" aria-labelledby="xps-search-1-autocomplete-group-suggestions">
+        <div class="xps-autocomplete__group-title" id="xps-search-1-autocomplete-group-suggestions">Suggestions</div>
+        <div class="xps-autocomplete__option"
+             role="option"
+             id="xps-search-1-autocomplete-option-0"
+             aria-selected="false">
+          <span class="xps-autocomplete__option-title"><mark class="xps-highlight">esp</mark>resso machine</span>
+        </div>
+        <div class="xps-autocomplete__option xps-autocomplete__option--active"
+             role="option"
+             id="xps-search-1-autocomplete-option-1"
+             aria-selected="true">
+          <span class="xps-autocomplete__option-title"><mark class="xps-highlight">esp</mark>resso grinder</span>
+        </div>
+      </li>
+      <li class="xps-autocomplete__group" role="group" aria-labelledby="xps-search-1-autocomplete-group-pages">
+        <div class="xps-autocomplete__group-title" id="xps-search-1-autocomplete-group-pages">Pages</div>
+        <div class="xps-autocomplete__option"
+             role="option"
+             id="xps-search-1-autocomplete-option-2"
+             aria-selected="false">
+          <span class="xps-autocomplete__option-title">Choosing an <mark class="xps-highlight">esp</mark>resso machine</span>
+          <span class="xps-autocomplete__option-meta">Article &middot; 12 March 2026</span>
+        </div>
+        <div class="xps-autocomplete__option"
+             role="option"
+             id="xps-search-1-autocomplete-option-3"
+             aria-selected="false">
+          <span class="xps-autocomplete__option-title">Rocket Appartamento</span>
+          <span class="xps-autocomplete__option-meta">Product</span>
+        </div>
+      </li>
+    </ul>
+    <div class="xps-autocomplete__footer">
+      <a class="xps-autocomplete__see-all" href="/search?q=esp">See all results for “esp”</a>
+    </div>
+  </div>
+</div>
+
+<!-- closed: the panel keeps its markup but is hidden, and aria-expanded is false -->
+<div class="xps xps-autocomplete">
+  <form class="xps-autocomplete__form" role="search" action="/search" method="get" novalidate>
+    <label class="xps-autocomplete__label xps-sr-only" for="xps-search-2-autocomplete-input">Search this site</label>
+    <div class="xps-autocomplete__field">
+      <input class="xps-autocomplete__input"
+             id="xps-search-2-autocomplete-input"
+             type="text"
+             name="q"
+             value=""
+             role="combobox"
+             aria-expanded="false"
+             aria-controls="xps-search-2-autocomplete-listbox"
+             aria-autocomplete="list"
+             autocomplete="off"
+             placeholder="Search…">
+      <button class="xps-button xps-autocomplete__reset" type="reset" aria-label="Clear the search query" hidden>
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+  </form>
+  <div class="xps-autocomplete__panel" hidden>
+    <ul class="xps-autocomplete__list" id="xps-search-2-autocomplete-listbox" role="listbox" aria-label="Search suggestions"></ul>
+  </div>
+</div>
+
+<!-- open with no suggestions -->
+<div class="xps xps-autocomplete xps-autocomplete--open">
+  <form class="xps-autocomplete__form" role="search" action="/search" method="get" novalidate>
+    <label class="xps-autocomplete__label xps-sr-only" for="xps-search-3-autocomplete-input">Search this site</label>
+    <div class="xps-autocomplete__field">
+      <input class="xps-autocomplete__input"
+             id="xps-search-3-autocomplete-input"
+             type="text"
+             name="q"
+             value="xyzzy"
+             role="combobox"
+             aria-expanded="true"
+             aria-controls="xps-search-3-autocomplete-listbox"
+             aria-autocomplete="list"
+             autocomplete="off"
+             placeholder="Search…">
+      <button class="xps-button xps-autocomplete__reset" type="reset" aria-label="Clear the search query">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+  </form>
+  <div class="xps-autocomplete__panel">
+    <ul class="xps-autocomplete__list" id="xps-search-3-autocomplete-listbox" role="listbox" aria-label="Search suggestions"></ul>
+    <p class="xps-autocomplete__empty" role="status">No suggestions for “xyzzy”.</p>
+  </div>
+</div>
