@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="CustomWidget.Dropdown.Tests/CustomWidget.Dropdown.Tests.csproj" />
+  <Project Path="CustomWidget.Dropdown.Widget/CustomWidget.Dropdown.Widget.csproj" />
+</Solution>
