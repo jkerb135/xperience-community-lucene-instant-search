@@ -1,0 +1,86 @@
+<!-- hits — states: results (default item template), empty, loading (skeletons) -->
+
+<div class="xps xps-hits">
+  <p class="xps-hits__status xps-sr-only" role="status">3 results for “espresso machine”</p>
+  <ol class="xps-hits__list">
+    <li class="xps-hits__item">
+      <article class="xps-hit">
+        <div class="xps-hit__media">
+          <img class="xps-hit__image" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" width="96" height="96">
+        </div>
+        <div class="xps-hit__body">
+          <h3 class="xps-hit__title">
+            <a class="xps-hit__link" href="/blog/choosing-an-espresso-machine">Choosing an <mark class="xps-highlight">espresso</mark> <mark class="xps-highlight">machine</mark></a>
+          </h3>
+          <p class="xps-hit__snippet">A dual-boiler <mark class="xps-highlight">espresso</mark> <mark class="xps-highlight">machine</mark> holds brew and steam temperature independently, which is what lets you pull a shot and steam milk without waiting.</p>
+          <ul class="xps-hit__meta">
+            <li class="xps-hit__meta-item">Article</li>
+            <li class="xps-hit__meta-item">12 March 2026</li>
+          </ul>
+        </div>
+      </article>
+    </li>
+    <li class="xps-hits__item">
+      <article class="xps-hit">
+        <div class="xps-hit__body">
+          <h3 class="xps-hit__title">
+            <a class="xps-hit__link" href="/products/rocket-appartamento">Rocket Appartamento</a>
+          </h3>
+          <p class="xps-hit__snippet">A heat-exchanger <mark class="xps-highlight">machine</mark> for the home barista who has run out of counter space.</p>
+          <ul class="xps-hit__meta">
+            <li class="xps-hit__meta-item">Product</li>
+          </ul>
+        </div>
+      </article>
+    </li>
+    <li class="xps-hits__item">
+      <article class="xps-hit">
+        <div class="xps-hit__body">
+          <h3 class="xps-hit__title">
+            <a class="xps-hit__link" href="/support/descaling">Descaling your <mark class="xps-highlight">machine</mark></a>
+          </h3>
+          <p class="xps-hit__snippet">Scale is the single largest cause of warranty claims. Descale every 300 litres, or every three months on hard water.</p>
+          <ul class="xps-hit__meta">
+            <li class="xps-hit__meta-item">Support</li>
+            <li class="xps-hit__meta-item">2 January 2026</li>
+          </ul>
+        </div>
+      </article>
+    </li>
+  </ol>
+</div>
+
+<!-- empty -->
+<div class="xps xps-hits xps-hits--empty">
+  <p class="xps-hits__status xps-sr-only" role="status">No results for “xyzzy”</p>
+  <div class="xps-hits__empty">
+    <p>No results for <strong>xyzzy</strong>.</p>
+    <p>Try fewer words, or clear some filters.</p>
+  </div>
+</div>
+
+<!-- loading: three skeleton hits, announced as busy -->
+<div class="xps xps-hits xps-hits--loading" aria-busy="true">
+  <p class="xps-hits__status xps-sr-only" role="status">Searching…</p>
+  <ol class="xps-hits__list">
+    <li class="xps-hits__item">
+      <article class="xps-hit xps-hit--skeleton" aria-hidden="true">
+        <div class="xps-hit__media"><span class="xps-skeleton xps-skeleton--block"></span></div>
+        <div class="xps-hit__body">
+          <span class="xps-skeleton xps-skeleton--title"></span>
+          <span class="xps-skeleton xps-skeleton--text"></span>
+          <span class="xps-skeleton xps-skeleton--text"></span>
+        </div>
+      </article>
+    </li>
+    <li class="xps-hits__item">
+      <article class="xps-hit xps-hit--skeleton" aria-hidden="true">
+        <div class="xps-hit__media"><span class="xps-skeleton xps-skeleton--block"></span></div>
+        <div class="xps-hit__body">
+          <span class="xps-skeleton xps-skeleton--title"></span>
+          <span class="xps-skeleton xps-skeleton--text"></span>
+        </div>
+      </article>
+    </li>
+  </ol>
+</div>
