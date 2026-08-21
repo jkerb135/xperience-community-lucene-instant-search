@@ -57,6 +57,7 @@ public static class XpSearchServiceCollectionExtensions
         services.TryAddSingleton(indexingOptions);
 
         services.TryAddSingleton<ILuceneIndexAccessor, LuceneIndexAccessor>();
+        services.TryAddSingleton<IDataClassDefinitionSource, DataClassInfoDefinitionSource>();
         services.TryAddSingleton<IIndexContentTypeSource, LuceneIndexContentTypeSource>();
         services.TryAddSingleton<IContentTypeFieldSource, FormInfoContentTypeFieldSource>();
         services.TryAddSingleton<IIndexSchemaProvider, IndexSchemaProvider>();

@@ -149,7 +149,10 @@ and how to lift it.
 
 ## Schema detection in `XpSearch.Core/Indexing/FormInfoContentTypeFieldSource.cs`
 
-- **Simplified:** fields are detected from `DataClassInfo.ClassFormDefinition` via `FormInfo.GetFields`, and
+- **Simplified:** fields are detected from `DataClassInfo.ClassFormDefinition` — read through
+  `IDataClassDefinitionSource`, whose default implementation calls the static
+  `DataClassInfoProvider.GetDataClassInfo` because `DataClassInfo` has no `IInfoProvider<T>` registration —
+  via `FormInfo.GetFields`, and
   mapped by their field data type. Data types with no obvious search meaning (assets, references, booleans,
   GUIDs, XML) are dropped. Reusable field schema fields are **not** in a content type's own class form
   definition — verified against a Dancing Goat database, where `DancingGoat.ProductCoffee` holds only
@@ -190,6 +193,27 @@ and how to lift it.
 - **Upgrade path:** give the strategy the index's content types (through `IIndexContentTypeSource`) and
   register every taxonomy dimension up front in the constructor.
 
+## `FlattenLinkedItems` in `XpSearch.Core/Indexing/XpSearchIndexingOptions.cs`
+
+- **Simplified:** the registration names the content types the linked field can hold. The *document* is
+  mapped from whatever each linked item's own `ContentTypeName` turns out to be, so the list is only used
+  to report the flattened fields in the parent type's schema — but it is a list a developer has to keep in
+  step with the content model, because the allowed types of a *Pages and reusable content* field live in
+  the field's editor settings, which have no documented public API. Two further shortcuts: when the field
+  holds several linked items, the first one to define a field name is the one that contributes it (a
+  second `SortedDocValuesField` of the same name would make Lucene reject the document), and flattening
+  reads only the first level of linked items, whatever `depth` the parent is loaded with.
+- **Ceiling:** a content type added to the field later is flattened into documents but invisible to
+  `facets`, `fields`, sort validation and the §7.4 dropdown until it is added to the registration. A page
+  linking two products indexes the first one's values only. And `FindItemsToReindex` is untouched: nothing
+  reindexes the page when the product it links changes, so each flattened relationship still needs an
+  override of its own (the guide says so; Dancing Goat has one).
+- **Upgrade path:** read the allowed content types off the field's settings if Kentico documents a public
+  way to; make the accumulation per-field-kind (append taxonomies from every linked item, keep first-wins
+  only for the sortable kinds) if a multi-item link ever needs it; and if `ContentRetriever`'s `Linking`
+  becomes expressible from a class name and a field name alone, generate the `FindItemsToReindex` query
+  from the same registration.
+
 ## Field renaming is not supported, in `XpSearch.Core/Indexing/XpSearchIndexingOptions.cs`
 
 - **Simplified:** spec §4.5f asks for exclude, rename and boost. `Exclude` and `Configure` are implemented;
@@ -197,7 +221,7 @@ and how to lift it.
   value is read from and the Lucene field it is written to, so changing it breaks the read. The guide says
   so instead of the code preventing it.
 - **Ceiling:** a project that wants a shorter attribute name on the wire has to add a second field in an
-  override of `MapToLuceneDocumentOrNull`, or rename in its own client code.
+  override of `ContributeAsync`, or rename in its own client code.
 - **Upgrade path:** add a source-field name to `SchemaField` that defaults to `Name`, read values by the
   source name in the strategy, and index and project by `Name`.
 ## `check.mjs` in `themes/scripts/check.mjs`

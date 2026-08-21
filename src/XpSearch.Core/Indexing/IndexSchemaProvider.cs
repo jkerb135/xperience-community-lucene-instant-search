@@ -20,23 +20,28 @@ public sealed class IndexSchemaProvider : IIndexSchemaProvider
     private readonly ILuceneIndexAccessor accessor;
     private readonly IIndexContentTypeSource contentTypeSource;
     private readonly IContentTypeFieldSource fieldSource;
+    private readonly XpSearchIndexingOptions options;
 
     /// <summary>Initializes a new instance of the <see cref="IndexSchemaProvider"/> class.</summary>
     /// <param name="accessor">The Lucene seam, used to check that the index exists.</param>
     /// <param name="contentTypeSource">Lists the content types an index covers.</param>
     /// <param name="fieldSource">Detects the fields of a content type.</param>
+    /// <param name="options">Supplies the linked content types whose fields are flattened into a covered type's documents.</param>
     public IndexSchemaProvider(
         ILuceneIndexAccessor accessor,
         IIndexContentTypeSource contentTypeSource,
-        IContentTypeFieldSource fieldSource)
+        IContentTypeFieldSource fieldSource,
+        XpSearchIndexingOptions options)
     {
         ArgumentNullException.ThrowIfNull(accessor);
         ArgumentNullException.ThrowIfNull(contentTypeSource);
         ArgumentNullException.ThrowIfNull(fieldSource);
+        ArgumentNullException.ThrowIfNull(options);
 
         this.accessor = accessor;
         this.contentTypeSource = contentTypeSource;
         this.fieldSource = fieldSource;
+        this.options = options;
     }
 
     /// <summary>
@@ -74,8 +79,17 @@ public sealed class IndexSchemaProvider : IIndexSchemaProvider
         foreach (string contentType in contentTypes)
         {
             // A field of the same name on two content types is one schema field; IndexSchema keeps
-            // the first definition, which matches how the documents share one Lucene field.
+            // the first definition, which matches how the documents share one Lucene field. The
+            // content type's own fields come first, so a flattened field never shadows one of its own.
             fields.AddRange(fieldSource.GetFields(contentType));
+
+            foreach (var link in options.FlattenedLinksOf(contentType))
+            {
+                foreach (string linkedContentType in link.LinkedContentTypeNames)
+                {
+                    fields.AddRange(fieldSource.GetFields(linkedContentType));
+                }
+            }
         }
 
         return new IndexSchema(indexName, fields);
