@@ -1,0 +1,289 @@
+/* xperience-search — default.css
+ * The opt-in visual theme. Load it after shell.css. Every visual value in this file goes
+ * through one of the custom properties below, so a site re-skins the whole widget set by
+ * overriding variables in its own stylesheet — no build step, no fork.
+ *
+ *   .xps { --xps-color-accent: #b8005c; --xps-radius: 0; }
+ *
+ * Colour literals appear only in the variable blocks. `themes/scripts/check.mjs` enforces that.
+ */
+
+.xps {
+  --xps-color-accent: #0b5fff;
+  --xps-color-text: #111;
+  --xps-color-muted: #666;
+  --xps-color-surface: #fff;
+  --xps-color-border: #e2e2e2;
+  --xps-radius: 6px;
+  --xps-space: 0.75rem;
+  --xps-font: inherit;
+
+  font-family: var(--xps-font);
+  color: var(--xps-color-text);
+}
+
+/* Opt-in dark mode: add data-xps-theme="auto" to the same element that carries `xps`.
+   It is opt-in because the widgets sit inside a host page whose background this file does not
+   control — following the OS unasked would put light text on a site that stayed light.
+   Only variable values change here: no new rules, no new selectors. */
+@media (prefers-color-scheme: dark) {
+  .xps[data-xps-theme="auto"] {
+    --xps-color-accent: #6f9dff;
+    --xps-color-text: #f2f2f2;
+    --xps-color-muted: #a9a9a9;
+    --xps-color-surface: #16181d;
+    --xps-color-border: #33363d;
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * Shared primitives
+ * ------------------------------------------------------------------------ */
+
+.xps a {
+  color: var(--xps-color-accent);
+}
+
+.xps :focus-visible {
+  outline-color: var(--xps-color-accent);
+}
+
+.xps-highlight {
+  background-color: color-mix(in srgb, var(--xps-color-accent) 18%, transparent);
+  color: inherit;
+  border-radius: calc(var(--xps-radius) / 3);
+}
+
+.xps-skeleton {
+  color: var(--xps-color-muted);
+  border-radius: calc(var(--xps-radius) / 2);
+}
+
+.xps-button {
+  background-color: var(--xps-color-surface);
+  color: var(--xps-color-text);
+  border: 1px solid var(--xps-color-border);
+  border-radius: var(--xps-radius);
+}
+
+.xps-button:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--xps-color-accent) 8%, var(--xps-color-surface));
+  border-color: color-mix(in srgb, var(--xps-color-accent) 40%, var(--xps-color-border));
+}
+
+.xps-button--primary {
+  background-color: var(--xps-color-accent);
+  border-color: var(--xps-color-accent);
+  color: var(--xps-color-surface);
+}
+
+.xps-button--primary:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--xps-color-text) 15%, var(--xps-color-accent));
+  border-color: color-mix(in srgb, var(--xps-color-text) 15%, var(--xps-color-accent));
+}
+
+.xps-chip {
+  background-color: color-mix(in srgb, var(--xps-color-accent) 8%, var(--xps-color-surface));
+  border: 1px solid color-mix(in srgb, var(--xps-color-accent) 30%, var(--xps-color-border));
+  border-radius: var(--xps-radius);
+}
+
+.xps-chip__attribute {
+  color: var(--xps-color-muted);
+}
+
+.xps-chip__remove {
+  background-color: transparent;
+  border: 0;
+  border-radius: var(--xps-radius);
+  color: var(--xps-color-muted);
+}
+
+.xps-chip__remove:hover {
+  color: var(--xps-color-text);
+  background-color: color-mix(in srgb, var(--xps-color-accent) 15%, transparent);
+}
+
+/* --------------------------------------------------------------------------
+ * Form controls
+ * ------------------------------------------------------------------------ */
+
+.xps-search-box__input,
+.xps-autocomplete__input,
+.xps-refinement-list__search-input,
+.xps-range-slider__input,
+.xps-sort-by__select {
+  background-color: var(--xps-color-surface);
+  color: var(--xps-color-text);
+  border: 1px solid var(--xps-color-border);
+  border-radius: var(--xps-radius);
+}
+
+.xps-search-box__input::placeholder,
+.xps-autocomplete__input::placeholder,
+.xps-refinement-list__search-input::placeholder {
+  color: var(--xps-color-muted);
+}
+
+.xps-search-box__reset,
+.xps-search-box__submit,
+.xps-autocomplete__reset {
+  color: var(--xps-color-muted);
+}
+
+.xps-search-box__reset:hover:not(:disabled),
+.xps-search-box__submit:hover:not(:disabled),
+.xps-autocomplete__reset:hover:not(:disabled) {
+  color: var(--xps-color-text);
+}
+
+.xps-refinement-list__checkbox,
+.xps-toggle-refinement__checkbox,
+.xps-range-slider__range {
+  accent-color: var(--xps-color-accent);
+}
+
+/* --------------------------------------------------------------------------
+ * hits
+ * ------------------------------------------------------------------------ */
+
+.xps-hit__link {
+  color: var(--xps-color-accent);
+  text-decoration: none;
+}
+
+.xps-hit__link:hover {
+  text-decoration: underline;
+}
+
+.xps-hit__snippet {
+  color: var(--xps-color-text);
+}
+
+.xps-hit__meta,
+.xps-hits__empty {
+  color: var(--xps-color-muted);
+  font-size: 0.875em;
+}
+
+.xps-hit__image {
+  border-radius: var(--xps-radius);
+}
+
+/* --------------------------------------------------------------------------
+ * refinementList / toggleRefinement / hierarchicalMenu
+ * ------------------------------------------------------------------------ */
+
+.xps-refinement-list__title,
+.xps-hierarchical-menu__title,
+.xps-range-slider__title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.xps-refinement-list__item--selected .xps-refinement-list__value {
+  font-weight: 600;
+}
+
+.xps-refinement-list__count,
+.xps-toggle-refinement__count,
+.xps-hierarchical-menu__count,
+.xps-refinement-list__no-results,
+.xps-range-slider__values,
+.xps-range-slider__input-label {
+  color: var(--xps-color-muted);
+  font-size: 0.875em;
+}
+
+.xps-refinement-list__show-more {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--xps-color-accent);
+}
+
+.xps-hierarchical-menu__link {
+  color: var(--xps-color-text);
+  text-decoration: none;
+}
+
+.xps-hierarchical-menu__link:hover {
+  color: var(--xps-color-accent);
+}
+
+.xps-hierarchical-menu__item--selected > .xps-hierarchical-menu__link {
+  color: var(--xps-color-accent);
+  font-weight: 600;
+}
+
+.xps-hierarchical-menu__item > .xps-hierarchical-menu__list {
+  border-inline-start: 1px solid var(--xps-color-border);
+}
+
+/* --------------------------------------------------------------------------
+ * pagination / stats
+ * ------------------------------------------------------------------------ */
+
+.xps-pagination__link {
+  color: var(--xps-color-text);
+  text-decoration: none;
+  border: 1px solid var(--xps-color-border);
+  border-radius: var(--xps-radius);
+}
+
+.xps-pagination__link:hover[href] {
+  border-color: color-mix(in srgb, var(--xps-color-accent) 50%, var(--xps-color-border));
+}
+
+.xps-pagination__item--current .xps-pagination__link {
+  background-color: var(--xps-color-accent);
+  border-color: var(--xps-color-accent);
+  color: var(--xps-color-surface);
+  font-weight: 600;
+}
+
+.xps-pagination__ellipsis,
+.xps-stats {
+  color: var(--xps-color-muted);
+}
+
+.xps-stats__time {
+  color: var(--xps-color-muted);
+}
+
+/* --------------------------------------------------------------------------
+ * autocomplete
+ * ------------------------------------------------------------------------ */
+
+.xps-autocomplete__panel {
+  background-color: var(--xps-color-surface);
+  border: 1px solid var(--xps-color-border);
+  border-radius: var(--xps-radius);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--xps-color-text) 15%, transparent);
+}
+
+.xps-autocomplete__group-title {
+  color: var(--xps-color-muted);
+  font-size: 0.75em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.xps-autocomplete__option--active,
+.xps-autocomplete__option:hover {
+  background-color: color-mix(in srgb, var(--xps-color-accent) 10%, transparent);
+}
+
+.xps-autocomplete__option-meta,
+.xps-autocomplete__empty {
+  color: var(--xps-color-muted);
+  font-size: 0.875em;
+}
+
+.xps-autocomplete__footer {
+  border-top: 1px solid var(--xps-color-border);
+}
+
+.xps-autocomplete__see-all {
+  color: var(--xps-color-accent);
+}
