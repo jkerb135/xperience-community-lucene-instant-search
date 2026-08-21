@@ -7,9 +7,8 @@ so anything they can do, your control can do.
 
 ### A worked example: a single-select dropdown facet
 
-This exact file lives at
-[`samples/CustomWidget.Dropdown/src/dropdownFacet.ts`](../../samples/CustomWidget.Dropdown/src/dropdownFacet.ts),
-is built and tested against the **packed** packages in CI (`node samples/pack-and-build.mjs`), and is
+This exact file lives at `samples/CustomWidget.Dropdown/src/dropdownFacet.ts` in the library
+repository, is built and tested against the **packed** packages in CI (`node samples/pack-and-build.mjs`), and is
 reproduced here in full. Nothing is elided, and it typechecks under `strict` with no `any` and no
 import from an internal path.
 
@@ -378,7 +377,7 @@ builds one `createSearch()` instance per group and starts it:
 - **The shell CSS is available to you, and only it.** Layout primitives (`xps`, `xps-stack`,
   `xps-cluster`), `xps-button`, `xps-chip`, `xps-skeleton`, `xps-sr-only` and the shared `xps-select`
   block are documented utilities you may render — see [Theming](theming.md) and `themes/MARKUP.md`. Do **not** borrow
-  another widget's block (`xps-sort-select__*`, `xps-facet-list__*`): those are that widget's
+  another widget's block (`xps-facet-list__*`, `xps-results__*`): those are that widget's
   contract, and `themes/scripts/check.mjs` enforces a three-way agreement between the CSS, the
   fixtures and `MARKUP.md` that your class names are not part of. Anything else is your own block,
   which you style yourself.
@@ -505,7 +504,7 @@ Assert.That(WebUtility.HtmlDecode(markup), Does.Contain("\"attribute\":\"brand\"
 
 `model.Mount` is `null` when `ConfigurationHint` returned a message; `model.EditorMessage` carries it
 in `XpSearchEditorMode.Edit` and is `null` on the live site. The full fixture is
-[`samples/CustomWidget.Dropdown/dotnet/CustomWidget.Dropdown.Tests`](../../samples/CustomWidget.Dropdown/dotnet/CustomWidget.Dropdown.Tests/DropdownFacetWidgetTests.cs).
+`samples/CustomWidget.Dropdown/dotnet/CustomWidget.Dropdown.Tests/DropdownFacetWidgetTests.cs`.
 
 #### Registration and services
 
@@ -521,6 +520,6 @@ the asset tag helper.
 - [Search API](search-api.md) — the JSON contract behind `results`.
 - [Widget reference](widget-reference.md) — the built-in widgets, the templating helpers, the XSS model.
 - [Migrating from Algolia](migrating-from-algolia.md) — the name-by-name map, verb by verb.
-- [`samples/CustomWidget.Dropdown`](../../samples/CustomWidget.Dropdown/) — the example above as a
-  buildable project: the widget, the Page Builder view component, jsdom tests for the JavaScript and
+- `samples/CustomWidget.Dropdown` in the library repository — the example above as a buildable
+  project: the widget, the Page Builder view component, jsdom tests for the JavaScript and
   NUnit tests for the C#, all against the packed packages.

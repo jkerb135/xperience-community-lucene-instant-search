@@ -156,6 +156,7 @@ surface:
 | `xps-cluster` | Horizontal flex that wraps, `gap: var(--xps-space)`. |
 | `xps-button` | Button box with a `2.25rem` minimum height. `xps-button--primary` for the accent fill. |
 | `xps-chip` | Removable token: `xps-chip__label`, `xps-chip__attribute`, `xps-chip__remove`. |
+| `xps-select` | Labelled select: `xps-select__label` (a real `<label for>`) and `xps-select__control` (the native `<select>`), plus `xps-select--disabled`. The only themed `<select>` in the product — `sortSelect` renders this same block, and so should your drop-down. |
 | `xps-skeleton` | Loading placeholder, with `--title`, `--text` and `--block` sizes. |
 | `xps-highlight` | The class on `<mark>` elements emitted by the `highlight` template helper. |
 
@@ -171,6 +172,11 @@ params.container.innerHTML = `
     </div>
   </div>`;
 ```
+
+Anything outside this table is a *widget's own* contract (`xps-facet-list__*`, `xps-results__*`) or
+does not exist. `themes/scripts/check.mjs` enforces a three-way agreement between `MARKUP.md`, the
+CSS and the fixtures, and your class names are not in it: use the utilities above, or your own block
+that you style yourself.
 
 ### The verification page
 

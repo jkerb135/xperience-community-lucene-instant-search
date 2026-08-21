@@ -8,6 +8,45 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Fixed:** the worked custom-widget example in `docs/guides/custom-widgets.md`. The previous
+  "dropdown facet in 40 lines" did not typecheck under `strict`, rendered `xps-dropdown__*` class
+  names that exist in neither `MARKUP.md` nor either stylesheet and no `xps` class on its root,
+  derived element ids from `container.id` — empty on a Page Builder mount, so every instance emitted
+  `id="-select"` — interpolated editor text and taxonomy labels into HTML without `escapeHtml`, and
+  broke single-select when two selections happened without an intervening render. The example is now
+  `samples/CustomWidget.Dropdown/src/dropdownFacet.ts` reproduced verbatim, and
+  `samples/pack-and-build.mjs` fails if the guide and the file diverge (ADR-0013).
+- **Fixed:** the npm package now ships what the guides promise a JavaScript-only consumer.
+  `themes/shell.css` and `themes/default.css` are package exports, the dependency-free mock server
+  ships as `mock/server.mjs` with an `xpsearch-mock` bin entry, and `README.md` is in the tarball.
+  `theming.md`'s stylesheet snippet and `js-client.md`'s mock-server instructions match reality;
+  repository-only scripts are prefixed `repo:` so an installed package has no broken `npm run mock`.
+  `"private": true` still blocks publishing (Phase 8) — see KNOWN-LIMITATIONS.
+- **Fixed:** `docs/guides/custom-widgets.md` and `js-client.md` claimed a state change re-renders
+  "the moment they are clicked". It renders on a **microtask**, so several mutations in one handler
+  coalesce into one render and the DOM is current one microtask after `actions` returns, not
+  synchronously. Behaviour unchanged; `src/behaviors/facet-apply.test.ts` pins it, along with what
+  `apply()` does (`toggleFacet(...).search()` — toggle **and** search, two applies to one request).
+- **Added:** `widgetId(container, widget, part)` and `readMountConfig(config, spec)`, exported from
+  the package root. `widgetId` is the single implementation of `MARKUP.md` rule 4 — the instance
+  segment falls back to `data-xps-instance`, then the container id, then `default` — and the four
+  built-ins that hand-rolled an id base now use it. `readMountConfig` narrows the untyped
+  `data-xps-config` values a widget factory receives, which is a trust boundary; a missing or
+  wrong-typed required key throws naming the key and the bootstrap logs it once and skips the mount.
+- **Added:** the shared `xps-select` utility block (`xps-select__label`, `xps-select__control`,
+  `xps-select--disabled`), so a custom widget can render a themed `<select>` without inventing class
+  names or borrowing another widget's. `sortSelect` renders the same block; its
+  `xps-sort-select__label`/`__select` classes are **removed** — a markup-contract change, and
+  semver-major per `MARKUP.md`.
+- **Added:** `samples/CustomWidget.Dropdown` and `samples/pack-and-build.mjs` (`.ps1` entry point),
+  which packs Core/Widgets/Admin and `npm pack`s the client into `samples/.feed/` and then restores,
+  builds, typechecks and tests the sample from that feed alone — so a packaging regression fails a
+  build instead of reaching a customer. `samples/README.md` explains why it is not a project
+  reference.
+- **Added:** `escapeHtml` is documented (`custom-widgets.md` → *Escaping*, `widget-reference.md` →
+  *Templating helpers* and *The XSS model*), and `quick-start.md` gains "Installing from a private
+  feed", including the `packageSourceMapping` entry that is mandatory, not optional, on a machine
+  with source mapping enabled.
 - **Fixed:** taxonomy fields no longer break indexing. The untyped content query result hands a Taxonomy
   column back as the JSON it is stored as, so `GetValue<IEnumerable<TagReference>>` threw
   `InvalidCastException` and took the whole rebuild batch with it — on a Dancing Goat host that meant an

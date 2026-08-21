@@ -314,9 +314,11 @@ sortSelect({
 | `label` | `'Sort by'` | Label text. |
 | `hideLabel` | `false` | Adds `xps-sr-only` to the label; it stays associated. |
 
-Markup: `<div class="xps xps-sort-select">` with `xps-sort-select__label` (`<label for>`) and
-`xps-sort-select__select` (a native `<select name="sort">`). The select is built once and only its
-`value` is patched, so changing the sort does not destroy the element you are using.
+Markup: `<div class="xps xps-sort-select xps-select">` — the widget adds only its identity class and
+renders the shared `xps-select` block, so it is the same `xps-select__label` (`<label for>`) and
+`xps-select__control` (a native `<select name="sort">`) a custom widget renders. The select is built
+once and only its `value` is patched, so changing the sort does not destroy the element you are
+using.
 
 ## `clearFilters`
 
