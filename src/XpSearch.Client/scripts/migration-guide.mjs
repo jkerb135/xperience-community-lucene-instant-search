@@ -1,5 +1,5 @@
 // Renders docs/guides/migrating-from-algolia.md from contract/algolia-map.json and the hand-written
-// preamble in docs/guides/_migrating-from-algolia.template.md.
+// preamble in contract/migrating-from-algolia.template.md.
 //   node scripts/migration-guide.mjs            regenerate in place  (npm run docs:migration)
 //   node scripts/migration-guide.mjs --check    fail on drift        (npm run docs:check)
 //
@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url';
 
 const clientDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const mapPath = resolve(clientDir, '../../contract/algolia-map.json');
-const templatePath = resolve(clientDir, '../../docs/guides/_migrating-from-algolia.template.md');
+const templatePath = resolve(clientDir, '../../contract/migrating-from-algolia.template.md');
 const outPath = resolve(clientDir, '../../docs/guides/migrating-from-algolia.md');
 
 /** Which `kind` values each generated section renders, in order. */
@@ -62,7 +62,7 @@ function render() {
 
   const out = [
     [
-      '<!-- Generated from contract/algolia-map.json and docs/guides/_migrating-from-algolia.template.md',
+      '<!-- Generated from contract/algolia-map.json and contract/migrating-from-algolia.template.md',
       '     by src/XpSearch.Client/scripts/migration-guide.mjs. DO NOT EDIT.',
       '     Regenerate with: npm run docs:migration   CI guard: npm run docs:check -->',
     ].join('\n'),

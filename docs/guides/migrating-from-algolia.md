@@ -1,4 +1,4 @@
-<!-- Generated from contract/algolia-map.json and docs/guides/_migrating-from-algolia.template.md
+<!-- Generated from contract/algolia-map.json and contract/migrating-from-algolia.template.md
      by src/XpSearch.Client/scripts/migration-guide.mjs. DO NOT EDIT.
      Regenerate with: npm run docs:migration   CI guard: npm run docs:check -->
 
