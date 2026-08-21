@@ -18,6 +18,31 @@ export {
 export type { MountConfig, MountWidgetFactory } from './bootstrap';
 export { defaultRouteToState, defaultStateToRoute } from './routing';
 export {
+  clearRefinements,
+  currentRefinements,
+  hits,
+  pagination,
+  refinementList,
+  searchBox,
+  sortBy,
+  stats,
+  toggleRefinement,
+} from './widgets';
+export type {
+  ClearRefinementsWidgetParams,
+  CurrentRefinementsWidgetParams,
+  HitsTemplates,
+  HitsWidgetParams,
+  PaginationWidgetParams,
+  RefinementListWidgetParams,
+  SearchBoxWidgetParams,
+  SortByWidgetParams,
+  StatsWidgetParams,
+  ToggleRefinementWidgetParams,
+} from './widgets';
+export { escapeHtml, formatNumber, highlight, html, render, TemplateResult } from './templates/html';
+export type { Renderable, TemplateHelpers } from './templates/html';
+export {
   API_VERSION,
   API_VERSION_HEADER,
   EVENTS_ROUTE,

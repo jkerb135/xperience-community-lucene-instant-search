@@ -13,6 +13,7 @@
  */
 import { xpsearch } from './instance';
 import type { InstantSearch, Widget, XpSearchOptions } from './types';
+import { DEFAULT_WIDGETS } from './widgets';
 
 /** Config from `data-xps-config`, plus the mount element the widget renders into. */
 export type MountConfig = Record<string, unknown> & { container: HTMLElement };
@@ -60,9 +61,9 @@ export function registerWidgetType(id: string, factory: MountWidgetFactory): voi
   registry.set(id, factory);
 }
 
-/** The factory registered for `id`, if any. */
+/** The factory that `id` resolves to — a registered one, or the built-in of that name. */
 export function getWidgetType(id: string): MountWidgetFactory | undefined {
-  return registry.get(id);
+  return registry.get(id) ?? DEFAULT_WIDGETS[id];
 }
 
 const MOUNTED = 'xpsMounted';
@@ -126,7 +127,9 @@ function buildWidget(element: HTMLElement): Widget | undefined {
     console.error('[xpsearch] .xps-mount element without data-xps-widget; skipping.', element);
     return undefined;
   }
-  const factory = registry.get(type);
+  // A registered factory wins over the built-in of the same name, which is what makes
+  // `registerWidgetType('hits', …)` a supported override rather than a collision.
+  const factory = registry.get(type) ?? DEFAULT_WIDGETS[type];
   if (!factory) {
     console.error(
       `[xpsearch] unknown widget type "${type}"; skipping. Register it with registerWidgetType("${type}", factory) before the bootstrap runs.`,
