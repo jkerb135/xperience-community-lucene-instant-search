@@ -1,6 +1,6 @@
 # ADR-0007: JavaScript client architecture
 
-- **Status:** accepted
+- **Status:** accepted; amended by ADR-0010 (API names and result shape change — see the owned-contract amendment)
 - **Date:** 2026-08-21
 - **Spec reference:** §5.1, §5.2, §5.5, §5.7, §5.9
 

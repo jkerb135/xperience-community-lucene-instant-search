@@ -1,6 +1,6 @@
-# Spec amendment — owned contract and API naming (PROPOSED)
+# Spec amendment — owned contract and API naming (ACCEPTED)
 
-- **Status:** proposed — awaiting owner approval
+- **Status:** accepted — owner approval 2026-08-21; implemented by unit CR-1 after core-api and js-widgets merge
 - **Date:** 2026-08-21
 - **Amends:** §4.2 (contract note, request/response), §4.3, §5.2, §5.3, §5.7 (names only), §6 class names, §7.1 mount attribute values, §9.1 event payload, §11.3 ("Migrating from Algolia" deliverable)
 - **ADR:** [ADR-0010](../../adr/0010-owned-contract.md) (supersedes ADR-0006 on acceptance; amends ADR-0007)

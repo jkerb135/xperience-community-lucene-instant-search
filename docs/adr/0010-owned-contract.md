@@ -1,6 +1,6 @@
 # ADR-0010: the contract and JS API are owned, not an Algolia mirror
 
-- **Status:** proposed — awaiting owner approval; supersedes ADR-0006 and amends ADR-0007 on acceptance
+- **Status:** accepted — owner approval 2026-08-21; supersedes ADR-0006, amends ADR-0007
 - **Date:** 2026-08-21
 - **Spec reference:** §4.2, §4.3, §5.2, §5.3, §5.7, §6, §9.1, §11.3 — see the [spec amendment](../spec/amendments/2026-08-21-owned-contract.md)
 
