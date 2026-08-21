@@ -1,0 +1,7 @@
+<Project>
+
+  <!-- Deliberately empty: it stops MSBuild walking up to the repository's Directory.Build.props.
+       The samples are third-party consumers and must build with a customer's defaults, not with
+       the library's shared TreatWarningsAsErrors/Version/NoWarn settings. -->
+
+</Project>
