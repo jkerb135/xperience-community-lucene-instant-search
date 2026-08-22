@@ -8,6 +8,31 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Added:** relevance tuning (spec §8). A new **Search tuning** administration application, under
+  *Development*, with listings and editing pages for rules, synonyms, stopwords and field weights,
+  built entirely on the built-in listing and edit UI page templates — no custom React. Four custom
+  module classes (`XpSearch.Rule`, `XpSearch.Synonym`, `XpSearch.FieldWeight`,
+  `XpSearch.StopwordList`) are installed on startup under their own module,
+  `CMS.Integration.XpSearchTuning`. Rules pin, bury, boost or filter results, with a
+  `Contains`/`Exact`/`StartsWith`/`Always` condition, an optional `Runs from`/`Runs until` schedule and
+  a priority; conflicts resolve by priority then rule id, and for pin and bury the first rule to name
+  a result wins. A pinned result the query did not match is injected only if it still matches the
+  active filters. `explain=true` now fills `ranking.boosts` with `rule:<name>`, `weight:<field>×<w>`
+  and `synonym:<term>` entries. See `docs/guides/relevance-tuning.md` and ADR-0014.
+- **Added:** `XpSearch.Core.Tuning.IRelevanceTuningSource` and the four query-pipeline stages that
+  read it — `SynonymExpansionStage` (200), `StopwordRemovalStage` (300), `BoostRulesStage` (700) and
+  `PinnedAndBuriedStage` (900). Core registers an empty source, so search behaves exactly as before
+  without `XpSearch.Admin`; `services.AddXpSearchAdmin()` swaps in the database-backed one, cached per
+  index through `IProgressiveCache` and invalidated by the object types' own cache dependencies
+  (spec §8.5).
+- **Added:** the ingestion admin surface (spec §10.8) inside the same application — an **API keys**
+  listing with a create page that shows the plaintext key exactly once, an **Index status** page with
+  document counts by source, the last external write and a rebuild trigger, and an **Ingestion log**
+  listing filtered by index and ordered newest first. `XpSearch.Admin` now references
+  `XpSearch.Ingestion`; the reasoning is in ADR-0014.
+- **Not yet:** redirect rules are stored but not applied — the JSON contract has no redirect member
+  (KNOWN-LIMITATIONS). The query tester (spec §8.4) is still pending.
+
 - **Added:** search analytics (spec §9). Four custom activity types (`xpsearch_query`,
   `xpsearch_noresults`, `xpsearch_click`, `xpsearch_conversion`) are created on startup and logged
   through `ICustomActivityLogger` for visitors whose cookie level is *Visitor* or higher — below that
