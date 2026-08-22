@@ -1,10 +1,11 @@
-﻿using CMS.DataEngine;
+using CMS.DataEngine;
 
 using Kentico.Xperience.Admin.Base;
 using Kentico.Xperience.Admin.Base.FormAnnotations;
 using Kentico.Xperience.Admin.Base.Forms;
 using Kentico.Xperience.Admin.Base.Forms.Internal;
 
+using Kentico.Xperience.Lucene.Admin;
 using Kentico.Xperience.Lucene.Core.Indexing;
 
 using XpSearch.Admin.Persistence;
@@ -12,12 +13,12 @@ using XpSearch.Admin.UIPages;
 using XpSearch.Core.Tuning;
 
 [assembly: UIPage(
-    parentType: typeof(SearchTuningApplication),
+    parentType: typeof(IndexTuningSection),
     slug: "rules",
     uiPageType: typeof(RuleListing),
     name: "Rules",
     templateName: TemplateNames.LISTING,
-    order: 100)]
+    order: 200)]
 
 [assembly: UIPage(
     parentType: typeof(RuleListing),
@@ -46,11 +47,10 @@ using XpSearch.Core.Tuning;
 namespace XpSearch.Admin.UIPages;
 
 /// <summary>The form a marketer fills in to describe a relevance rule (spec §8.2).</summary>
-public class RuleModel
+public class RuleModel : IIndexScopedModel
 {
-    /// <summary>Gets or sets the code name of the index the rule applies to.</summary>
-    [RequiredValidationRule]
-    [DropDownComponent(Label = "Index", Order = 1, Tooltip = "Which search index this rule applies to.")]
+    /// <summary>Gets or sets the code name of the index the rule applies to. Set from the URL, not editable.</summary>
+    [TextInputComponent(Label = "Index", Order = 1, Tooltip = "The search index this rule applies to.")]
     public string IndexName { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the display name; it is what an explained result shows.</summary>
@@ -175,22 +175,35 @@ public class RuleModel
 /// <summary>Lists the relevance rules (spec §8.1).</summary>
 public class RuleListing : ListingPage
 {
+    private readonly ILuceneConfigurationStorageService storageService;
+
+    /// <summary>Initializes a new instance of the <see cref="RuleListing"/> class.</summary>
+    /// <param name="storageService">Reads the stored index configuration, to resolve the index in the URL.</param>
+    public RuleListing(ILuceneConfigurationStorageService storageService) => this.storageService = storageService;
+
+    /// <summary>Gets or sets the identifier of the index the listing is scoped to, taken from the URL.</summary>
+    [PageParameter(typeof(IntPageModelBinder), typeof(IndexEditPage))]
+    public int IndexIdentifier { get; set; }
+
     /// <inheritdoc />
     protected override string ObjectType => XpSearchRuleInfo.OBJECT_TYPE;
 
     /// <inheritdoc />
     public override Task ConfigurePage()
     {
+        string indexName = IndexScope.Resolve(storageService, IndexIdentifier);
+
         PageConfiguration.ColumnConfigurations
             .AddColumn(nameof(XpSearchRuleInfo.RuleName), "Rule", searchable: true)
-            .AddColumn(nameof(XpSearchRuleInfo.RuleIndexName), "Index", searchable: true)
             .AddColumn(nameof(XpSearchRuleInfo.RulePattern), "Words to look for")
             .AddColumn(nameof(XpSearchRuleInfo.RulePriority), "Priority", sortable: true)
             .AddColumn(nameof(XpSearchRuleInfo.RuleEnabled), "Enabled");
 
-        PageConfiguration.HeaderActions.AddLink<RuleCreate>("New rule");
-        PageConfiguration.AddEditRowAction<RuleEdit>();
+        PageConfiguration.HeaderActions.AddLink<RuleCreate>("New rule", parameters: IndexScope.Route(IndexIdentifier));
+        PageConfiguration.AddEditRowAction<RuleEdit>(parameters: IndexScope.Route(IndexIdentifier));
         PageConfiguration.TableActions.AddDeleteAction(nameof(Delete), "Delete");
+        PageConfiguration.QueryModifiers.AddModifier((query, _) =>
+            query.WhereEquals(nameof(XpSearchRuleInfo.RuleIndexName), indexName));
 
         return base.ConfigurePage();
     }
@@ -202,28 +215,31 @@ public class RuleEditSection : EditSectionPage<XpSearchRuleInfo>
 }
 
 /// <summary>Edits one relevance rule.</summary>
-public class RuleEdit : TuningEditPage<RuleModel>
+public class RuleEdit : IndexScopedEditPage<RuleModel>
 {
     private readonly IInfoProvider<XpSearchRuleInfo> provider;
 
     /// <summary>Initializes a new instance of the <see cref="RuleEdit"/> class.</summary>
     /// <param name="formItemCollectionProvider">Builds the form components.</param>
     /// <param name="formDataBinder">Binds the submitted values.</param>
-    /// <param name="indexManager">The integration's index registry.</param>
+    /// <param name="storageService">Reads the stored index configuration.</param>
     /// <param name="pageLinkGenerator">Generates admin URLs.</param>
     /// <param name="provider">Provider of rule objects.</param>
     public RuleEdit(
         IFormItemCollectionProvider formItemCollectionProvider,
         IFormDataBinder formDataBinder,
-        ILuceneIndexManager indexManager,
+        ILuceneConfigurationStorageService storageService,
         IPageLinkGenerator pageLinkGenerator,
         IInfoProvider<XpSearchRuleInfo> provider)
-        : base(formItemCollectionProvider, formDataBinder, indexManager, pageLinkGenerator) =>
+        : base(formItemCollectionProvider, formDataBinder, storageService, pageLinkGenerator) =>
         this.provider = provider;
 
     /// <summary>Gets or sets the identifier of the edited rule, taken from the URL.</summary>
-    [PageParameter(typeof(IntPageModelBinder))]
+    [PageParameter(typeof(IntPageModelBinder), typeof(RuleEditSection))]
     public int ObjectId { get; set; }
+
+    /// <inheritdoc />
+    protected override string? EditedIndexName => provider.Get(ObjectId)?.RuleIndexName;
 
     /// <inheritdoc />
     protected override RuleModel CreateModel() =>
@@ -243,31 +259,30 @@ public class RuleEdit : TuningEditPage<RuleModel>
 }
 
 /// <summary>Creates a relevance rule.</summary>
-public class RuleCreate : TuningEditPage<RuleModel>
+public class RuleCreate : IndexScopedEditPage<RuleModel>
 {
     private readonly IInfoProvider<XpSearchRuleInfo> provider;
 
     /// <summary>Initializes a new instance of the <see cref="RuleCreate"/> class.</summary>
     /// <param name="formItemCollectionProvider">Builds the form components.</param>
     /// <param name="formDataBinder">Binds the submitted values.</param>
-    /// <param name="indexManager">The integration's index registry.</param>
+    /// <param name="storageService">Reads the stored index configuration.</param>
     /// <param name="pageLinkGenerator">Generates admin URLs.</param>
     /// <param name="provider">Provider of rule objects.</param>
     public RuleCreate(
         IFormItemCollectionProvider formItemCollectionProvider,
         IFormDataBinder formDataBinder,
-        ILuceneIndexManager indexManager,
+        ILuceneConfigurationStorageService storageService,
         IPageLinkGenerator pageLinkGenerator,
         IInfoProvider<XpSearchRuleInfo> provider)
-        : base(formItemCollectionProvider, formDataBinder, indexManager, pageLinkGenerator) =>
+        : base(formItemCollectionProvider, formDataBinder, storageService, pageLinkGenerator) =>
         this.provider = provider;
 
     /// <inheritdoc />
     protected override Type? RedirectTo => typeof(RuleListing);
 
     /// <inheritdoc />
-    protected override RuleModel CreateModel() =>
-        new() { IndexName = IndexNames().FirstOrDefault() ?? string.Empty };
+    protected override RuleModel CreateModel() => new();
 
     /// <inheritdoc />
     protected override Task<string> PersistAsync(RuleModel submitted, CancellationToken cancellationToken)

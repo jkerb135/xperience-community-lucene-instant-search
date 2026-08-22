@@ -8,9 +8,6 @@ namespace XpSearch.Admin.UIPages.QueryTester;
 /// <summary>What the client asks the query tester to run (spec §8.4).</summary>
 public sealed class QueryTesterRequest
 {
-    /// <summary>Gets or sets the code name of the index to search.</summary>
-    public string IndexName { get; set; } = string.Empty;
-
     /// <summary>Gets or sets the query to test. An empty query matches everything.</summary>
     public string Query { get; set; } = string.Empty;
 

@@ -13,38 +13,37 @@ using XpSearch.Admin.UIPages;
 using XpSearch.Ingestion.Abstractions;
 
 [assembly: UIPage(
-    parentType: typeof(SearchTuningApplication),
-    slug: "index-status",
+    parentType: typeof(IndexTuningSection),
+    slug: "status",
     uiPageType: typeof(IndexStatusPage),
-    name: "Index status",
+    name: "Status",
     templateName: TemplateNames.EDIT,
-    order: 600)]
+    order: 800)]
 
 namespace XpSearch.Admin.UIPages;
 
-/// <summary>The index status page's form: what every index holds, and which one to rebuild.</summary>
-public class IndexStatusModel
+/// <summary>The index status page's form: what this index holds, and the rebuild trigger.</summary>
+public class IndexStatusModel : IIndexScopedModel
 {
-    /// <summary>Gets or sets the read-only report of every index.</summary>
-    [TextAreaComponent(Label = "Indexes", Order = 1)]
-    public string Report { get; set; } = string.Empty;
-
-    /// <summary>Gets or sets the index the rebuild command applies to.</summary>
-    [RequiredValidationRule]
-    [DropDownComponent(Label = "Index to rebuild", Order = 2)]
+    /// <summary>Gets or sets the code name of the index. Set from the URL, not editable.</summary>
+    [TextInputComponent(Label = "Index", Order = 1)]
     public string IndexName { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the read-only report of the index.</summary>
+    [TextAreaComponent(Label = "Contents", Order = 2)]
+    public string Report { get; set; } = string.Empty;
 }
 
 /// <summary>
-/// Document counts by source, the last external write and a rebuild trigger (spec §10.8).
+/// Document counts by source, the last external write and a rebuild trigger for one index (spec §10.8).
 /// </summary>
 /// <remarks>
 /// The built-in listing template can only list a registered object type, and index status is derived
-/// from <c>ILuceneIndexManager</c> and the ingestion store rather than stored in a table. Rather than
-/// write a React listing, the page reports every index in a read-only text area and uses the edit
+/// from the search index and the ingestion store rather than stored in a table. Rather than
+/// write a React listing, the page reports the index in a read-only text area and uses the edit
 /// template's submit action as the rebuild trigger. See ADR-0014.
 /// </remarks>
-public class IndexStatusPage : TuningEditPage<IndexStatusModel>
+public class IndexStatusPage : IndexScopedEditPage<IndexStatusModel>
 {
     private readonly IXpSearchIndexer indexer;
     private readonly ILuceneClient client;
@@ -53,7 +52,7 @@ public class IndexStatusPage : TuningEditPage<IndexStatusModel>
     /// <summary>Initializes a new instance of the <see cref="IndexStatusPage"/> class.</summary>
     /// <param name="formItemCollectionProvider">Builds the form components.</param>
     /// <param name="formDataBinder">Binds the submitted values.</param>
-    /// <param name="indexManager">The integration's index registry.</param>
+    /// <param name="storageService">Reads the stored index configuration.</param>
     /// <param name="pageLinkGenerator">Generates admin URLs.</param>
     /// <param name="indexer">Reads document counts and health per index.</param>
     /// <param name="client">The integration's index writer, decorated so a rebuild replays external documents.</param>
@@ -61,12 +60,12 @@ public class IndexStatusPage : TuningEditPage<IndexStatusModel>
     public IndexStatusPage(
         IFormItemCollectionProvider formItemCollectionProvider,
         IFormDataBinder formDataBinder,
-        ILuceneIndexManager indexManager,
+        ILuceneConfigurationStorageService storageService,
         IPageLinkGenerator pageLinkGenerator,
         IXpSearchIndexer indexer,
         ILuceneClient client,
         IIngestionLog log)
-        : base(formItemCollectionProvider, formDataBinder, indexManager, pageLinkGenerator)
+        : base(formItemCollectionProvider, formDataBinder, storageService, pageLinkGenerator)
     {
         this.indexer = indexer;
         this.client = client;
@@ -89,12 +88,7 @@ public class IndexStatusPage : TuningEditPage<IndexStatusModel>
     }
 
     /// <inheritdoc />
-    protected override IndexStatusModel CreateModel() =>
-        new()
-        {
-            Report = BuildReport(),
-            IndexName = IndexNames().FirstOrDefault() ?? string.Empty
-        };
+    protected override IndexStatusModel CreateModel() => new() { Report = BuildReport() };
 
     /// <inheritdoc />
     protected override async Task<ICollection<IFormItem>> GetFormItems()
@@ -116,39 +110,40 @@ public class IndexStatusPage : TuningEditPage<IndexStatusModel>
 
         // The registered ILuceneClient is the ingestion package's decorator, so externally pushed
         // documents are replayed after the integration wipes the index (spec §10.2).
-        await client.Rebuild(submitted.IndexName, cancellationToken).ConfigureAwait(false);
+        await client.Rebuild(IndexName, cancellationToken).ConfigureAwait(false);
 
         await log.WriteAsync(
-            new IngestionLogEntry("admin-ui", submitted.IndexName, "rebuild", 0, true, "Rebuild triggered from the Search tuning application.", DateTime.UtcNow),
+            new IngestionLogEntry("admin-ui", IndexName, "rebuild", 0, true, "Rebuild triggered from the index tuning pages.", DateTime.UtcNow),
             cancellationToken)
             .ConfigureAwait(false);
 
-        return $"Rebuild of '{submitted.IndexName}' triggered.";
+        return $"Rebuild of '{IndexName}' triggered.";
     }
 
     private string BuildReport()
     {
-        var report = new StringBuilder();
-
-        foreach (string index in IndexNames())
+        if (string.IsNullOrEmpty(IndexName))
         {
-            var status = indexer.GetStatusAsync(index, CancellationToken.None).GetAwaiter().GetResult();
-
-            report.Append(CultureInfo.InvariantCulture, $"{index}: {status.Documents?.Total ?? 0} documents, health {status.Health}");
-
-            if (status.LastWrite is { } lastWrite)
-            {
-                report.Append(CultureInfo.InvariantCulture, $", last external write {lastWrite:u}");
-            }
-
-            report.AppendLine();
-
-            foreach ((string source, long count) in status.Documents?.BySource ?? [])
-            {
-                report.AppendLine(CultureInfo.InvariantCulture, $"    {source}: {count}");
-            }
+            return "This index is not registered.";
         }
 
-        return report.Length == 0 ? "No search indexes are registered." : report.ToString();
+        var status = indexer.GetStatusAsync(IndexName, CancellationToken.None).GetAwaiter().GetResult();
+        var report = new StringBuilder();
+
+        report.Append(CultureInfo.InvariantCulture, $"{status.Documents?.Total ?? 0} documents, health {status.Health}");
+
+        if (status.LastWrite is { } lastWrite)
+        {
+            report.Append(CultureInfo.InvariantCulture, $", last external write {lastWrite:u}");
+        }
+
+        report.AppendLine();
+
+        foreach ((string source, long count) in status.Documents?.BySource ?? [])
+        {
+            report.AppendLine(CultureInfo.InvariantCulture, $"    {source}: {count}");
+        }
+
+        return report.ToString();
     }
 }

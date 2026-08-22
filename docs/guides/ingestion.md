@@ -107,8 +107,9 @@ existence, so an out-of-scope key never learns whether an index exists. `["*"]` 
 wildcard. Every write is recorded in the ingestion log with the key prefix, the index, the document
 count and the outcome.
 
-Creating keys from the admin UI is part of the Search tuning application and is not built yet; today
-you create them from code, once, and hand the plaintext to the integration.
+Keys are created in the administration, in **Search ingestion → API keys** (under *Development*).
+The plaintext is shown once, in the message at the top of the screen, and never again. You can also
+create them from code, once, and hand the plaintext to the integration.
 
 ### Schemas
 
@@ -245,7 +246,9 @@ Nothing is ever silently truncated.
 
 ### What is not here yet
 
-- Admin UI for keys, schemas, index status and the ingestion log (Search tuning application).
+- Admin UI for schemas; schemas are declared in code on the indexing strategy. Keys and the
+  ingestion log are in the **Search ingestion** application; index status is per index, at
+  **Lucene Search → indexes → *index* → Tuning → Status**.
 - The C# and Node convenience clients; today it is one `fetch` or one `HttpClient` call per request.
 - Facet **counts** for pushed documents: they are filterable on `string[]` attributes, but the taxonomy
   sidecar the counts come from is only written for Xperience content.

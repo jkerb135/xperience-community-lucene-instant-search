@@ -5,18 +5,19 @@ using Kentico.Xperience.Admin.Base.FormAnnotations;
 using Kentico.Xperience.Admin.Base.Forms;
 using Kentico.Xperience.Admin.Base.Forms.Internal;
 
+using Kentico.Xperience.Lucene.Admin;
 using Kentico.Xperience.Lucene.Core.Indexing;
 
 using XpSearch.Admin.Persistence;
 using XpSearch.Admin.UIPages;
 
 [assembly: UIPage(
-    parentType: typeof(SearchTuningApplication),
+    parentType: typeof(IndexTuningSection),
     slug: "synonyms",
     uiPageType: typeof(SynonymListing),
     name: "Synonyms",
     templateName: TemplateNames.LISTING,
-    order: 200)]
+    order: 300)]
 
 [assembly: UIPage(
     parentType: typeof(SynonymListing),
@@ -45,11 +46,10 @@ using XpSearch.Admin.UIPages;
 namespace XpSearch.Admin.UIPages;
 
 /// <summary>The form behind one synonym group (spec §8.2).</summary>
-public class SynonymModel
+public class SynonymModel : IIndexScopedModel
 {
-    /// <summary>Gets or sets the code name of the index the group applies to.</summary>
-    [RequiredValidationRule]
-    [DropDownComponent(Label = "Index", Order = 1)]
+    /// <summary>Gets or sets the code name of the index the group applies to. Set from the URL, not editable.</summary>
+    [TextInputComponent(Label = "Index", Order = 1)]
     public string IndexName { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the direction, as the numeric value of <see cref="Core.Tuning.SynonymDirection"/>.</summary>
@@ -109,21 +109,34 @@ public class SynonymModel
 /// <summary>Lists the synonym groups (spec §8.1).</summary>
 public class SynonymListing : ListingPage
 {
+    private readonly ILuceneConfigurationStorageService storageService;
+
+    /// <summary>Initializes a new instance of the <see cref="SynonymListing"/> class.</summary>
+    /// <param name="storageService">Reads the stored index configuration, to resolve the index in the URL.</param>
+    public SynonymListing(ILuceneConfigurationStorageService storageService) => this.storageService = storageService;
+
+    /// <summary>Gets or sets the identifier of the index the listing is scoped to, taken from the URL.</summary>
+    [PageParameter(typeof(IntPageModelBinder), typeof(IndexEditPage))]
+    public int IndexIdentifier { get; set; }
+
     /// <inheritdoc />
     protected override string ObjectType => XpSearchSynonymInfo.OBJECT_TYPE;
 
     /// <inheritdoc />
     public override Task ConfigurePage()
     {
+        string indexName = IndexScope.Resolve(storageService, IndexIdentifier);
+
         PageConfiguration.ColumnConfigurations
             .AddColumn(nameof(XpSearchSynonymInfo.SynonymInput), "Words", searchable: true)
             .AddColumn(nameof(XpSearchSynonymInfo.SynonymOutput), "Replacements")
-            .AddColumn(nameof(XpSearchSynonymInfo.SynonymIndexName), "Index", searchable: true)
             .AddColumn(nameof(XpSearchSynonymInfo.SynonymEnabled), "Enabled");
 
-        PageConfiguration.HeaderActions.AddLink<SynonymCreate>("New synonym");
-        PageConfiguration.AddEditRowAction<SynonymEdit>();
+        PageConfiguration.HeaderActions.AddLink<SynonymCreate>("New synonym", parameters: IndexScope.Route(IndexIdentifier));
+        PageConfiguration.AddEditRowAction<SynonymEdit>(parameters: IndexScope.Route(IndexIdentifier));
         PageConfiguration.TableActions.AddDeleteAction(nameof(Delete), "Delete");
+        PageConfiguration.QueryModifiers.AddModifier((query, _) =>
+            query.WhereEquals(nameof(XpSearchSynonymInfo.SynonymIndexName), indexName));
 
         return base.ConfigurePage();
     }
@@ -135,28 +148,31 @@ public class SynonymEditSection : EditSectionPage<XpSearchSynonymInfo>
 }
 
 /// <summary>Edits one synonym group.</summary>
-public class SynonymEdit : TuningEditPage<SynonymModel>
+public class SynonymEdit : IndexScopedEditPage<SynonymModel>
 {
     private readonly IInfoProvider<XpSearchSynonymInfo> provider;
 
     /// <summary>Initializes a new instance of the <see cref="SynonymEdit"/> class.</summary>
     /// <param name="formItemCollectionProvider">Builds the form components.</param>
     /// <param name="formDataBinder">Binds the submitted values.</param>
-    /// <param name="indexManager">The integration's index registry.</param>
+    /// <param name="storageService">Reads the stored index configuration.</param>
     /// <param name="pageLinkGenerator">Generates admin URLs.</param>
     /// <param name="provider">Provider of synonym objects.</param>
     public SynonymEdit(
         IFormItemCollectionProvider formItemCollectionProvider,
         IFormDataBinder formDataBinder,
-        ILuceneIndexManager indexManager,
+        ILuceneConfigurationStorageService storageService,
         IPageLinkGenerator pageLinkGenerator,
         IInfoProvider<XpSearchSynonymInfo> provider)
-        : base(formItemCollectionProvider, formDataBinder, indexManager, pageLinkGenerator) =>
+        : base(formItemCollectionProvider, formDataBinder, storageService, pageLinkGenerator) =>
         this.provider = provider;
 
     /// <summary>Gets or sets the identifier of the edited group, taken from the URL.</summary>
-    [PageParameter(typeof(IntPageModelBinder))]
+    [PageParameter(typeof(IntPageModelBinder), typeof(SynonymEditSection))]
     public int ObjectId { get; set; }
+
+    /// <inheritdoc />
+    protected override string? EditedIndexName => provider.Get(ObjectId)?.SynonymIndexName;
 
     /// <inheritdoc />
     protected override SynonymModel CreateModel() =>
@@ -174,31 +190,30 @@ public class SynonymEdit : TuningEditPage<SynonymModel>
 }
 
 /// <summary>Creates a synonym group.</summary>
-public class SynonymCreate : TuningEditPage<SynonymModel>
+public class SynonymCreate : IndexScopedEditPage<SynonymModel>
 {
     private readonly IInfoProvider<XpSearchSynonymInfo> provider;
 
     /// <summary>Initializes a new instance of the <see cref="SynonymCreate"/> class.</summary>
     /// <param name="formItemCollectionProvider">Builds the form components.</param>
     /// <param name="formDataBinder">Binds the submitted values.</param>
-    /// <param name="indexManager">The integration's index registry.</param>
+    /// <param name="storageService">Reads the stored index configuration.</param>
     /// <param name="pageLinkGenerator">Generates admin URLs.</param>
     /// <param name="provider">Provider of synonym objects.</param>
     public SynonymCreate(
         IFormItemCollectionProvider formItemCollectionProvider,
         IFormDataBinder formDataBinder,
-        ILuceneIndexManager indexManager,
+        ILuceneConfigurationStorageService storageService,
         IPageLinkGenerator pageLinkGenerator,
         IInfoProvider<XpSearchSynonymInfo> provider)
-        : base(formItemCollectionProvider, formDataBinder, indexManager, pageLinkGenerator) =>
+        : base(formItemCollectionProvider, formDataBinder, storageService, pageLinkGenerator) =>
         this.provider = provider;
 
     /// <inheritdoc />
     protected override Type? RedirectTo => typeof(SynonymListing);
 
     /// <inheritdoc />
-    protected override SynonymModel CreateModel() =>
-        new() { IndexName = IndexNames().FirstOrDefault() ?? string.Empty };
+    protected override SynonymModel CreateModel() => new();
 
     /// <inheritdoc />
     protected override Task<string> PersistAsync(SynonymModel submitted, CancellationToken cancellationToken)

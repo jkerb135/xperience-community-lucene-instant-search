@@ -8,6 +8,7 @@ using NSubstitute;
 
 using NUnit.Framework;
 
+using XpSearch.Admin.UIPages;
 using XpSearch.Admin.UIPages.Analytics;
 using XpSearch.Core.Analytics;
 
@@ -17,6 +18,8 @@ namespace XpSearch.Admin.Tests;
 [TestFixture]
 internal sealed class AnalyticsDashboardPageTests
 {
+    private const int IndexIdentifier = 7;
+
     private ISearchAnalyticsService analytics = null!;
     private IPageLinkGenerator links = null!;
     private AnalyticsDashboardPage page = null!;
@@ -31,10 +34,13 @@ internal sealed class AnalyticsDashboardPageTests
         links.GetPath<ZeroResultRuleCreatePage>(Arg.Any<PageParameterValues>()).Returns("/admin/xpsearch-tuning/analytics/SEED");
 
         page = new AnalyticsDashboardPage(
-            Substitute.For<ILuceneIndexManager>(),
+            Storage.Holding(IndexIdentifier, "articles"),
             analytics,
             links,
-            new FakeTime(new DateTime(2026, 8, 21, 10, 0, 0, DateTimeKind.Utc)));
+            new FakeTime(new DateTime(2026, 8, 21, 10, 0, 0, DateTimeKind.Utc)))
+        {
+            IndexIdentifier = IndexIdentifier
+        };
     }
 
     [Test]
@@ -61,7 +67,7 @@ internal sealed class AnalyticsDashboardPageTests
     public async Task Load_PassesTheWholeLastDayOfTheRangeAndClampsTheLimit()
     {
         await page.Load(
-            new AnalyticsRequest { IndexName = "articles", From = "2026-08-01", To = "2026-08-21", Limit = 5000 },
+            new AnalyticsRequest { From = "2026-08-01", To = "2026-08-21", Limit = 5000 },
             CancellationToken.None);
 
         var query = (SearchAnalyticsQuery)analytics.ReceivedCalls().Single().GetArguments()[0]!;
@@ -93,14 +99,16 @@ internal sealed class AnalyticsDashboardPageTests
     [Test]
     public async Task CreateRule_DeepLinksToTheCreatePageWithTheQuerySeeded()
     {
-        var response = await page.CreateRule(new CreateRuleRequest { IndexName = "articles", Query = "cold brew / iced" });
+        var response = await page.CreateRule(new CreateRuleRequest { Query = "cold brew / iced" });
 
-        var seed = (PageParameterValues)links.ReceivedCalls().Single().GetArguments()[0]!;
-        seed.TryGetValue(typeof(ZeroResultRuleCreatePage), out object? value);
+        var parameters = (PageParameterValues)links.ReceivedCalls().Single().GetArguments()[0]!;
+        parameters.TryGetValue(typeof(ZeroResultRuleCreatePage), out object? seed);
+        parameters.TryGetValue(typeof(Kentico.Xperience.Lucene.Admin.IndexEditPage), out object? index);
 
         Expect.Multiple(() =>
         {
-            Assert.That(RuleSeed.Decode(value as string), Is.EqualTo(("articles", "cold brew / iced")));
+            Assert.That(RuleSeed.Decode(seed as string), Is.EqualTo(("articles", "cold brew / iced")));
+            Assert.That(index, Is.EqualTo(IndexIdentifier), "the create page also needs the index segment of the URL");
             Assert.That(response, Is.Not.Null);
         });
     }
@@ -114,6 +122,21 @@ internal sealed class AnalyticsDashboardPageTests
             Assert.That(RuleSeed.Decode(ZeroResultRuleCreatePage.EmptySeed), Is.EqualTo((string.Empty, string.Empty)));
             Assert.That(RuleSeed.Decode("not base64 at all!"), Is.EqualTo((string.Empty, string.Empty)));
             Assert.That(RuleSeed.Encode("articles", "cold brew / iced"), Does.Not.Contain("/").And.Not.Contain("+").And.Not.Contain("="));
+        });
+    }
+
+    /// <summary>The dashboard reports on the index in the URL, and says so to the client template.</summary>
+    [Test]
+    public async Task ConfigureTemplateProperties_LocksTheIndexToTheOneInTheUrl()
+    {
+        var properties = await page.ConfigureTemplateProperties(new AnalyticsDashboardClientProperties());
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(properties.SelectedIndexName, Is.EqualTo("articles"));
+            Assert.That(properties.IndexNames, Is.EqualTo(new[] { "articles" }));
+            Assert.That(properties.IndexLocked, Is.True);
+            Assert.That(properties.Today, Is.EqualTo("2026-08-21"));
         });
     }
 
@@ -147,7 +170,7 @@ internal sealed class AnalyticsDashboardPageTests
             .Single();
 
     private static AnalyticsRequest Request() =>
-        new() { IndexName = "articles", From = "2026-08-01", To = "2026-08-21", Limit = 20 };
+        new() { From = "2026-08-01", To = "2026-08-21", Limit = 20 };
 
     private static SearchAnalyticsReport Report() =>
         new(

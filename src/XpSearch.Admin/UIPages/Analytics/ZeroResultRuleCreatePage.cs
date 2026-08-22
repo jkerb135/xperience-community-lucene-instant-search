@@ -43,16 +43,16 @@ public class ZeroResultRuleCreatePage : RuleCreate
     /// <summary>Initializes a new instance of the <see cref="ZeroResultRuleCreatePage"/> class.</summary>
     /// <param name="formItemCollectionProvider">Builds the form components.</param>
     /// <param name="formDataBinder">Binds the submitted values.</param>
-    /// <param name="indexManager">The integration's index registry.</param>
+    /// <param name="storageService">Reads the stored index configuration.</param>
     /// <param name="pageLinkGenerator">Generates admin URLs.</param>
     /// <param name="provider">Provider of rule objects.</param>
     public ZeroResultRuleCreatePage(
         IFormItemCollectionProvider formItemCollectionProvider,
         IFormDataBinder formDataBinder,
-        ILuceneIndexManager indexManager,
+        ILuceneConfigurationStorageService storageService,
         IPageLinkGenerator pageLinkGenerator,
         IInfoProvider<XpSearchRuleInfo> provider)
-        : base(formItemCollectionProvider, formDataBinder, indexManager, pageLinkGenerator, provider)
+        : base(formItemCollectionProvider, formDataBinder, storageService, pageLinkGenerator, provider)
     {
     }
 
@@ -64,12 +64,9 @@ public class ZeroResultRuleCreatePage : RuleCreate
     protected override RuleModel CreateModel()
     {
         var model = base.CreateModel();
-        (string indexName, string query) = RuleSeed.Decode(Seed);
 
-        if (!string.IsNullOrEmpty(indexName))
-        {
-            model.IndexName = indexName;
-        }
+        // The index comes from the URL's index segment; only the query part of the seed is used.
+        (_, string query) = RuleSeed.Decode(Seed);
 
         model.Pattern = query;
         model.Name = string.IsNullOrEmpty(query) ? model.Name : $"Rule for '{query}'";
