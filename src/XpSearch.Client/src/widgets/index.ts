@@ -13,6 +13,9 @@ import { searchBox } from './searchBox';
 import { sortSelect } from './sortSelect';
 import { resultStats } from './resultStats';
 import { toggleFilter } from './toggleFilter';
+import { rangeFilter } from './rangeFilter';
+import { loadMore } from './loadMore';
+import { suggestions } from './suggestions';
 
 export { clearFilters, activeFilters } from './activeFilters';
 export type {
@@ -33,6 +36,12 @@ export { resultStats } from './resultStats';
 export type { ResultStatsWidgetParams } from './resultStats';
 export { toggleFilter } from './toggleFilter';
 export type { ToggleFilterWidgetParams } from './toggleFilter';
+export { rangeFilter } from './rangeFilter';
+export type { RangeFilterWidgetParams } from './rangeFilter';
+export { loadMore } from './loadMore';
+export type { LoadMoreWidgetParams } from './loadMore';
+export { suggestions } from './suggestions';
+export type { SuggestionsWidgetParams } from './suggestions';
 
 /**
  * `data-xps-config` is JSON: its shape is only known at runtime, so the one cast in this file
@@ -46,7 +55,11 @@ const fromMount =
   (config: MountConfig): Widget =>
     factory(config as unknown as TParams);
 
-/** Resolved by `data-xps-widget` unless `registerWidgetType` overrode the name (spec 7.1). */
+/**
+ * Resolved by `data-xps-widget` unless `registerWidgetType` overrode the name (spec 7.1).
+ * `categoryTree` is the one reserved name with no widget behind it: see
+ * docs/internal/KNOWN-LIMITATIONS.md.
+ */
 export const DEFAULT_WIDGETS: Readonly<Record<string, MountWidgetFactory>> = {
   searchBox: fromMount(searchBox),
   results: fromMount(results),
@@ -57,4 +70,7 @@ export const DEFAULT_WIDGETS: Readonly<Record<string, MountWidgetFactory>> = {
   clearFilters: fromMount(clearFilters),
   activeFilters: fromMount(activeFilters),
   toggleFilter: fromMount(toggleFilter),
+  rangeFilter: fromMount(rangeFilter),
+  loadMore: fromMount(loadMore),
+  suggestions: fromMount(suggestions),
 };

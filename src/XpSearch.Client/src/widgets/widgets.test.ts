@@ -6,8 +6,8 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mountAll } from '../bootstrap';
-import { API_VERSION_HEADER, EVENTS_ROUTE } from '../contract/constants';
-import type { SearchRequest, SearchResponse } from '../contract/generated';
+import { API_VERSION_HEADER, EVENTS_ROUTE, SUGGEST_ROUTE } from '../contract/constants';
+import type { SearchRequest, SearchResponse, Suggestion } from '../contract/generated';
 import { createSearch } from '../instance';
 import type { SearchInstance, Widget } from '../types';
 import { html } from '../templates/html';
@@ -15,11 +15,14 @@ import { widgetId } from './dom';
 import {
   clearFilters,
   activeFilters,
+  loadMore,
+  rangeFilter,
   results,
   pagination,
   facetList,
   searchBox,
   sortSelect,
+  suggestions,
   resultStats,
   toggleFilter,
 } from './index';
@@ -931,5 +934,390 @@ describe('widgetId (MARKUP.md rule 4)', () => {
     expect(widgetId(first, 'wid-e', 'select')).toBe('xps-search-3-wid-e-select');
     expect(widgetId(second, 'wid-e', 'select')).toBe('xps-search-3-wid-e-2-select');
     expect(widgetId(third, 'wid-e', 'select')).toBe('xps-search-3-wid-e-3-select');
+  });
+});
+
+describe('rangeFilter', () => {
+  const mount = (params: Record<string, unknown> = {}): HTMLElement => {
+    const host = container('range');
+    search = start([
+      rangeFilter({ container: host, attribute: 'price', label: 'Price', ...params }),
+    ]);
+    return host;
+  };
+
+  it('renders two sliders, two number inputs and the values line', async () => {
+    const host = mount({ min: 0, max: 500, step: 5 });
+    await settled(search!);
+    const root = host.firstElementChild!;
+    expect(classesOf(root)).toEqual(['xps', 'xps-range-filter']);
+    const track = root.querySelector('.xps-range-filter__track')!;
+    expect(track.getAttribute('role')).toBe('group');
+    expect(track.getAttribute('aria-labelledby')).toBe(
+      root.querySelector('.xps-range-filter__title')?.id
+    );
+    const inputs = [
+      ...root.querySelectorAll<HTMLInputElement>(
+        '.xps-range-filter__range, .xps-range-filter__input'
+      ),
+    ];
+    expect(inputs.map((input) => input.type)).toEqual(['range', 'range', 'number', 'number']);
+    expect(inputs.map((input) => input.value)).toEqual(['0', '500', '0', '500']);
+    expect(inputs.every((input) => input.min === '0' && input.max === '500' && input.step === '5')).toBe(
+      true
+    );
+    expect(inputs[0]?.getAttribute('aria-describedby')).toBe(
+      root.querySelector('.xps-range-filter__values')?.id
+    );
+    expect(inputs[0]?.id).toMatch(/^xps-range-price(-\d+)?-range-min$/);
+    expect(text(root.querySelector('.xps-range-filter__values'))).toBe('0 to 500');
+    // Every control has a real, associated label (spec 5.6).
+    for (const input of inputs) {
+      expect(root.querySelector('label[for="' + input.id + '"]')).not.toBeNull();
+    }
+  });
+
+  it('mirrors the two halves of the control and filters on change', async () => {
+    const host = mount({ min: 0, max: 500, step: 5 });
+    await settled(search!);
+    const root = host.firstElementChild!;
+    const numberMax = root.querySelectorAll<HTMLInputElement>('.xps-range-filter__input')[1]!;
+    numberMax.value = '300';
+    numberMax.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(root.querySelector<HTMLInputElement>('.xps-range-filter__range--max')?.value).toBe('300');
+    expect(text(root.querySelector('.xps-range-filter__values'))).toBe('0 to 300');
+    expect(calls.length).toBe(1); // dragging does not search
+
+    numberMax.dispatchEvent(new Event('change', { bubbles: true }));
+    await vi.waitFor(() => expect(calls.length).toBe(2));
+    expect((calls[1]?.body as unknown as SearchRequest).filters?.numeric).toEqual([
+      { attribute: 'price', operator: 'lte', value: 300 },
+    ]);
+  });
+
+  it('keeps neither end past the other, and clamps to the bounds', async () => {
+    const host = mount({ min: 0, max: 500 });
+    await settled(search!);
+    const root = host.firstElementChild!;
+    const min = root.querySelector<HTMLInputElement>('.xps-range-filter__range--min')!;
+    min.value = '900';
+    min.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(min.value).toBe('500');
+    const max = root.querySelector<HTMLInputElement>('.xps-range-filter__range--max')!;
+    max.value = '-10';
+    max.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(max.value).toBe('500');
+  });
+
+  it('renders disabled when it has no bounds to offer', async () => {
+    const host = mount();
+    await settled(search!);
+    const root = host.firstElementChild!;
+    expect(classesOf(root)).toContain('xps-range-filter--disabled');
+    expect([...root.querySelectorAll<HTMLInputElement>('input')].every((i) => i.disabled)).toBe(
+      true
+    );
+    expect(text(root.querySelector('.xps-range-filter__values'))).toBe(
+      'No price range in these results.'
+    );
+  });
+});
+
+describe('loadMore', () => {
+  const CORPUS = ['a', 'b', 'c', 'd', 'e'];
+  /** One page of a five-document corpus, so a second load is a different set of ids. */
+  const paged = (request: SearchRequest): SearchResponse => {
+    const at = request.page ?? 1;
+    const ids = CORPUS.slice((at - 1) * 2, at * 2);
+    return {
+      ...RESPONSE,
+      results: ids.map((id) => ({ id, attributes: { title: id.toUpperCase(), url: '/' + id } })),
+      page: at,
+      pageSize: 2,
+      total: CORPUS.length,
+      totalPages: 3,
+    };
+  };
+
+  const mount = (): HTMLElement => {
+    const host = container('more');
+    const fetchFn = (async (url: string, init: RequestInit) => {
+      const body = JSON.parse(String(init.body)) as SearchRequest;
+      calls.push({ url: String(url), body: body as unknown as Record<string, unknown> });
+      return new Response(JSON.stringify(paged(body)), {
+        status: 200,
+        headers: { [API_VERSION_HEADER]: '1' },
+      });
+    }) as unknown as typeof fetch;
+    search = createSearch({
+      index: 'site-content',
+      fetchFn,
+      debounceMs: 0,
+      initialState: { pageSize: 2 },
+    });
+    started.push(search);
+    search.addWidgets([loadMore({ container: host })]);
+    search.start();
+    return host;
+  };
+
+  const items = (host: HTMLElement): string[] =>
+    [...host.querySelectorAll('.xps-load-more__item .xps-result__link')].map(
+      (link) => link.textContent ?? ''
+    );
+
+  it('renders the results item template, a live region, a sentinel and a button', async () => {
+    const host = mount();
+    await vi.waitFor(() => expect(items(host).length).toBe(2));
+    const root = host.firstElementChild!;
+    expect(classesOf(root)).toEqual(['xps', 'xps-load-more']);
+    expect(root.querySelector('.xps-load-more__list')?.tagName).toBe('OL');
+    expect(root.querySelector('.xps-load-more__item article')?.className).toBe('xps-result');
+    const status = root.querySelector('.xps-load-more__status')!;
+    expect(status.getAttribute('role')).toBe('status');
+    expect(classesOf(status)).toContain('xps-sr-only');
+    expect(text(status)).toBe('Showing 2 of 5 results');
+    expect(root.querySelector('.xps-load-more__sentinel')?.getAttribute('aria-hidden')).toBe('true');
+    const button = root.querySelector<HTMLButtonElement>('.xps-load-more__load-more')!;
+    expect(button.type).toBe('button');
+    expect(button.disabled).toBe(false);
+    expect(button.textContent).toBe('Load more results');
+  });
+
+  it('appends the next page to the same <ol> instead of rebuilding it', async () => {
+    const host = mount();
+    await vi.waitFor(() => expect(items(host).length).toBe(2));
+    const list = host.querySelector('.xps-load-more__list')!;
+    const first = list.firstElementChild;
+
+    host.querySelector<HTMLButtonElement>('.xps-load-more__load-more')!.click();
+    await vi.waitFor(() => expect(items(host).length).toBe(4));
+    expect(items(host)).toEqual(['A', 'B', 'C', 'D']);
+    // The same element, still first: appending is what keeps scroll position and focus.
+    expect(host.querySelector('.xps-load-more__list')).toBe(list);
+    expect(list.firstElementChild).toBe(first);
+    expect(text(host.querySelector('.xps-load-more__status'))).toBe('Showing 4 of 5 results');
+  });
+
+  it('disables the button and says so when everything is loaded', async () => {
+    const host = mount();
+    await vi.waitFor(() => expect(items(host).length).toBe(2));
+    const button = host.querySelector<HTMLButtonElement>('.xps-load-more__load-more')!;
+    button.click();
+    await vi.waitFor(() => expect(items(host).length).toBe(4));
+    button.click();
+    await vi.waitFor(() => expect(items(host).length).toBe(5));
+    expect(classesOf(host.firstElementChild)).toContain('xps-load-more--exhausted');
+    expect(button.disabled).toBe(true);
+    expect(button.textContent).toBe('No more results');
+    expect(text(host.querySelector('.xps-load-more__status'))).toBe('Showing all 5 results');
+  });
+
+  it('rebuilds the list when the search changes', async () => {
+    const host = mount();
+    await vi.waitFor(() => expect(items(host).length).toBe(2));
+    host.querySelector<HTMLButtonElement>('.xps-load-more__load-more')!.click();
+    await vi.waitFor(() => expect(items(host).length).toBe(4));
+
+    search!.actions.setQuery('espresso').setPage(1).search();
+    await vi.waitFor(() => expect(items(host).length).toBe(2));
+    expect(items(host)).toEqual(['A', 'B']);
+  });
+});
+
+describe('suggestions', () => {
+  const SUGGESTIONS: Suggestion[] = [
+    { text: 'espresso machine' },
+    { text: 'espresso grinder' },
+    {
+      text: 'Choosing an espresso machine',
+      url: '/blog/choosing',
+      result: { id: 'doc-1', attributes: { contentType: 'Article' } },
+    },
+  ];
+
+  const mount = (
+    params: Record<string, unknown> = {},
+    answers: Suggestion[] = SUGGESTIONS
+  ): HTMLElement => {
+    const host = container('suggest');
+    const fetchFn = (async (url: string, init: RequestInit) => {
+      calls.push({
+        url: String(url),
+        body: JSON.parse(String(init.body)) as Record<string, unknown>,
+      });
+      const body = String(url).endsWith(SUGGEST_ROUTE) ? { suggestions: answers } : RESPONSE;
+      return new Response(JSON.stringify(body), {
+        status: 200,
+        headers: { [API_VERSION_HEADER]: '1' },
+      });
+    }) as unknown as typeof fetch;
+    search = createSearch({ index: 'site-content', fetchFn, debounceMs: 0 });
+    started.push(search);
+    search.addWidgets([suggestions({ container: host, debounceMs: 0, ...params })]);
+    search.start();
+    return host;
+  };
+
+  const type = async (host: HTMLElement, value: string): Promise<HTMLInputElement> => {
+    const input = host.querySelector<HTMLInputElement>('.xps-suggestions__input')!;
+    input.value = value;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await vi.waitFor(() => expect(host.querySelector('.xps-suggestions--open')).not.toBeNull());
+    return input;
+  };
+
+  const key = (input: HTMLInputElement, name: string): void => {
+    input.dispatchEvent(
+      new KeyboardEvent('keydown', { key: name, bubbles: true, cancelable: true })
+    );
+  };
+
+  it('renders a closed combobox before anything is typed', async () => {
+    const host = mount();
+    await settled(search!);
+    const root = host.firstElementChild!;
+    expect(classesOf(root)).toEqual(['xps', 'xps-suggestions']);
+    const input = root.querySelector<HTMLInputElement>('.xps-suggestions__input')!;
+    expect(input.getAttribute('role')).toBe('combobox');
+    expect(input.getAttribute('aria-expanded')).toBe('false');
+    expect(input.getAttribute('aria-autocomplete')).toBe('list');
+    const prefix = input.id.replace(/-input$/, '');
+    expect(prefix).toMatch(/^xps-suggest-suggestions(-\d+)?$/);
+    expect(input.getAttribute('aria-controls')).toBe(prefix + '-listbox');
+    expect(input.hasAttribute('aria-activedescendant')).toBe(false);
+    // The listbox exists even when closed, so aria-controls never dangles.
+    expect(root.querySelector('.xps-suggestions__list')?.getAttribute('role')).toBe('listbox');
+    expect(root.querySelector<HTMLElement>('.xps-suggestions__panel')?.hidden).toBe(true);
+    expect(root.querySelector<HTMLElement>('.xps-suggestions__reset')?.hidden).toBe(true);
+    expect(root.querySelector('label[for="' + input.id + '"]')).not.toBeNull();
+  });
+
+  it('groups query suggestions and documents, numbering the option ids in visual order', async () => {
+    const host = mount();
+    await settled(search!);
+    const input = await type(host, 'esp');
+    expect(input.getAttribute('aria-expanded')).toBe('true');
+
+    const groups = [...host.querySelectorAll('.xps-suggestions__group')];
+    expect(groups.map((group) => group.getAttribute('role'))).toEqual(['group', 'group']);
+    expect(
+      groups.map((group) => text(group.querySelector('.xps-suggestions__group-title')))
+    ).toEqual(['Suggestions', 'Pages']);
+    const prefix = input.id.replace(/-input$/, '');
+    const options = [...host.querySelectorAll('[role="option"]')];
+    expect(options.map((option) => option.id)).toEqual([
+      prefix + '-option-0',
+      prefix + '-option-1',
+      prefix + '-option-2',
+    ]);
+    expect(options.every((option) => option.getAttribute('aria-selected') === 'false')).toBe(true);
+    expect(options[0]?.querySelector('mark')?.className).toBe('xps-highlight');
+    expect(text(options[2]?.querySelector('.xps-suggestions__option-meta'))).toBe('Article');
+  });
+
+  it('moves aria-activedescendant with the arrow keys and never moves DOM focus', async () => {
+    const host = mount();
+    await settled(search!);
+    const input = await type(host, 'esp');
+    input.focus();
+
+    const option = (at: number): string => input.id.replace(/-input$/, '') + '-option-' + at;
+    key(input, 'ArrowDown');
+    expect(input.getAttribute('aria-activedescendant')).toBe(option(0));
+    expect(document.activeElement).toBe(input);
+    expect(
+      host.querySelector('.xps-suggestions__option--active')?.getAttribute('aria-selected')
+    ).toBe('true');
+
+    key(input, 'End');
+    expect(input.getAttribute('aria-activedescendant')).toBe(option(2));
+    key(input, 'Home');
+    expect(input.getAttribute('aria-activedescendant')).toBe(option(0));
+    key(input, 'ArrowUp');
+    expect(input.getAttribute('aria-activedescendant')).toBe(option(2));
+
+    key(input, 'Escape');
+    expect(input.getAttribute('aria-expanded')).toBe('false');
+    expect(input.hasAttribute('aria-activedescendant')).toBe(false);
+    expect(host.querySelector<HTMLElement>('.xps-suggestions__panel')?.hidden).toBe(true);
+  });
+
+  it('searches for a picked query suggestion', async () => {
+    const host = mount();
+    await settled(search!);
+    const input = await type(host, 'esp');
+    key(input, 'ArrowDown');
+    key(input, 'Enter');
+    await vi.waitFor(() => expect(search!.state.query).toBe('espresso machine'));
+    expect(input.value).toBe('espresso machine');
+    expect(host.querySelector<HTMLElement>('.xps-suggestions__panel')?.hidden).toBe(true);
+  });
+
+  it('navigates to a picked document suggestion', async () => {
+    const assign = vi.fn();
+    const host = mount({ windowRef: { location: { assign } } as unknown as Window });
+    await settled(search!);
+    await type(host, 'esp');
+    host.querySelectorAll<HTMLElement>('[role="option"]')[2]?.click();
+    expect(assign).toHaveBeenCalledWith('/blog/choosing');
+  });
+
+  it('offers "see all" and submits to the results page when one is configured', async () => {
+    const assign = vi.fn();
+    const host = mount({
+      resultsUrl: '/search',
+      windowRef: { location: { assign } } as unknown as Window,
+    });
+    await settled(search!);
+    const input = await type(host, 'esp');
+    const seeAll = host.querySelector<HTMLAnchorElement>('.xps-suggestions__see-all')!;
+    expect(seeAll.getAttribute('href')).toBe(location.origin + '/search?q=esp');
+    expect(host.querySelector('form')?.getAttribute('action')).toBe('/search');
+
+    key(input, 'Enter');
+    expect(assign).toHaveBeenCalledWith(location.origin + '/search?q=esp');
+  });
+
+  it('says so when there is nothing to suggest, and the reset button clears', async () => {
+    const host = mount({}, []);
+    await settled(search!);
+    const input = host.querySelector<HTMLInputElement>('.xps-suggestions__input')!;
+    input.value = 'xyzzy';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await vi.waitFor(() => expect(host.querySelector('.xps-suggestions__empty')).not.toBeNull());
+    const empty = host.querySelector('.xps-suggestions__empty')!;
+    expect(empty.getAttribute('role')).toBe('status');
+    expect(text(empty)).toBe('No suggestions for “xyzzy”.');
+    expect(host.querySelector<HTMLElement>('.xps-suggestions__reset')?.hidden).toBe(false);
+
+    host
+      .querySelector('form')
+      ?.dispatchEvent(new Event('reset', { bubbles: true, cancelable: true }));
+    await vi.waitFor(() => expect(input.value).toBe(''));
+    expect(host.querySelector<HTMLElement>('.xps-suggestions__panel')?.hidden).toBe(true);
+  });
+});
+
+describe('the samples in docs/guides/widget-reference.md', () => {
+  it('mount and render exactly as written', async () => {
+    const price = container('filter-price');
+    const list = container('search-results');
+    const suggest = container('search-suggest');
+    search = start([
+      rangeFilter({ container: '#filter-price', attribute: 'price', label: 'Price', min: 0, max: 500, step: 5 }),
+      loadMore({ container: '#search-results', autoLoad: true }),
+      suggestions({
+        container: '#search-suggest',
+        resultsUrl: '/search',
+        debounceMs: 150,
+        minQueryLength: 1,
+        limit: 5,
+      }),
+    ]);
+    await settled(search);
+    expect(price.querySelector('.xps-range-filter')).not.toBeNull();
+    expect(list.querySelectorAll('.xps-load-more__item').length).toBe(3);
+    expect(suggest.querySelector('.xps-suggestions__input')).not.toBeNull();
   });
 });

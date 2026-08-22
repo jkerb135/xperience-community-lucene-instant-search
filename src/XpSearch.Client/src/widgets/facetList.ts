@@ -34,8 +34,11 @@ export type FacetListWidgetParams = {
   showMoreLabels?: { more?: string; less?: string };
 };
 
-/** `espresso` + `es` → `<mark class="xps-highlight">es</mark>presso`, escaped either side. */
-function markMatch(label: string, needle: string): Renderable {
+/**
+ * `espresso` + `es` → `<mark class="xps-highlight">es</mark>presso`, escaped either side.
+ * Shared with `suggestions`, which marks the typed prefix the same way.
+ */
+export function markMatch(label: string, needle: string): Renderable {
   const at = needle === '' ? -1 : label.toLowerCase().indexOf(needle.toLowerCase());
   if (at === -1) return label;
   return html.raw(
