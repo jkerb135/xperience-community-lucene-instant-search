@@ -59,6 +59,19 @@ public sealed class LuceneIndexAccessor : ILuceneIndexAccessor
     public Analyzer GetAnalyzer(string indexName) => Require(indexName).LuceneAnalyzer;
 
     /// <inheritdoc />
+    public IReadOnlyList<string> IndexNamesForStrategy(Type strategyType)
+    {
+        ArgumentNullException.ThrowIfNull(strategyType);
+
+        return
+        [
+            .. indexManager.GetAllIndices()
+                .Where(index => index.LuceneIndexingStrategyType == strategyType)
+                .Select(index => index.IndexName)
+        ];
+    }
+
+    /// <inheritdoc />
     public FacetsConfig? GetFacetsConfig(string indexName)
     {
         var index = Require(indexName);

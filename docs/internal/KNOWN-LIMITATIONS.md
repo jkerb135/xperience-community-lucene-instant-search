@@ -182,17 +182,6 @@ and how to lift it.
 - **Upgrade path:** decorate `IIndexSchemaProvider` with an `IProgressiveCache` entry keyed by index name,
   dependent on `cms.class|all`, so a content type change still invalidates it.
 
-## `FacetsConfig` accumulation in `XpSearch.Core/Indexing/XpSearchIndexingStrategy.cs`
-
-- **Simplified:** the strategy registers a taxonomy dimension as multi-valued the first time it maps a
-  document that has one, and `FacetsConfigFactory` returns that same accumulating instance. This works
-  because the task processor maps documents before the client asks for the configuration and builds them.
-- **Ceiling:** in a process that has never indexed anything, the configuration is empty. Querying still
-  works — an unregistered dimension falls back to `FacetsConfig`'s defaults, which is what drill-down and
-  counting need — but it means the configuration is not a static description of the index.
-- **Upgrade path:** give the strategy the index's content types (through `IIndexContentTypeSource`) and
-  register every taxonomy dimension up front in the constructor.
-
 ## `FlattenLinkedItems` in `XpSearch.Core/Indexing/XpSearchIndexingOptions.cs`
 
 - **Simplified:** the registration names the content types the linked field can hold. The *document* is

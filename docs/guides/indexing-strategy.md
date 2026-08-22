@@ -11,6 +11,7 @@ using CMS.Websites;
 
 using Microsoft.Extensions.Logging;
 
+using XpSearch.Core.Abstractions;
 using XpSearch.Core.Indexing;
 
 public sealed class MySearchIndexingStrategy : XpSearchIndexingStrategy
@@ -20,9 +21,11 @@ public sealed class MySearchIndexingStrategy : XpSearchIndexingStrategy
         IWebPageUrlRetriever urlRetriever,
         ITaxonomyRetriever taxonomyRetriever,
         IContentTypeFieldSource fieldSource,
+        ILuceneIndexAccessor accessor,
+        IIndexSchemaProvider schemaProvider,
         XpSearchIndexingOptions indexingOptions,
         ILogger<XpSearchIndexingStrategy> logger)
-        : base(executor, urlRetriever, taxonomyRetriever, fieldSource, indexingOptions, logger)
+        : base(executor, urlRetriever, taxonomyRetriever, fieldSource, accessor, schemaProvider, indexingOptions, logger)
     {
     }
 }
@@ -126,6 +129,14 @@ That is all a request needs to use it:
   "filters": { "facets": [{ "attribute": "ProductFieldTags", "values": ["espresso-machines"] }] }
 }
 ```
+
+`FacetsConfigFactory` is derived from the detected schema, not from what has been mapped so far: the
+first time the Lucene client asks for it, every facetable field of every index registered for this
+strategy is declared as a multi-valued dimension. A dimension a document turns out to carry that the
+schema did not know about is still registered while mapping, as a fallback. There is nothing left for
+a host to override: a fresh index, or one whose documents this process has not mapped yet, accepts a
+document with several tags in one dimension instead of failing the whole batch with
+*dimension "X" is not multiValued*.
 
 Facet values are tag **code names**, because they are stable across language variants and renames; the
 tag **title** comes back as the facet value's `label`, so a widget never has to display a code name. The

@@ -28,6 +28,15 @@ public interface ILuceneIndexAccessor
     /// <returns>The index's analyzer.</returns>
     Analyzer GetAnalyzer(string indexName);
 
+    /// <summary>Gets the code names of the indexes configured to use an indexing strategy.</summary>
+    /// <param name="strategyType">The strategy class, as registered with <c>RegisterStrategy</c>.</param>
+    /// <returns>The index names, empty when no registered index uses that strategy.</returns>
+    /// <remarks>
+    /// A strategy instance is not told which index it is mapping for, so this is how one derives its
+    /// facet dimensions from the schema of the indexes it serves before it has mapped anything.
+    /// </remarks>
+    IReadOnlyList<string> IndexNamesForStrategy(Type strategyType);
+
     /// <summary>Gets the facet configuration of the index's strategy.</summary>
     /// <param name="indexName">Code name of the index.</param>
     /// <returns>The configuration, or <see langword="null"/> when the index has no taxonomy sidecar.</returns>

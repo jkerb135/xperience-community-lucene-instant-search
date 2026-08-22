@@ -35,13 +35,17 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
     private readonly IWebPageUrlRetriever urlRetriever;
     private readonly ITaxonomyRetriever taxonomyRetriever;
     private readonly IContentTypeFieldSource fieldSource;
+    private readonly ILuceneIndexAccessor accessor;
+    private readonly IIndexSchemaProvider schemaProvider;
     private readonly XpSearchIndexingOptions options;
     private readonly ILogger<XpSearchIndexingStrategy> logger;
 
-    // Shared with FacetsConfigFactory: dimensions are registered as they are discovered while mapping,
-    // which happens before the client asks for the config and builds the documents.
+    // Every facetable field of every index this strategy serves is registered the first time the
+    // configuration is asked for; mapping registers anything the schema did not know about.
     private readonly FacetsConfig facetsConfig = new();
     private readonly HashSet<string> registeredDimensions = new(StringComparer.Ordinal);
+
+    private bool schemaDimensionsRegistered;
 
     // One warning per colliding (content type, field) pair, however many documents hit it.
     private readonly HashSet<string> reportedCollisions = new(StringComparer.OrdinalIgnoreCase);
@@ -51,6 +55,8 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
     /// <param name="urlRetriever">Resolves the web page URL stored on the document.</param>
     /// <param name="taxonomyRetriever">Resolves tag identifiers to tag code names and titles.</param>
     /// <param name="fieldSource">Detects the searchable fields of a content type.</param>
+    /// <param name="accessor">The Lucene seam, used to find the indexes this strategy is configured for.</param>
+    /// <param name="schemaProvider">Supplies those indexes' detected schema, which the facet dimensions come from.</param>
     /// <param name="options">Per-field overrides and linked-item flattening supplied by the developer.</param>
     /// <param name="logger">Logger.</param>
     public XpSearchIndexingStrategy(
@@ -58,6 +64,8 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
         IWebPageUrlRetriever urlRetriever,
         ITaxonomyRetriever taxonomyRetriever,
         IContentTypeFieldSource fieldSource,
+        ILuceneIndexAccessor accessor,
+        IIndexSchemaProvider schemaProvider,
         XpSearchIndexingOptions options,
         ILogger<XpSearchIndexingStrategy> logger)
     {
@@ -65,6 +73,8 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
         ArgumentNullException.ThrowIfNull(urlRetriever);
         ArgumentNullException.ThrowIfNull(taxonomyRetriever);
         ArgumentNullException.ThrowIfNull(fieldSource);
+        ArgumentNullException.ThrowIfNull(accessor);
+        ArgumentNullException.ThrowIfNull(schemaProvider);
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(logger);
 
@@ -72,6 +82,8 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
         this.urlRetriever = urlRetriever;
         this.taxonomyRetriever = taxonomyRetriever;
         this.fieldSource = fieldSource;
+        this.accessor = accessor;
+        this.schemaProvider = schemaProvider;
         this.options = options;
         this.logger = logger;
     }
@@ -119,7 +131,21 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
     }
 
     /// <inheritdoc />
-    public override FacetsConfig FacetsConfigFactory() => facetsConfig;
+    /// <remarks>
+    /// Every facetable field of every index this strategy is registered for is a multi-valued
+    /// dimension, derived from the detected schema the first time the configuration is asked for. The
+    /// Lucene client asks for it before it builds a batch, so a fresh index - or one whose documents
+    /// this process has not mapped yet - still gets a configuration that accepts a document with more
+    /// than one tag in a dimension, which <c>FacetsConfig.Build</c> otherwise refuses for the whole
+    /// batch. Dimensions discovered while mapping are added to the same instance as a fallback, so a
+    /// field the schema cannot see (one added by <see cref="ContributeAsync"/>, say) still works.
+    /// </remarks>
+    public override FacetsConfig FacetsConfigFactory()
+    {
+        RegisterSchemaDimensions();
+
+        return facetsConfig;
+    }
 
     /// <summary>
     /// Adds anything the auto-detected mapping cannot know about to the document of one item. The base
@@ -440,12 +466,48 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
         }
     }
 
+    /// <summary>Registers every facetable field of the indexes this strategy serves, once.</summary>
+    private void RegisterSchemaDimensions()
+    {
+        if (schemaDimensionsRegistered)
+        {
+            return;
+        }
+
+        // One attempt per instance: a schema that cannot be read must not be retried for every
+        // document, and the mapping fallback still registers what the documents actually carry.
+        schemaDimensionsRegistered = true;
+
+        foreach (string indexName in accessor.IndexNamesForStrategy(GetType()))
+        {
+            try
+            {
+                // FacetsConfigFactory is a synchronous integration API and the schema comes from the
+                // database. ASP.NET Core has no synchronization context to deadlock against.
+                var schema = schemaProvider.GetSchemaAsync(indexName, CancellationToken.None).GetAwaiter().GetResult();
+
+                foreach (var field in schema.Fields.Where(field => field.Facetable))
+                {
+                    RegisterDimension(field.Name);
+                }
+            }
+            catch (Exception exception)
+            {
+                logger.LogWarning(
+                    exception,
+                    "The schema of index {Index} could not be read, so its facet dimensions are only registered as documents are mapped.",
+                    indexName);
+            }
+        }
+    }
+
     private void RegisterDimension(string dimension)
     {
         if (registeredDimensions.Add(dimension))
         {
             // A taxonomy field always holds a set, so its dimension must accept several values per
-            // document; FacetsConfig.Build throws otherwise.
+            // document; FacetsConfig.Build throws otherwise. Single-valued dimensions lose nothing by
+            // being declared multi-valued - counting reads the taxonomy either way.
             facetsConfig.SetMultiValued(dimension, true);
         }
     }

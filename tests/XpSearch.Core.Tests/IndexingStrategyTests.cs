@@ -31,6 +31,7 @@ internal sealed class IndexingStrategyTests
     private const string ProductPage = "DancingGoat.ProductPage";
     private const string ProductCoffee = "DancingGoat.ProductCoffee";
     private const string LinkedField = "ProductPageProduct";
+    private const string IndexName = "products";
 
     private static readonly Guid Espresso = Guid.Parse("11111111-1111-1111-1111-111111111111");
     private static readonly Guid Filter = Guid.Parse("22222222-2222-2222-2222-222222222222");
@@ -101,6 +102,8 @@ internal sealed class IndexingStrategyTests
                 Substitute.For<IWebPageUrlRetriever>(),
                 TaxonomyRetriever(),
                 Fields(ProductCoffee),
+                Substitute.For<ILuceneIndexAccessor>(),
+                Substitute.For<IIndexSchemaProvider>(),
                 new XpSearchIndexingOptions(),
                 NullLogger<XpSearchIndexingStrategy>.Instance)
             .MapToLuceneDocumentOrNull(Item(ProductCoffee));
@@ -186,18 +189,52 @@ internal sealed class IndexingStrategyTests
         Assert.That(options.LinkedItemsDepth, Is.EqualTo(3));
     }
 
+    /// <summary>
+    /// The dimensions must exist before the first document is built: the Lucene client asks for the
+    /// configuration and then builds the whole batch with it, and a document with two tags in a
+    /// dimension the configuration does not know fails the entire batch.
+    /// </summary>
+    [Test]
+    public void FacetsConfig_DeclaresEveryFacetableSchemaFieldBeforeAnythingIsMapped()
+    {
+        var schema = new IndexSchema(IndexName, [Tags, Name]);
+        var strategy = Strategy(Container(ProductCoffee, values: []), new XpSearchIndexingOptions(), Fields(ProductCoffee), schema: schema);
+
+        var config = strategy.FacetsConfigFactory();
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(config.GetDimConfig(Tags.Name).IsMultiValued, Is.True, "a facetable field is a multi-valued dimension");
+            Assert.That(config.GetDimConfig(Name.Name).IsMultiValued, Is.False, "a field that is not facetable is not a dimension");
+        });
+    }
+
     private static XpSearchIndexingStrategy Strategy(
         IContentQueryDataContainer data,
         XpSearchIndexingOptions options,
         IContentTypeFieldSource fields,
-        ILogger<XpSearchIndexingStrategy>? logger = null) =>
-        new(
+        ILogger<XpSearchIndexingStrategy>? logger = null,
+        IndexSchema? schema = null)
+    {
+        var accessor = Substitute.For<ILuceneIndexAccessor>();
+        var schemaProvider = Substitute.For<IIndexSchemaProvider>();
+
+        // No index claims the strategy unless the test hands one a schema, which leaves the mapping
+        // fallback as the only source of dimensions.
+        accessor.IndexNamesForStrategy(Arg.Any<Type>()).Returns(schema is null ? [] : [IndexName]);
+        schemaProvider.GetSchemaAsync(IndexName, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(schema ?? new IndexSchema(IndexName, [])));
+
+        return new XpSearchIndexingStrategy(
             Executor(data),
             Substitute.For<IWebPageUrlRetriever>(),
             TaxonomyRetriever(),
             fields,
+            accessor,
+            schemaProvider,
             options,
             logger ?? NullLogger<XpSearchIndexingStrategy>.Instance);
+    }
 
     private static IContentQueryExecutor Executor(IContentQueryDataContainer data)
     {
@@ -292,9 +329,11 @@ internal sealed class IndexingStrategyTests
         IWebPageUrlRetriever urlRetriever,
         ITaxonomyRetriever taxonomyRetriever,
         IContentTypeFieldSource fieldSource,
+        ILuceneIndexAccessor accessor,
+        IIndexSchemaProvider schemaProvider,
         XpSearchIndexingOptions options,
         ILogger<XpSearchIndexingStrategy> logger)
-        : XpSearchIndexingStrategy(executor, urlRetriever, taxonomyRetriever, fieldSource, options, logger)
+        : XpSearchIndexingStrategy(executor, urlRetriever, taxonomyRetriever, fieldSource, accessor, schemaProvider, options, logger)
     {
         protected override async Task ContributeAsync(IndexingContext context, Document document, CancellationToken cancellationToken)
         {

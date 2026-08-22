@@ -50,6 +50,8 @@ internal sealed class TestSearchIndex : ILuceneIndexAccessor, IDisposable
 
     public Analyzer GetAnalyzer(string name) => analyzer;
 
+    public IReadOnlyList<string> IndexNamesForStrategy(Type strategyType) => [indexName];
+
     public FacetsConfig? GetFacetsConfig(string name) => withTaxonomy ? config : null;
 
     public void Invalidate(string name)

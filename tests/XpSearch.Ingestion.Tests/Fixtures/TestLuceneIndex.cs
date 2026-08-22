@@ -65,6 +65,8 @@ internal sealed class TestLuceneIndex : ILuceneIndexAccessor, ILuceneClient, IDi
 
     public Analyzer GetAnalyzer(string indexName) => analyzer;
 
+    public IReadOnlyList<string> IndexNamesForStrategy(Type strategyType) => [IndexName];
+
     public FacetsConfig? GetFacetsConfig(string indexName) => null;
 
     public void Invalidate(string indexName) => Refresh();
