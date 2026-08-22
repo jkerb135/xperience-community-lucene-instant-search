@@ -8,6 +8,10 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Changed:** the search start time lives on `SearchContext` (`StartedTimestamp`, `Elapsed`) instead of
+  in the internal `SearchTimingStage`, which is gone. The stage was never part of the documented
+  stage-order table and nothing outside the library could reference it; the logged processing time and
+  the response's `tookMs` now come from the same clock.
 - **Fixed:** a redirect no longer disappears when the response comes from the cache. The default
   response cache re-issues `queryId` on every hit by copying the cached response, and that copy
   dropped `redirect`, so a host with caching enabled always saw `"redirect": null`. The copy is

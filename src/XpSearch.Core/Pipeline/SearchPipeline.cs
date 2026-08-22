@@ -1,5 +1,3 @@
-using System.Diagnostics;
-
 using XpSearch.Core.Abstractions;
 using XpSearch.Core.Contract;
 
@@ -61,20 +59,16 @@ public sealed class SearchPipeline : ISearchPipeline
             accessor.GetFacetsConfig(request.Index),
             cancellationToken);
 
-        var stopwatch = Stopwatch.StartNew();
-
         foreach (var stage in stages)
         {
             cancellationToken.ThrowIfCancellationRequested();
             await stage.ExecuteAsync(context, cancellationToken).ConfigureAwait(false);
         }
 
-        stopwatch.Stop();
-
         var response = context.Response
             ?? throw new InvalidOperationException("The search pipeline produced no response; a stage removed or replaced the projection stage.");
 
-        response.TookMs = stopwatch.ElapsedMilliseconds;
+        response.TookMs = (long)context.Elapsed.TotalMilliseconds;
 
         return response;
     }

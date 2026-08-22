@@ -1,6 +1,3 @@
-using System.Diagnostics;
-using System.Runtime.CompilerServices;
-
 using CMS.Websites.Routing;
 
 using Microsoft.Extensions.Logging;
@@ -8,52 +5,6 @@ using Microsoft.Extensions.Logging;
 using XpSearch.Core.Pipeline;
 
 namespace XpSearch.Core.Analytics;
-
-/// <summary>
-/// Stamps the start of a search so <see cref="LogActivityStage"/> can report how long it took. Runs
-/// before every other stage.
-/// </summary>
-/// <remarks>
-/// The pipeline sets <c>tookMs</c> on the response only after the last stage has run, so a stage
-/// cannot read it; this records the start instead. The timestamps hang off the context in a
-/// <see cref="ConditionalWeakTable{TKey,TValue}"/>, which keeps the shared
-/// <see cref="SearchContext"/> free of an analytics-only property.
-/// </remarks>
-public sealed class SearchTimingStage : ISearchStage
-{
-    /// <summary>Where this stage runs: before request normalization.</summary>
-    public const int StageOrder = SearchStageOrder.Normalize - 1;
-
-    private static readonly ConditionalWeakTable<SearchContext, object> Started = [];
-
-    /// <inheritdoc />
-    public int Order => StageOrder;
-
-    /// <summary>Gets how long ago the timing stage saw this context, in milliseconds.</summary>
-    /// <param name="context">The context of the search being processed.</param>
-    /// <returns>The elapsed milliseconds, or zero when the timing stage did not run.</returns>
-    public static int ElapsedMs(SearchContext context)
-    {
-        ArgumentNullException.ThrowIfNull(context);
-
-        if (!Started.TryGetValue(context, out object? timestamp) || timestamp is not long start)
-        {
-            return 0;
-        }
-
-        return (int)Stopwatch.GetElapsedTime(start).TotalMilliseconds;
-    }
-
-    /// <inheritdoc />
-    public Task ExecuteAsync(SearchContext context, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(context);
-
-        Started.AddOrUpdate(context, Stopwatch.GetTimestamp());
-
-        return Task.CompletedTask;
-    }
-}
 
 /// <summary>
 /// The last stage of the pipeline (spec §4.4, slot 1200): writes the search activity for the current
@@ -126,7 +77,7 @@ public sealed class LogActivityStage : ISearchStage
                 DateTime.UtcNow,
                 ChannelName(),
                 context.Request.Language ?? string.Empty,
-                SearchTimingStage.ElapsedMs(context))));
+                (int)context.Elapsed.TotalMilliseconds)));
         }
         catch (Exception exception)
         {

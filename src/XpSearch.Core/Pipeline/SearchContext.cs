@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 using Lucene.Net.Analysis;
 using Lucene.Net.Documents;
 using Lucene.Net.Facet;
@@ -42,6 +44,12 @@ public sealed class SearchContext
         CancellationToken = cancellationToken;
         QueryText = request.Query ?? string.Empty;
     }
+
+    /// <summary>Gets the <see cref="Stopwatch"/> timestamp taken when the search started.</summary>
+    public long StartedTimestamp { get; } = Stopwatch.GetTimestamp();
+
+    /// <summary>Gets how long the search has been running. The response's <c>tookMs</c> comes from this.</summary>
+    public TimeSpan Elapsed => Stopwatch.GetElapsedTime(StartedTimestamp);
 
     /// <summary>Gets the request as received. Normalized values live on this context, not on it.</summary>
     public SearchRequest Request { get; }

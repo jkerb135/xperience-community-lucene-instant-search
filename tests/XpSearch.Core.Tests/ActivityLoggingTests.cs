@@ -10,6 +10,7 @@ using NUnit.Framework;
 
 using XpSearch.Core.Analytics;
 using XpSearch.Core.Contract;
+using XpSearch.Core.Pipeline;
 using XpSearch.Core.Tests.Fixtures;
 
 namespace XpSearch.Core.Tests;
@@ -121,7 +122,7 @@ internal sealed class ActivityLoggingTests
         using var harness = new TestHarness(
             extraStages:
             [
-                new SearchTimingStage(),
+                new DelayStage(),
                 new LogActivityStage(activityLogger, contexts, queue, channel, NullLogger<LogActivityStage>.Instance)
             ]);
 
@@ -137,6 +138,18 @@ internal sealed class ActivityLoggingTests
         Assert.That(entry.ResultCount, Is.EqualTo((int)response.Total));
         Assert.That(entry.ChannelName, Is.EqualTo("Store"));
         Assert.That(contexts.Get(response.QueryId!)!.Query, Is.EqualTo("lucene"));
+        Assert.That(entry.ProcessingTimeMs, Is.GreaterThanOrEqualTo(DelayStage.Delay.TotalMilliseconds));
+    }
+
+    /// <summary>Burns a known amount of time so the logged processing time has something to measure.</summary>
+    private sealed class DelayStage : ISearchStage
+    {
+        internal static TimeSpan Delay => TimeSpan.FromMilliseconds(20);
+
+        public int Order => SearchStageOrder.LogActivity - 1;
+
+        public Task ExecuteAsync(SearchContext context, CancellationToken cancellationToken) =>
+            Task.Delay(Delay, cancellationToken);
     }
 
     [Test]
