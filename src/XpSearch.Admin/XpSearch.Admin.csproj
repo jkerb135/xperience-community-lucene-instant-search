@@ -5,7 +5,37 @@
     <AssemblyName>XpSearch.Admin</AssemblyName>
     <PackageId>YourCo.Xperience.Search.Admin</PackageId>
     <IsPackable>true</IsPackable>
+    <!-- Organization name of the admin client module; the project name is on AdminClientPath below.
+         Both must match Client/webpack.config.js and RegisterClientModule in XpSearchAdminClientModule.cs. -->
+    <AdminOrgName>yourco</AdminOrgName>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Client\node_modules\**" />
+    <EmbeddedResource Remove="Client\node_modules\**" />
+    <None Remove="Client\node_modules\**" />
+  </ItemGroup>
+
+  <!-- The client module is served in Embedded mode: the Kentico.Xperience.Admin targets embed
+       everything under AdminClientPath into this assembly, so the package ships its own admin UI and
+       no webpack dev server is involved
+       (https://docs.kentico.com/documentation/developers-and-admins/customization/extend-the-administration-interface/prepare-your-environment-for-admin-development,
+       "Choose how to serve client scripts"). The bundle is built outside MSBuild, so a build without
+       it must fail loudly rather than ship a package whose pages cannot load. -->
+  <Target Name="CheckXpSearchAdminClientBundle" BeforeTargets="BeforeBuild">
+    <ItemGroup>
+      <!-- webpack names the bundle entry.kxh.&lt;contenthash&gt;.js, so the check is for any bundle. -->
+      <XpSearchAdminClientBundle Include="$(MSBuildThisFileDirectory)Client\dist\*.js" />
+    </ItemGroup>
+    <Error Condition="'@(XpSearchAdminClientBundle)' == ''"
+           Text="XpSearch.Admin needs the admin client module: run 'npm ci &amp;&amp; npm run build' in src/XpSearch.Admin/Client (expected a bundle in $(MSBuildThisFileDirectory)Client\dist)." />
+  </Target>
+
+  <ItemGroup>
+    <AdminClientPath Include="Client\dist\**">
+      <ProjectName>xperience-search-admin</ProjectName>
+    </AdminClientPath>
+  </ItemGroup>
 
   <ItemGroup>
     <!-- The §10.8 admin pages (API keys, index status, ingestion log) are pages over ingestion data,

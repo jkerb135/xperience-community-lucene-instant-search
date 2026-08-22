@@ -1,0 +1,46 @@
+{
+  "name": "yourco-xperience-search-admin",
+  "version": "0.1.0",
+  "description": "Custom admin UI templates of the Xperience Search tuning application: the query tester (spec 8.4) and the analytics dashboard (spec 9.3).",
+  "private": true,
+  "scripts": {
+    "start": "webpack serve --mode development",
+    "build": "webpack --mode=production",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@kentico/xperience-admin-base": "31.8.0",
+    "@kentico/xperience-admin-components": "31.8.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@babel/core": "7.29.7",
+    "@babel/plugin-transform-runtime": "7.29.7",
+    "@babel/preset-env": "7.29.7",
+    "@babel/preset-react": "7.29.7",
+    "@babel/preset-typescript": "7.29.7",
+    "@kentico/xperience-webpack-config": "31.8.0",
+    "@types/react": "18.3.31",
+    "@types/react-dom": "18.3.7",
+    "babel-loader": "10.1.1",
+    "typescript": "5.9.3",
+    "webpack": "5.109.2",
+    "webpack-cli": "7.2.2",
+    "webpack-dev-server": "6.0.0"
+  },
+  "overrides": {
+    "react": "$react",
+    "react-dom": "$react",
+    "sockjs": {
+      "uuid": "11.1.1"
+    },
+    "shell-quote@<=1.8.4": "1.9.0",
+    "fast-uri@>=3.0.0 <3.1.5": "3.1.5"
+  },
+  "browserslist": [
+    "> .2% and last 3 versions",
+    "not op_mini all",
+    "not IE 11"
+  ]
+}
