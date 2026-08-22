@@ -5,17 +5,19 @@
  */
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { startMockServer } from '../../mock/server.ts';
-import { QUERY_ROUTE } from '../contract/constants';
+import { QUERY_ROUTE, SUGGEST_ROUTE } from '../contract/constants';
 import { createSearch } from '../instance';
 import type { SearchInstance } from '../types';
 import {
   clearFilters,
   activeFilters,
+  loadMore,
   results,
   pagination,
   facetList,
   searchBox,
   sortSelect,
+  suggestions,
   resultStats,
 } from './index';
 
@@ -118,5 +120,56 @@ describe('the demo widget set against the mock server', () => {
 
     search.dispose();
     expect(document.querySelector('#results')?.innerHTML).toBe('');
+  }, 20_000);
+
+  it('accumulates pages and autocompletes over the same transport', async () => {
+    document.body.innerHTML = '<div id="suggest"></div><div id="more"></div>';
+    const assign = vi.fn();
+
+    const search = createSearch({
+      index: 'site-content',
+      endpoint: `${server.url}${QUERY_ROUTE}`,
+      suggestEndpoint: `${server.url}${SUGGEST_ROUTE}`,
+      debounceMs: 5,
+      initialState: { pageSize: 5 },
+    });
+    search.addWidgets([
+      suggestions({
+        container: '#suggest',
+        debounceMs: 0,
+        windowRef: { location: { assign } } as unknown as Window,
+      }),
+      loadMore({ container: '#more' }),
+    ]);
+    search.start();
+
+    const items = (): number => document.querySelectorAll('.xps-load-more__item').length;
+    const status = (): string =>
+      document.querySelector('.xps-load-more__status')?.textContent ?? '';
+
+    await settled(search, () => items() === 5);
+    expect(status()).toBe('Showing 5 of 54 results');
+
+    // The button appends the next page; the <ol> is never rebuilt.
+    const list = document.querySelector('.xps-load-more__list');
+    (document.querySelector('.xps-load-more__load-more') as HTMLButtonElement).click();
+    await settled(search, () => items() === 10);
+    expect(document.querySelector('.xps-load-more__list')).toBe(list);
+    expect(status()).toBe('Showing 10 of 54 results');
+
+    // Autocomplete over the real /suggest route.
+    const input = document.querySelector('.xps-suggestions__input') as HTMLInputElement;
+    input.value = 'Espresso';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await settled(search, () => document.querySelectorAll('[role="option"]').length > 0);
+    expect(document.querySelector('.xps-suggestions--open')).not.toBeNull();
+
+    // Typing searched in place, so the accumulated list was rebuilt for the new query.
+    await settled(search, () => items() > 0 && items() <= 5);
+
+    (document.querySelector('[role="option"]') as HTMLElement).click();
+    expect(assign).toHaveBeenCalledWith(expect.stringContaining('/docs/espresso-basics'));
+
+    search.dispose();
   }, 20_000);
 });

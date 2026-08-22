@@ -13,18 +13,21 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 import axe from 'axe-core';
-import { API_VERSION_HEADER } from '../contract/constants';
-import { query } from '../../mock/server.ts';
+import { API_VERSION_HEADER, SUGGEST_ROUTE } from '../contract/constants';
+import { query, suggest } from '../../mock/server.ts';
 import { createSearch } from '../instance';
 import type { SearchInstance } from '../types';
 import {
   clearFilters,
   activeFilters,
+  loadMore,
+  rangeFilter,
   results,
   pagination,
   facetList,
   searchBox,
   sortSelect,
+  suggestions,
   resultStats,
   toggleFilter,
 } from './index';
@@ -35,18 +38,22 @@ const AXE_OPTIONS: axe.RunOptions = {
 };
 
 /** Answers from the mock corpus, so the DOM under test is the one a real response produces. */
-const fetchFn = (async (_url: string, init: RequestInit) =>
-  new Response(JSON.stringify(query(JSON.parse(String(init.body)))), {
+const fetchFn = (async (url: string, init: RequestInit) => {
+  const body = JSON.parse(String(init.body));
+  const answer = String(url).endsWith(SUGGEST_ROUTE) ? suggest(body) : query(body);
+  return new Response(JSON.stringify(answer), {
     status: 200,
     headers: { [API_VERSION_HEADER]: '1' },
-  })) as unknown as typeof fetch;
+  });
+}) as unknown as typeof fetch;
 
 function page(): SearchInstance {
   document.body.innerHTML = `<main>
     <h1>Search</h1>
     <div id="box"></div><div id="sort"></div><div id="resultStats"></div>
     <div id="facet"></div><div id="toggle"></div><div id="chips"></div><div id="clear"></div>
-    <div id="results"></div><div id="pages"></div>
+    <div id="range"></div><div id="suggest"></div>
+    <div id="results"></div><div id="pages"></div><div id="more"></div>
   </main>`;
 
   const search = createSearch({
@@ -80,8 +87,11 @@ function page(): SearchInstance {
       attributeLabels: { contentType: 'Content type' },
     }),
     clearFilters({ container: '#clear' }),
+    rangeFilter({ container: '#range', attribute: 'price', label: 'Price', min: 5, max: 60, step: 5 }),
+    suggestions({ container: '#suggest', debounceMs: 0 }),
     results({ container: '#results' }),
     pagination({ container: '#pages', padding: 2 }),
+    loadMore({ container: '#more' }),
   ]);
   search.start();
   return search;
@@ -95,11 +105,29 @@ const violations = async (): Promise<string[]> => {
 };
 
 describe('accessibility (axe-core)', () => {
-  it('reports no violations for the nine widgets with results', async () => {
+  it('reports no violations for the twelve widgets with results', async () => {
     const search = page();
     search.actions.setQuery('espresso').search();
     await vi.waitFor(() => expect(search.results?.total).toBeGreaterThan(0), { timeout: 3000 });
 
+    expect(await violations()).toEqual([]);
+    search.dispose();
+  }, 20_000);
+
+  it('reports no violations with the suggestions popup open', async () => {
+    const search = page();
+    await vi.waitFor(() => expect(search.results).not.toBeNull(), { timeout: 3000 });
+    // Closed first: the listbox is in the DOM either way, so aria-controls cannot dangle.
+    expect(await violations()).toEqual([]);
+
+    const input = document.querySelector('.xps-suggestions__input') as HTMLInputElement;
+    input.value = 'Espresso';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await vi.waitFor(() => expect(document.querySelectorAll('[role="option"]').length).toBeGreaterThan(0), {
+      timeout: 3000,
+    });
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    expect(input.getAttribute('aria-activedescendant')).not.toBeNull();
     expect(await violations()).toEqual([]);
     search.dispose();
   }, 20_000);

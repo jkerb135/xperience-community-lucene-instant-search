@@ -50,9 +50,17 @@ const TITLE_ATTRIBUTE = 'title';
 const URL_ATTRIBUTE = 'url';
 const SNIPPET_ATTRIBUTES = ['summary', 'content', 'excerpt'];
 
-function defaultItem<TAttributes extends Record<string, unknown>>(
+/** The three options the default item template reads. Shared with `loadMore`, which reuses it. */
+export interface ResultItemOptions {
+  titleAttribute?: string;
+  urlAttribute?: string;
+  snippetAttributes?: string[];
+}
+
+/** The `xps-result` block of `themes/fixtures/results.html`. Exported for `loadMore` to reuse. */
+export function defaultResultItem<TAttributes extends Record<string, unknown>>(
   result: Result<TAttributes>,
-  params: ResultsWidgetParams<TAttributes> = { container: '' }
+  params: ResultItemOptions = {}
 ): Renderable {
   const attributes = result.attributes as Record<string, unknown>;
   const image = typeof attributes['image'] === 'string' ? attributes['image'] : '';
@@ -152,7 +160,7 @@ export function results<TAttributes extends Record<string, unknown> = Record<str
       } else if (options.items.length > 0) {
         body = list(
           options.items.map((result) =>
-            templates.item ? templates.item(result, helpers) : defaultItem(result, options.params)
+            templates.item ? templates.item(result, helpers) : defaultResultItem(result, options.params)
           )
         );
         const count = helpers.formatNumber(options.results?.total ?? options.items.length);

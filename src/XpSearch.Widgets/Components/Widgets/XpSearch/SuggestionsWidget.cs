@@ -11,7 +11,7 @@ using XpSearch.Widgets.Options;
     viewComponentType: typeof(SuggestionsWidgetViewComponent),
     name: "Search - Suggestions",
     propertiesType: typeof(SuggestionsWidgetProperties),
-    Description = "Type-ahead suggestions under the search box. Needs the suggestions JavaScript widget, which ships in a later release.",
+    Description = "Type-ahead suggestions under the search box, as a WAI-ARIA combobox.",
     IconClass = "icon-light-bulb",
     AllowCache = false)]
 
@@ -39,10 +39,6 @@ public sealed class SuggestionsWidgetProperties : XpSearchMountWidgetProperties
 }
 
 /// <summary>Renders the <c>suggestions</c> mount.</summary>
-/// <remarks>
-/// <c>suggestions</c> is a reserved widget name: the mount is emitted, but until the JavaScript widget
-/// ships the bootstrap logs an unknown-widget error and skips it. Nothing else on the page breaks.
-/// </remarks>
 public sealed class SuggestionsWidgetViewComponent : XpSearchMountWidgetViewComponent<SuggestionsWidgetProperties>
 {
     /// <summary>Initializes a new instance of the <see cref="SuggestionsWidgetViewComponent"/> class.</summary>
@@ -66,6 +62,8 @@ public sealed class SuggestionsWidgetViewComponent : XpSearchMountWidgetViewComp
         ArgumentNullException.ThrowIfNull(properties);
         ArgumentNullException.ThrowIfNull(config);
 
+        // Which of the two an index answers with is server-side configuration, so "mode" documents
+        // the editor's intent for the index; it does not change the request the widget sends.
         config["mode"] = string.IsNullOrWhiteSpace(properties.Mode) ? SuggestionsWidgetProperties.ModeDocuments : properties.Mode;
         // "limit" is what POST /api/xpsearch/suggest calls it.
         config["limit"] = properties.MaxItems;

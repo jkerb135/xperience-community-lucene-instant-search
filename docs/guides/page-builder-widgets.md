@@ -75,10 +75,10 @@ Then, per widget:
 | Search box | Placeholder · Show reset button · Focus on page load |
 | Results | Results per page · Result template · Fields to show (one attribute name per line — `title`, `url`, `contentType`, `language` or any field of your content types) |
 | Facet list | Attribute · Label · Operator (any / all of the selected values) · Values shown · Show a "show more" button |
-| Pagination | Style (numbered pages / load more button) |
+| Pagination | Style (numbered pages / load more button) — "load more" emits a `loadMore` mount instead of a `pagination` one, so place one or the other, never both |
 | Result stats | Text template (`{total}`, `{tookMs}`, `{query}`, `{page}`, `{totalPages}`) · Text before the first search |
 | Sort selector | Sort options (one `key;Label` per line) · Label · Hide the label visually |
-| Suggestions | Mode (matching documents / popular queries) · Maximum items |
+| Suggestions | Mode (matching documents / popular queries) · Maximum items. Whether an index answers with documents or with query suggestions is server-side configuration; the property records the editor's intent and does not change the request |
 
 A blank text property is left out of `data-xps-config` entirely, so the JavaScript widget's own default
 applies rather than an empty string overriding it.

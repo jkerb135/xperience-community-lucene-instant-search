@@ -24,6 +24,24 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
   waiting to be indexed. `degraded` now means work failed to reach the index and nothing has succeeded
   since. `clear` and `delete` are asynchronous like `rebuild`, and the guide says so.
 
+- **Added:** the Phase 2.5 JavaScript widgets (spec §5.3): `rangeFilter`, `loadMore` and
+  `suggestions`, each a behaviour plus a default renderer emitting the markup contract in
+  `themes/MARKUP.md`, each in `DEFAULT_WIDGETS` so a `.xps-mount` resolves it by name. `rangeFilter`
+  renders `withRange` as two native `<input type="range">` sliders and two number inputs, and renders
+  itself disabled when it has no bounds to offer. `loadMore` accumulates the pages of one search into
+  one `<ol>` that is appended to and never rebuilt, with a live-region counter, a real button and an
+  `IntersectionObserver` sentinel for the scroll path; place it *or* `pagination`, never both.
+  `suggestions` implements the WAI-ARIA APG combobox-with-listbox pattern over `POST /suggest`, with
+  a debounce, a minimum query length, latest-response-wins, and full keyboard support. Two new
+  behaviours, `withLoadMore` and `withSuggestions`, are exported from
+  `@yourco/xperience-search/behaviors`. See `docs/guides/widget-reference.md`.
+- **Added:** `SearchInstance.suggest({ query, limit?, language? })` — autocomplete over the
+  instance's own index and transport (endpoint, headers, `fetchFn`, contract-version check).
+  Neither debounced nor cancelled: `withSuggestions` owns that policy.
+- **Changed:** the Page Builder "Search - Suggestions" widget and the pagination "Load more" style no
+  longer say their JavaScript widget ships later — both work now. No new Page Builder widget for
+  `rangeFilter`: its bounds are a property of the corpus that an editor cannot know, and the contract
+  does not report them (`docs/internal/KNOWN-LIMITATIONS.md`).
 - **Added:** relevance tuning (spec §8). A new **Search tuning** administration application, under
   *Development*, with listings and editing pages for rules, synonyms, stopwords and field weights,
   built entirely on the built-in listing and edit UI page templates — no custom React. Four custom

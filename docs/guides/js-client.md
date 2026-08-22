@@ -7,10 +7,10 @@ shared parent and no order requirement.
 
 > **Status:** the core and the default widgets ship today: state, transport, the widget lifecycle,
 > the [behaviours](custom-widgets.md), routing, the event bus, the `.xps-mount` bootstrap, and the
-> nine renderers documented in the [widget reference](widget-reference.md) — `searchBox`, `results`,
-> `facetList`, `pagination`, `resultStats`, `sortSelect`, `clearFilters`, `activeFilters`,
-> `toggleFilter`. `suggestions`, `rangeFilter`, `categoryTree` and `loadMore` are reserved names
-> without renderers yet; build them on the behaviours, exactly as the built-ins are built.
+> twelve renderers documented in the [widget reference](widget-reference.md) — `searchBox`,
+> `results`, `facetList`, `pagination`, `resultStats`, `sortSelect`, `clearFilters`,
+> `activeFilters`, `toggleFilter`, `rangeFilter`, `loadMore`, `suggestions`. `categoryTree` is a
+> reserved name without a renderer; build it on the behaviours, exactly as the built-ins are built.
 
 ### A working search page
 
@@ -100,7 +100,13 @@ ESM build is `dist/xpsearch.mjs` plus `dist/behaviors.mjs`, and the package `exp
 
 The instance exposes `addWidgets(widgets)`, `removeWidgets(widgets)`, `start()`, `dispose()`,
 `on(event, handler)`, `off(event, handler)`, `urlFor(state?)`, `sendEvent(type, resultId, position?)`,
-and the read-only `state`, `results`, `status`, `actions` and `index`.
+`suggest({ query, limit?, language? })`, and the read-only `state`, `results`, `status`, `actions`
+and `index`.
+
+`suggest()` is autocomplete over the instance's own index and transport — the endpoint, headers,
+`fetchFn` and contract-version check it was configured with. It is neither debounced nor cancelled:
+the [`suggestions` widget](widget-reference.md) owns that policy, and so does anything you build on
+`withSuggestions`.
 
 ### Changing state: the actions
 

@@ -30,7 +30,7 @@ public sealed class PaginationWidgetProperties : XpSearchMountWidgetProperties
     [DropDownComponent(
         Label = "Style",
         Options = $"{StyleNumbered};Numbered pages\r\n{StyleLoadMore};Load more button",
-        ExplanationText = "\"Load more\" needs the loadMore JavaScript widget, which ships in a later release.",
+        ExplanationText = "\"Load more\" appends the next page instead of replacing it. Place either this or numbered pages, never both.",
         Order = OrderFirstWidgetProperty)]
     public string Style { get; set; } = StyleNumbered;
 }

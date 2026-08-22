@@ -4,9 +4,8 @@
  * A behaviour is what other libraries call a connector: it computes the render state and the
  * verbs (`apply`, `urlFor`, `isActive`, `canApply`, `isStalled`) and leaves the markup to you.
  *
- * `withSuggestions` and `withCategoryTree` are deliberately absent: they depend on `/suggest`
- * behaviour and on hierarchical facet semantics that are not decided yet. See
- * docs/internal/KNOWN-LIMITATIONS.md.
+ * `withCategoryTree` is deliberately absent: a hierarchy needs a facet shape the contract does
+ * not have (`FacetValue` is flat). See docs/internal/KNOWN-LIMITATIONS.md.
  */
 export { withActiveFilters } from './behaviors/activeFilters';
 export type {
@@ -21,6 +20,8 @@ export type {
   FacetListRenderState,
   FacetListSortBy,
 } from './behaviors/facetList';
+export { withLoadMore } from './behaviors/loadMore';
+export type { LoadMoreBehaviorParams, LoadMoreRenderState } from './behaviors/loadMore';
 export { withPagination } from './behaviors/pagination';
 export type {
   PaginationBehaviorParams,
@@ -35,6 +36,11 @@ export type { ResultStatsRenderState } from './behaviors/resultStats';
 export { withSearchBox } from './behaviors/searchBox';
 export type { SearchBoxBehaviorParams, SearchBoxRenderState } from './behaviors/searchBox';
 export { withSortSelect } from './behaviors/sortSelect';
+export { withSuggestions } from './behaviors/suggestions';
+export type {
+  SuggestionsBehaviorParams,
+  SuggestionsRenderState,
+} from './behaviors/suggestions';
 export type {
   SortSelectBehaviorParams,
   SortSelectItem,
@@ -43,6 +49,7 @@ export type {
 export type {
   RenderOptions,
   Result,
+  Suggestion,
   SearchActions,
   SearchInstance,
   SearchResults,

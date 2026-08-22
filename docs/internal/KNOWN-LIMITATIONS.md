@@ -3,18 +3,23 @@
 Intentional simplifications, one entry each: where it lives, what was simplified, the ceiling it hits,
 and how to lift it.
 
-## `withSuggestions` and `withCategoryTree` in `XpSearch.Client/src/behaviors.ts`
+## `categoryTree` in `XpSearch.Client` — no behaviour, no renderer
 
-- **Simplified:** eight of the ten behaviours spec 5.7 lists are published; these two are not exported at
-  all. `withSuggestions` needs the `/suggest` semantics (query suggestions vs document suggestions, and
-  the stale-response and keyboard policy) that are still open decision 6 in the spec, and
-  `withCategoryTree` needs hierarchical facet semantics, which depend on the faceting approach of
-  ADR-0001. The transport half of autocomplete exists already: `SearchClient.suggest()`.
-- **Ceiling:** the `suggestions`, `categoryTree` and taxonomy-navigation widgets cannot be built
-  yet, and a developer who needs either has to call `SearchClient.suggest()` and drive
-  `actions.setQuery()` by hand.
-- **Upgrade path:** add the two behaviour files once those decisions land; both are additive, so neither
-  is a breaking change.
+- **Simplified:** `categoryTree` has a markup contract (`themes/MARKUP.md`), a fixture and a reserved
+  name in `FIRST_PARTY_WIDGET_TYPES`, but neither a behaviour nor a renderer, because the contract
+  cannot describe a hierarchy: `FacetValue` is `{ value, label, count }` and nothing else, and
+  `TaxonomyFacetProvider` emits no path or parent. A tree assembled in the browser by splitting
+  labels on a separator would be a guess about the taxonomy, not the taxonomy, so none was built.
+- **Ceiling:** taxonomy navigation - the one facet UI an editor asks for by name - cannot be built at
+  all. A `.xps-mount` naming `categoryTree` is one console error and a skipped widget, not a silent
+  no-op, and the name stays reserved so a project cannot take it first.
+- **Upgrade path:** a coordinated Core + contract change (a CR-3 unit the owner approves) adding the
+  ancestry to the wire. The proposal is **`FacetValue.path?: string[]`** - the value's ancestors from
+  the root, excluding the value itself, so `["Coffee", "Machines"]` for `Espresso` - rather than a
+  single `parent` field: it is what `TaxonomyFacetProvider` can produce in one pass, a renderer can
+  build the whole tree from it without a second lookup, and it is additive, so an existing client
+  ignores it. Then `withCategoryTree` reads `path`, and the renderer is the fixture that already
+  exists.
 
 ## `searchable` in `XpSearch.Client/src/widgets/facetList.ts`
 
@@ -41,18 +46,6 @@ and how to lift it.
   `templates.empty` that reads well as an idle state, or give the instance a `status` render pass on
   `start()` so the widget can distinguish "about to search" from "idle".
 
-## Widget renderers not shipped, in `XpSearch.Client/src/widgets/index.ts`
-
-- **Simplified:** `suggestions`, `rangeFilter`, `categoryTree` and `loadMore` have a markup
-  contract in `themes/MARKUP.md` and a fixture, but no default renderer. Three of them have no
-  behaviour either (see the entry above); `rangeFilter` has `withRange` but inherits its
-  hand-configured bounds.
-- **Ceiling:** a project needing any of the four writes the renderer itself against the behaviour, or
-  waits. `FIRST_PARTY_WIDGET_TYPES` still reserves the four names, so a `.xps-mount` naming one is a
-  console error and a skipped widget, not a silent no-op.
-- **Upgrade path:** add the renderer next to the others and put it in `DEFAULT_WIDGETS`; the markup,
-  the CSS and the fixtures are already in place, so each is additive.
-
 ## `withRange` in `XpSearch.Client/src/behaviors/range.ts`
 
 - **Simplified:** the control's bounds come from `params.min`/`max`, and `canApply` is false
@@ -61,7 +54,9 @@ and how to lift it.
 - **Ceiling:** a range slider over an unknown corpus has to be hand-configured, and its ends do not
   follow the current result set.
 - **Upgrade path:** add facet statistics to `SearchResponse` (a contract change, so a coordinated event)
-  and read them in the behaviour, keeping the params as an override.
+  and read them in the behaviour, keeping the params as an override. The `rangeFilter` renderer ships
+  and needs no change: it already renders itself `disabled` when the bounds are missing, and would
+  simply stop being disabled.
 
 ## Default route mapping in `XpSearch.Client/src/routing.ts`
 
@@ -292,16 +287,16 @@ and how to lift it.
   `SearchResultTemplate.ViewName` per result into the mount element, and have the `results` widget adopt
   the existing children on its first render instead of replacing them.
 
-## `SuggestionsWidgetViewComponent` and pagination style "Load more" in `XpSearch.Widgets`
+## No Page Builder widget for `rangeFilter` in `XpSearch.Widgets`
 
-- **Simplified:** both emit a mount for a JavaScript widget that is reserved but not shipped -
-  `suggestions` and `loadMore`. The mount is rendered anyway, so the markup contract is already right when
-  those widgets land.
-- **Ceiling:** placing either today produces one `console.error` from the bootstrap ("unknown widget
-  type") and an empty container. Every other widget of the instance keeps working - the bootstrap skips
-  the mount rather than throwing.
-- **Upgrade path:** none needed on the C# side; the widgets start working when `suggestions` and
-  `loadMore` are added to `DEFAULT_WIDGETS` in `XpSearch.Client/src/widgets/index.ts`.
+- **Simplified:** the `rangeFilter` JavaScript widget ships, but no Page Builder widget emits its
+  mount. Its two required properties are the bounds, and an editor cannot know them - they are a
+  property of the corpus, which the contract does not report (see the `withRange` entry above).
+- **Ceiling:** a range slider has to be placed in the page template with `@Html.XpSearchMount(...)`
+  or hand-written `.xps-mount` markup, not dropped in by an editor.
+- **Upgrade path:** a small widget with Attribute (schema-driven drop-down, numeric fields only),
+  Minimum, Maximum and Step properties, once someone wants it - or, better, after facet statistics
+  land, with the bounds left empty by default.
 
 ## `SortOptionsValidation.IsValidKey` in `XpSearch.Widgets`
 
