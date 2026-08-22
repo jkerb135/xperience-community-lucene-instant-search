@@ -61,6 +61,7 @@ public sealed class ProjectResponseStage : ISearchStage
             TotalPages = context.PageSize <= 0
                 ? 0
                 : (long)Math.Ceiling(context.Total / (double)context.PageSize),
+            Redirect = context.Redirect,
             QueryId = string.IsNullOrWhiteSpace(context.Request.QueryId)
                 ? Guid.NewGuid().ToString()
                 : context.Request.QueryId

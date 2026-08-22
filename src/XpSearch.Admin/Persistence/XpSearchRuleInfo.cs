@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using System.Globalization;
 
 using CMS;
@@ -154,7 +154,7 @@ public class XpSearchRuleInfo : AbstractInfo<XpSearchRuleInfo, IInfoProvider<XpS
         set => SetValue(nameof(RuleFilterExpression), value);
     }
 
-    /// <summary>Gets or sets the destination of a redirect rule. Stored but not surfaced; see ADR-0014.</summary>
+    /// <summary>Gets or sets the destination of a redirect rule, surfaced as <c>SearchResponse.redirect</c>.</summary>
     [DatabaseField]
     public virtual string RuleRedirectUrl
     {

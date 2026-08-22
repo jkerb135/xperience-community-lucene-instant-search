@@ -62,6 +62,7 @@ export type {
   EventType,
   HighlightOptions,
   RankingInfo,
+  SearchRedirect,
   SearchRequest,
   SearchResponse,
   SuggestRequest,

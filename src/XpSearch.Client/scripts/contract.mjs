@@ -171,7 +171,7 @@ const typeScriptTarget = (schema, out) => ({
 const queryTypes = [
   'EventRequest', 'EventType', 'FacetFilter', 'FacetOperator', 'FacetValue', 'Filters',
   'HighlightOptions', 'NumericFilter', 'NumericOperator', 'RankingInfo', 'Result',
-  'SearchRequest', 'SearchResponse', 'SuggestRequest', 'SuggestResponse', 'Suggestion',
+  'SearchRedirect', 'SearchRequest', 'SearchResponse', 'SuggestRequest', 'SuggestResponse', 'Suggestion',
 ];
 
 const ingestionTypes = [

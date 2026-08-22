@@ -1,4 +1,4 @@
-namespace XpSearch.Core.Tuning;
+﻿namespace XpSearch.Core.Tuning;
 
 /// <summary>How a rule's pattern is compared against the normalized query (spec §8.2).</summary>
 public enum RuleCondition
@@ -31,7 +31,7 @@ public enum RuleConsequence
     /// <summary>Restrict the results to documents matching an expression.</summary>
     Filter,
 
-    /// <summary>Send the visitor to a URL instead of showing results. Not surfaced; see ADR-0014.</summary>
+    /// <summary>Send the visitor to a URL. Surfaced as <c>SearchResponse.redirect</c>; the results are returned alongside it.</summary>
     Redirect
 }
 
@@ -58,7 +58,7 @@ public enum SynonymDirection
 /// <param name="TargetPosition">One-based position for a pin.</param>
 /// <param name="BoostValue">Score multiplier for a boost.</param>
 /// <param name="FilterExpression">Comma-separated <c>field:value</c> pairs for a filter or an untargeted boost.</param>
-/// <param name="RedirectUrl">Destination of a redirect rule.</param>
+/// <param name="RedirectUrl">Destination of a redirect rule. A redirect rule with no URL does nothing.</param>
 /// <param name="ValidFrom">First moment the rule applies, in UTC. Null means "already".</param>
 /// <param name="ValidTo">Last moment the rule applies, in UTC. Null means "forever".</param>
 /// <param name="Priority">Conflict resolution order; lower runs first.</param>

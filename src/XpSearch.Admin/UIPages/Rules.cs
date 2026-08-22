@@ -1,4 +1,4 @@
-using CMS.DataEngine;
+﻿using CMS.DataEngine;
 
 using Kentico.Xperience.Admin.Base;
 using Kentico.Xperience.Admin.Base.FormAnnotations;
@@ -77,7 +77,7 @@ public class RuleModel
     [DropDownComponent(
         Label = "Then",
         Order = 6,
-        Options = "0;Pin a result to a position\r\n1;Bury a result\r\n2;Boost a result\r\n3;Filter the results\r\n4;Redirect (not applied yet)")]
+        Options = "0;Pin a result to a position\r\n1;Bury a result\r\n2;Boost a result\r\n3;Filter the results\r\n4;Redirect the visitor")]
     public string Consequence { get; set; } = "0";
 
     /// <summary>Gets or sets the result id to pin, bury or boost.</summary>
@@ -97,7 +97,7 @@ public class RuleModel
     public string FilterExpression { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the redirect destination.</summary>
-    [TextInputComponent(Label = "Redirect URL", Order = 11, Tooltip = "Stored for a future release; the search response has no redirect field yet.")]
+    [TextInputComponent(Label = "Redirect URL", Order = 11, Tooltip = "Where a Redirect rule sends the visitor. Returned as the response's redirect member; the shipped search box follows it only for a submitted query.")]
     public string RedirectUrl { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the first moment the rule applies, in UTC.</summary>

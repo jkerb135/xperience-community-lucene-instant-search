@@ -30,8 +30,16 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
   document counts by source, the last external write and a rebuild trigger, and an **Ingestion log**
   listing filtered by index and ordered newest first. `XpSearch.Admin` now references
   `XpSearch.Ingestion`; the reasoning is in ADR-0014.
-- **Not yet:** redirect rules are stored but not applied — the JSON contract has no redirect member
-  (KNOWN-LIMITATIONS).
+- **Added:** redirect rules act (spec §8.2). `SearchResponse` gains a required, nullable
+  `redirect: { url, rule }` — always present, `null` when no rule matched. `BoostRulesStage` sets it
+  from the first matching redirect rule in the existing precedence order (priority, then id); a rule
+  with an empty URL is skipped. The search is not short-circuited: the response carries its results
+  next to the destination, and `explain=true` lists the rule as `rule:<name>` like any other. On the
+  client, `withSearchBox` gains `submit(query)` beside `apply(query)` and the `searchBox` widget
+  wires it to the form's submit event: a redirect is followed **only** for a query the visitor
+  submitted, never on a keystroke and never on the search a restored URL runs at page load.
+  `followRedirects: false` opts out and `withResults` exposes `redirect` so a template can render
+  "Redirecting…" instead. This supersedes the "stored but not applied" note of ADR-0014.
 
 - **Added:** the **Query tester** page (spec §8.4), under *Search tuning*. Pick an index, type a query
   and an optional language, and see the ranking twice side by side: **with rules** (what a visitor

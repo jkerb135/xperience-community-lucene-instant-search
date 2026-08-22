@@ -26,6 +26,7 @@ const response: SearchResponse = {
   totalPages: 3,
   tookMs: 14,
   queryId: 'generated-guid',
+  redirect: null,
 };
 
 const fetchFn = vi.fn<typeof fetch>(

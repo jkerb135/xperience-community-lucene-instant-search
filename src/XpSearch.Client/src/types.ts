@@ -11,6 +11,7 @@ import type {
   NumericFilter,
   NumericOperator,
   Result as WireResult,
+  SearchRedirect,
   SearchRequest,
   SearchResponse,
 } from './contract/generated';
@@ -23,6 +24,7 @@ export type {
   HighlightOptions,
   NumericFilter,
   NumericOperator,
+  SearchRedirect,
   SearchRequest,
   SearchResponse,
 };

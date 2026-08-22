@@ -174,7 +174,8 @@ curl -sS -X POST http://localhost:5000/api/xpsearch/query \
   "total": 5,
   "totalPages": 1,
   "tookMs": 3,
-  "queryId": "0f2f…"
+  "queryId": "0f2f…",
+  "redirect": null
 }
 ```
 

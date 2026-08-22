@@ -20,6 +20,7 @@ const BODY: SearchResponse = {
   total: 1,
   totalPages: 1,
   tookMs: 2,
+  redirect: null,
 };
 
 const requests: SearchRequest[] = [];

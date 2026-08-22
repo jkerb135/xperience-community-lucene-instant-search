@@ -1,4 +1,4 @@
-using NUnit.Framework;
+﻿using NUnit.Framework;
 
 using XpSearch.Core.Contract;
 using XpSearch.Core.Tests.Fixtures;
@@ -45,10 +45,11 @@ internal sealed class RuleSelectionTests
         int targetPosition = 0,
         double boost = 2,
         string filter = "",
+        string redirectUrl = "",
         DateTime? from = null,
         DateTime? to = null,
         int priority = 100) =>
-        new(id, name, enabled, condition, pattern, consequence, targetId, targetPosition, boost, filter, string.Empty, from, to, priority);
+        new(id, name, enabled, condition, pattern, consequence, targetId, targetPosition, boost, filter, redirectUrl, from, to, priority);
 
     [Test]
     public void Matching_HonoursEveryConditionType()
@@ -336,6 +337,99 @@ internal sealed class TuningPipelineTests
             Assert.That(response.Results, Is.Not.Empty, "'contentType' must reach the ContentTypeName field");
             Assert.That(response.Results.Select(result => result.Id), Is.All.EqualTo("doc-3:en"));
         });
+    }
+
+    [Test]
+    public async Task Redirect_IsSurfacedOnTheResponseNextToTheResults()
+    {
+        var source = new FakeTuningSource
+        {
+            Rules =
+            [
+                RuleSelectionTests.Rule(
+                    name: "Espresso landing page",
+                    consequence: RuleConsequence.Redirect,
+                    redirectUrl: "  /promotions/espresso  ")
+            ]
+        };
+
+        using var harness = Harness(source);
+
+        var response = await harness.Search(Request("espresso"));
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(response.Redirect, Is.Not.Null);
+            Assert.That(response.Redirect!.Url, Is.EqualTo("/promotions/espresso"));
+            Assert.That(response.Redirect.Rule, Is.EqualTo("Espresso landing page"));
+            Assert.That(response.Results, Is.Not.Empty, "a redirect does not replace the results; the client decides");
+        });
+    }
+
+    [Test]
+    public async Task Redirect_IsNullWhenNoRuleApplies()
+    {
+        var never = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var source = new FakeTuningSource
+        {
+            Rules =
+            [
+                RuleSelectionTests.Rule(id: 1, enabled: false, consequence: RuleConsequence.Redirect, redirectUrl: "/disabled"),
+                RuleSelectionTests.Rule(id: 2, consequence: RuleConsequence.Redirect, redirectUrl: "/expired", to: never),
+                RuleSelectionTests.Rule(id: 3, pattern: "decaf", consequence: RuleConsequence.Redirect, redirectUrl: "/other-query"),
+                RuleSelectionTests.Rule(id: 4, consequence: RuleConsequence.Redirect, redirectUrl: "   ")
+            ]
+        };
+
+        using var harness = Harness(source);
+        using var untuned = new TestHarness();
+
+        var response = await harness.Search(Request("espresso"));
+        var plain = await untuned.Search(Request("espresso"));
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(response.Redirect, Is.Null);
+            Assert.That(plain.Redirect, Is.Null);
+        });
+    }
+
+    [Test]
+    public async Task Redirect_TakesTheFirstRuleInPrecedenceOrder()
+    {
+        var source = new FakeTuningSource
+        {
+            Rules =
+            [
+                RuleSelectionTests.Rule(id: 7, name: "Late", consequence: RuleConsequence.Redirect, redirectUrl: "/late", priority: 200),
+                RuleSelectionTests.Rule(id: 9, name: "Early", consequence: RuleConsequence.Redirect, redirectUrl: "/early", priority: 100),
+                RuleSelectionTests.Rule(id: 2, name: "Same priority, lower id", consequence: RuleConsequence.Redirect, redirectUrl: "/tie-break", priority: 100)
+            ]
+        };
+
+        using var harness = Harness(source);
+
+        var response = await harness.Search(Request("espresso"));
+
+        Assert.That(response.Redirect!.Url, Is.EqualTo("/tie-break"));
+    }
+
+    [Test]
+    public async Task Redirect_IsExplainedLikeAnyOtherRule()
+    {
+        var source = new FakeTuningSource
+        {
+            Rules =
+            [
+                RuleSelectionTests.Rule(name: "Support redirect", consequence: RuleConsequence.Redirect, redirectUrl: "/support")
+            ]
+        };
+
+        using var harness = Harness(source);
+
+        var response = await harness.Search(Request("espresso", explain: true));
+
+        Assert.That(response.Results[0].Ranking!.Boosts!, Does.Contain("rule:Support redirect"));
     }
 
     [Test]

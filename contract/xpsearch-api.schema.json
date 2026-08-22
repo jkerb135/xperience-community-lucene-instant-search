@@ -243,7 +243,8 @@
         "pageSize",
         "total",
         "totalPages",
-        "tookMs"
+        "tookMs",
+        "redirect"
       ],
       "additionalProperties": false,
       "properties": {
@@ -288,6 +289,37 @@
         "queryId": {
           "type": "string",
           "description": "Correlation id for this search. Echoes SearchRequest.queryId when supplied, otherwise server-generated. Send it back on click and conversion events."
+        },
+        "redirect": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/SearchRedirect"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Required, and null whenever no redirect rule matched. Set when a relevance rule with the Redirect consequence matched this query; the first such rule in precedence order (priority, then id) wins. The results are still returned alongside it, because following a redirect is the client's decision: the shipped search box navigates only for a query the visitor submitted, never as they type."
+        }
+      }
+    },
+    "SearchRedirect": {
+      "type": "object",
+      "title": "SearchRedirect",
+      "description": "Where a matching redirect rule sends the visitor.",
+      "required": [
+        "url",
+        "rule"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "url": {
+          "type": "string",
+          "description": "Required. Destination configured on the rule, exactly as the marketer typed it: root-relative (\"/support\"), absolute (\"https://example.com/support\") or any other form the browser can resolve."
+        },
+        "rule": {
+          "type": "string",
+          "description": "Required. Display name of the rule that matched, for logging and for the query tester."
         }
       }
     },

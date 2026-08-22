@@ -24,6 +24,7 @@ const BODY: SearchResponse = {
   total: 13,
   totalPages: 1,
   tookMs: 3,
+  redirect: null,
 };
 
 let search: SearchInstance | undefined;

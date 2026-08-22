@@ -9,7 +9,7 @@ import { withPagination } from './pagination';
 import { withRange } from './range';
 import { withResults } from './results';
 import { withResultStats } from './resultStats';
-import { withSearchBox } from './searchBox';
+import { withSearchBox, type SearchBoxBehaviorParams } from './searchBox';
 import { withSortSelect } from './sortSelect';
 
 const BODY: SearchResponse = {
@@ -30,6 +30,7 @@ const BODY: SearchResponse = {
   total: 9,
   totalPages: 5,
   tookMs: 7,
+  redirect: null,
   queryId: 'q-42',
 };
 
@@ -139,6 +140,102 @@ describe('withSearchBox', () => {
     await new Promise((r) => setTimeout(r, 5));
     expect(seen).toEqual(['blocked']);
     expect(requests).toHaveLength(1);
+  });
+});
+
+/**
+ * Redirect rules (contract `SearchResponse.redirect`). The rule is on the response of every
+ * search for "espresso"; only a submitted query may act on it, so a visitor can type past it.
+ */
+describe('withSearchBox and a redirect rule', () => {
+  const REDIRECT: SearchResponse = {
+    ...BODY,
+    redirect: { url: '/promotions/espresso', rule: 'Espresso landing page' },
+  };
+
+  type BoxRender = Parameters<Parameters<typeof withSearchBox>[0]>[0];
+
+  function mountBox(
+    params: SearchBoxBehaviorParams = {},
+    options: Partial<Parameters<typeof createSearch>[0]> = {}
+  ): { renders: BoxRender[]; assigned: string[] } {
+    const assigned: string[] = [];
+    const windowRef = {
+      location: { assign: (url: string) => assigned.push(url) },
+    } as unknown as Window;
+    const renders: BoxRender[] = [];
+    const fetchFn = vi.fn(async (_url: string, init: RequestInit) => {
+      const request = JSON.parse(String(init.body)) as SearchRequest;
+      return new Response(JSON.stringify(request.query === 'espresso' ? REDIRECT : BODY), {
+        status: 200,
+        headers: { [API_VERSION_HEADER]: '1' },
+      });
+    });
+    const search = createSearch({
+      index: 'site-content',
+      debounceMs: 0,
+      fetchFn: fetchFn as unknown as typeof fetch,
+      ...options,
+    });
+    live.push(search);
+    search.addWidgets([
+      withSearchBox((rendered) => renders.push(rendered))({ windowRef, ...params }),
+    ]);
+    search.start();
+    return { renders, assigned };
+  }
+
+  const lastRender = (renders: BoxRender[]): BoxRender => renders[renders.length - 1]!;
+
+  it('navigates when the visitor submits the query', async () => {
+    const { renders, assigned } = mountBox();
+    await vi.waitFor(() => expect(renders.length).toBeGreaterThanOrEqual(2));
+
+    lastRender(renders).submit('espresso');
+    await vi.waitFor(() => expect(assigned).toEqual(['/promotions/espresso']));
+  });
+
+  it('never navigates as the visitor types, however often the rule matches', async () => {
+    const { renders, assigned } = mountBox();
+    await vi.waitFor(() => expect(renders.length).toBeGreaterThanOrEqual(2));
+
+    lastRender(renders).apply('espresso');
+    await vi.waitFor(() => expect(lastRender(renders).results?.redirect).not.toBeNull());
+    lastRender(renders).apply('espresso');
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    expect(assigned).toEqual([]);
+  });
+
+  it('does not navigate for the search a restored URL state runs on page load', async () => {
+    const { renders, assigned } = mountBox({}, { initialState: { query: 'espresso' } });
+    await vi.waitFor(() => expect(lastRender(renders).results?.redirect).not.toBeNull());
+    expect(assigned).toEqual([]);
+  });
+
+  it('navigates once per response, and lets the visitor type past the rule afterwards', async () => {
+    const { renders, assigned } = mountBox();
+    await vi.waitFor(() => expect(renders.length).toBeGreaterThanOrEqual(2));
+
+    lastRender(renders).submit('espresso');
+    await vi.waitFor(() => expect(assigned).toHaveLength(1));
+    lastRender(renders).apply('espresso beans');
+    lastRender(renders).apply('espresso');
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    expect(assigned).toHaveLength(1);
+  });
+
+  it('followRedirects: false reports the redirect and stays put', async () => {
+    const { renders, assigned } = mountBox({ followRedirects: false });
+    await vi.waitFor(() => expect(renders.length).toBeGreaterThanOrEqual(2));
+
+    lastRender(renders).submit('espresso');
+    await vi.waitFor(() =>
+      expect(lastRender(renders).results?.redirect).toEqual({
+        url: '/promotions/espresso',
+        rule: 'Espresso landing page',
+      })
+    );
+    expect(assigned).toEqual([]);
   });
 });
 

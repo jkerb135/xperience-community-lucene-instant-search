@@ -217,8 +217,8 @@ plus the behaviour's own data and actions:
 
 | Behaviour | `params` | Render state |
 |---|---|---|
-| `withSearchBox` | `queryHook?` | `query`, `apply(q)`, `clear()`, `isStalled` |
-| `withResults` | `transformItems?` | `items`, `results`, `sendEvent(type, result, position?)` |
+| `withSearchBox` | `queryHook?`, `followRedirects?`, `windowRef?` | `query`, `apply(q)`, `submit(q)`, `clear()`, `isStalled` |
+| `withResults` | `transformItems?` | `items`, `results`, `redirect`, `sendEvent(type, result, position?)` |
 | `withFacetList` | `attribute`, `operator?`, `limit?`, `showMore?`, `showMoreLimit?`, `sortBy?`, `transformItems?` | `items[{ label, value, count, isActive }]`, `apply(value)`, `urlFor(value)`, `canApply`, `canToggleShowMore`, `isShowingMore`, `toggleShowMore()`, `sendEvent` |
 | `withPagination` | `padding?`, `maxPages?` | `pages`, `current`, `totalPages`, `total`, `isFirstPage`, `isLastPage`, `canApply`, `apply(page)`, `urlFor(page)` |
 | `withResultStats` | — | `total`, `tookMs`, `query`, `page`, `totalPages`, `pageSize`, `hasResults` |

@@ -118,11 +118,13 @@ cached entry, which is the right trade at the volumes tuning data has.
 
 **Foreclosed / deferred.**
 
-- **Redirect rules are stored but never applied.** Spec §8.2 defines `RuleRedirectUrl`, but the owned
-  JSON contract (ADR-0010, amendment 2026-08-21) has no redirect member on the response and this unit
-  is explicitly not allowed to add one. The spec and the contract disagree; the contract wins until a
-  coordinated contract change adds a `redirect` member to `SearchResponse`. The field, the enum value
-  and the drop-down option all exist so no data is lost in the meantime.
+- **Redirect rules were stored but not applied** while this unit shipped, because the owned JSON
+  contract (ADR-0010) had no redirect member on the response and this unit was not allowed to add
+  one. The field, the enum value and the drop-down option existed so no data was lost. **Resolved by
+  unit CR-2 (2026-08-21):** `SearchResponse.redirect` is a required, nullable `{ url, rule }`;
+  `BoostRulesStage` sets it from the first matching redirect rule in the precedence order above, and
+  the search still runs, so the response carries results next to the destination. Following it is the
+  client's decision — the shipped search box navigates only for a query the visitor submitted.
 - **Index status is an edit page, not a listing.** The built-in listing template can only list a
   registered object type, and index status is derived from `ILuceneIndexManager` and the ingestion
   store. It is reported in a read-only text area, with the submit action wired to rebuild. A React

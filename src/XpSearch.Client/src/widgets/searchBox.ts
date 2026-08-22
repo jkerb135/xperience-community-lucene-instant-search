@@ -12,6 +12,13 @@ export type SearchBoxWidgetParams = {
   container: string | HTMLElement;
   /** Intercepts a query before it reaches the state (spec 5.3). */
   queryHook?: (query: string, search: (value: string) => void) => void;
+  /**
+   * Defaults to `true`. Navigate when a submitted query matched a redirect rule. Typing never
+   * redirects, so a visitor can search for something that merely contains the rule's pattern.
+   */
+  followRedirects?: boolean;
+  /** `window` by default; injectable for tests and SSR. */
+  windowRef?: Window;
   placeholder?: string;
   /** Text of the always-rendered `<label>`. */
   label?: string;
@@ -30,6 +37,7 @@ export function searchBox(params: SearchBoxWidgetParams): Widget {
   let input: HTMLInputElement | undefined;
   let reset: HTMLElement | undefined;
   let apply: (query: string) => void = () => {};
+  let submit: (query: string) => void = () => {};
   let clear: () => void = () => {};
 
   const widget = withSearchBox<SearchBoxWidgetParams>(
@@ -43,6 +51,7 @@ export function searchBox(params: SearchBoxWidgetParams): Widget {
         autofocus = false,
       } = options.params;
       apply = options.apply;
+      submit = options.submit;
       clear = options.clear;
 
       if (isFirstRender) {
@@ -68,7 +77,7 @@ export function searchBox(params: SearchBoxWidgetParams): Widget {
         root.addEventListener('input', () => apply(input?.value ?? ''));
         root.addEventListener('submit', (event) => {
           event.preventDefault();
-          apply(input?.value ?? '');
+          submit(input?.value ?? '');
         });
         root.addEventListener('reset', (event) => {
           // The native reset would restore the *initial* value, not an empty one.

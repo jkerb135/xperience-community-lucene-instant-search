@@ -17,6 +17,7 @@ const BODY: SearchResponse = {
   total: 1,
   totalPages: 1,
   tookMs: 4,
+  redirect: null,
   queryId: 'q-1',
 };
 

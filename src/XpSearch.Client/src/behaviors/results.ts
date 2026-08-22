@@ -1,4 +1,11 @@
-import type { EventType, RenderOptions, Result, SearchResults, WidgetFactory } from '../types';
+import type {
+  EventType,
+  RenderOptions,
+  Result,
+  SearchRedirect,
+  SearchResults,
+  WidgetFactory,
+} from '../types';
 import { createBehavior } from './internal';
 
 export interface ResultsBehaviorParams<TAttributes extends Record<string, unknown>> {
@@ -9,6 +16,12 @@ export interface ResultsBehaviorParams<TAttributes extends Record<string, unknow
 export interface ResultsRenderState<TAttributes extends Record<string, unknown>> {
   items: Array<Result<TAttributes>>;
   results: SearchResults<TAttributes> | null;
+  /**
+   * Where a redirect rule sends the visitor, or `null`. The results are still there: whether to
+   * show them or a “Redirecting…” message is the renderer's call, and only `searchBox`
+   * navigates.
+   */
+  redirect: SearchRedirect | null;
   /**
    * Analytics for a result (spec 9.1). `position` defaults to the result's one-based position
    * across pages. Silently does nothing when the response carried no `queryId`.
@@ -41,6 +54,7 @@ export function withResults<
       return {
         items,
         results,
+        redirect: results?.redirect ?? null,
         sendEvent(type, result, position) {
           const at = position ?? positionOf(results, items, result);
           base.search.sendEvent(type, result.id, at);
