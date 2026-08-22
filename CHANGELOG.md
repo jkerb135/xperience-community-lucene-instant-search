@@ -8,6 +8,14 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Fixed:** `_source` is facetable in practice, not only in the schema. Every document - Xperience
+  content and externally pushed alike - now carries a `FacetField` for it alongside the term, so
+  `facets: ["_source"]` returns counts and `filters.facets` can drill down to one provenance. The term
+  is unchanged, so the ingestion status counts and `clear?source=` behave exactly as before.
+- **Fixed:** `GET …/status` no longer reports `health: "degraded"` while a queued write is merely
+  waiting to be indexed. `degraded` now means work failed to reach the index and nothing has succeeded
+  since. `clear` and `delete` are asynchronous like `rebuild`, and the guide says so.
+
 - **Added:** relevance tuning (spec §8). A new **Search tuning** administration application, under
   *Development*, with listings and editing pages for rules, synonyms, stopwords and field weights,
   built entirely on the built-in listing and edit UI page templates — no custom React. Four custom

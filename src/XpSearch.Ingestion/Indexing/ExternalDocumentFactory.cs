@@ -4,6 +4,7 @@ using System.Text.Json;
 using Kentico.Xperience.Lucene.Core;
 
 using Lucene.Net.Documents;
+using Lucene.Net.Facet;
 using Lucene.Net.Util;
 
 using XpSearch.Core.Abstractions;
@@ -28,8 +29,10 @@ namespace XpSearch.Ingestion.Indexing;
 /// <para>
 /// Taxonomy-typed (<c>string[]</c>) attributes are written as plain terms rather than facet fields:
 /// facet fields would have to be registered in the strategy's <c>FacetsConfig</c> before the client
-/// builds them, and an external document has no strategy. Filtering on such an attribute works;
-/// facet counts do not include externally pushed documents (see KNOWN-LIMITATIONS).
+/// builds them, and an external document has no strategy of its own. Filtering on such an attribute
+/// works; facet counts do not include externally pushed documents (see KNOWN-LIMITATIONS). The
+/// reserved <c>_source</c> is the exception: it is a base schema field, so every strategy registers
+/// the dimension and the facet field below is always safe to build.
 /// </para>
 /// </remarks>
 public static class ExternalDocumentFactory
@@ -47,7 +50,12 @@ public static class ExternalDocumentFactory
         {
             new StringField(BaseDocumentProperties.ID, record.Id, Field.Store.YES),
             new StringField(BaseDocumentProperties.ITEM_GUID, record.Id, Field.Store.YES),
-            new StringField(LuceneFieldNames.SourceField, record.Source, Field.Store.YES)
+            new StringField(LuceneFieldNames.SourceField, record.Source, Field.Store.YES),
+
+            // "_source" is a base schema field, so the strategy's FacetsConfig always has the
+            // dimension: the client can build this one even though the document has no strategy of
+            // its own. The term above stays - the status counts and a scoped clear read it.
+            new FacetField(LuceneFieldNames.SourceField, record.Source)
         };
 
         using var body = JsonDocument.Parse(record.Json);

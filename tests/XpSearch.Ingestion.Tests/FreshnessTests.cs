@@ -1,14 +1,7 @@
-using Microsoft.Extensions.Options;
-
 using NUnit.Framework;
 
-using XpSearch.Core.Abstractions;
 using XpSearch.Core.Contract;
-using XpSearch.Core.Facets;
-using XpSearch.Core.Highlighting;
-using XpSearch.Core.Options;
-using XpSearch.Core.Pipeline;
-using XpSearch.Core.Pipeline.Stages;
+using XpSearch.Ingestion.Contract;
 using XpSearch.Ingestion.Tests.Fixtures;
 
 namespace XpSearch.Ingestion.Tests;
@@ -21,36 +14,11 @@ namespace XpSearch.Ingestion.Tests;
 [TestFixture]
 internal sealed class FreshnessTests
 {
-    private sealed class FixedSchemaProvider(IndexSchema schema) : IIndexSchemaProvider
-    {
-        public Task<IndexSchema> GetSchemaAsync(string indexName, CancellationToken cancellationToken) =>
-            Task.FromResult(schema);
-    }
-
-    private static ISearchPipeline PipelineOver(TestHarness harness)
-    {
-        var options = Microsoft.Extensions.Options.Options.Create(new XpSearchOptions());
-
-        return new SearchPipeline(
-            harness.Index,
-            new FixedSchemaProvider(harness.Schema.Fields),
-            [
-                new NormalizeRequestStage(options),
-                new BuildQueryStage(),
-                new FacetFilterStage(),
-                new NumericFilterStage(),
-                new ExecuteSearchStage(harness.Index),
-                new CollectFacetsStage(new TaxonomyFacetProvider(harness.Index), options),
-                new HighlightStage(new LuceneHighlighter()),
-                new ProjectResponseStage()
-            ]);
-    }
-
     [Test]
     public async Task PushedDocumentIsSearchableWithoutARestart()
     {
         using var harness = new TestHarness();
-        var pipeline = PipelineOver(harness);
+        var pipeline = harness.Pipeline();
 
         var before = await pipeline.ExecuteAsync(
             new SearchRequest { Index = TestHarness.IndexName, Query = "espresso" },
@@ -89,6 +57,36 @@ internal sealed class FreshnessTests
         {
             Assert.That(status.Documents.Total, Is.EqualTo(1));
             Assert.That(status.Documents.BySource["pim"], Is.EqualTo(1));
+        });
+    }
+
+    /// <summary>
+    /// Work waiting in the queue is the normal state of an asynchronous write, so the status of an
+    /// index whose counts are merely lagging must not read as an incident. Only work that failed to
+    /// reach Lucene is degraded.
+    /// </summary>
+    [Test]
+    public async Task QueuedWorkIsHealthyAndFailedWorkIsDegraded()
+    {
+        using var harness = new TestHarness();
+
+        await harness.Indexer.UpsertAsync(
+            TestHarness.IndexName,
+            [TestHarness.Document("pim-1", attributes: [("title", "Espresso machine")])],
+            waitForIndex: false);
+
+        var queued = await harness.Indexer.GetStatusAsync(TestHarness.IndexName);
+
+        harness.Queue.FailedCount = 1;
+
+        var failed = await harness.Indexer.GetStatusAsync(TestHarness.IndexName);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(harness.Queue.Queued, Is.Not.Empty, "the write is still waiting to be indexed");
+            Assert.That(queued.Documents.Total, Is.Zero, "and the counts lag behind it");
+            Assert.That(queued.Health, Is.EqualTo(Health.Healthy));
+            Assert.That(failed.Health, Is.EqualTo(Health.Degraded));
         });
     }
 }

@@ -65,6 +65,39 @@ internal sealed class SearchPipelineTests
         });
     }
 
+    /// <summary>
+    /// The schema declares <c>_source</c> facetable, so Xperience content has to be countable and
+    /// drillable by its provenance, exactly like <c>contentType</c>.
+    /// </summary>
+    [Test]
+    public async Task Facets_CountAndFilterOnTheSourceOfXperienceContent()
+    {
+        var counted = TestHarness.Request();
+        counted.Facets = [LuceneFieldNames.SourceField];
+
+        var response = await harness.Search(counted);
+
+        var drilled = TestHarness.Request();
+        drilled.Filters = new Filters { Facets = [Facet(LuceneFieldNames.SourceField, LuceneFieldNames.XperienceSource)] };
+
+        var elsewhere = TestHarness.Request();
+        elsewhere.Filters = new Filters { Facets = [Facet(LuceneFieldNames.SourceField, "pim")] };
+
+        var xperience = await harness.Search(drilled);
+        var pim = await harness.Search(elsewhere);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(
+                response.Facets![LuceneFieldNames.SourceField].Single().Count,
+                Is.EqualTo(TestCorpus.Documents.Count),
+                "every corpus document is Xperience content");
+
+            Assert.That(xperience.Total, Is.EqualTo(TestCorpus.Documents.Count));
+            Assert.That(pim.Total, Is.Zero, "no document was pushed by another source");
+        });
+    }
+
     [Test]
     public async Task Facets_AreOrderedByCountThenValueAndCarryTheTaxonomyTitleAsTheLabel()
     {

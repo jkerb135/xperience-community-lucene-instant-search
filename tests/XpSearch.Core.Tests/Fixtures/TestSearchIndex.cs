@@ -124,7 +124,8 @@ internal sealed class TestSearchIndex : ILuceneIndexAccessor, IDisposable
             new TextField(TestCorpus.BodyField, source.Body, Field.Store.YES),
             new StringField(BaseDocumentProperties.CONTENT_TYPE_NAME, source.ContentType, Field.Store.YES),
             new StringField(BaseDocumentProperties.LANGUAGE_NAME, source.Language, Field.Store.YES),
-            new StringField(BaseDocumentProperties.URL, source.Url, Field.Store.YES)
+            new StringField(BaseDocumentProperties.URL, source.Url, Field.Store.YES),
+            new StringField(LuceneFieldNames.SourceField, LuceneFieldNames.XperienceSource, Field.Store.YES)
         };
 
         if (withTaxonomy)
@@ -133,6 +134,7 @@ internal sealed class TestSearchIndex : ILuceneIndexAccessor, IDisposable
             // taxonomy writer the index writer cannot consume one.
             document.Add(new FacetField(BaseDocumentProperties.CONTENT_TYPE_NAME, source.ContentType));
             document.Add(new FacetField(BaseDocumentProperties.LANGUAGE_NAME, source.Language));
+            document.Add(new FacetField(LuceneFieldNames.SourceField, LuceneFieldNames.XperienceSource));
         }
 
         AddTaxonomy(document, TestCorpus.CategoryField, source.Categories, withTaxonomy);

@@ -19,6 +19,8 @@ namespace XpSearch.Ingestion.Queue;
 /// </remarks>
 public class XpSearchIngestionQueueWorker : ThreadQueueWorker<IngestionWorkItem, XpSearchIngestionQueueWorker>
 {
+    private static int failures;
+
     /// <summary>Initializes a new instance of the <see cref="XpSearchIngestionQueueWorker"/> class.</summary>
     /// <remarks>Called by <c>ThreadWorker&lt;T&gt;.Current</c>; do not call it directly.</remarks>
     public XpSearchIngestionQueueWorker()
@@ -37,9 +39,9 @@ public class XpSearchIngestionQueueWorker : ThreadQueueWorker<IngestionWorkItem,
         Current.Enqueue(item, ensureThread: true);
     }
 
-    /// <summary>Gets how many items are waiting.</summary>
-    /// <returns>The queue length.</returns>
-    public static int Waiting() => Current.ItemsInQueue;
+    /// <summary>Gets how many work items have failed in a row without one succeeding since.</summary>
+    /// <returns>The consecutive failure count.</returns>
+    public static int Failures() => Volatile.Read(ref failures);
 
     /// <inheritdoc />
     protected override void Finish() => RunProcess();
@@ -52,9 +54,22 @@ public class XpSearchIngestionQueueWorker : ThreadQueueWorker<IngestionWorkItem,
         var processor = Service.Resolve<IIngestionWorkProcessor>()
             ?? throw new InvalidOperationException("IIngestionWorkProcessor is not registered. Call services.AddXpSearchIngestion().");
 
-        // The worker thread is synchronous by contract; every path below it is async, so this is the
-        // one place the two meet.
-        processor.ProcessAsync(item, CancellationToken.None).GetAwaiter().GetResult();
+        try
+        {
+            // The worker thread is synchronous by contract; every path below it is async, so this is
+            // the one place the two meet.
+            processor.ProcessAsync(item, CancellationToken.None).GetAwaiter().GetResult();
+
+            Interlocked.Exchange(ref failures, 0);
+        }
+        catch
+        {
+            // Counted, then rethrown so ThreadQueueWorker logs it as it always has. The row stays
+            // Pending and is re-queued on the next application start, so the failure is recoverable -
+            // but until something succeeds the index status reports it as degraded.
+            Interlocked.Increment(ref failures);
+            throw;
+        }
     }
 }
 
@@ -64,7 +79,7 @@ public class XpSearchIngestionQueueWorker : ThreadQueueWorker<IngestionWorkItem,
 public sealed class ThreadQueueIngestionQueue : IIngestionQueue
 {
     /// <inheritdoc />
-    public int PendingCount => XpSearchIngestionQueueWorker.Waiting();
+    public int FailedCount => XpSearchIngestionQueueWorker.Failures();
 
     /// <inheritdoc />
     public void Enqueue(IngestionWorkItem item) => XpSearchIngestionQueueWorker.EnqueueItem(item);

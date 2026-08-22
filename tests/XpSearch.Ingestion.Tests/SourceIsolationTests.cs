@@ -1,6 +1,8 @@
 using NUnit.Framework;
 
+using XpSearch.Core.Contract;
 using XpSearch.Core.Indexing;
+using XpSearch.Core.Pipeline;
 using XpSearch.Ingestion.Tests.Fixtures;
 
 namespace XpSearch.Ingestion.Tests;
@@ -109,6 +111,59 @@ internal sealed class SourceIsolationTests
         });
     }
 
+    /// <summary>
+    /// The schema declares <c>_source</c> facetable, so it has to be countable and drillable for a
+    /// pushed document as well as for Xperience content - and a scoped clear has to take its facet
+    /// away with it.
+    /// </summary>
+    [Test]
+    public async Task Source_IsCountableAndDrillableAndAScopedClearRemovesOnlyItsCount()
+    {
+        using var harness = new TestHarness(xperienceContent: XperienceContent());
+        var pipeline = harness.Pipeline();
+
+        await harness.Indexer.UpsertAsync(
+            TestHarness.IndexName,
+            [
+                TestHarness.Document("pim-1", attributes: ("title", "From the PIM")),
+                TestHarness.Document("kb-1", "support", ("title", "From the knowledge base")),
+            ],
+            waitForIndex: true);
+
+        var counts = await Counts(pipeline);
+
+        var drilled = await pipeline.ExecuteAsync(
+            new SearchRequest
+            {
+                Index = TestHarness.IndexName,
+                Filters = new Filters { Facets = [new FacetFilter { Attribute = LuceneFieldNames.SourceField, Values = ["support"] }] },
+            },
+            CancellationToken.None);
+
+        await harness.Indexer.DeleteBySourceAsync(TestHarness.IndexName, "pim", waitForIndex: true);
+
+        var after = await Counts(pipeline);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(counts, Is.EqualTo(new Dictionary<string, long>
+            {
+                [LuceneFieldNames.XperienceSource] = 2,
+                ["pim"] = 1,
+                ["support"] = 1,
+            }));
+
+            Assert.That(drilled.Total, Is.EqualTo(1));
+            Assert.That(drilled.Results[0].Id, Is.EqualTo("kb-1"));
+
+            Assert.That(after, Is.EqualTo(new Dictionary<string, long>
+            {
+                [LuceneFieldNames.XperienceSource] = 2,
+                ["support"] = 1,
+            }));
+        });
+    }
+
     [Test]
     public void Clear_RefusesToTouchXperienceContent()
     {
@@ -116,5 +171,15 @@ internal sealed class SourceIsolationTests
 
         Expect.ThrowsAsync<XpSearch.Ingestion.Abstractions.IngestionValidationException>(
             () => harness.Indexer.DeleteBySourceAsync(TestHarness.IndexName, LuceneFieldNames.XperienceSource));
+    }
+
+    /// <summary>The <c>_source</c> facet counts of the whole index, as a search sees them.</summary>
+    private static async Task<Dictionary<string, long>> Counts(ISearchPipeline pipeline)
+    {
+        var response = await pipeline.ExecuteAsync(
+            new SearchRequest { Index = TestHarness.IndexName, Facets = [LuceneFieldNames.SourceField] },
+            CancellationToken.None);
+
+        return response.Facets![LuceneFieldNames.SourceField].ToDictionary(value => value.Value, value => value.Count, StringComparer.Ordinal);
     }
 }

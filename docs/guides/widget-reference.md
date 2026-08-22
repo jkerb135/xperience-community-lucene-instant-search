@@ -198,6 +198,10 @@ The defaults are the names the server projects every document's base fields unde
 at your own fields (`titleAttribute: 'ProductFieldName'`) when the content type carries a better one,
 and ask for those fields in `fields` so they come back.
 
+**Expect `title` to be the content item's name**, which in Xperience is often a slug with a generated
+suffix (`CoffeePlunger-p2e57tss`), not a display title. Set `titleAttribute` to the field that holds
+the real one.
+
 Markup: `<div class="xps xps-results">` containing the live region `xps-results__status` and either
 `xps-results__list` (an `<ol>` of `xps-results__item`) or `xps-results__empty`. Modifiers `--empty` and
 `--loading` (with `aria-busy="true"`) mirror the state.

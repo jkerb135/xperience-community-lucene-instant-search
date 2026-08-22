@@ -265,6 +265,11 @@ from `curl` when a result is ranked in a way nobody can explain.
 suggestions or with matching documents is per-index server configuration, not a request field, so the same
 client code works for both.
 
+For document suggestions, `text` is the result's `title` — which for Xperience content is the content
+item's *name*, often a slug with a generated suffix (`CoffeePlunger-p2e57tss`). `/suggest` has no
+equivalent of the results widget's `titleAttribute`: read `result.attributes` and render your own
+label if the item name is not what you want a user to see.
+
 ### `POST /api/xpsearch/events`
 
 ```json
@@ -307,8 +312,8 @@ covers. `IIndexSchemaProvider.GetSchemaAsync(indexName, cancellationToken)` retu
 `Searchable` / `Facetable` / `Sortable` / `Retrievable` flag per field.
 
 **`facets` and `filters.facets`** accept attributes the schema marks facetable — in practice, Xperience
-Taxonomy fields plus `contentType` and `language`. Values are tag code names; the tag title comes
-back as the facet value's `label`. Anything else is a `400` keyed `facets[i]` or
+Taxonomy fields plus `contentType`, `language` and `_source`. Values are tag code names; the tag
+title comes back as the facet value's `label`. Anything else is a `400` keyed `facets[i]` or
 `filters.facets[i].attribute`.
 
 **`filters.numeric`** accepts attributes the schema marks numeric — integer, decimal and date fields. A

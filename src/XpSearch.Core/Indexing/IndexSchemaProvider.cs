@@ -76,8 +76,8 @@ public sealed class IndexSchemaProvider : IIndexSchemaProvider
         new SchemaField(LanguageAttribute, SearchFieldKind.Keyword, Searchable: false, Facetable: true, Sortable: false, Retrievable: true) { LuceneName = BaseDocumentProperties.LANGUAGE_NAME },
         new SchemaField(UrlAttribute, SearchFieldKind.Keyword, Searchable: false, Facetable: false, Sortable: false, Retrievable: true) { LuceneName = BaseDocumentProperties.URL },
 
-        // Facetable so a query can filter to one provenance; facet *counts* are only collected for
-        // taxonomy dimensions, so asking for "_source" in `facets` returns no counts.
+        // Facetable: every document carries "_source" as a facet field as well as a term, so a query
+        // can both count and drill down on its provenance.
         new SchemaField(LuceneFieldNames.SourceField, SearchFieldKind.Keyword, Searchable: false, Facetable: true, Sortable: false, Retrievable: true)
     ];
 

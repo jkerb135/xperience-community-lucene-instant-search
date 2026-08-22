@@ -5,6 +5,8 @@ using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.Standard;
 using Lucene.Net.Documents;
 using Lucene.Net.Facet;
+using Lucene.Net.Facet.Taxonomy;
+using Lucene.Net.Facet.Taxonomy.Directory;
 using Lucene.Net.Index;
 using Lucene.Net.Search;
 using Lucene.Net.Store;
@@ -29,10 +31,13 @@ namespace XpSearch.Ingestion.Tests.Fixtures;
 internal sealed class TestLuceneIndex : ILuceneIndexAccessor, ILuceneClient, IDisposable
 {
     private readonly RAMDirectory directory = new();
+    private readonly RAMDirectory taxonomy = new();
+    private readonly FacetsConfig config = new();
     private readonly Analyzer analyzer = new StandardAnalyzer(LuceneVersion.LUCENE_48);
     private readonly List<Document> xperienceContent;
 
     private DirectoryReader? reader;
+    private DirectoryTaxonomyReader? taxonomyReader;
 
     internal TestLuceneIndex(string indexName, IEnumerable<Document>? xperienceContent = null)
     {
@@ -55,6 +60,7 @@ internal sealed class TestLuceneIndex : ILuceneIndexAccessor, ILuceneClient, IDi
             new StringField(BaseDocumentProperties.ITEM_GUID, itemGuid, Field.Store.YES),
             new StringField(BaseDocumentProperties.LANGUAGE_NAME, language, Field.Store.YES),
             new StringField(LuceneFieldNames.SourceField, LuceneFieldNames.XperienceSource, Field.Store.YES),
+            new FacetField(LuceneFieldNames.SourceField, LuceneFieldNames.XperienceSource),
             new TextField(IndexSchemaProvider.TitleField, title, Field.Store.YES)
         };
 
@@ -67,20 +73,24 @@ internal sealed class TestLuceneIndex : ILuceneIndexAccessor, ILuceneClient, IDi
 
     public IReadOnlyList<string> IndexNamesForStrategy(Type strategyType) => [IndexName];
 
-    public FacetsConfig? GetFacetsConfig(string indexName) => null;
+    public FacetsConfig? GetFacetsConfig(string indexName) => config;
 
     public void Invalidate(string indexName) => Refresh();
 
     public TResult UseSearcher<TResult>(string indexName, Func<IndexSearcher, TResult> use) => use(new IndexSearcher(OpenReader()));
 
-    public TResult UseSearcherWithDrillSideways<TResult>(string indexName, Func<IndexSearcher, DrillSideways, TResult> use) =>
-        throw new InvalidOperationException("The test index has no taxonomy sidecar.");
+    public TResult UseSearcherWithDrillSideways<TResult>(string indexName, Func<IndexSearcher, DrillSideways, TResult> use)
+    {
+        var searcher = new IndexSearcher(OpenReader());
+
+        return use(searcher, new DrillSideways(searcher, config, taxonomyReader));
+    }
 
     public Task<int> UpsertRecords(IEnumerable<Document> documents, string indexName, CancellationToken cancellationToken)
     {
         int written = 0;
 
-        Write(writer =>
+        Write((writer, taxonomyWriter) =>
         {
             foreach (var document in documents)
             {
@@ -98,7 +108,9 @@ internal sealed class TestLuceneIndex : ILuceneIndexAccessor, ILuceneClient, IDi
                     writer.DeleteDocuments(query);
                 }
 
-                writer.AddDocument(document);
+                // What DefaultLuceneClient.UpsertRecordsInternal does with every document it writes,
+                // whatever produced it: the facet fields become taxonomy ordinals here or nowhere.
+                writer.AddDocument(config.Build(taxonomyWriter, document));
                 written++;
             }
         });
@@ -115,7 +127,7 @@ internal sealed class TestLuceneIndex : ILuceneIndexAccessor, ILuceneClient, IDi
             return Task.FromResult(0);
         }
 
-        Write(writer =>
+        Write((writer, _) =>
         {
             var query = new BooleanQuery();
 
@@ -174,30 +186,36 @@ internal sealed class TestLuceneIndex : ILuceneIndexAccessor, ILuceneClient, IDi
     public void Dispose()
     {
         reader?.Dispose();
+        taxonomyReader?.Dispose();
         analyzer.Dispose();
         directory.Dispose();
+        taxonomy.Dispose();
     }
 
     private void Reset(IEnumerable<Document> documents)
     {
         using (var writer = new IndexWriter(directory, new IndexWriterConfig(LuceneVersion.LUCENE_48, analyzer) { OpenMode = OpenMode.CREATE }))
+        using (var taxonomyWriter = new DirectoryTaxonomyWriter(taxonomy, OpenMode.CREATE))
         {
             foreach (var document in documents)
             {
-                writer.AddDocument(document);
+                writer.AddDocument(config.Build(taxonomyWriter, document));
             }
 
+            taxonomyWriter.Commit();
             writer.Commit();
         }
 
         Refresh();
     }
 
-    private void Write(Action<IndexWriter> write)
+    private void Write(Action<IndexWriter, DirectoryTaxonomyWriter> write)
     {
         using (var writer = new IndexWriter(directory, new IndexWriterConfig(LuceneVersion.LUCENE_48, analyzer) { OpenMode = OpenMode.CREATE_OR_APPEND }))
+        using (var taxonomyWriter = new DirectoryTaxonomyWriter(taxonomy, OpenMode.CREATE_OR_APPEND))
         {
-            write(writer);
+            write(writer, taxonomyWriter);
+            taxonomyWriter.Commit();
             writer.Commit();
         }
 
@@ -209,7 +227,14 @@ internal sealed class TestLuceneIndex : ILuceneIndexAccessor, ILuceneClient, IDi
     {
         reader?.Dispose();
         reader = null;
+        taxonomyReader?.Dispose();
+        taxonomyReader = null;
     }
 
-    private DirectoryReader OpenReader() => reader ??= DirectoryReader.Open(directory);
+    private DirectoryReader OpenReader()
+    {
+        taxonomyReader ??= new DirectoryTaxonomyReader(taxonomy);
+
+        return reader ??= DirectoryReader.Open(directory);
+    }
 }

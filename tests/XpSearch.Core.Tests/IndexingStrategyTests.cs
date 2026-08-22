@@ -84,6 +84,25 @@ internal sealed class IndexingStrategyTests
         });
     }
 
+    /// <summary>
+    /// <c>_source</c> is declared facetable, so it is written twice: the term the ingestion status
+    /// counts and a scoped clear read, and the facet field that makes it countable and drillable.
+    /// </summary>
+    [Test]
+    public async Task Map_WritesTheSourceAsBothATermAndAFacet()
+    {
+        var data = Container(ProductCoffee, values: []);
+        var strategy = Strategy(data, new XpSearchIndexingOptions(), Fields(ProductCoffee));
+
+        var document = await strategy.MapToLuceneDocumentOrNull(Item(ProductCoffee));
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(Values(document!, LuceneFieldNames.SourceField), Is.EquivalentTo(new[] { LuceneFieldNames.XperienceSource }));
+            Assert.That(FacetValues(document!, LuceneFieldNames.SourceField), Is.EquivalentTo(new[] { LuceneFieldNames.XperienceSource }));
+        });
+    }
+
     [Test]
     public async Task ContributeAsync_WritesFieldsWithTheSameEncodingAsTheBaseMapping()
     {
