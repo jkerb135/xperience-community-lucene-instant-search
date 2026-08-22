@@ -8,6 +8,21 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Added:** search analytics (spec §9). Four custom activity types (`xpsearch_query`,
+  `xpsearch_noresults`, `xpsearch_click`, `xpsearch_conversion`) are created on startup and logged
+  through `ICustomActivityLogger` for visitors whose cookie level is *Visitor* or higher — below that
+  nothing is logged and nothing is thrown. Independently of consent, every search is written to the
+  new `XpSearch.QueryLog` module class through a `ThreadQueueWorker`, a click event records the
+  clicked position on its row, and `XpSearchQueryLogRetentionTask` (identifier
+  `XpSearch.QueryLogRetention`, default 180 days) prunes it — create its configuration once in the
+  *Scheduled tasks* application. `ISearchAnalyticsService` returns top queries, zero-result queries,
+  click-through rate, average clicked position, daily volume and slowest queries (p95); the
+  dashboard page itself is still pending (KNOWN-LIMITATIONS). See `docs/guides/analytics.md` and
+  ADR-0015.
+- **Added:** `SuggestMode.QuerySuggestions` now works: `/api/xpsearch/suggest` answers from the
+  logged popular queries of the last `Analytics.QuerySuggestionDays` days (spec §4.3, §13.6). It
+  previously returned an empty list with a warning.
+
 - **Fixed:** the worked custom-widget example in `docs/guides/custom-widgets.md`. The previous
   "dropdown facet in 40 lines" did not typecheck under `strict`, rendered `xps-dropdown__*` class
   names that exist in neither `MARKUP.md` nor either stylesheet and no `xps` class on its root,

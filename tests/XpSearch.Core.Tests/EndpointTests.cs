@@ -12,6 +12,7 @@ using Microsoft.Extensions.Options;
 using NUnit.Framework;
 
 using XpSearch.Core.Abstractions;
+using XpSearch.Core.Analytics;
 using XpSearch.Core.Contract;
 using XpSearch.Core.Endpoints;
 using XpSearch.Core.Facets;
@@ -58,6 +59,7 @@ internal sealed class EndpointTests
         builder.Services.AddSingleton<ISearchStage>(new HighlightStage(new LuceneHighlighter()));
         builder.Services.AddSingleton<ISearchStage, ProjectResponseStage>();
         builder.Services.AddSingleton<ISearchPipeline, SearchPipeline>();
+        builder.Services.AddSingleton<IQuerySuggestionSource>(new FakeQuerySuggestionSource());
         builder.Services.AddSingleton<ISuggestService, DocumentSuggestService>();
         builder.Services.AddSingleton<ISearchEventSink, LoggingSearchEventSink>();
 
