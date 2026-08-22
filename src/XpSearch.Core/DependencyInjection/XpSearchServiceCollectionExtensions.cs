@@ -15,6 +15,7 @@ using XpSearch.Core.Options;
 using XpSearch.Core.Pipeline;
 using XpSearch.Core.Pipeline.Stages;
 using XpSearch.Core.Search;
+using XpSearch.Core.Tuning;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -68,11 +69,20 @@ public static class XpSearchServiceCollectionExtensions
         services.TryAddSingleton<ISearchEventSink, LoggingSearchEventSink>();
         services.TryAddSingleton<XpSearchIndexingStrategy>();
 
+        // Core works without XpSearch.Admin (spec §2.2): the tuning stages run against an empty
+        // source until AddXpSearchAdmin() replaces it with the cached, database-backed one.
+        services.TryAddSingleton<IRelevanceTuningSource, EmptyRelevanceTuningSource>();
+        services.TryAddSingleton(TimeProvider.System);
+
         services.AddXpSearchStage<NormalizeRequestStage>();
+        services.AddXpSearchStage<SynonymExpansionStage>();
+        services.AddXpSearchStage<StopwordRemovalStage>();
         services.AddXpSearchStage<BuildQueryStage>();
         services.AddXpSearchStage<FacetFilterStage>();
         services.AddXpSearchStage<NumericFilterStage>();
+        services.AddXpSearchStage<BoostRulesStage>();
         services.AddXpSearchStage<ExecuteSearchStage>();
+        services.AddXpSearchStage<PinnedAndBuriedStage>();
         services.AddXpSearchStage<CollectFacetsStage>();
         services.AddXpSearchStage<HighlightStage>();
         services.AddXpSearchStage<ProjectResponseStage>();

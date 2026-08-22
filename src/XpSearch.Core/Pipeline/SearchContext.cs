@@ -5,6 +5,7 @@ using Lucene.Net.Search;
 
 using XpSearch.Core.Abstractions;
 using XpSearch.Core.Contract;
+using XpSearch.Core.Tuning;
 
 namespace XpSearch.Core.Pipeline;
 
@@ -99,6 +100,34 @@ public sealed class SearchContext
     /// </summary>
     public IDictionary<string, IReadOnlyList<string>> DrillDown { get; } =
         new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+
+    /// <summary>
+    /// Gets the refinements that must hold for a document to belong in the results: the language
+    /// filter and every facet and numeric filter, whether or not it was expressed as a drill-down.
+    /// A pinned document is only injected when it also matches these (spec §8.3).
+    /// </summary>
+    public BooleanQuery ActiveFilters { get; } = new();
+
+    /// <summary>Gets or sets the relevance tuning configured for this index (spec §8.2).</summary>
+    public TuningSet Tuning { get; set; } = TuningSet.Empty;
+
+    /// <summary>
+    /// Gets or sets the synonym-expanded query: one slot per query position, each holding the
+    /// interchangeable terms for that position with the original first. Empty means "no expansion".
+    /// </summary>
+    public IReadOnlyList<IReadOnlyList<string>> QuerySlots { get; set; } = [];
+
+    /// <summary>
+    /// Gets the <c>explain=true</c> entries that apply to every hit: field weights, synonym
+    /// expansions and query-time rules.
+    /// </summary>
+    public IList<string> QueryExplanations { get; } = new List<string>();
+
+    /// <summary>
+    /// Gets the <c>explain=true</c> entries that apply to one hit, keyed by its result id.
+    /// </summary>
+    public IDictionary<string, List<string>> DocumentExplanations { get; } =
+        new Dictionary<string, List<string>>(StringComparer.Ordinal);
 
     /// <summary>Gets or sets the total number of matching documents across all pages.</summary>
     public int Total { get; set; }

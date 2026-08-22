@@ -41,10 +41,17 @@ public sealed class FacetFilterStage : ISearchStage
             if (disjunctive && context.FacetsConfig is not null && !context.DrillDown.ContainsKey(filter.Attribute))
             {
                 context.DrillDown[filter.Attribute] = filter.Values;
+
+                // A drill-down never reaches the base query, so the equivalent boolean clause is
+                // recorded separately: the pin stage has to know every refinement in play (spec §8.3).
+                context.ActiveFilters.Add(BuildClause(filter, disjunctive: true), Occur.MUST);
                 continue;
             }
 
-            mustClauses.Add(BuildClause(filter, disjunctive));
+            var clause = BuildClause(filter, disjunctive);
+
+            mustClauses.Add(clause);
+            context.ActiveFilters.Add(clause, Occur.MUST);
         }
 
         if (mustClauses.Count == 0)
