@@ -30,8 +30,10 @@ public sealed class NumericFilterStage : ISearchStage
         {
             var field = context.Schema.Find(filter.Attribute)!;
             var range = BuildRange(field, filter);
+            var occur = filter.Operator == NumericOperator.Ne ? Occur.MUST_NOT : Occur.MUST;
 
-            combined.Add(range, filter.Operator == NumericOperator.Ne ? Occur.MUST_NOT : Occur.MUST);
+            combined.Add(range, occur);
+            context.ActiveFilters.Add(range, occur);
         }
 
         context.BaseQuery = combined;

@@ -7,18 +7,18 @@ namespace XpSearch.Core.Pipeline;
 /// own with <c>services.AddXpSearchStage&lt;T&gt;(order)</c>.
 /// </summary>
 /// <remarks>
-/// The slots reserved for later phases are declared but not filled, so Phase 5 and Phase 6 can drop
-/// stages in without renumbering anything that already ships.
+/// The slots reserved for later phases are declared but not filled, so Phase 6 can drop stages in
+/// without renumbering anything that already ships.
 /// </remarks>
 public static class SearchStageOrder
 {
     /// <summary>Validate and normalize the request: trim, lowercase, length cap, filter validation.</summary>
     public const int Normalize = 100;
 
-    /// <summary>Reserved for synonym expansion (Phase 5). Not implemented.</summary>
+    /// <summary>Load the index's relevance tuning and expand the query with its synonyms.</summary>
     public const int SynonymExpansion = 200;
 
-    /// <summary>Reserved for stopword removal (Phase 5). Not implemented.</summary>
+    /// <summary>Drop the index's configured stopwords from the query.</summary>
     public const int StopwordRemoval = 300;
 
     /// <summary>Build the Lucene query from the normalized free text.</summary>
@@ -30,13 +30,13 @@ public static class SearchStageOrder
     /// <summary>Apply numeric refinements as range queries.</summary>
     public const int NumericFilters = 600;
 
-    /// <summary>Reserved for admin-configured boost rules (Phase 5). Not implemented.</summary>
+    /// <summary>Apply the admin-configured boost and filter rules to the query.</summary>
     public const int BoostRules = 700;
 
     /// <summary>Execute the search and collect documents and facet counts.</summary>
     public const int Execute = 800;
 
-    /// <summary>Reserved for pinned and buried results (Phase 5). Not implemented.</summary>
+    /// <summary>Reorder the executed results according to the pin and bury rules.</summary>
     public const int PinnedAndBuried = 900;
 
     /// <summary>Project the raw facet counts onto the requested dimensions.</summary>

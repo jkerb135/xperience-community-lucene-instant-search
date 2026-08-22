@@ -435,3 +435,57 @@ and how to lift it.
   analytics deliberately does not.
 - **Ceiling:** a crash or a redeploy loses up to one worker interval (10 s) of query log rows.
 - **Upgrade path:** none planned — a missing aggregate row is not a missing document.
+
+## Redirect rules in `XpSearch.Admin/Persistence/XpSearchRuleInfo.cs` and `Pipeline/Stages/BoostRulesStage.cs`
+
+- **Simplified:** `RuleConsequence.Redirect` and `RuleRedirectUrl` are stored and editable, but no
+  stage acts on them. Spec §8.2 defines the field; the owned JSON contract (ADR-0010, amendment
+  2026-08-21) has no redirect member on `SearchResponse`, and adding one is a coordinated contract
+  change, not a unit-local one. `BoostRulesStage` skips the consequence outright.
+- **Ceiling:** a marketer can create a redirect rule that quietly does nothing. The **Then** option
+  and the guide both say so, which is the only mitigation there is.
+- **Upgrade path:** add a `redirect` member to `SearchResponse` in `contract/xpsearch-api.schema.json`,
+  regenerate, and have `BoostRulesStage` set it from the first matching redirect rule in precedence
+  order. The stored data survives unchanged.
+
+## `PinnedAndBuriedStage` in `XpSearch.Core/Pipeline/Stages/PinnedAndBuriedStage.cs`
+
+- **Simplified:** pin and bury reorder the **current page** of results, which is all
+  `ExecuteSearchStage` materializes. A pin to position 3 is applied on the page that contains
+  position 3; other pages are untouched. Injecting a document the query did not match increments
+  `total` by one and drops the last row of the page.
+- **Ceiling:** with a pinned document, `total` and the page boundaries are approximate by at most the
+  number of pins, and a document pinned to a position beyond `MaxResultWindow` can never appear.
+- **Upgrade path:** move the reordering above pagination — have `ExecuteSearchStage` expose the full
+  `TopDocs` window and apply pins to it before slicing the page.
+
+## Model to row mapping in `XpSearch.Admin/UIPages/*.cs`
+
+- **Simplified:** each edit page maps its form model onto its `*Info` row and back by hand, and those
+  two methods have no unit test. An Info object cannot be constructed outside Kentico's IoC container
+  (`Service.InitializeContainer`), so the round trip only runs on a live instance. The Ingestion unit
+  hits the same wall.
+- **Ceiling:** a mistyped assignment in `ApplyTo`/`From` is caught by a human clicking Save, not by
+  CI. The column names themselves are pinned by `ModuleInstallerTests`.
+- **Upgrade path:** stand up Kentico's IoC container in the test fixture, or move the mapping onto
+  plain records that the pages then copy field-by-field.
+
+## Index status page in `XpSearch.Admin/UIPages/IndexStatus.cs`
+
+- **Simplified:** the built-in listing template lists a registered object type, and index status is
+  computed from `ILuceneIndexManager` and the ingestion store. The page therefore reports every index
+  as text in a read-only text area and reuses the edit template's submit action as the rebuild
+  trigger. The counts are read synchronously while the page is built.
+- **Ceiling:** no sorting, no per-row actions, and one blocking status read per index on page load.
+- **Upgrade path:** a React listing component, alongside the query tester (spec §8.4), fed by
+  `IXpSearchIndexer.GetStatusAsync`.
+
+## Synonym expansion in `XpSearch.Core/Tuning/SynonymExpansion.cs`
+
+- **Simplified:** synonyms are matched against whitespace-separated tokens of the normalized query,
+  longest phrase first, before the analyzer runs. There is no stemming and no per-index analyzer
+  awareness in the matching itself (the alternatives are analyzed when they are parsed).
+- **Ceiling:** `sofas` does not match the synonym group `sofa` unless both are listed, and a
+  punctuation-joined phrase is not recognised.
+- **Upgrade path:** replace the token scan with a Lucene `SynonymFilter` over a `SynonymMap` built
+  from the same rows and wired into the index's analyzer chain.

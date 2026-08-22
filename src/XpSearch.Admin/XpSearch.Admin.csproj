@@ -8,7 +8,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <AssemblyAttribute Include="CMS.AssemblyDiscoverableAttribute" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The §10.8 admin pages (API keys, index status, ingestion log) are pages over ingestion data,
+         so Admin depends on Ingestion. See docs/adr/0014-relevance-tuning.md. -->
     <ProjectReference Include="..\XpSearch.Core\XpSearch.Core.csproj" />
+    <ProjectReference Include="..\XpSearch.Ingestion\XpSearch.Ingestion.csproj" />
   </ItemGroup>
 
   <ItemGroup>

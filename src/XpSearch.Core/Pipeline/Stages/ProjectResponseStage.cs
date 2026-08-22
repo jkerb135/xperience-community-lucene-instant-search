@@ -32,10 +32,11 @@ public sealed class ProjectResponseStage : ISearchStage
         for (int i = 0; i < results.Length; i++)
         {
             var scored = context.Documents[i];
+            string id = ResolveResultId(scored.Document);
 
             results[i] = new Result
             {
-                Id = ResolveResultId(scored.Document),
+                Id = id,
                 Score = scored.Score,
                 Attributes = ProjectAttributes(context, scored.Document),
                 Highlights = i < context.Highlights.Count ? context.Highlights[i] : null,
@@ -43,9 +44,7 @@ public sealed class ProjectResponseStage : ISearchStage
                     ? new RankingInfo
                     {
                         BaseScore = scored.Score,
-
-                        // Boost rules are Phase 5; until then nothing has changed the score.
-                        Boosts = [],
+                        Boosts = Explain(context, id),
                         Position = ((long)(context.Page - 1) * context.PageSize) + i + 1
                     }
                     : null
@@ -78,7 +77,7 @@ public sealed class ProjectResponseStage : ISearchStage
     /// itself does not, so a hand-written strategy may leave it out. The fallback composes the two
     /// fields the integration always adds, which is exactly the pair it deletes documents by.
     /// </remarks>
-    private static string ResolveResultId(Document document)
+    internal static string ResolveResultId(Document document)
     {
         string? id = document.Get(BaseDocumentProperties.ID);
 
@@ -90,6 +89,21 @@ public sealed class ProjectResponseStage : ISearchStage
         return XpSearchIndexingStrategy.ComposeResultId(
             document.Get(BaseDocumentProperties.ITEM_GUID) ?? string.Empty,
             document.Get(BaseDocumentProperties.LANGUAGE_NAME) ?? string.Empty);
+    }
+
+    /// <summary>
+    /// The <c>ranking.boosts</c> entries of one hit (spec §8.3): everything that applied to the whole
+    /// query - field weights, synonym expansions, boost and filter rules - then the rules that named
+    /// this document.
+    /// </summary>
+    private static string[] Explain(SearchContext context, string id)
+    {
+        if (!context.DocumentExplanations.TryGetValue(id, out var entries))
+        {
+            return [.. context.QueryExplanations];
+        }
+
+        return [.. context.QueryExplanations, .. entries];
     }
 
     private static Dictionary<string, JsonElement> ProjectAttributes(SearchContext context, Document document)
