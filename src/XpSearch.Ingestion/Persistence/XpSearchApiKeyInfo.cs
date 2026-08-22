@@ -1,8 +1,16 @@
 using System.Data;
 using System.Globalization;
 
+using CMS;
 using CMS.DataEngine;
 using CMS.Helpers;
+
+using XpSearch.Ingestion.Persistence;
+
+// Registers the object type with the system. Without it Xperience never adds
+// IInfoProvider<XpSearchApiKeyInfo> to the container and the application fails DI validation
+// at startup: https://docs.kentico.com/documentation/developers-and-admins/customization/object-types/object-type-configuration
+[assembly: RegisterObjectType(typeof(XpSearchApiKeyInfo), XpSearchApiKeyInfo.OBJECT_TYPE)]
 
 namespace XpSearch.Ingestion.Persistence;
 
