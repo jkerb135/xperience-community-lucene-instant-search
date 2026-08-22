@@ -132,7 +132,10 @@ A query suggestion carries `text` only — there is no document behind it. Leave
 
 ### The dashboard
 
-**Search tuning → Analytics** shows the whole log for one index and one date range.
+**Lucene Search → indexes → click the index → Tuning → Analytics** shows the whole log for that
+index and one date range (`/admin/lucene/indexes/{id}/tuning/analytics`). The index is the one you
+clicked; it is shown above the date range and cannot be changed, so there is no "every index" view —
+open each index's dashboard in turn.
 
 1. Pick the **Index**, or leave it on **Every index**.
 2. Pick the range: **Last 7 days**, **Last 30 days**, **Last 90 days**, or type **From** and **To**
@@ -162,7 +165,8 @@ Every row of **Zero-result queries** has a **Create rule** button. It opens the 
 
 Choose what the rule should do — usually **Pin a result to a position**, pointing at the page that
 *should* have come back — fill in the result id, and save. You land back on the **Rules** listing.
-Then check it in **Query tester** (see `docs/guides/relevance-tuning.md`).
+Then check it in **Query tester**, next to Analytics in the same sidebar (see
+`docs/guides/relevance-tuning.md`).
 
 If the query found nothing because the content genuinely does not exist, the report is telling you to
 write the page, not the rule.

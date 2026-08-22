@@ -220,7 +220,24 @@ This prefix-matches the index's suggest field (`Title` by default) and returns t
 a dropdown can show real results. The other mode, suggesting previously typed queries, needs the search
 analytics store and is not available yet.
 
-### 8. The UI
+### 8. Tune it
+
+Everything that shapes results for an index lives inside the index:
+
+**Lucene Search → indexes → click the index → the *Tuning* sidebar** — Settings, Rules, Synonyms,
+Stopwords, Field weights, Query tester, Analytics and Status
+(`/admin/lucene/indexes/{id}/tuning/rules` and friends). Clicking an index row in the listing opens
+the sidebar directly.
+
+These pages are governed by the **Lucene Search** application in *Role management*: *View* to read
+them, *Create*/*Update*/*Delete* to change them, *Rebuild* to rebuild an index.
+
+The two pages that are not about one index — **API keys** and **Ingestion log** — are in the
+**Search ingestion** application under *Development*.
+
+See [Relevance tuning](relevance-tuning.md) and [Analytics](analytics.md).
+
+### 9. The UI
 
 The JavaScript widgets that bind to these endpoints ship separately — see the JS client guide. Nothing on
 this page depends on them: the endpoints are a plain JSON API and are equally usable from your own

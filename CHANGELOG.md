@@ -8,6 +8,30 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Changed (breaking):** the relevance-tuning admin pages moved inside the search index. They are now
+  reached at **Lucene Search → indexes → click an index → the *Tuning* sidebar**: *Settings*, *Rules*,
+  *Synonyms*, *Stopwords*, *Field weights*, *Query tester*, *Analytics* and *Status*. Clicking an index
+  row in the Lucene index listing opens the sidebar instead of the integration's bare edit form; that
+  form is the sidebar's *Settings* page. See ADR-0017.
+- **Changed (breaking):** the old URLs are gone. `/admin/xpsearch-tuning/rules`, `/synonyms`,
+  `/stopwords`, `/field-weights`, `/query-tester`, `/analytics` and `/index-status` are now
+  `/admin/lucene/indexes/{id}/tuning/rules`, `/synonyms`, `/stopwords`, `/weights`, `/query-tester`,
+  `/analytics` and `/status`. Re-point any bookmarks.
+- **Changed (breaking):** permissions for those pages are now assigned on the **Lucene Search**
+  application in *Role management*, not on *Search tuning*. A UI page is governed by the nearest
+  ancestor application, and the moved pages sit under the Lucene integration. Grant *View*,
+  *Create*, *Update*, *Delete* and *Rebuild* there. `XpSearch.SearchTuning` grants now cover only the
+  two pages that stayed.
+- **Changed (breaking):** the *Search tuning* application is renamed **Search ingestion** and holds
+  only **API keys** and **Ingestion log**. Its identifier (`XpSearch.SearchTuning`) and slug
+  (`xpsearch-tuning`) are unchanged, and it no longer declares the `UPDATE` permission, which none of
+  its remaining pages evaluate.
+- **Changed (breaking):** the index is no longer a field. Every tuning listing is filtered to the index
+  in the URL and has lost its Index column; every tuning form shows the index read-only and takes its
+  value from the URL. A row whose stored index differs from the URL's is refused on save rather than
+  moved. The query tester's index selector and the analytics dashboard's "every index" option are gone
+  — analytics now reports the index you are in.
+
 - **Changed:** the search start time lives on `SearchContext` (`StartedTimestamp`, `Elapsed`) instead of
   in the internal `SearchTimingStage`, which is gone. The stage was never part of the documented
   stage-order table and nothing outside the library could reference it; the logged processing time and

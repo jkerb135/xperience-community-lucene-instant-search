@@ -88,8 +88,35 @@ Then run `npm run start` in `src/XpSearch.Admin/Client`. Remove the setting befo
 2. Write the back end as `Page<TClientProperties>` with a `TemplateClientProperties` subclass, and
    register it with `[assembly: UIPage(..., "@yourco/xperience-search-admin/<Name>", order)]`.
 3. Fetch data with `[PageCommand]` handlers and `usePageCommand` on the client. Give every command a
-   `Permission` from the set `SearchTuningApplication` declares.
+   `Permission` from the set the *owning application* declares — for a page inside
+   `IndexTuningSection` that is the Lucene integration's application (`View`, `Create`, `Update`,
+   `Delete`, `Rebuild`); for a page under `SearchTuningApplication` it is `View`, `Create`, `Delete`.
 4. `npm run typecheck`, `npm run build`, `dotnet build src/XpSearch.Admin`.
+
+#### Pages inside an index
+
+Both shipped templates hang under `IndexTuningSection`, so the index is not something the visitor
+picks. The pattern is:
+
+```csharp
+[PageParameter(typeof(IntPageModelBinder), typeof(IndexEditPage))]
+public int IndexIdentifier { get; set; }
+
+private string IndexName => IndexScope.Resolve(storageService, IndexIdentifier);
+
+public override Task<MyClientProperties> ConfigureTemplateProperties(MyClientProperties properties)
+{
+    properties.IndexNames = [IndexName];
+    properties.SelectedIndexName = IndexName;
+    properties.IndexLocked = true;
+
+    return Task.FromResult(properties);
+}
+```
+
+`indexLocked` is the contract with the template: when it is `true` the template renders the index as
+text instead of a `Select`. The command handlers ignore any index the client sends and use
+`IndexName` from the URL, so a tampered payload cannot reach another index.
 
 Constraints worth knowing before you start: dynamic `import()` is not supported in admin client
 modules, and `react`, `react-dom`, `react-router`, `i18next` and `@hello-pangea/dnd` are shared at

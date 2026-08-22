@@ -1,20 +1,49 @@
 ## Relevance tuning
 
-You know your visitors better than any ranking algorithm does. **Search tuning** is the application
-where you tell search what to do about that — promote a product during a campaign, hide a
-discontinued page, teach it that "sofa" and "couch" are the same word.
+You know your visitors better than any ranking algorithm does. Tuning is where you tell search what
+to do about that — promote a product during a campaign, hide a discontinued page, teach it that
+"sofa" and "couch" are the same word.
 
 You do not need a developer for anything on this page. Everything is done in the Xperience
 administration.
+
+### Where the tuning pages are
+
+Tuning belongs to one search index, so it lives inside the index:
+
+**Lucene Search → indexes → click the index → the *Tuning* sidebar**
+
+The sidebar has one entry per kind of tuning:
+
+| Sidebar entry | URL | What it is |
+|---|---|---|
+| **Settings** | `/admin/lucene/indexes/{id}/tuning/settings` | The index's own configuration (strategy, analyzer, channels) — the Lucene integration's form. |
+| **Rules** | `…/tuning/rules` | Pin, bury, boost, filter and redirect rules. |
+| **Synonyms** | `…/tuning/synonyms` | Words that mean the same thing. |
+| **Stopwords** | `…/tuning/stopwords` | Words ignored when someone searches. |
+| **Field weights** | `…/tuning/weights` | How much a match in one field counts. |
+| **Query tester** | `…/tuning/query-tester` | The same query with and without your tuning. |
+| **Analytics** | `…/tuning/analytics` | What visitors searched for, clicked, and did not find. |
+| **Status** | `…/tuning/status` | Document counts, last write, and the rebuild button. |
+
+Everything you see on these pages applies to that one index. You never pick an index on a form; the
+index you clicked is the index you are editing, and it is shown read-only at the top of every form.
+
+Two pages are **not** per-index and stay in their own application, **Search ingestion** (under
+*Development*): **API keys** and **Ingestion log**.
+
+**Permissions.** These pages are governed by the **Lucene Search** application, not by *Search
+ingestion*. A role needs *View* on Lucene Search to read them, *Create*/*Update*/*Delete* to change
+them. See *Permissions* at the end of this page.
 
 ### Your first rule, in five steps
 
 Say the search *espresso machine* should always show your flagship machine first.
 
-1. Open **Search tuning** in the administration menu (it sits under **Development**).
-2. Select **Rules**, then **New rule**.
+1. Open **Lucene Search** in the administration menu (it sits under **Development**) and select the
+   index you want to tune, for example *Products*.
+2. Select **Rules** in the sidebar, then **New rule**.
 3. Fill in:
-   - **Index** — the search index the rule applies to, for example *Products*.
    - **Rule name** — `Flagship machine first`. Give it a name you will recognise in six months.
    - **Enabled** — leave selected.
    - **When the visitor's search** — *Contains the words below*.
@@ -107,17 +136,16 @@ The **Query tester** shows the rule as `rule:<name>` in the explanation, the sam
 
 A synonym tells search that different words mean the same thing.
 
-1. **Search tuning → Synonyms → New synonym**.
-2. **Index** — the index it applies to.
-3. **Direction**:
+1. **Synonyms → New synonym** in the index's Tuning sidebar.
+2. **Direction**:
    - *Two-way* — every word finds every other. `sofa, couch, settee` means someone searching for
      *settee* finds the sofas, and someone searching for *sofa* finds the settees.
    - *One-way* — the **Words** find the **Replacements**, but not the other way round. Use this when
      the words are not really equivalent: `laptop` → `notebook` is fine one-way if you do not want
      someone searching for *notebook* to be shown laptops.
-4. **Words** — comma-separated: `sofa, couch, settee`.
-5. **Replacements** — only for a one-way synonym. Leave it empty for two-way.
-6. **Save**.
+3. **Words** — comma-separated: `sofa, couch, settee`.
+4. **Replacements** — only for a one-way synonym. Leave it empty for two-way.
+5. **Save**.
 
 Phrases work: `sofa bed, futon` is a valid two-way group, and a search for *cheap sofa bed* uses it
 rather than the plain `sofa` group, because the longer phrase always wins.
@@ -130,11 +158,10 @@ something red.
 Stopwords are words that are ignored when someone searches — *the*, *a*, *of*, or your own noise
 words like *buy* on a shop.
 
-1. **Search tuning → Stopwords → New stopword list** (one list per index; edit the existing one if
-   there already is one).
-2. **Index** — the index.
-3. **Words to ignore** — one word per line.
-4. **Save**.
+1. **Stopwords → New stopword list** in the index's Tuning sidebar (one list per index; edit the
+   existing one if there already is one).
+2. **Words to ignore** — one word per line.
+3. **Save**.
 
 Two cautions. Removing a word makes searches *broader*, not better — if you make *free* a stopword,
 *free shipping* becomes *shipping*. And if a visitor searches for nothing but stopwords, the search
@@ -145,12 +172,11 @@ is left alone rather than turned into "show me everything".
 A field weight decides how much a match in one place counts compared to another. A match in a title
 usually deserves more than a match halfway down a body of text.
 
-1. **Search tuning → Field weights → New field weight**.
-2. **Index** — the index.
-3. **Field** — the field name as it appears in your search results, for example `Title`.
-4. **Weight** — `1` is normal. `3` makes a match in that field count roughly three times as much.
+1. **Field weights → New field weight** in the index's Tuning sidebar.
+2. **Field** — the field name as it appears in your search results, for example `Title`.
+3. **Weight** — `1` is normal. `3` makes a match in that field count roughly three times as much.
    `0.5` halves it.
-5. **Save**.
+4. **Save**.
 
 Start small. Move one field to `2` or `3`, look at the results, then adjust. Weights of 20 tend to
 turn search into "whatever has the word in the title", which is rarely what anyone wanted.
@@ -164,10 +190,10 @@ the list; they are stable and do not change when you edit the page.
 
 ### Checking your work: the Query tester
 
-**Search tuning → Query tester** answers the only question that matters after you save a rule: did it
-do what you meant?
+**Query tester** in the index's Tuning sidebar answers the only question that matters after you save
+a rule: did it do what you meant?
 
-1. Pick the **Index** you tuned.
+1. The **Index** is the one you are in — it is shown above the form and cannot be changed.
 2. Type the **Query** a visitor would type. Leave **Language** empty unless you are checking one
    language in particular (`en`, `de`, …).
 3. Press **Run**.
@@ -208,18 +234,46 @@ Two things worth knowing. The tester always runs a fresh search, so a rule you s
 already visible even though live searches may still be served from cache for a moment. And testing
 never shows up in **Analytics** — tester runs are not written to the query log.
 
-### The other pages in this application
+### The other pages in the sidebar
 
-- **Analytics** — what visitors searched for, what they clicked and, above all, what found nothing.
-  See `docs/guides/analytics.md`; every zero-result row has a **Create rule** button that opens the
-  rule form with the query already filled in.
+- **Settings** — the index's own configuration: which content it holds, its strategy and its
+  analyzer. This is the Lucene integration's form; it is here so that everything about an index is in
+  one place.
+- **Analytics** — what visitors searched for on *this* index, what they clicked and, above all, what
+  found nothing. See `docs/guides/analytics.md`; every zero-result row has a **Create rule** button
+  that opens the rule form with the query already filled in.
+- **Status** — how many documents this index holds and where they came from, plus a **Rebuild index**
+  button. A rebuild empties the index and writes it again; search results are incomplete while it
+  runs, so do it out of hours.
+
+### And two pages that are not per-index
+
+They live in the **Search ingestion** application (under *Development*), because they are about
+systems pushing data in rather than about one index:
+
 - **API keys** — for systems that push data into search. When you create a key it is shown **once**,
   in the message at the top of the screen. Copy it then; it cannot be shown again.
-- **Index status** — how many documents each index holds and where they came from, plus a **Rebuild
-  index** button. A rebuild empties an index and writes it again; search results are incomplete while
-  it runs, so do it out of hours.
 - **Ingestion log** — a record of every push into search: who, which index, how many documents and
   whether it worked. Filter it by index. This is the page that answers "who deleted our catalogue".
+
+### Permissions
+
+Because the tuning pages sit inside an index, they are governed by the **Lucene Search** application
+in *Role management*, not by *Search ingestion*:
+
+| To… | Grant on **Lucene Search** |
+|---|---|
+| Read the tuning pages, run the query tester, read analytics | *View* |
+| Create rules, synonyms, stopword lists, field weights | *Create* |
+| Edit them, edit index settings | *Update* |
+| Delete them | *Delete* |
+| Rebuild an index | *Rebuild* |
+
+Grants on **Search ingestion** now only cover API keys and the ingestion log.
+
+One wrinkle worth knowing: the index's own edit URL requires *Update*, so a *View*-only role reaches
+the sidebar by clicking the index row in the listing (which is what the row click does), not by
+opening the index's configuration form first.
 
 ### Things that do not work yet
 
