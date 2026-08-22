@@ -1,22 +1,25 @@
-using Kentico.Xperience.Lucene.Core;
+﻿using Kentico.Xperience.Lucene.Core;
 
 using Lucene.Net.Index;
 using Lucene.Net.Search;
 
 using XpSearch.Core.Abstractions;
+using XpSearch.Core.Contract;
 using XpSearch.Core.Tuning;
 
 namespace XpSearch.Core.Pipeline.Stages;
 
 /// <summary>
-/// Applies the rules that change the query itself (spec §8.3): <see cref="RuleConsequence.Boost"/>
-/// raises the score of its target, <see cref="RuleConsequence.Filter"/> restricts the result set.
+/// Applies the rules that act before the search runs (spec §8.3): <see cref="RuleConsequence.Boost"/>
+/// raises the score of its target, <see cref="RuleConsequence.Filter"/> restricts the result set and
+/// <see cref="RuleConsequence.Redirect"/> records a destination on the response.
 /// Pin and bury are a post-execution reordering and belong to <see cref="PinnedAndBuriedStage"/>.
 /// </summary>
 /// <remarks>
 /// Rules arrive in precedence order (priority, then id) and are applied in that order, so a later
-/// rule's clauses wrap the earlier ones. <see cref="RuleConsequence.Redirect"/> is stored but not
-/// applied: the response contract has no redirect member - see ADR-0014.
+/// rule's clauses wrap the earlier ones. Boost and filter rules all apply; only the first redirect
+/// does, and it does not stop the search - the response carries results next to the destination and
+/// the client decides whether to navigate.
 /// </remarks>
 public sealed class BoostRulesStage : ISearchStage
 {
@@ -36,6 +39,7 @@ public sealed class BoostRulesStage : ISearchStage
             {
                 RuleConsequence.Boost => Boost(context, rule),
                 RuleConsequence.Filter => Filter(context, rule),
+                RuleConsequence.Redirect => Redirect(context, rule),
                 _ => false
             };
 
@@ -100,6 +104,23 @@ public sealed class BoostRulesStage : ISearchStage
             { context.BaseQuery, Occur.MUST },
             { target, Occur.SHOULD }
         };
+
+        return true;
+    }
+
+    /// <summary>
+    /// Records where a redirect rule sends the visitor. The first one wins: rules arrive in
+    /// precedence order, and a later one naming another destination is ignored rather than
+    /// overwriting it. A rule with no URL configured is not a redirect at all.
+    /// </summary>
+    private static bool Redirect(SearchContext context, TuningRule rule)
+    {
+        if (context.Redirect is not null || string.IsNullOrWhiteSpace(rule.RedirectUrl))
+        {
+            return false;
+        }
+
+        context.Redirect = new SearchRedirect { Url = rule.RedirectUrl.Trim(), Rule = rule.Name };
 
         return true;
     }

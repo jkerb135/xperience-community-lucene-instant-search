@@ -151,6 +151,13 @@ public sealed class SearchContext
     /// </summary>
     public IReadOnlyList<Dictionary<string, string>?> Highlights { get; set; } = [];
 
+    /// <summary>
+    /// Gets or sets the destination of the first matching redirect rule, in precedence order, or
+    /// <see langword="null"/> when none matched (spec §8.2). The projection stage copies it onto
+    /// the response; the results are returned alongside it and following it is the client's call.
+    /// </summary>
+    public SearchRedirect? Redirect { get; set; }
+
     /// <summary>Gets or sets the response under construction. The projection stage creates it.</summary>
     public SearchResponse? Response { get; set; }
 }
