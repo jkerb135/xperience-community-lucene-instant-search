@@ -44,19 +44,37 @@ public sealed class IndexSchemaProvider : IIndexSchemaProvider
         this.options = options;
     }
 
+    /// <summary>Attribute name of the item's display name.</summary>
+    public const string TitleAttribute = "title";
+
+    /// <summary>Attribute name of the web page URL.</summary>
+    public const string UrlAttribute = "url";
+
+    /// <summary>Attribute name of the content type class name.</summary>
+    public const string ContentTypeAttribute = "contentType";
+
+    /// <summary>Attribute name of the language code name.</summary>
+    public const string LanguageAttribute = "language";
+
     /// <summary>
     /// Gets the fields present on every document, whatever its content type: the identifier and the
     /// properties the Lucene integration adds itself, plus the title the strategy adds.
     /// </summary>
     /// <returns>The base fields, in projection order.</returns>
+    /// <remarks>
+    /// The base fields are the only ones whose attribute name differs from their Lucene field name:
+    /// the wire contract owns <c>title</c>, <c>url</c>, <c>contentType</c> and <c>language</c>, while
+    /// the documents keep the names the Lucene integration writes. A field detected from a content
+    /// type is the same name on both sides.
+    /// </remarks>
     public static IReadOnlyList<SchemaField> BaseFields() =>
     [
         // The result id is a member of its own, so ID is never projected as an attribute.
         new SchemaField(BaseDocumentProperties.ID, SearchFieldKind.Keyword, Searchable: false, Facetable: false, Sortable: false, Retrievable: false),
-        new SchemaField(TitleField, SearchFieldKind.Text, Searchable: true, Facetable: false, Sortable: true, Retrievable: true, Boost: 2f),
-        new SchemaField(BaseDocumentProperties.CONTENT_TYPE_NAME, SearchFieldKind.Keyword, Searchable: false, Facetable: true, Sortable: false, Retrievable: true),
-        new SchemaField(BaseDocumentProperties.LANGUAGE_NAME, SearchFieldKind.Keyword, Searchable: false, Facetable: true, Sortable: false, Retrievable: true),
-        new SchemaField(BaseDocumentProperties.URL, SearchFieldKind.Keyword, Searchable: false, Facetable: false, Sortable: false, Retrievable: true),
+        new SchemaField(TitleAttribute, SearchFieldKind.Text, Searchable: true, Facetable: false, Sortable: true, Retrievable: true, Boost: 2f) { LuceneName = TitleField },
+        new SchemaField(ContentTypeAttribute, SearchFieldKind.Keyword, Searchable: false, Facetable: true, Sortable: false, Retrievable: true) { LuceneName = BaseDocumentProperties.CONTENT_TYPE_NAME },
+        new SchemaField(LanguageAttribute, SearchFieldKind.Keyword, Searchable: false, Facetable: true, Sortable: false, Retrievable: true) { LuceneName = BaseDocumentProperties.LANGUAGE_NAME },
+        new SchemaField(UrlAttribute, SearchFieldKind.Keyword, Searchable: false, Facetable: false, Sortable: false, Retrievable: true) { LuceneName = BaseDocumentProperties.URL },
 
         // Facetable so a query can filter to one provenance; facet *counts* are only collected for
         // taxonomy dimensions, so asking for "_source" in `facets` returns no counts.

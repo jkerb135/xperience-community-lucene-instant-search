@@ -16,7 +16,7 @@ builder.Services.AddKenticoLucene(lucene => lucene
 builder.Services.AddXpSearch(options =>
 {
     options.CacheTtl = TimeSpan.FromSeconds(60);
-    options.Indexes["MySiteIndex"].SuggestField = "Title";
+    options.Indexes["MySiteIndex"].SuggestField = "title";
 });
 
 var app = builder.Build();
@@ -143,7 +143,7 @@ curl -sS -X POST http://localhost:5000/api/xpsearch/query \
         "index": "MySiteIndex",
         "query": "espresso",
         "pageSize": 5,
-        "facets": ["ContentTypeName"],
+        "facets": ["contentType"],
         "highlight": { "fields": ["Body"] }
       }'
 ```
@@ -155,14 +155,16 @@ curl -sS -X POST http://localhost:5000/api/xpsearch/query \
       "id": "6f1a…:en",
       "score": 1.42,
       "attributes": {
-        "Title": "Espresso Basics",
-        "Url": "/articles/espresso-basics"
+        "title": "Espresso Basics",
+        "url": "/articles/espresso-basics",
+        "contentType": "DancingGoat.ArticlePage",
+        "language": "en"
       },
       "highlights": { "Body": "Brewing <mark>espresso</mark> requires pressure" }
     }
   ],
   "facets": {
-    "ContentTypeName": [
+    "contentType": [
       { "value": "Article", "label": "Article", "count": 4 },
       { "value": "Product", "label": "Product", "count": 3 }
     ]
@@ -177,8 +179,9 @@ curl -sS -X POST http://localhost:5000/api/xpsearch/query \
 ```
 
 Every response also carries `X-XpSearch-Api-Version: 1`. The keys inside `attributes` are the names of
-your content type's fields, plus `Title`, `Url`, `ContentTypeName` and `LanguageName`, which every
-document carries. To find out what an index exposes without guessing, `IIndexSchemaProvider.GetSchemaAsync` returns
+your content type's fields, unchanged, plus the four attributes every document carries whatever its
+content type: `title`, `url`, `contentType` and `language`. The document id is the result's own `id`,
+never an attribute. To find out what an index exposes without guessing, `IIndexSchemaProvider.GetSchemaAsync` returns
 the field list with its `Searchable` / `Facetable` / `Sortable` / `Retrievable` flags.
 
 ### 6. Filter

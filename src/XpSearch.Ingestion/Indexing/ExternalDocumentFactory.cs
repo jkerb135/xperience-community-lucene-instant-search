@@ -81,17 +81,17 @@ public static class ExternalDocumentFactory
                 break;
 
             case SearchFieldKind.Boolean when value.ValueKind is JsonValueKind.True or JsonValueKind.False:
-                document.Add(new StringField(field.Name, value.GetBoolean() ? "true" : "false", Field.Store.YES));
+                document.Add(new StringField(field.LuceneName, value.GetBoolean() ? "true" : "false", Field.Store.YES));
                 break;
 
             case SearchFieldKind.Number when value.TryGetDouble(out double number):
-                document.Add(new DoubleField(field.Name, number, Field.Store.YES));
-                document.Add(new DoubleDocValuesField(field.Name, number));
+                document.Add(new DoubleField(field.LuceneName, number, Field.Store.YES));
+                document.Add(new DoubleDocValuesField(field.LuceneName, number));
                 break;
 
             case SearchFieldKind.Date when value.TryGetInt64(out long epochSeconds):
-                document.Add(new Int64Field(field.Name, epochSeconds, Field.Store.YES));
-                document.Add(new NumericDocValuesField(field.Name, epochSeconds));
+                document.Add(new Int64Field(field.LuceneName, epochSeconds, Field.Store.YES));
+                document.Add(new NumericDocValuesField(field.LuceneName, epochSeconds));
                 break;
 
             case SearchFieldKind.Taxonomy when value.ValueKind == JsonValueKind.Array:
@@ -111,7 +111,7 @@ public static class ExternalDocumentFactory
 
     private static void AddText(Document document, SchemaField field, string value)
     {
-        document.Add(new TextField(field.Name, value, Field.Store.YES));
+        document.Add(new TextField(field.LuceneName, value, Field.Store.YES));
 
         if (field.Sortable)
         {
@@ -121,7 +121,7 @@ public static class ExternalDocumentFactory
 
     private static void AddKeyword(Document document, SchemaField field, string value)
     {
-        document.Add(new StringField(field.Name, value, Field.Store.YES));
+        document.Add(new StringField(field.LuceneName, value, Field.Store.YES));
 
         if (field.Sortable)
         {
@@ -131,7 +131,7 @@ public static class ExternalDocumentFactory
 
     private static void AddTag(Document document, SchemaField field, string value)
     {
-        document.Add(new StringField(field.Name, value, Field.Store.YES));
+        document.Add(new StringField(field.LuceneName, value, Field.Store.YES));
         document.Add(new TextField(LuceneFieldNames.SearchFieldName(field), value, Field.Store.NO));
 
         // External sources have no tag titles, so the code name doubles as the label; the query side

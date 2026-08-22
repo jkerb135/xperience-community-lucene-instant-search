@@ -49,13 +49,20 @@ Pick the registered strategy name in the **Search** application when you create 
 
 Every document gets these fields whatever its content type:
 
-| Field | Kind | Flags | Where it comes from |
-|---|---|---|---|
-| `ID` | keyword | — | `{itemGuid}:{languageName}`, surfaced as the result's `id` |
-| `Title` | text | searchable, sortable, retrievable | the content item's name; boosted ×2 |
-| `ContentTypeName` | keyword | facetable, retrievable | the Lucene integration |
-| `LanguageName` | keyword | facetable, retrievable | the Lucene integration |
-| `Url` | keyword | retrievable | `IWebPageUrlRetriever`, converted from `~/x` to `/x` |
+| Attribute | Lucene field | Kind | Flags | Where it comes from |
+|---|---|---|---|---|
+| — | `ID` | keyword | — | `{itemGuid}:{languageName}`, surfaced as the result's `id` |
+| `title` | `Title` | text | searchable, sortable, retrievable | the content item's name; boosted ×2 |
+| `contentType` | `ContentTypeName` | keyword | facetable, retrievable | the Lucene integration |
+| `language` | `LanguageName` | keyword | facetable, retrievable | the Lucene integration |
+| `url` | `Url` | keyword | retrievable | `IWebPageUrlRetriever`, converted from `~/x` to `/x` |
+| `_source` | `_source` | keyword | facetable, retrievable | `xperience`, or the pushed document's source |
+
+These four are the only fields whose **attribute name** (what a request and a result call them) differs
+from the Lucene field the documents carry: the wire names are this library's, so one default result
+template works for every project, while the documents keep the names the Lucene integration writes. A
+field detected from a content type is the same name on both sides — `ProductFieldName` is
+`ProductFieldName` in `fields`, in `attributes` and in `highlights`.
 
 On top of that, each field of each indexed content type is detected from the content type definition
 (`DataClassInfo.ClassFormDefinition`) and mapped by its

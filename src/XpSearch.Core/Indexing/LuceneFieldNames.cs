@@ -37,7 +37,7 @@ public static class LuceneFieldNames
     {
         ArgumentNullException.ThrowIfNull(field);
 
-        return field.Name + LabelSuffix;
+        return field.LuceneName + LabelSuffix;
     }
 
     /// <summary>Composes one label term out of a tag code name and its title.</summary>
@@ -66,8 +66,8 @@ public static class LuceneFieldNames
         // Numbers and dates sort straight off their numeric doc values; strings need a separate
         // SortedDocValuesField because the indexed field is analyzed or facet-encoded.
         return field.Kind is SearchFieldKind.Number or SearchFieldKind.Date
-            ? field.Name
-            : field.Name + SortSuffix;
+            ? field.LuceneName
+            : field.LuceneName + SortSuffix;
     }
 
     /// <summary>Gets the analyzed field free-text queries match for the given attribute.</summary>
@@ -79,6 +79,6 @@ public static class LuceneFieldNames
 
         // A taxonomy attribute stores tag code names verbatim for retrieval and drill-down; the
         // human-readable titles live in a parallel analyzed field.
-        return field.Kind == SearchFieldKind.Taxonomy ? field.Name + TextSuffix : field.Name;
+        return field.Kind == SearchFieldKind.Taxonomy ? field.LuceneName + TextSuffix : field.LuceneName;
     }
 }

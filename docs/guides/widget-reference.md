@@ -178,6 +178,14 @@ results({
 | `templates.loading` | `loadingRows` skeleton rows | `(helpers) => Renderable` |
 | `transformItems` | — | `(results) => results`, applied before rendering. |
 | `loadingRows` | `3` | Skeleton rows in the default loading template. |
+| `titleAttribute` | `title` | Attribute the default template reads the heading from. Highlights win over the raw value. |
+| `urlAttribute` | `url` | Attribute the default template reads the link `href` from. |
+| `snippetAttributes` | `['summary', 'content', 'excerpt']` | Tried in order; the first one with a value (highlighted where there is a highlight) becomes the snippet. |
+
+The defaults are the names the server projects every document's base fields under — `title`, `url`,
+`contentType` — so the default template renders an Xperience result without configuration. Point them
+at your own fields (`titleAttribute: 'ProductFieldName'`) when the content type carries a better one,
+and ask for those fields in `fields` so they come back.
 
 Markup: `<div class="xps xps-results">` containing the live region `xps-results__status` and either
 `xps-results__list` (an `<ol>` of `xps-results__item`) or `xps-results__empty`. Modifiers `--empty` and

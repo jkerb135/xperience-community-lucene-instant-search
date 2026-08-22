@@ -75,9 +75,9 @@ internal static class TestCorpus
         new(ScriptDocumentId, "Script Danger", "<script>alert('xss')</script> espresso injection attempt.", "Article", "en", "/articles/script-danger", ["coffee"], [], null, 1_700_000_300)
     ];
 
-    /// <summary>The content type dimension, named after the field the Lucene integration writes.</summary>
-    internal static string ContentTypeField => BaseDocumentProperties.CONTENT_TYPE_NAME;
+    /// <summary>The content type attribute; the documents carry it under the integration's own field name.</summary>
+    internal static string ContentTypeField => IndexSchemaProvider.ContentTypeAttribute;
 
-    /// <summary>The language dimension, named after the field the Lucene integration writes.</summary>
-    internal static string LanguageField => BaseDocumentProperties.LANGUAGE_NAME;
+    /// <summary>The language attribute; the documents carry it under the integration's own field name.</summary>
+    internal static string LanguageField => IndexSchemaProvider.LanguageAttribute;
 }

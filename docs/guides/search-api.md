@@ -272,7 +272,7 @@ Failures are [RFC 9457 Problem Details](https://learn.microsoft.com/aspnet/core/
   "title": "The request is not valid.",
   "status": 400,
   "errors": {
-    "filters.numeric[0].attribute": ["'Title' is not a numeric attribute of index 'site-content'."]
+    "filters.numeric[0].attribute": ["'title' is not a numeric attribute of index 'site-content'."]
   }
 }
 ```
@@ -289,7 +289,7 @@ covers. `IIndexSchemaProvider.GetSchemaAsync(indexName, cancellationToken)` retu
 `Searchable` / `Facetable` / `Sortable` / `Retrievable` flag per field.
 
 **`facets` and `filters.facets`** accept attributes the schema marks facetable — in practice, Xperience
-Taxonomy fields plus `ContentTypeName` and `LanguageName`. Values are tag code names; the tag title comes
+Taxonomy fields plus `contentType` and `language`. Values are tag code names; the tag title comes
 back as the facet value's `label`. Anything else is a `400` keyed `facets[i]` or
 `filters.facets[i].attribute`.
 

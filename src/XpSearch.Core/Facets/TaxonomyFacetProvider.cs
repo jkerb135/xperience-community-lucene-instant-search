@@ -42,8 +42,11 @@ public sealed class TaxonomyFacetProvider : IFacetProvider
             return facets;
         }
 
-        foreach (string dimension in dimensions)
+        foreach (string attribute in dimensions)
         {
+            var field = context.Schema.Find(attribute);
+            string dimension = field?.LuceneName ?? attribute;
+
             // GetTopChildren returns null for a dimension that has no match in the current result
             // set; the contract wants the attribute present with no values rather than missing.
             var result = context.Facets.GetTopChildren(Math.Max(1, maxValues), dimension);
@@ -61,14 +64,14 @@ public sealed class TaxonomyFacetProvider : IFacetProvider
                 }
             }
 
-            ApplyTitles(context, dimension, values);
+            ApplyTitles(field, context.Request.Index, values);
 
             // Count descending, then value ascending, so the order is stable between searches.
             values.Sort((left, right) => right.Count != left.Count
                 ? right.Count.CompareTo(left.Count)
                 : string.CompareOrdinal(left.Value, right.Value));
 
-            facets[dimension] = [.. values];
+            facets[attribute] = [.. values];
         }
 
         return facets;
@@ -85,16 +88,14 @@ public sealed class TaxonomyFacetProvider : IFacetProvider
     /// contain. A dimension written by a strategy that predates the label field simply has no terms,
     /// and every label stays equal to its value.
     /// </remarks>
-    private void ApplyTitles(SearchContext context, string dimension, List<FacetValue> values)
+    private void ApplyTitles(SchemaField? field, string indexName, List<FacetValue> values)
     {
-        var field = context.Schema.Find(dimension);
-
         if (values.Count == 0 || field is null || field.Kind != SearchFieldKind.Taxonomy)
         {
             return;
         }
 
-        var titles = ReadTitles(context.Request.Index, LuceneFieldNames.LabelFieldName(field));
+        var titles = ReadTitles(indexName, LuceneFieldNames.LabelFieldName(field));
 
         foreach (var value in values)
         {

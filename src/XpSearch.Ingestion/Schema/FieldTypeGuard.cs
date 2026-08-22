@@ -59,7 +59,7 @@ public sealed class FieldTypeGuard : IFieldTypeGuard
             foreach (string name in names)
             {
                 var field = schema.Find(name);
-                var info = field is null ? null : infos.FieldInfo(field.Name);
+                var info = field is null ? null : infos.FieldInfo(field.LuceneName);
 
                 if (field is null || info is null)
                 {

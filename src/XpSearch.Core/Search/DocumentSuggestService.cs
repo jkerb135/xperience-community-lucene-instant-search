@@ -105,7 +105,7 @@ public sealed class DocumentSuggestService : ISuggestService
             foreach (var scoreDoc in matches.ScoreDocs)
             {
                 var document = searcher.Doc(scoreDoc.Doc);
-                string? text = document.Get(suggestField.Name);
+                string? text = document.Get(suggestField.LuceneName);
 
                 if (string.IsNullOrWhiteSpace(text))
                 {

@@ -1,3 +1,5 @@
+using XpSearch.Core.Indexing;
+
 namespace XpSearch.Core.Options;
 
 /// <summary>
@@ -45,10 +47,10 @@ public sealed class XpSearchIndexOptions
     public SuggestMode SuggestMode { get; set; } = SuggestMode.Documents;
 
     /// <summary>
-    /// Gets or sets the field document suggestions prefix-match and display.
-    /// Defaults to <c>Title</c>, the field <c>XpSearchIndexingStrategy</c> writes page titles to.
+    /// Gets or sets the attribute document suggestions prefix-match and display.
+    /// Defaults to <c>title</c>, the attribute every document carries its display name under.
     /// </summary>
-    public string SuggestField { get; set; } = "Title";
+    public string SuggestField { get; set; } = IndexSchemaProvider.TitleAttribute;
 }
 
 /// <summary>

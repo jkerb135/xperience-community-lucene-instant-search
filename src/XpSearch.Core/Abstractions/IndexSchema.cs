@@ -32,7 +32,7 @@ public enum SearchFieldKind
 /// <summary>
 /// One field of an index, as auto-detected from the content types the index covers.
 /// </summary>
-/// <param name="Name">Lucene field name; also the facet dimension name for <see cref="SearchFieldKind.Taxonomy"/>.</param>
+/// <param name="Name">Attribute name on the wire: what <c>fields</c>, <c>facets</c>, <c>filters</c>, <c>sort</c> and a result's <c>attributes</c> call the field.</param>
 /// <param name="Kind">What the field holds.</param>
 /// <param name="Searchable">Whether free-text queries match against the field.</param>
 /// <param name="Facetable">Whether the field can appear in <c>facets</c> and <c>filters.facets</c>.</param>
@@ -46,7 +46,20 @@ public sealed record SchemaField(
     bool Facetable,
     bool Sortable,
     bool Retrievable,
-    float Boost = 1f);
+    float Boost = 1f)
+{
+    /// <summary>
+    /// Gets the Lucene field the value is written to and read from. Defaults to <see cref="Name"/>.
+    /// </summary>
+    /// <remarks>
+    /// The two differ only for the base fields every document carries, where the attribute name is
+    /// this library's (<c>title</c>, <c>url</c>, <c>contentType</c>, <c>language</c>) and the Lucene
+    /// field is the integration's (<c>Title</c>, <c>Url</c>, <c>ContentTypeName</c>,
+    /// <c>LanguageName</c>). A field detected from a content type keeps its Xperience name on both
+    /// sides, so <c>ProductFieldName</c> is <c>ProductFieldName</c> on the wire too.
+    /// </remarks>
+    public string LuceneName { get; init; } = Name;
+}
 
 /// <summary>
 /// The set of fields an index exposes. Consumed by the query pipeline (query building, filter and

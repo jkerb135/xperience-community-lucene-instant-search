@@ -147,7 +147,9 @@ public sealed class NormalizeRequestStage : ISearchStage
 
             validated.Add(new FacetFilter
             {
-                Attribute = field.Name,
+                // The dimension, not the attribute: a facet filter is only ever used to build a
+                // drill-down or a term query, and the response never echoes it back.
+                Attribute = field.LuceneName,
                 Values = entry.Values,
                 Operator = entry.Operator
             });

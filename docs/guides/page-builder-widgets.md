@@ -73,7 +73,7 @@ Then, per widget:
 | Widget | Properties |
 |---|---|
 | Search box | Placeholder · Show reset button · Focus on page load |
-| Results | Results per page · Result template · Fields to show (one field name per line) |
+| Results | Results per page · Result template · Fields to show (one attribute name per line — `title`, `url`, `contentType`, `language` or any field of your content types) |
 | Facet list | Attribute · Label · Operator (any / all of the selected values) · Values shown · Show a "show more" button |
 | Pagination | Style (numbered pages / load more button) |
 | Result stats | Text template (`{total}`, `{tookMs}`, `{query}`, `{page}`, `{totalPages}`) · Text before the first search |

@@ -184,9 +184,13 @@ internal sealed class SchemaDetectionTests
 
         Expect.Multiple(() =>
         {
-            Assert.That(schema.Find(IndexSchemaProvider.TitleField), Is.Not.Null);
+            Assert.That(schema.Find(IndexSchemaProvider.TitleAttribute), Is.Not.Null);
             Assert.That(schema.Find("ProductFieldTags")!.Facetable, Is.True);
-            Assert.That(schema.Find("ContentTypeName")!.Facetable, Is.True);
+            Assert.That(schema.Find(IndexSchemaProvider.ContentTypeAttribute)!.Facetable, Is.True);
+
+            // The base fields are the only ones whose attribute name and Lucene field differ.
+            Assert.That(schema.Find(IndexSchemaProvider.TitleAttribute)!.LuceneName, Is.EqualTo(IndexSchemaProvider.TitleField));
+            Assert.That(schema.Find("ProductFieldTags")!.LuceneName, Is.EqualTo("ProductFieldTags"));
         });
     }
 

@@ -287,18 +287,43 @@ internal sealed class SearchPipelineTests
         Assert.That(response.Results.Any(result => result.Highlights?[TestCorpus.BodyField].Contains("<b>espresso</b>", StringComparison.Ordinal) == true));
     }
 
+    /// <summary>
+    /// The base fields every document carries are projected under this library's own names, so one
+    /// default result template works whatever the content type is called in Xperience.
+    /// </summary>
+    [Test]
+    public async Task Attributes_NameTheBaseFieldsTheWayTheContractDoes()
+    {
+        var response = await harness.Search(TestHarness.Request("espresso"));
+        var attributes = response.Results[0].Attributes;
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(attributes.Keys, Does.Contain("title"));
+            Assert.That(attributes.Keys, Does.Contain("url"));
+            Assert.That(attributes.Keys, Does.Contain("contentType"));
+            Assert.That(attributes.Keys, Does.Contain("language"));
+            Assert.That(attributes.Keys, Does.Not.Contain("Title"));
+            Assert.That(attributes.Keys, Does.Not.Contain("ContentTypeName"));
+            Assert.That(attributes["url"].GetString(), Does.StartWith("/"));
+
+            // A field detected from a content type keeps its Xperience name.
+            Assert.That(attributes.Keys, Does.Contain(TestCorpus.BodyField));
+        });
+    }
+
     [Test]
     public async Task Fields_ProjectOnlyTheRequestedAttributes()
     {
         var request = TestHarness.Request("espresso");
-        request.Fields = [IndexSchemaProvider.TitleField, "Url"];
+        request.Fields = [IndexSchemaProvider.TitleAttribute, IndexSchemaProvider.UrlAttribute];
 
         var response = await harness.Search(request);
         var result = response.Results[0];
 
         Expect.Multiple(() =>
         {
-            Assert.That(result.Attributes.Keys, Is.EquivalentTo(new[] { IndexSchemaProvider.TitleField, "Url" }));
+            Assert.That(result.Attributes.Keys, Is.EquivalentTo(new[] { IndexSchemaProvider.TitleAttribute, IndexSchemaProvider.UrlAttribute }));
             Assert.That(result.Id, Is.Not.Empty, "the result id is always returned");
         });
     }

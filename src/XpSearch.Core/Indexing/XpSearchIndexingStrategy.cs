@@ -177,7 +177,7 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
             case SearchFieldKind.Text:
                 // Rich text arrives as HTML; the platform stripper is used rather than a regex so
                 // entities and comments are handled: CMS.Helpers.HTMLHelper.StripTags.
-                AddText(document, field.Name, HTMLHelper.StripTags(value as string, true, " "), field.Sortable);
+                AddText(document, field.LuceneName, HTMLHelper.StripTags(value as string, true, " "), field.Sortable);
                 break;
 
             case SearchFieldKind.Keyword:
@@ -185,14 +185,14 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
                 break;
 
             case SearchFieldKind.Number when TryGetNumber(value, out double number):
-                document.Add(new DoubleField(field.Name, number, Field.Store.YES));
-                document.Add(new DoubleDocValuesField(field.Name, number));
+                document.Add(new DoubleField(field.LuceneName, number, Field.Store.YES));
+                document.Add(new DoubleDocValuesField(field.LuceneName, number));
                 break;
 
             case SearchFieldKind.Date when value is DateTime date:
                 long epochSeconds = new DateTimeOffset(DateTime.SpecifyKind(date, DateTimeKind.Utc)).ToUnixTimeSeconds();
-                document.Add(new Int64Field(field.Name, epochSeconds, Field.Store.YES));
-                document.Add(new NumericDocValuesField(field.Name, epochSeconds));
+                document.Add(new Int64Field(field.LuceneName, epochSeconds, Field.Store.YES));
+                document.Add(new NumericDocValuesField(field.LuceneName, epochSeconds));
                 break;
 
             default:
@@ -250,7 +250,7 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
             return;
         }
 
-        document.Add(new StringField(field.Name, value, Field.Store.YES));
+        document.Add(new StringField(field.LuceneName, value, Field.Store.YES));
 
         if (field.Sortable)
         {
@@ -440,7 +440,7 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
             return;
         }
 
-        RegisterDimension(field.Name);
+        RegisterDimension(field.LuceneName);
 
         // Tag identifiers are GUIDs; the code name is what a facet filter refers to and the title is
         // what a visitor would type. See the tag selector in the admin form component reference.
@@ -453,8 +453,8 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
                 continue;
             }
 
-            document.Add(new FacetField(field.Name, tag.Name));
-            document.Add(new StringField(field.Name, tag.Name, Field.Store.YES));
+            document.Add(new FacetField(field.LuceneName, tag.Name));
+            document.Add(new StringField(field.LuceneName, tag.Name, Field.Store.YES));
             document.Add(new TextField(LuceneFieldNames.SearchFieldName(field), tag.Title ?? tag.Name, Field.Store.NO));
 
             // The pair, verbatim and un-analyzed, so the query side can read every code name's
@@ -488,7 +488,7 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
 
                 foreach (var field in schema.Fields.Where(field => field.Facetable))
                 {
-                    RegisterDimension(field.Name);
+                    RegisterDimension(field.LuceneName);
                 }
             }
             catch (Exception exception)

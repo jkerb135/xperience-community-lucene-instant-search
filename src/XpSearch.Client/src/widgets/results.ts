@@ -30,25 +30,45 @@ export type ResultsWidgetParams<
   transformItems?: (items: Array<Result<TAttributes>>) => Array<Result<TAttributes>>;
   /** Skeleton rows rendered while the first search is in flight. Defaults to 3. */
   loadingRows?: number;
+  /** Attribute the default template reads the title from. Defaults to `title`. */
+  titleAttribute?: string;
+  /** Attribute the default template reads the link from. Defaults to `url`. */
+  urlAttribute?: string;
+  /**
+   * Attributes the default template tries, in order, for the snippet; the first one with a value
+   * wins. Defaults to `summary`, `content`, `excerpt`.
+   */
+  snippetAttributes?: string[];
 };
 
-/** The snippet falls back through the fields a Kentico index usually carries. */
-const SNIPPET_FIELDS = ['content', 'summary', 'excerpt'];
+/**
+ * The attributes the default template reads. `title`, `url` and `contentType` are the names the
+ * server projects the base fields of every document under; the snippet has no base field, so it
+ * falls back through the ones a content type usually carries.
+ */
+const TITLE_ATTRIBUTE = 'title';
+const URL_ATTRIBUTE = 'url';
+const SNIPPET_ATTRIBUTES = ['summary', 'content', 'excerpt'];
 
 function defaultItem<TAttributes extends Record<string, unknown>>(
-  result: Result<TAttributes>
+  result: Result<TAttributes>,
+  params: ResultsWidgetParams<TAttributes> = { container: '' }
 ): Renderable {
   const attributes = result.attributes as Record<string, unknown>;
   const image = typeof attributes['image'] === 'string' ? attributes['image'] : '';
-  const url = typeof attributes['url'] === 'string' ? attributes['url'] : '#';
+  const urlAttribute = params.urlAttribute ?? URL_ATTRIBUTE;
+  const url = typeof attributes[urlAttribute] === 'string' ? attributes[urlAttribute] : '#';
   const type = typeof attributes['contentType'] === 'string' ? attributes['contentType'] : '';
-  const field = SNIPPET_FIELDS.find((name) => highlight(name, result).value !== '');
+  const title = params.titleAttribute ?? TITLE_ATTRIBUTE;
+  const field = (params.snippetAttributes ?? SNIPPET_ATTRIBUTES).find(
+    (name) => highlight(name, result).value !== ''
+  );
   return html`<article class="xps-result">
     ${image
       ? html`<div class="xps-result__media"><img class="xps-result__image" src="${image}" alt="" width="96" height="96"></div>`
       : ''}
     <div class="xps-result__body">
-      <h3 class="xps-result__title"><a class="xps-result__link" href="${url}">${highlight('title', result)}</a></h3>
+      <h3 class="xps-result__title"><a class="xps-result__link" href="${url}">${highlight(title, result)}</a></h3>
       ${field ? html`<p class="xps-result__snippet">${highlight(field, result)}</p>` : ''}
       ${type
         ? html`<ul class="xps-result__meta"><li class="xps-result__meta-item">${type}</li></ul>`
@@ -132,7 +152,7 @@ export function results<TAttributes extends Record<string, unknown> = Record<str
       } else if (options.items.length > 0) {
         body = list(
           options.items.map((result) =>
-            templates.item ? templates.item(result, helpers) : defaultItem(result)
+            templates.item ? templates.item(result, helpers) : defaultItem(result, options.params)
           )
         );
         const count = helpers.formatNumber(options.results?.total ?? options.items.length);

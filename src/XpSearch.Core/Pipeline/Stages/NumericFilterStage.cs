@@ -53,7 +53,7 @@ public sealed class NumericFilterStage : ISearchStage
         // the range query must match the field's numeric type or it silently matches nothing.
         if (field.Kind != SearchFieldKind.Date)
         {
-            return NumericRangeQuery.NewDoubleRange(field.Name, min, max, minInclusive, maxInclusive);
+            return NumericRangeQuery.NewDoubleRange(field.LuceneName, min, max, minInclusive, maxInclusive);
         }
 
         // An exclusive bound on an integer field is folded into an inclusive one, so a fractional
@@ -61,6 +61,6 @@ public sealed class NumericFilterStage : ISearchStage
         long? intMin = min is null ? null : (long)(minInclusive ? Math.Ceiling(min.Value) : Math.Floor(min.Value) + 1);
         long? intMax = max is null ? null : (long)(maxInclusive ? Math.Floor(max.Value) : Math.Ceiling(max.Value) - 1);
 
-        return NumericRangeQuery.NewInt64Range(field.Name, intMin, intMax, true, true);
+        return NumericRangeQuery.NewInt64Range(field.LuceneName, intMin, intMax, true, true);
     }
 }

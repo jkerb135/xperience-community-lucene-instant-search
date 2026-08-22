@@ -271,6 +271,51 @@ describe('results', () => {
     expect(third.querySelector('.xps-result__link')?.textContent).toBe('Descaling <b>your</b> machine');
   });
 
+  it('reads the default attribute names the server projects, and honours the overrides', async () => {
+    const root = mount();
+    await settled(search!);
+    const first = root.querySelector('.xps-results__item') as HTMLElement;
+
+    // title / url / contentType are what the server calls the base fields of every document.
+    expect((first.querySelector('.xps-result__link') as HTMLAnchorElement).getAttribute('href')).toBe(
+      '/blog/choosing-an-espresso-machine'
+    );
+    expect(first.querySelector('.xps-result__link')?.textContent).toBe('Choosing an espresso machine');
+    expect(first.querySelector('.xps-result__meta-item')?.textContent).toBe('Article');
+    // The snippet is highlighted, so the fallback list is searched against the highlights too.
+    expect(first.querySelector('.xps-result__snippet mark')?.textContent).toBe('espresso');
+  });
+
+  it('takes the title, url and snippet attribute names from the params', async () => {
+    const response: SearchResponse = {
+      ...RESPONSE,
+      results: [
+        {
+          id: 'doc-1',
+          attributes: {
+            ProductFieldName: 'Rocket Appartamento',
+            ProductPageUrl: '/products/rocket',
+            ProductFieldDescription: 'A heat exchanger machine.',
+          },
+        },
+      ],
+    };
+    const root = mount(
+      {
+        titleAttribute: 'ProductFieldName',
+        urlAttribute: 'ProductPageUrl',
+        snippetAttributes: ['ProductFieldDescription'],
+      },
+      response
+    );
+    await settled(search!);
+    const link = root.querySelector('.xps-result__link') as HTMLAnchorElement;
+
+    expect(link.getAttribute('href')).toBe('/products/rocket');
+    expect(link.textContent).toBe('Rocket Appartamento');
+    expect(root.querySelector('.xps-result__snippet')?.textContent).toBe('A heat exchanger machine.');
+  });
+
   it('announces the count in the live region, and only when it changes', async () => {
     const root = mount();
     search?.actions.setQuery('espresso');

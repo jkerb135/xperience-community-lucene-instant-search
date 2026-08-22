@@ -58,7 +58,7 @@ public sealed class LuceneHighlighter : IHighlighter
                 continue;
             }
 
-            string? stored = document.Document.Get(schemaField.Name);
+            string? stored = document.Document.Get(schemaField.LuceneName);
 
             if (string.IsNullOrEmpty(stored))
             {

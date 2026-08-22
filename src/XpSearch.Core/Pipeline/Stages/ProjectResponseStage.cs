@@ -102,13 +102,13 @@ public sealed class ProjectResponseStage : ISearchStage
 
         foreach (var field in wanted)
         {
-            if (string.Equals(field.Name, BaseDocumentProperties.ID, StringComparison.Ordinal))
+            if (string.Equals(field.LuceneName, BaseDocumentProperties.ID, StringComparison.Ordinal))
             {
                 // The result id is a member of its own, never one of the projected attributes.
                 continue;
             }
 
-            var values = document.GetFields(field.Name);
+            var values = document.GetFields(field.LuceneName);
 
             if (values.Length == 0)
             {
@@ -152,7 +152,7 @@ public sealed class ProjectResponseStage : ISearchStage
 
         string? text = value.GetStringValue(CultureInfo.InvariantCulture);
 
-        return string.Equals(field.Name, BaseDocumentProperties.URL, StringComparison.OrdinalIgnoreCase)
+        return string.Equals(field.LuceneName, BaseDocumentProperties.URL, StringComparison.OrdinalIgnoreCase)
             ? WebUrl.ToRootRelative(text)
             : text;
     }
