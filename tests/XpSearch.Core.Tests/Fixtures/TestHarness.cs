@@ -32,7 +32,8 @@ internal sealed class TestHarness : IDisposable
         XpSearchOptions? options = null,
         bool withTaxonomy = true,
         IRelevanceTuningSource? tuning = null,
-        TimeProvider? time = null)
+        TimeProvider? time = null,
+        params ISearchStage[] extraStages)
     {
         Options = options ?? new XpSearchOptions();
         Index = new TestSearchIndex(TestCorpus.IndexName, TestCorpus.Documents, withTaxonomy);
@@ -54,7 +55,8 @@ internal sealed class TestHarness : IDisposable
                 new PinnedAndBuriedStage(Index),
                 new CollectFacetsStage(new TaxonomyFacetProvider(Index), wrapped),
                 new HighlightStage(new LuceneHighlighter()),
-                new ProjectResponseStage()
+                new ProjectResponseStage(),
+                .. extraStages
             ]);
     }
 
