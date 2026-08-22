@@ -335,7 +335,9 @@ and how to lift it.
 - **Simplified:** a `string[]` (taxonomy) attribute on an externally pushed document is written as plain
   indexed terms plus the `_text` and `_label` companions, not as a `FacetField`. Facet fields have to be
   registered in the strategy's `FacetsConfig` before `DefaultLuceneClient` builds the document, and an
-  external document has no strategy to register them on.
+  external document has no strategy to register them on. The reserved `_source` is *not* affected: it is
+  a base schema field, so every strategy registers the dimension and both Xperience content and pushed
+  documents carry it as a facet field - `_source` counts and drills down like `contentType`.
 - **Ceiling:** pushed documents can be *filtered* by such an attribute and their values appear in
   results, but they do not contribute to the facet counts a `facetList` widget renders, because those
   come from the taxonomy sidecar. An index mixing Xperience content and pushed documents shows counts
@@ -343,6 +345,20 @@ and how to lift it.
 - **Upgrade path:** have the ingestion writer register the dimensions on the index's
   `XpSearchIndexingStrategy` instance (it already owns a shared `FacetsConfig`) before upserting, or
   write the taxonomy sidecar directly through `ILuceneIndexService.UseIndexAndTaxonomyWriter`.
+
+## `health` in `XpSearchIndexer.GetStatusAsync` (`XpSearch.Ingestion`)
+
+- **Simplified:** `degraded` is derived from one number, `IIngestionQueue.FailedCount` - the count of
+  work items that threw in `XpSearchIngestionQueueWorker.ProcessItem` without one succeeding since. It
+  used to be derived from the queue length, which made every asynchronous write flip a healthy index to
+  `degraded` until the queue drained (HW-3 §5.2).
+- **Ceiling:** the counter is a static field of the worker, so it is per process and starts at zero
+  after a restart, and work that is *stuck* rather than failing - a queue that never drains because the
+  worker thread is wedged - still reads as `healthy`. A failure followed by an unrelated success also
+  clears it.
+- **Upgrade path:** the real signal is already persisted: `XpSearch_ExternalDocument` rows keep
+  `DocumentStatus` and `UpdatedAt`, so an oldest-pending-row query on the store (one extra method on
+  `IExternalDocumentStore`) would report both stuck and failed work across restarts.
 
 ## API key and schema administration in `XpSearch.Ingestion`
 

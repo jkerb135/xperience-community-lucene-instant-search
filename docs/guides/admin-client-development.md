@@ -57,6 +57,17 @@ under `AdminClientPath` into embedded resources of `XpSearch.Admin.dll`, so the 
 its own admin UI and a host application needs no configuration and no dev server. Embedded is the
 default when a module has no `Mode` configured, so a host's `appsettings.json` can stay untouched.
 
+To check that a build really embedded the bundle, read the assembly's manifest resource names - the
+targets add the `EmbeddedResource` items *during* the build, so inspecting the project
+(`dotnet msbuild -getItem:EmbeddedResource`) evaluates before they exist and reports nothing:
+
+```powershell
+[Reflection.Assembly]::LoadFrom("src/XpSearch.Admin/bin/Debug/net8.0/XpSearch.Admin.dll").GetManifestResourceNames()
+# XpSearch.Admin.AdminResources.yourco.xperience.search.admin.entry.kxh.<hash>.js
+```
+
+The hash has to match the file `npm run build` wrote to `Client/dist`.
+
 For front-end work, `Proxy` mode is faster — the host serves the templates from your webpack dev
 server instead of the assembly. In the host application:
 

@@ -185,6 +185,15 @@ documents get theirs from the request, from the API key's integration or from
   is one request. Both `documents.total` and every `bySource` entry count *live* documents in the
   current index generation - deleted and replaced copies that Lucene has not merged away yet are not
   counted - so the entries always add up to the total.
+- **`_source` is facetable.** Ask for it in `facets` to get the counts a search sees, or filter to one
+  provenance with `filters.facets`, exactly like `contentType`.
+
+Like `rebuild`, **`clear` and `delete` are asynchronous unless you send `waitForIndex: true`**: the
+response carries a `taskId` and reports how many *stored* documents were removed, while the Lucene
+half runs on the ingestion queue. `GET …/status` is therefore eventually consistent - a status read
+straight after a `clear` can still report the pre-clear counts. That lag is not an incident, and
+`health` stays `healthy` through it; `degraded` means queued work failed to reach the index and
+nothing has succeeded since.
 
 ### In-process: `IXpSearchIndexer`
 
