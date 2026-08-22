@@ -1,6 +1,6 @@
 ## Widget reference
 
-The nine widgets that ship with `@yourco/xperience-search`, the templating helpers they hand to your
+The twelve widgets that ship with `@yourco/xperience-search`, the templating helpers they hand to your
 templates, and the markup each one emits. Every widget is a behaviour plus a default renderer — the
 same public API a [custom widget](custom-widgets.md) uses — so anything a built-in can do, yours can
 too.
@@ -403,6 +403,119 @@ Markup: `<div class="xps xps-toggle-filter">` (plus `--disabled`) with `__label`
 `__checkbox`, `__value` and `__count`. A real checkbox, disabled when no document carries the value
 and it is not already selected.
 
+## `rangeFilter`
+
+```js
+rangeFilter({ container: '#filter-price', attribute: 'price', label: 'Price', min: 0, max: 500, step: 5 });
+```
+
+| Option | Default | What it does |
+|---|---|---|
+| `container` | — | Selector or element. Required. |
+| `attribute` | — | The numeric attribute to filter. Required. |
+| `min` / `max` | — | The bounds of the control. Without both, it renders disabled. |
+| `step` | `1` | Step of the sliders and the number inputs. |
+| `label` | the attribute name | Heading text. |
+| `labels` | `{ from: 'From', to: 'To' }` | Visible labels of the two number inputs. |
+
+The bounds are configuration, not data: the JSON contract carries no numeric facet statistics, so
+there is nowhere for a server-computed min/max to arrive. With no `min`/`max` the widget renders the
+whole control `disabled` with "No … range in these results." rather than pretending to filter — see
+[KNOWN-LIMITATIONS](../internal/KNOWN-LIMITATIONS.md).
+
+Dragging updates the numbers and the values line; the search runs on `change` (mouse release, or the
+commit of a held arrow key), so a drag is one request and not one per pixel. Neither end can cross
+the other, and both are clamped to the bounds. Applying a bound equal to `min`/`max` removes that
+filter instead of sending a no-op comparison, so a pristine control adds nothing to the request.
+
+Markup: `<div class="xps xps-range-filter">` (plus `--disabled`) with `__title`, a
+`__track` (`role="group"`) holding two `xps-range-filter__range` sliders (`--min`, `--max`), a
+`__inputs` row of two `xps-range-filter__input` number fields, and the `__values` line.
+
+Accessibility: two native `<input type="range">` controls rather than a custom drag widget, so the
+control is keyboard-operable and announced with no extra code. Every one of the four inputs has a
+real associated `<label>` (the two slider labels are `xps-sr-only`), the track is a labelled group,
+and both sliders point `aria-describedby` at the values line.
+
+## `loadMore`
+
+```js
+loadMore({ container: '#search-results', autoLoad: true });
+```
+
+| Option | Default | What it does |
+|---|---|---|
+| `container` | — | Selector or element. Required. |
+| `templates.item` | the built-in result template | `(result, { html, highlight, formatNumber }) => …`, the same signature `results` uses. |
+| `transformItems` | — | Massages each page before it is appended. |
+| `autoLoad` | `true` | Loads the next page when the sentinel scrolls into view. |
+| `titleAttribute` / `urlAttribute` / `snippetAttributes` | `title` / `url` / `summary, content, excerpt` | What the default item template reads. |
+| `labels` | `{ more: 'Load more results', exhausted: 'No more results' }` | Button text. |
+
+`loadMore` **replaces** `results` and `pagination`: it renders the same `xps-result` items, and it
+owns `state.page`. Do not put `pagination` and `loadMore` in one instance — both drive the page, and
+paging backwards throws the accumulated list away. `results` alongside it is legal (it shows the
+current page only) but is rarely what you want.
+
+Each response is appended to the existing `<ol>`; the list is rebuilt only when the search itself
+changes (a new query, a refinement, a sort). Click tracking works exactly as in `results`, and the
+`position` sent is the item's place across all loaded pages.
+
+Markup: `<div class="xps xps-load-more">` (plus `--exhausted`) with `__status`, `__list` (`<ol>`),
+one `__item` per result, `__sentinel` and `__load-more`.
+
+Accessibility: the `<ol>` is appended to and never rebuilt, so scroll position and focus survive a
+load. `__status` is an `xps-sr-only` live region reading "Showing 5 of 54 results". The button is
+the keyboard path and is always present — `disabled` only when everything is loaded. The
+`IntersectionObserver` sentinel is the scroll path *in addition* to that button; where the API is
+missing it is simply not used, and the button still works.
+
+## `suggestions`
+
+```js
+suggestions({ container: '#search-suggest', resultsUrl: '/search', debounceMs: 150, minQueryLength: 1, limit: 5 });
+```
+
+| Option | Default | What it does |
+|---|---|---|
+| `container` | — | Selector or element. Required. |
+| `debounceMs` | `150` | Trailing debounce before `/suggest` is called. |
+| `minQueryLength` | `1` | Shortest query that asks for suggestions at all. |
+| `limit` | `5` | `SuggestRequest.limit`. |
+| `language` | the instance's `language` | `SuggestRequest.language`. |
+| `resultsUrl` | — | The full results page. See below. |
+| `placeholder` | `'Search…'` | |
+| `label` / `showLabel` | `'Search this site'` / `false` | The always-rendered `<label>`; hidden with `xps-sr-only` by default. |
+| `groupLabels` | `{ suggestions: 'Suggestions', documents: 'Pages' }` | Group headings, used only when a response mixes both sources. |
+| `mode` | `'documents'` | Accepted so the Page Builder mount can pass it through, and otherwise unused: whether an index answers with query suggestions or with matching documents is server-side configuration, not a request field. |
+| `windowRef` | `window` | Injectable, for tests and SSR. |
+
+**`resultsUrl` decides what kind of search box this is.** Set it and the widget is a header box: the
+form posts to that URL, typing does *not* search in place, Enter with no active option navigates to
+`resultsUrl` with the query in the URL (built through the instance's own routing mapping, so a
+custom mapping is respected), and a "See all results" link appears under the list. Leave it out and
+the widget searches its own instance as the visitor types, like `searchBox`.
+
+Policy: the query is debounced by `debounceMs`; a response is applied only if it answers the newest
+keystroke, so a slow answer to `esp` can never overwrite the list for `espresso`; below
+`minQueryLength` nothing is requested and the popup closes; a failed `/suggest` closes the popup and
+leaves the search box working. Picking a suggestion that carries a `url` (a document) navigates to
+it; one without (a query suggestion) applies it with `setQuery` and searches.
+
+Markup: `<div class="xps xps-suggestions">` (plus `--open`) with `__form`, `__label`, `__field`,
+`__input`, `__reset`, `__panel`, `__list` (`role="listbox"`), `__option` (`role="option"`, plus
+`--active`), `__option-title`, `__option-meta`, `__empty`, `__footer` and `__see-all`. When one
+response carries both query suggestions and documents they are wrapped in two `__group` elements
+with a `__group-title` each; with a single source the options sit directly in the listbox.
+
+Accessibility: the WAI-ARIA APG
+[combobox-with-listbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/). DOM focus never
+leaves the input — `aria-activedescendant` names the active option — and the listbox element is in
+the DOM even when closed, so `aria-controls` cannot dangle. Keyboard: `Down`/`Up` move (wrapping),
+`Home`/`End` jump to the ends, `Enter` activates the active option or submits, `Escape` closes the
+popup and clears the input when pressed again, `Tab` closes and moves on. Clicking an option does not
+blur the input first, so the popup cannot close out from under the click.
+
 ---
 
 ## The XSS model
@@ -431,7 +544,7 @@ and every interpolation is yours to `escapeHtml`. The untrusted values are facet
 
 ## Page Builder mounts
 
-All nine widgets resolve by name from a `.xps-mount` element, so the Page Builder widgets (spec §7.1)
+All twelve widgets resolve by name from a `.xps-mount` element, so the Page Builder widgets (spec §7.1)
 need no JavaScript of their own:
 
 ```html
@@ -447,9 +560,6 @@ need no JavaScript of their own:
 contain a dot. See [Building a custom widget](custom-widgets.md) and
 [Page Builder widgets](page-builder-widgets.md).
 
-## Not in this release
-
-`suggestions`, `rangeFilter`, `categoryTree` and `loadMore` have markup contracts and reserved names,
-and range has a behaviour, but none of them has a default renderer yet. `withRange` is public today —
-see [Building a custom widget](custom-widgets.md) — and the remaining behaviours follow the open
-decisions recorded in `docs/internal/KNOWN-LIMITATIONS.md`.
+`categoryTree` is the one reserved name with no widget behind it: a hierarchy needs a facet shape
+the JSON contract does not have (`FacetValue` is flat), so it waits on a coordinated contract change —
+see [KNOWN-LIMITATIONS](../internal/KNOWN-LIMITATIONS.md).

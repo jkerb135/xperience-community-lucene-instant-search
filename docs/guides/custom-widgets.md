@@ -225,6 +225,8 @@ plus the behaviour's own data and actions:
 | `withSortSelect` | `items` | `options`, `current`, `canApply`, `apply(value)`, `urlFor(value)` |
 | `withActiveFilters` | `includedAttributes?`, `excludedAttributes?`, `transformItems?` | `items[{ attribute, type, value, operator?, label, apply(), urlFor() }]`, `canApply`, `clearAll()`, `clearAllUrl()` |
 | `withRange` | `attribute`, `min?`, `max?` | `start`, `range`, `canApply`, `apply([min, max])` |
+| `withLoadMore` | `transformItems?` | `items` (every page loaded so far), `total`, `isExhausted`, `isLoading`, `generation`, `loadMore()`, `sendEvent(type, result, position?)` |
+| `withSuggestions` | `debounceMs?`, `minQueryLength?`, `limit?`, `language?`, `resultsUrl?`, `windowRef?` | `query`, `suggestions`, `isOpen`, `activeIndex`, `isLoading`, `seeAllUrl`, `setQuery(q)`, `move(offset \| 'first' \| 'last')`, `select(index)`, `submit()`, `close()`, `clear()` |
 
 Page numbers are one-based everywhere, like the JSON contract. `withFacetList` declares its attribute to
 the request, so facet counts arrive without extra configuration, and it declares its `operator`, so
@@ -233,8 +235,13 @@ the request, so facet counts arrive without extra configuration, and it declares
 Accessibility state is handed to you rather than derived: `isActive` for `aria-pressed`/`aria-current`,
 `canApply` for `disabled`, `isStalled` for a spinner or an `aria-busy` region.
 
-`withSuggestions` and `withCategoryTree` are not published yet — see
-[KNOWN-LIMITATIONS](../internal/KNOWN-LIMITATIONS.md).
+`withLoadMore` bumps `generation` whenever it threw the accumulated list away instead of appending
+to it; a renderer that appends compares it with the one it last painted and rebuilds when it differs.
+A `withSuggestions` renderer must call `close()` from its unmount function — that is what drops a
+debounced call that has not fired yet and makes an in-flight answer stale.
+
+`withCategoryTree` is not published: a hierarchy needs a facet shape the contract does not have —
+see [KNOWN-LIMITATIONS](../internal/KNOWN-LIMITATIONS.md).
 
 ### TypeScript
 
