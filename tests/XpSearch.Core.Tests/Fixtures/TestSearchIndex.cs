@@ -52,6 +52,14 @@ internal sealed class TestSearchIndex : ILuceneIndexAccessor, IDisposable
 
     public FacetsConfig? GetFacetsConfig(string name) => withTaxonomy ? config : null;
 
+    public void Invalidate(string name)
+    {
+        reader?.Dispose();
+        reader = null;
+        taxonomyReader?.Dispose();
+        taxonomyReader = null;
+    }
+
     public TResult UseSearcher<TResult>(string name, Func<IndexSearcher, TResult> use) =>
         use(new IndexSearcher(OpenReader()));
 

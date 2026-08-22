@@ -15,6 +15,7 @@ using NSubstitute;
 using NUnit.Framework;
 
 using XpSearch.Core.Abstractions;
+using XpSearch.Core.Caching;
 using XpSearch.Ingestion.Abstractions;
 using XpSearch.Ingestion.Contract;
 using XpSearch.Ingestion.Endpoints;
@@ -58,7 +59,9 @@ internal sealed class EndpointTests
         builder.WebHost.UseUrls("http://127.0.0.1:0");
 
         builder.Services.AddSingleton<ILuceneIndexAccessor>(index);
-        builder.Services.AddSingleton<ILuceneClient>(index);
+        // As a host wires it: AddXpSearch decorates ILuceneClient first, so ingestion writes reach
+        // Lucene through the decorator that drops the integration's cached searcher afterwards.
+        builder.Services.AddSingleton<ILuceneClient>(new CacheEvictingLuceneClient(index, new NullSearchCache(), index));
         builder.Services.AddSingleton<IExternalDocumentStore>(store);
         builder.Services.AddSingleton<IApiKeyStore>(keyStore);
         builder.Services.AddSingleton<IIngestionLog, RecordingIngestionLog>();

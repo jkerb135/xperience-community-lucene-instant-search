@@ -23,6 +23,7 @@ namespace XpSearch.Ingestion.Tests.Fixtures;
 /// <item><description><c>UpsertRecords</c> deletes by <c>ItemGuid</c> AND <c>LanguageName</c> before adding, and only when the document carries both (<c>UpsertRecordsInternal</c>).</description></item>
 /// <item><description><c>DeleteRecords</c> deletes by a <c>Term("ItemGuid", …)</c> per identifier (<c>DeleteRecordsInternal</c>).</description></item>
 /// <item><description><c>Rebuild</c> resets the index with <c>OpenMode.CREATE</c> and re-indexes Xperience content only (<c>RebuildInternal</c> → <c>ILuceneIndexService.ResetIndex</c>), which is exactly what wipes externally pushed documents.</description></item>
+/// <item><description>The reader is opened once and reused until <see cref="Invalidate"/> is called, the way the integration's cached <c>SearcherManager</c> behaves - so a write that forgets to invalidate is invisible here too.</description></item>
 /// </list>
 /// </summary>
 internal sealed class TestLuceneIndex : ILuceneIndexAccessor, ILuceneClient, IDisposable
@@ -65,6 +66,8 @@ internal sealed class TestLuceneIndex : ILuceneIndexAccessor, ILuceneClient, IDi
     public Analyzer GetAnalyzer(string indexName) => analyzer;
 
     public FacetsConfig? GetFacetsConfig(string indexName) => null;
+
+    public void Invalidate(string indexName) => Refresh();
 
     public TResult UseSearcher<TResult>(string indexName, Func<IndexSearcher, TResult> use) => use(new IndexSearcher(OpenReader()));
 
@@ -196,7 +199,8 @@ internal sealed class TestLuceneIndex : ILuceneIndexAccessor, ILuceneClient, IDi
             writer.Commit();
         }
 
-        Refresh();
+        // Deliberately no Refresh: an in-place write leaves the cached reader on the previous commit
+        // point until something invalidates it, which is the production behaviour being guarded.
     }
 
     private void Refresh()

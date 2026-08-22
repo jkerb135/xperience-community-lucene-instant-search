@@ -158,6 +158,16 @@ for a catalogue import: every request serializes against the index writer, and a
 have taken seconds in the background takes minutes in the foreground. Leave it off and poll
 `GET …/status` instead. The single-document routes accept it as `?waitForIndex=true`.
 
+### Freshness after a write
+
+A write is visible to the next query in the same process, with no restart and no delay: every write
+goes through the library's `ILuceneClient` decorator, which drops both the cached query responses for
+the index and the Lucene integration's cached searcher. (The integration keeps one reader per index
+open until something invalidates it, and its own client only invalidates on rebuild and index
+deletion - which is why a write made around `ILuceneClient`, straight through an index writer, stays
+invisible.) With `waitForIndex: true` the document is searchable by the time the response arrives;
+without it, by the time the queued work item has run.
+
 ### Source isolation
 
 Every document carries a `_source`. Xperience-managed content is `_source: "xperience"`; pushed
@@ -172,7 +182,9 @@ documents get theirs from the request, from the API key's integration or from
   source it deletes every *external* source. Neither can touch Xperience content, and asking for
   `source=xperience` is a `400`.
 - **Counts are per source.** `GET …/status` reports `documents.bySource`, so "did the PIM sync land"
-  is one request.
+  is one request. Both `documents.total` and every `bySource` entry count *live* documents in the
+  current index generation - deleted and replaced copies that Lucene has not merged away yet are not
+  counted - so the entries always add up to the total.
 
 ### In-process: `IXpSearchIndexer`
 

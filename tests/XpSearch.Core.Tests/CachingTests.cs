@@ -87,7 +87,8 @@ internal sealed class CachingTests
         var (pipeline, inner, cache) = Build();
         var lucene = Substitute.For<ILuceneClient>();
         lucene.Rebuild(Arg.Any<string>(), Arg.Any<CancellationToken?>()).Returns(Task.CompletedTask);
-        var decorated = new CacheEvictingLuceneClient(lucene, cache);
+        var accessor = Substitute.For<ILuceneIndexAccessor>();
+        var decorated = new CacheEvictingLuceneClient(lucene, cache, accessor);
 
         await pipeline.ExecuteAsync(TestHarness.Request("espresso"), CancellationToken.None);
         await decorated.Rebuild(TestCorpus.IndexName, CancellationToken.None);
@@ -109,12 +110,21 @@ internal sealed class CachingTests
         var lucene = Substitute.For<ILuceneClient>();
         lucene.UpsertRecords(Arg.Any<IEnumerable<Document>>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(1);
         lucene.DeleteRecords(Arg.Any<IEnumerable<string>>(), Arg.Any<string>()).Returns(1);
-        var decorated = new CacheEvictingLuceneClient(lucene, cache);
+        var accessor = Substitute.For<ILuceneIndexAccessor>();
+        var decorated = new CacheEvictingLuceneClient(lucene, cache, accessor);
 
         await decorated.UpsertRecords([new Document()], TestCorpus.IndexName, CancellationToken.None);
         await decorated.DeleteRecords(["guid"], TestCorpus.IndexName);
 
-        Assert.That(cache.Evictions, Is.EqualTo(2));
+        Expect.Multiple(() =>
+        {
+            Assert.That(cache.Evictions, Is.EqualTo(2));
+
+            // The integration never invalidates its cached searcher after an in-place write, so a
+            // pushed document would stay invisible until the process restarted.
+            accessor.Received(2).Invalidate(TestCorpus.IndexName);
+        });
+
         await lucene.Received(1).UpsertRecords(Arg.Any<IEnumerable<Document>>(), TestCorpus.IndexName, Arg.Any<CancellationToken>());
         await lucene.Received(1).DeleteRecords(Arg.Any<IEnumerable<string>>(), TestCorpus.IndexName);
     }
@@ -125,11 +135,37 @@ internal sealed class CachingTests
         var cache = new MemorySearchCache();
         var lucene = Substitute.For<ILuceneClient>();
         lucene.GetStatistics(Arg.Any<CancellationToken>()).Returns(new List<LuceneIndexStatisticsModel>());
-        var decorated = new CacheEvictingLuceneClient(lucene, cache);
+        var accessor = Substitute.For<ILuceneIndexAccessor>();
+        var decorated = new CacheEvictingLuceneClient(lucene, cache, accessor);
 
         await decorated.GetStatistics(CancellationToken.None);
 
-        Assert.That(cache.Evictions, Is.Zero);
+        Expect.Multiple(() =>
+        {
+            Assert.That(cache.Evictions, Is.Zero);
+            accessor.DidNotReceiveWithAnyArgs().Invalidate(default!);
+        });
+    }
+
+    /// <summary>
+    /// <c>LuceneIndexAccessor.Invalidate</c> reaches the integration's cached searcher through the
+    /// internal <c>LuceneSearchCacheInvalidator</c>, which the container registers as a singleton.
+    /// Nothing else in the integration is public enough to do it, so an upgrade that renames or moves
+    /// the type has to fail here rather than in a host, silently.
+    /// </summary>
+    [Test]
+    public void TheIntegrationsSearchCacheInvalidator_IsStillReachable()
+    {
+        var invalidator = typeof(Kentico.Xperience.Lucene.Core.Search.ILuceneSearchService).Assembly
+            .GetType("Kentico.Xperience.Lucene.Core.Search.LuceneSearchCacheInvalidator");
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(invalidator, Is.Not.Null);
+            Assert.That(
+                invalidator!.GetMethod("Invalidate", [typeof(Kentico.Xperience.Lucene.Core.Indexing.LuceneIndex)]),
+                Is.Not.Null);
+        });
     }
 
     private static (ISearchPipeline Pipeline, CountingPipeline Inner, MemorySearchCache Cache) Build(XpSearchOptions? options = null)

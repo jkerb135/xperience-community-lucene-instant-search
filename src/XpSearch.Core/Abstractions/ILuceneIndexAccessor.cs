@@ -33,6 +33,19 @@ public interface ILuceneIndexAccessor
     /// <returns>The configuration, or <see langword="null"/> when the index has no taxonomy sidecar.</returns>
     FacetsConfig? GetFacetsConfig(string indexName);
 
+    /// <summary>
+    /// Drops the integration's cached searcher for the index, so the next search opens a reader over
+    /// the current commit point.
+    /// </summary>
+    /// <param name="indexName">Code name of the index.</param>
+    /// <remarks>
+    /// The integration caches a <c>SearcherManager</c> per index and only rebuilds it when it is
+    /// invalidated; its own client invalidates on rebuild and index deletion but not on in-place
+    /// upserts and deletes, so a document written through <c>ILuceneClient.UpsertRecords</c> stays
+    /// invisible for the lifetime of the process unless this is called after the write.
+    /// </remarks>
+    void Invalidate(string indexName);
+
     /// <summary>Runs a callback against a searcher for the index.</summary>
     /// <typeparam name="TResult">Type the callback returns.</typeparam>
     /// <param name="indexName">Code name of the index.</param>

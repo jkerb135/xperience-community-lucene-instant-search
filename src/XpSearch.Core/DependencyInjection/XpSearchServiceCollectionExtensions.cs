@@ -84,7 +84,10 @@ public static class XpSearchServiceCollectionExtensions
             provider.GetRequiredService<Options.IOptions<XpSearchOptions>>()));
 
         services.DecorateLuceneClient<CacheEvictingLuceneClient>(
-            (provider, inner) => new CacheEvictingLuceneClient(inner, provider.GetRequiredService<ISearchCache>()));
+            (provider, inner) => new CacheEvictingLuceneClient(
+                inner,
+                provider.GetRequiredService<ISearchCache>(),
+                provider.GetRequiredService<ILuceneIndexAccessor>()));
 
         return services;
     }

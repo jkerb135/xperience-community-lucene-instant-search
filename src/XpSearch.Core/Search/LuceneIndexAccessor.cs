@@ -1,3 +1,5 @@
+using System.Reflection;
+
 using Kentico.Xperience.Lucene.Core.Indexing;
 using Kentico.Xperience.Lucene.Core.Search;
 
@@ -17,6 +19,17 @@ namespace XpSearch.Core.Search;
 /// </summary>
 public sealed class LuceneIndexAccessor : ILuceneIndexAccessor
 {
+    // Kentico.Xperience.Lucene 15.0.5 keeps both the searcher cache and the type that invalidates it
+    // internal, and DefaultLuceneClient only invalidates on Rebuild and DeleteIndex - never after an
+    // in-place upsert or delete. The invalidator is a registered singleton (LuceneStartupExtensions),
+    // so resolving it by name is the only way to make a write visible to the next query in the same
+    // process. Its Invalidate also broadcasts the web farm task when the index is on shared storage.
+    private static readonly Type? InvalidatorType =
+        typeof(ILuceneSearchService).Assembly.GetType("Kentico.Xperience.Lucene.Core.Search.LuceneSearchCacheInvalidator");
+
+    private static readonly MethodInfo? InvalidateMethod =
+        InvalidatorType?.GetMethod("Invalidate", BindingFlags.Public | BindingFlags.Instance, [typeof(LuceneIndex)]);
+
     private readonly ILuceneIndexManager indexManager;
     private readonly ILuceneSearchService searchService;
     private readonly IServiceProvider serviceProvider;
@@ -57,6 +70,21 @@ public sealed class LuceneIndexAccessor : ILuceneIndexAccessor
         var strategy = (ILuceneIndexingStrategy)serviceProvider.GetRequiredService(index.LuceneIndexingStrategyType);
 
         return strategy.FacetsConfigFactory();
+    }
+
+    /// <inheritdoc />
+    public void Invalidate(string indexName)
+    {
+        var index = Require(indexName);
+
+        if (InvalidateMethod is null || serviceProvider.GetService(InvalidatorType!) is not { } invalidator)
+        {
+            throw new InvalidOperationException(
+                "Kentico.Xperience.Lucene's search cache invalidator could not be resolved, so a write cannot be made "
+                + "visible to running queries. The installed integration is not the version this library targets.");
+        }
+
+        InvalidateMethod.Invoke(invalidator, [index]);
     }
 
     /// <inheritdoc />

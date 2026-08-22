@@ -4,6 +4,8 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 using XpSearch.Core.Abstractions;
+using XpSearch.Core.Caching;
+using XpSearch.Core.Contract;
 using XpSearch.Core.Indexing;
 using XpSearch.Ingestion.Abstractions;
 using XpSearch.Ingestion.Indexing;
@@ -165,6 +167,20 @@ internal sealed class ImmediateRebuildWaiter : IRebuildCompletionWaiter
     public Task WaitAsync(string indexName, CancellationToken cancellationToken) => Task.CompletedTask;
 }
 
+/// <summary>Caches nothing; the response cache has its own tests.</summary>
+internal sealed class NullSearchCache : ISearchCache
+{
+    public Task<SearchResponse> GetOrAddAsync(
+        string indexName,
+        string key,
+        Func<CancellationToken, Task<SearchResponse>> factory,
+        CancellationToken cancellationToken) => factory(cancellationToken);
+
+    public void Evict(string indexName)
+    {
+    }
+}
+
 /// <summary>Names the caller in the ingestion log.</summary>
 internal sealed class FixedCaller(string prefix) : IIngestionCaller
 {
@@ -187,17 +203,21 @@ internal sealed class TestHarness : IDisposable
         Log = new RecordingIngestionLog();
         Schema = schema ?? TestSchema.Products();
 
-        // The writer talks to the index directly; the rebuild replay lives in the decorator that
-        // Client exposes, which is the only path a rebuild ever takes.
+        // AddXpSearch decorates ILuceneClient before AddXpSearchIngestion does, so every ingestion
+        // write really goes through CacheEvictingLuceneClient - which is what invalidates the
+        // integration's cached searcher. The rebuild replay lives in the outer decorator that Client
+        // exposes, the only path a rebuild ever takes.
+        var evicting = new CacheEvictingLuceneClient(Index, new NullSearchCache(), Index);
+
         Writer = new ExternalDocumentWriter(
             Store,
-            Index,
+            evicting,
             new StaticSchemaProvider(Schema),
             new ImmediateRebuildWaiter(),
             NullLogger<ExternalDocumentWriter>.Instance);
 
         Queue = new ManualIngestionQueue(Writer);
-        Client = new ExternalDocumentReplayLuceneClient(Index, Queue, NullLogger<ExternalDocumentReplayLuceneClient>.Instance);
+        Client = new ExternalDocumentReplayLuceneClient(evicting, Queue, NullLogger<ExternalDocumentReplayLuceneClient>.Instance);
 
         Indexer = new XpSearchIndexer(
             Store,
