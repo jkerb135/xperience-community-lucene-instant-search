@@ -250,6 +250,7 @@ export function query(request: SearchRequest): SearchResponse {
     total: scored.length,
     totalPages: Math.ceil(scored.length / pageSize),
     tookMs: Date.now() - started,
+    redirect: null,
     queryId: request.queryId ?? randomUUID(),
   };
 }

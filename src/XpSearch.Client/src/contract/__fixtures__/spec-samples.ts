@@ -73,5 +73,6 @@ export const specSearchResponse: SearchResponse = {
   total: 46,
   totalPages: 3,
   tookMs: 14,
+  redirect: null,
   queryId: 'generated-guid',
 };

@@ -20,6 +20,7 @@ const BODY: SearchResponse = {
   total: 0,
   totalPages: 1,
   tookMs: 1,
+  redirect: null,
 };
 
 function stubFetch(): { fetchFn: typeof fetch; requests: SearchRequest[] } {

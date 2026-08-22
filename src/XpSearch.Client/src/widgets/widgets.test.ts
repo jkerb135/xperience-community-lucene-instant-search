@@ -61,6 +61,7 @@ const RESPONSE: SearchResponse = {
   total: 46,
   totalPages: 9,
   tookMs: 14,
+  redirect: null,
   queryId: 'q-1',
 };
 
@@ -210,6 +211,49 @@ describe('searchBox', () => {
     input.value = '  latte  ';
     input.dispatchEvent(new Event('input', { bubbles: true }));
     expect(search?.state.query).toBe('latte');
+  });
+
+  it('follows a redirect rule on submit only, never on load or while typing', async () => {
+    const assigned: string[] = [];
+    const windowRef = {
+      location: { assign: (url: string) => assigned.push(url) },
+    } as unknown as Window;
+    const host = container('search');
+    search = start([searchBox({ container: host, windowRef })], {
+      ...RESPONSE,
+      redirect: { url: '/support', rule: 'Support redirect' },
+    });
+    const form = host.querySelector('form') as HTMLFormElement;
+    const input = form.querySelector('input') as HTMLInputElement;
+
+    await settled(search);
+    expect(assigned).toEqual([]);
+
+    input.value = 'help';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(assigned).toEqual([]);
+
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    await vi.waitFor(() => expect(assigned).toEqual(['/support']));
+  });
+
+  it('followRedirects: false leaves the visitor on the page', async () => {
+    const assigned: string[] = [];
+    const windowRef = {
+      location: { assign: (url: string) => assigned.push(url) },
+    } as unknown as Window;
+    const host = container('search');
+    search = start([searchBox({ container: host, windowRef, followRedirects: false })], {
+      ...RESPONSE,
+      redirect: { url: '/support', rule: 'Support redirect' },
+    });
+    const form = host.querySelector('form') as HTMLFormElement;
+
+    await settled(search);
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(assigned).toEqual([]);
   });
 
   it('marks the root stalled while a slow request is in flight', async () => {
