@@ -1,4 +1,4 @@
-﻿using Kentico.Xperience.Lucene.Core;
+using Kentico.Xperience.Lucene.Core;
 
 using Lucene.Net.Index;
 using Lucene.Net.Search;
