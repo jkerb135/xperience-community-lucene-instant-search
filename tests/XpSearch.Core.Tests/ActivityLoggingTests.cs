@@ -119,10 +119,11 @@ internal sealed class ActivityLoggingTests
         channel.WebsiteChannelName.Returns("Store");
 
         using var harness = new TestHarness(
-            null,
-            true,
-            new SearchTimingStage(),
-            new LogActivityStage(activityLogger, contexts, queue, channel, NullLogger<LogActivityStage>.Instance));
+            extraStages:
+            [
+                new SearchTimingStage(),
+                new LogActivityStage(activityLogger, contexts, queue, channel, NullLogger<LogActivityStage>.Instance)
+            ]);
 
         var response = await harness.Search(TestHarness.Request("lucene"));
 
