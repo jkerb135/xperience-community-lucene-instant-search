@@ -17,6 +17,8 @@ import type {
   SearchResults,
   SearchState,
   SearchStatus,
+  SuggestRequest,
+  SuggestResponse,
   Widget,
   XpSearchOptions,
 } from './types';
@@ -308,6 +310,14 @@ export function createSearch(options: XpSearchOptions): SearchInstance {
 
     urlFor(state) {
       return router.urlFor(state ?? store.get());
+    },
+
+    suggest(request: Omit<SuggestRequest, 'index'>): Promise<SuggestResponse> {
+      return client.suggest({
+        ...(options.language === undefined ? {} : { language: options.language }),
+        ...request,
+        index: options.index,
+      });
     },
 
     sendEvent(type: EventType, resultId: string, position?: number) {

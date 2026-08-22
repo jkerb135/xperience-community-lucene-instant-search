@@ -14,6 +14,9 @@ import type {
   SearchRedirect,
   SearchRequest,
   SearchResponse,
+  SuggestRequest,
+  SuggestResponse,
+  Suggestion,
 } from './contract/generated';
 
 export type {
@@ -27,6 +30,9 @@ export type {
   SearchRedirect,
   SearchRequest,
   SearchResponse,
+  SuggestRequest,
+  SuggestResponse,
+  Suggestion,
 };
 
 /**
@@ -171,6 +177,12 @@ export interface SearchInstance {
   urlFor(state?: SearchState): string;
   /** Fire-and-forget analytics event, correlated with the last response's `queryId`. */
   sendEvent(type: EventType, resultId: string, position?: number): void;
+  /**
+   * Autocomplete over this instance's index and transport (spec 5.3): the endpoint, headers,
+   * `fetchFn` and contract-version check the instance was configured with. Neither debounced nor
+   * cancelled — {@link withSuggestions} owns that policy.
+   */
+  suggest(request: Omit<SuggestRequest, 'index'>): Promise<SuggestResponse>;
 }
 
 /** `routing: { stateToRoute, routeToState }` (spec 5.5). */
