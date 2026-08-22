@@ -1,4 +1,4 @@
-﻿namespace XpSearch.Core.Tuning;
+namespace XpSearch.Core.Tuning;
 
 /// <summary>How a rule's pattern is compared against the normalized query (spec §8.2).</summary>
 public enum RuleCondition
