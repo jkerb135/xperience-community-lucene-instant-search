@@ -1,3 +1,4 @@
+using XpSearch.Core.Analytics;
 using XpSearch.Core.Indexing;
 
 namespace XpSearch.Core.Options;
@@ -88,6 +89,9 @@ public sealed class XpSearchOptions
 
     /// <summary>Gets or sets the ceiling on <c>limit</c> for <c>/suggest</c>. Defaults to 20.</summary>
     public int MaxSuggestLimit { get; set; } = 20;
+
+    /// <summary>Gets the analytics settings: query log retention and query suggestions (spec §9.2).</summary>
+    public XpSearchAnalyticsOptions Analytics { get; } = new();
 
     /// <summary>Gets the per-index settings, keyed by index code name (case-insensitive).</summary>
     /// <remarks>The indexer creates a missing entry, so <c>o.Indexes["MyIndex"].SuggestMode = ...</c> is enough to configure an index.</remarks>

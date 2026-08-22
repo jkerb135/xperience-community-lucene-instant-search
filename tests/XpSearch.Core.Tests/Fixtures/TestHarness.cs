@@ -27,7 +27,7 @@ internal sealed class StaticSchemaProvider : IIndexSchemaProvider
 /// </summary>
 internal sealed class TestHarness : IDisposable
 {
-    internal TestHarness(XpSearchOptions? options = null, bool withTaxonomy = true)
+    internal TestHarness(XpSearchOptions? options = null, bool withTaxonomy = true, params ISearchStage[] extraStages)
     {
         Options = options ?? new XpSearchOptions();
         Index = new TestSearchIndex(TestCorpus.IndexName, TestCorpus.Documents, withTaxonomy);
@@ -45,7 +45,8 @@ internal sealed class TestHarness : IDisposable
                 new ExecuteSearchStage(Index),
                 new CollectFacetsStage(new TaxonomyFacetProvider(Index), wrapped),
                 new HighlightStage(new LuceneHighlighter()),
-                new ProjectResponseStage()
+                new ProjectResponseStage(),
+                .. extraStages
             ]);
     }
 

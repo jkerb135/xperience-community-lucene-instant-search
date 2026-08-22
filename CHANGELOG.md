@@ -8,6 +8,55 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Added:** search analytics (spec §9). Four custom activity types (`xpsearch_query`,
+  `xpsearch_noresults`, `xpsearch_click`, `xpsearch_conversion`) are created on startup and logged
+  through `ICustomActivityLogger` for visitors whose cookie level is *Visitor* or higher — below that
+  nothing is logged and nothing is thrown. Independently of consent, every search is written to the
+  new `XpSearch.QueryLog` module class through a `ThreadQueueWorker`, a click event records the
+  clicked position on its row, and `XpSearchQueryLogRetentionTask` (identifier
+  `XpSearch.QueryLogRetention`, default 180 days) prunes it — create its configuration once in the
+  *Scheduled tasks* application. `ISearchAnalyticsService` returns top queries, zero-result queries,
+  click-through rate, average clicked position, daily volume and slowest queries (p95); the
+  dashboard page itself is still pending (KNOWN-LIMITATIONS). See `docs/guides/analytics.md` and
+  ADR-0015.
+- **Added:** `SuggestMode.QuerySuggestions` now works: `/api/xpsearch/suggest` answers from the
+  logged popular queries of the last `Analytics.QuerySuggestionDays` days (spec §4.3, §13.6). It
+  previously returned an empty list with a warning.
+
+- **Fixed:** the Page Builder widgets and the admin facet-attribute selector were invisible to
+  Xperience. `XpSearch.Widgets`, `XpSearch.Admin` and `XpSearch.Core` did not carry
+  `CMS.AssemblyDiscoverableAttribute`, so the system never scanned their `RegisterWidget`,
+  `RegisterFormComponentConfigurator`, `RegisterModule`, `RegisterObjectType` and
+  `RegisterScheduledTask` attributes and none of the seven widgets appeared in the Page Builder. A
+  test now asserts the attribute on every shipped assembly that registers something by attribute.
+- **Fixed:** the ingestion object types are registered. `XpSearchApiKeyInfo`,
+  `XpSearchExternalDocumentInfo` and `XpSearchIngestionLogInfo` defined an `ObjectTypeInfo` but no
+  `[assembly: RegisterObjectType]`, so no `IInfoProvider<T>` reached the container and a host failed
+  DI validation on startup. Hosts that declared them as a workaround can delete that file.
+- **Fixed:** a pushed document is searchable in the same process, without a restart. The Lucene
+  integration caches one searcher per index and its client only invalidates it on rebuild and index
+  deletion, never after an in-place upsert or delete, so `waitForIndex: true` returned before the
+  document could be found and `GET …/status` reported a stale total. Every write through
+  `ILuceneClient` now drops the integration's cached searcher as well as this library's response
+  cache.
+- **Fixed:** results render their title and link again. The default JavaScript template read
+  `attributes.title`, `url` and `contentType` while the server projected the integration's `Title`,
+  `Url` and `ContentTypeName`. The server owns the wire names of the base fields now — `title`,
+  `url`, `contentType`, `language`, with the document id staying the result's own `id` — and maps
+  them onto the Lucene fields; a field detected from a content type keeps its Xperience name on both
+  sides. The `results` widget gained `titleAttribute`, `urlAttribute` and `snippetAttributes`
+  params. **Breaking** for any client that read `attributes.Title`, `attributes.Url` or filtered on
+  `ContentTypeName` / `LanguageName`.
+- **Fixed:** the facet configuration is derived from the detected schema before anything is mapped.
+  The strategy used to register a dimension the first time it mapped a document carrying one, so a
+  fresh index handed the Lucene client an empty `FacetsConfig` and a document with two tags in one
+  dimension failed the whole batch with *dimension "X" is not multiValued*. A host no longer needs a
+  `FacetsConfigFactory` override. `XpSearchIndexingStrategy`'s constructor takes two more services
+  (`ILuceneIndexAccessor`, `IIndexSchemaProvider`), which is **breaking** for derived strategies.
+- **Fixed:** `GET …/status` counted replaced documents twice — `bySource.xperience` read 64 on an
+  index of 32 documents — because a term's document frequency includes documents deleted from a
+  segment that has not been merged away. Every figure counts live documents now, so the per-source
+  counts add up to the total.
 - **Fixed:** the worked custom-widget example in `docs/guides/custom-widgets.md`. The previous
   "dropdown facet in 40 lines" did not typecheck under `strict`, rendered `xps-dropdown__*` class
   names that exist in neither `MARKUP.md` nor either stylesheet and no `xps` class on its root,

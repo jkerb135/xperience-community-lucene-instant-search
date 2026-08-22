@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 using XpSearch.Core.Abstractions;
+using XpSearch.Core.Analytics;
 using XpSearch.Core.Caching;
 using XpSearch.Core.Endpoints;
 using XpSearch.Core.Facets;
@@ -65,9 +66,20 @@ public static class XpSearchServiceCollectionExtensions
         services.TryAddSingleton<IHighlighter, LuceneHighlighter>();
         services.TryAddSingleton<ISearchCache, ProgressiveSearchCache>();
         services.TryAddSingleton<ISuggestService, DocumentSuggestService>();
-        services.TryAddSingleton<ISearchEventSink, LoggingSearchEventSink>();
+        services.TryAddSingleton<ISearchEventSink, ActivitySearchEventSink>();
         services.TryAddSingleton<XpSearchIndexingStrategy>();
 
+        // Analytics (spec §9). The activity logger is consent-gated; the query log is not.
+        services.TryAddSingleton<ISearchActivityLogger, SearchActivityLogger>();
+        services.TryAddSingleton<IQueryContextMap, QueryContextMap>();
+        services.TryAddSingleton<IQueryLogStore, InfoQueryLogStore>();
+        services.TryAddSingleton<IQueryLogQueue, ThreadQueueQueryLogQueue>();
+        services.TryAddSingleton<IQuerySuggestionSource, QuerySuggestionService>();
+        services.TryAddSingleton<ISearchAnalyticsService, SearchAnalyticsService>();
+        services.TryAddSingleton<XpSearchAnalyticsModuleInstaller>();
+        services.TryAddSingleton<XpSearchActivityTypeInstaller>();
+
+        services.AddXpSearchStage<SearchTimingStage>();
         services.AddXpSearchStage<NormalizeRequestStage>();
         services.AddXpSearchStage<BuildQueryStage>();
         services.AddXpSearchStage<FacetFilterStage>();
@@ -76,6 +88,7 @@ public static class XpSearchServiceCollectionExtensions
         services.AddXpSearchStage<CollectFacetsStage>();
         services.AddXpSearchStage<HighlightStage>();
         services.AddXpSearchStage<ProjectResponseStage>();
+        services.AddXpSearchStage<LogActivityStage>();
 
         services.TryAddSingleton<SearchPipeline>();
         services.TryAddSingleton<ISearchPipeline>(provider => new CachedSearchPipeline(

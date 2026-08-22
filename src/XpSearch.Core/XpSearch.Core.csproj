@@ -14,4 +14,11 @@
     <PackageReference Include="Lucene.Net.QueryParser" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Xperience only scans an assembly marked discoverable for the analytics module class, its query
+         log object type and the retention scheduled task:
+         https://docs.kentico.com/documentation/developers-and-admins/customization/integrate-custom-code -->
+    <AssemblyAttribute Include="CMS.AssemblyDiscoverableAttribute" />
+  </ItemGroup>
+
 </Project>

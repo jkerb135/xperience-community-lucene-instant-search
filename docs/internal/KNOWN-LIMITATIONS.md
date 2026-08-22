@@ -362,3 +362,51 @@ and how to lift it.
   rather than being absent from `npm run`'s listing.
 - **Upgrade path:** a `prepack` step that rewrites `package.json` (or `npm pkg delete scripts.*` in
   the release workflow) if the noise ever matters.
+
+## The analytics dashboard (spec §9.3)
+
+- **Simplified:** the data behind every report on the dashboard ships (`ISearchAnalyticsService`,
+  `SearchAnalyticsReport`), but the admin **page** that renders them does not — nor does the
+  "Create rule" deep link from a zero-result row into the rule editor.
+- **Ceiling:** a marketer cannot see the reports in the administration yet; a developer can read them
+  from `ISearchAnalyticsService` (see `docs/guides/analytics.md`).
+- **Upgrade path:** the React admin unit renders `SearchAnalyticsReport`; no data work is left.
+
+## `SearchAnalyticsService.GetReportAsync` in `XpSearch.Core/Analytics/SearchAnalyticsService.cs`
+
+- **Simplified:** one `IQueryLogStore.ReadAsync` for the requested range, then every report is a LINQ
+  pass over those rows in memory, instead of six SQL aggregates. Every figure is then guaranteed
+  consistent with every other, and the store keeps four methods.
+- **Ceiling:** memory and time grow with the number of rows in the range — fine for the day-to-month
+  ranges a dashboard asks for, not for a multi-year range on a site doing millions of searches.
+- **Upgrade path:** add aggregate methods to `IQueryLogStore` backed by ObjectQuery `GROUP BY` and
+  have the service call them; `ISearchAnalyticsService` and its DTOs do not change.
+
+## `QuerySuggestionService` in `XpSearch.Core/Analytics/QuerySuggestionService.cs`
+
+- **Simplified:** prefix matching and volume counting happen in memory over the last
+  `Analytics.QuerySuggestionDays` days of the log, cached per index/prefix/limit for
+  `options.CacheTtl`. There is no suggestion index and no precomputed popularity table.
+- **Ceiling:** the first uncached suggestion of a keystroke reads the window's rows; on a busy site
+  with a long window that read is the cost of autocomplete, and the cache is per instance.
+- **Upgrade path:** the same store-level `GROUP BY` as above, or a nightly materialized
+  popular-queries table the service reads instead.
+
+## `QueryContextMap` in `XpSearch.Core/Analytics/QueryContextMap.cs`
+
+- **Simplified:** the `queryId` → query text map that gives click and conversion activities their
+  query is in process memory: 10 000 entries, 30 minutes, oldest dropped when full.
+- **Ceiling:** behind a load balancer, or after an application restart, a click whose search was
+  answered elsewhere logs its activity with an empty query part. The clicked position still reaches
+  the query log, because that lookup is by `LogQueryID` in the database, so click-through reports are
+  unaffected.
+- **Upgrade path:** back the map with Xperience's cache (or a distributed cache) behind the same
+  `IQueryContextMap` interface.
+
+## Queued query log rows are not durable
+
+- **Simplified:** `XpSearchQueryLogQueueWorker` holds pending rows in memory; a process that dies
+  before the worker drains loses them. Ingestion persists first and re-queues on start (ADR-0005);
+  analytics deliberately does not.
+- **Ceiling:** a crash or a redeploy loses up to one worker interval (10 s) of query log rows.
+- **Upgrade path:** none planned — a missing aggregate row is not a missing document.
