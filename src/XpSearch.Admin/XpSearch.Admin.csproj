@@ -16,4 +16,11 @@
     <PackageReference Include="Kentico.Xperience.Lucene.Admin" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Xperience only scans the RegisterFormComponentConfigurator attribute of an assembly marked
+         discoverable; without this, the facet attribute selector never replaces the plain text input:
+         https://docs.kentico.com/documentation/developers-and-admins/customization/integrate-custom-code -->
+    <AssemblyAttribute Include="CMS.AssemblyDiscoverableAttribute" />
+  </ItemGroup>
+
 </Project>

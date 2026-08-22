@@ -14,6 +14,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\XpSearch.Widgets\XpSearch.Widgets.csproj" />
+    <!-- Referenced only so AssemblyDiscoveryTests can reflect over the admin assembly. -->
+    <ProjectReference Include="..\..\src\XpSearch.Admin\XpSearch.Admin.csproj" />
   </ItemGroup>
 
   <ItemGroup>

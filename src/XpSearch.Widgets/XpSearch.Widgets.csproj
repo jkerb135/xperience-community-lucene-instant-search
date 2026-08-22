@@ -19,6 +19,13 @@
     <PackageReference Include="Kentico.Xperience.WebApp" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Xperience only scans the RegisterWidget attributes of an assembly marked discoverable; without
+         this, none of the widgets appear in the Page Builder:
+         https://docs.kentico.com/documentation/developers-and-admins/customization/integrate-custom-code -->
+    <AssemblyAttribute Include="CMS.AssemblyDiscoverableAttribute" />
+  </ItemGroup>
+
   <!-- The JS bundle and the two stylesheets are built outside MSBuild, so they are copied into
        wwwroot/ (gitignored) before static web asset discovery and shipped as Razor Class Library
        static web assets: a NuGet package cannot write into the host's ~/wwwroot/PageBuilder/Public/
