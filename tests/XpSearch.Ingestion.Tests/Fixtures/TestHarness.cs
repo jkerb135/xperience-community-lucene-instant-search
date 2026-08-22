@@ -6,7 +6,12 @@ using Microsoft.Extensions.Options;
 using XpSearch.Core.Abstractions;
 using XpSearch.Core.Caching;
 using XpSearch.Core.Contract;
+using XpSearch.Core.Facets;
+using XpSearch.Core.Highlighting;
 using XpSearch.Core.Indexing;
+using XpSearch.Core.Options;
+using XpSearch.Core.Pipeline;
+using XpSearch.Core.Pipeline.Stages;
 using XpSearch.Ingestion.Abstractions;
 using XpSearch.Ingestion.Indexing;
 using XpSearch.Ingestion.Options;
@@ -134,7 +139,8 @@ internal sealed class ManualIngestionQueue : IIngestionQueue
 
     internal List<IngestionWorkItem> Queued { get; } = [];
 
-    public int PendingCount => Queued.Count;
+    /// <summary>Set by a test to stand in for work the worker thread could not write to Lucene.</summary>
+    public int FailedCount { get; set; }
 
     public void Enqueue(IngestionWorkItem item) => Queued.Add(item);
 
@@ -179,6 +185,12 @@ internal sealed class NullSearchCache : ISearchCache
     public void Evict(string indexName)
     {
     }
+}
+
+/// <summary>Serves the harness's schema to the query pipeline.</summary>
+internal sealed class FixedSchemaProvider(IndexSchema schema) : IIndexSchemaProvider
+{
+    public Task<IndexSchema> GetSchemaAsync(string indexName, CancellationToken cancellationToken) => Task.FromResult(schema);
 }
 
 /// <summary>Names the caller in the ingestion log.</summary>
@@ -250,6 +262,31 @@ internal sealed class TestHarness : IDisposable
 
     /// <summary>The production write client as a host would resolve it: the replay decorator in front of the index.</summary>
     internal Kentico.Xperience.Lucene.Core.Indexing.ILuceneClient Client { get; }
+
+    /// <summary>
+    /// The query pipeline a host would resolve, over this harness's index and schema: the ingestion
+    /// tests that assert what a pushed document looks like to a search read it through the real
+    /// stages rather than through Lucene directly.
+    /// </summary>
+    /// <returns>The pipeline.</returns>
+    internal ISearchPipeline Pipeline()
+    {
+        var options = Microsoft.Extensions.Options.Options.Create(new XpSearchOptions());
+
+        return new SearchPipeline(
+            Index,
+            new FixedSchemaProvider(Schema.Fields),
+            [
+                new NormalizeRequestStage(options),
+                new BuildQueryStage(),
+                new FacetFilterStage(),
+                new NumericFilterStage(),
+                new ExecuteSearchStage(Index),
+                new CollectFacetsStage(new TaxonomyFacetProvider(Index), options),
+                new HighlightStage(new LuceneHighlighter()),
+                new ProjectResponseStage()
+            ]);
+    }
 
     internal static SearchDocument Document(string id, string source = "pim", params (string Name, object? Value)[] attributes) =>
         SearchDocument.Create(id, source, attributes.ToDictionary(entry => entry.Name, entry => entry.Value, StringComparer.OrdinalIgnoreCase));

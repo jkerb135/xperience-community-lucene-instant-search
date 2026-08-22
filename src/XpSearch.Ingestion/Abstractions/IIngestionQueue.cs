@@ -45,8 +45,12 @@ public interface IIngestionQueue
     /// <param name="item">The work to do.</param>
     void Enqueue(IngestionWorkItem item);
 
-    /// <summary>Gets the number of items waiting to be processed, for the index status's health.</summary>
-    int PendingCount { get; }
+    /// <summary>
+    /// Gets the number of consecutive work items that failed to reach Lucene, for the index status's
+    /// health. Work merely waiting in the queue is not a failure: it is the normal state of an
+    /// asynchronous write, and the counter goes back to zero as soon as an item succeeds.
+    /// </summary>
+    int FailedCount { get; }
 }
 
 /// <summary>

@@ -185,8 +185,10 @@ export interface IndexStatus {
      */
     documents: DocumentCounts;
     /**
-     * "healthy" when the index is readable and nothing is stuck, "degraded" when queued writes
-     * are waiting or replaying, "unavailable" when the index cannot be read.
+     * "healthy" when the index is readable and no write has failed - including while queued
+     * writes are still waiting, which is the normal state of an asynchronous write, "degraded"
+     * when queued work failed to reach the index and nothing has succeeded since, "unavailable"
+     * when the index cannot be read.
      */
     health: Health;
     /**
@@ -216,8 +218,10 @@ export interface DocumentCounts {
 }
 
 /**
- * "healthy" when the index is readable and nothing is stuck, "degraded" when queued writes
- * are waiting or replaying, "unavailable" when the index cannot be read.
+ * "healthy" when the index is readable and no write has failed - including while queued
+ * writes are still waiting, which is the normal state of an asynchronous write, "degraded"
+ * when queued work failed to reach the index and nothing has succeeded since, "unavailable"
+ * when the index cannot be read.
  */
 export type Health = "healthy" | "degraded" | "unavailable";
 

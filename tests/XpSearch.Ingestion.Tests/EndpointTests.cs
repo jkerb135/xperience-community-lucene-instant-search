@@ -242,7 +242,7 @@ internal sealed class EndpointTests
     /// <summary>Runs queued work as soon as it is queued, so an HTTP test can assert on the index.</summary>
     private sealed class ImmediateQueue(IServiceProvider services) : IIngestionQueue
     {
-        public int PendingCount => 0;
+        public int FailedCount => 0;
 
         public void Enqueue(IngestionWorkItem item) =>
             services.GetRequiredService<IIngestionWorkProcessor>().ProcessAsync(item, CancellationToken.None).GetAwaiter().GetResult();

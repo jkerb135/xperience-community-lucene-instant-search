@@ -266,7 +266,12 @@ public sealed class XpSearchIndexer : IXpSearchIndexer
             Documents = new DocumentCounts { Total = counts.Total, BySource = counts.BySource },
             // Stored as UTC; the column has no offset, so the kind is stated rather than assumed.
             LastWrite = lastWrite is { } written ? new DateTimeOffset(DateTime.SpecifyKind(written, DateTimeKind.Utc)) : null,
-            Health = queue.PendingCount > 0 ? Health.Degraded : Health.Healthy,
+
+            // Queued work is the normal state of an asynchronous write, so it is not degraded
+            // health - the counts are simply eventually consistent (documented in the ingestion
+            // guide). Only work that failed to reach Lucene, and has not been followed by a
+            // successful item, is an incident worth reporting.
+            Health = queue.FailedCount > 0 ? Health.Degraded : Health.Healthy,
         };
     }
 
