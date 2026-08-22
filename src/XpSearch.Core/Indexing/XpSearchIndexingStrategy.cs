@@ -296,8 +296,11 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
 
             // Provenance marker (spec §10.2): pushed documents carry their own source, so a scoped
             // clear and the ingestion status counts can separate Xperience content from the rest.
-            // Written once per document, before any flattened or contributed field is added.
-            new StringField(LuceneFieldNames.SourceField, LuceneFieldNames.XperienceSource, Field.Store.YES)
+            // Written once per document, before any flattened or contributed field is added. The
+            // term is what the status counts and a scoped clear read; the facet field is what makes
+            // "_source" countable and drillable, as the schema declares it to be.
+            new StringField(LuceneFieldNames.SourceField, LuceneFieldNames.XperienceSource, Field.Store.YES),
+            new FacetField(LuceneFieldNames.SourceField, LuceneFieldNames.XperienceSource)
         };
 
         AddText(document, IndexSchemaProvider.TitleField, item.Name, sortable: true);
