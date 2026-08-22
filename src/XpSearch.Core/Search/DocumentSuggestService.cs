@@ -5,10 +5,10 @@ using Kentico.Xperience.Lucene.Core;
 using Lucene.Net.Index;
 using Lucene.Net.Search;
 
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 using XpSearch.Core.Abstractions;
+using XpSearch.Core.Analytics;
 using XpSearch.Core.Contract;
 using XpSearch.Core.Indexing;
 using XpSearch.Core.Options;
@@ -23,36 +23,36 @@ namespace XpSearch.Core.Search;
 /// the document-suggestion mode of spec §4.3.
 /// </summary>
 /// <remarks>
-/// The other mode, query suggestions from logged popular queries, depends on the Phase 6 analytics
-/// store (spec §13.6). An index configured for it gets an empty list and a logged warning.
+/// The other mode, query suggestions from logged popular queries (spec §13.6), is answered by
+/// <see cref="IQuerySuggestionSource"/> from the Phase 6 query log.
 /// </remarks>
 public sealed class DocumentSuggestService : ISuggestService
 {
     private readonly ILuceneIndexAccessor accessor;
     private readonly IIndexSchemaProvider schemaProvider;
+    private readonly IQuerySuggestionSource querySuggestions;
     private readonly XpSearchOptions options;
-    private readonly ILogger<DocumentSuggestService> logger;
 
     /// <summary>Initializes a new instance of the <see cref="DocumentSuggestService"/> class.</summary>
     /// <param name="accessor">The Lucene seam.</param>
     /// <param name="schemaProvider">Supplies the schema of the index being suggested from.</param>
+    /// <param name="querySuggestions">Answers for an index configured for query suggestions.</param>
     /// <param name="options">The configured search options.</param>
-    /// <param name="logger">Logger.</param>
     public DocumentSuggestService(
         ILuceneIndexAccessor accessor,
         IIndexSchemaProvider schemaProvider,
-        IOptions<XpSearchOptions> options,
-        ILogger<DocumentSuggestService> logger)
+        IQuerySuggestionSource querySuggestions,
+        IOptions<XpSearchOptions> options)
     {
         ArgumentNullException.ThrowIfNull(accessor);
         ArgumentNullException.ThrowIfNull(schemaProvider);
+        ArgumentNullException.ThrowIfNull(querySuggestions);
         ArgumentNullException.ThrowIfNull(options);
-        ArgumentNullException.ThrowIfNull(logger);
 
         this.accessor = accessor;
         this.schemaProvider = schemaProvider;
+        this.querySuggestions = querySuggestions;
         this.options = options.Value;
-        this.logger = logger;
     }
 
     /// <inheritdoc />
@@ -72,15 +72,6 @@ public sealed class DocumentSuggestService : ISuggestService
 
         var indexOptions = options.Indexes[request.Index];
 
-        if (indexOptions.SuggestMode == SuggestMode.QuerySuggestions)
-        {
-            logger.LogWarning(
-                "Index {Index} is configured for query suggestions, which need the Phase 6 analytics store; returning no suggestions.",
-                request.Index);
-
-            return Empty();
-        }
-
         string prefix = NormalizePrefix(request.Query);
 
         if (prefix.Length == 0)
@@ -89,6 +80,15 @@ public sealed class DocumentSuggestService : ISuggestService
         }
 
         int limit = ValidateLimit(request.Limit);
+
+        if (indexOptions.SuggestMode == SuggestMode.QuerySuggestions)
+        {
+            var queries = await querySuggestions.SuggestAsync(request.Index, prefix, limit, cancellationToken).ConfigureAwait(false);
+
+            // A query suggestion has no document behind it, so it carries text only.
+            return new SuggestResponse { Suggestions = [.. queries.Select(text => new Suggestion { Text = text })] };
+        }
+
         var schema = await schemaProvider.GetSchemaAsync(request.Index, cancellationToken).ConfigureAwait(false);
         var suggestField = schema.Find(indexOptions.SuggestField)
             ?? throw new SearchValidationException(
