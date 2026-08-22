@@ -489,3 +489,24 @@ and how to lift it.
   punctuation-joined phrase is not recognised.
 - **Upgrade path:** replace the token scan with a Lucene `SynonymFilter` over a `SynonymMap` built
   from the same rows and wired into the index's analyzer chain.
+
+## Admin client templates in `XpSearch.Admin/Client/src/**`
+
+- **Simplified:** the two React templates have no render tests. The Kentico admin client boilerplate
+  ships no test runner, and adding jest or vitest plus a DOM and mocks for `usePageCommand` would be
+  more machinery than the templates contain logic. Everything with a decision in it — the with/without
+  marking, the explanation split, the report mapping, the deep-link token — is a pure function on the
+  C# side and is unit-tested there; the client is checked by `tsc --noEmit` under `strict`.
+- **Ceiling:** a broken JSX branch (an empty state, the aria-live region, the SVG chart) is caught by
+  a human opening the page, not by CI.
+- **Upgrade path:** add vitest with jsdom to `Client/package.json` and one render test per template
+  over fixture data, stubbing `@kentico/xperience-admin-base`.
+
+## Query tester result count in `XpSearch.Admin/UIPages/QueryTester/QueryTesterPage.cs`
+
+- **Simplified:** the tester runs page 1 only, at most 50 results per side (`MaxPageSize`), and the
+  diff therefore compares the first page of each side.
+- **Ceiling:** a result the rules moved from position 3 to position 60 is marked `Removed` rather than
+  `MovedDown`, because the with-rules page no longer holds it. Same class of approximation as the pin
+  and bury reordering above.
+- **Upgrade path:** run both sides over a larger window than the page shown and diff the window.

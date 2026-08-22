@@ -130,6 +130,45 @@ POST /api/xpsearch/suggest
 A query suggestion carries `text` only — there is no document behind it. Leave the mode at
 `SuggestMode.Documents` (the default) for a dropdown that shows actual results.
 
+### The dashboard
+
+**Search tuning → Analytics** shows the whole log for one index and one date range.
+
+1. Pick the **Index**, or leave it on **Every index**.
+2. Pick the range: **Last 7 days**, **Last 30 days**, **Last 90 days**, or type **From** and **To**
+   yourself as `yyyy-mm-dd` and press **Apply**. Both dates are in UTC and both are included.
+
+What you get:
+
+- **Search volume over time** — one bar per day. *Show the numbers* opens the same data as a table.
+- **Zero-result queries** — what visitors asked for and did not find, most searched first, with the
+  date it was last asked. This is the report to read first.
+- **Top queries** — what visitors search for most.
+- **Click-through rate by query** — how often a search led to a click, and the mean position of the
+  thing clicked. A high volume with a low rate means the results are wrong; a good rate with a high
+  average position means the right result is too far down (a case for a pin).
+- **Slowest queries** — the 95th percentile of server-side processing time per query.
+
+The header line gives the total number of searches in the range and the average clicked position
+across all of them.
+
+#### From a zero-result query to a fix
+
+Every row of **Zero-result queries** has a **Create rule** button. It opens the rule form with:
+
+- **Index** set to the index you were looking at,
+- **Words to look for** set to that query,
+- **Rule name** pre-filled as *Rule for '<query>'*.
+
+Choose what the rule should do — usually **Pin a result to a position**, pointing at the page that
+*should* have come back — fill in the result id, and save. You land back on the **Rules** listing.
+Then check it in **Query tester** (see `docs/guides/relevance-tuning.md`).
+
+If the query found nothing because the content genuinely does not exist, the report is telling you to
+write the page, not the rule.
+
+Nothing on this page changes any data except that button, and the button only opens a form.
+
 ### Reading the reports from code
 
 `ISearchAnalyticsService` returns everything the analytics dashboard shows, for one index and date

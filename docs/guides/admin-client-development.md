@@ -1,0 +1,96 @@
+## Admin client module development
+
+`XpSearch.Admin` ships two administration pages that are custom React templates rather than built-in
+ones: the **Query tester** (spec §8.4) and the **Analytics dashboard** (spec §9.3). Their front end
+lives in `src/XpSearch.Admin/Client` and is a standard Xperience admin client module, built with
+webpack and embedded into `XpSearch.Admin.dll`.
+
+If you never touch those two pages, you still need the bundle to build the project.
+
+### Build it
+
+```bash
+cd src/XpSearch.Admin/Client
+npm ci
+npm run build          # writes Client/dist/entry.kxh.<hash>.js
+cd ../../..
+dotnet build src/XpSearch.Admin
+```
+
+`dotnet build src/XpSearch.Admin` fails with a clear message if `Client/dist` holds no bundle. The
+output is gitignored, so this is the first thing to run on a fresh clone — the same rule as
+`src/XpSearch.Client` for `XpSearch.Widgets`.
+
+Other scripts: `npm run typecheck` (`tsc --noEmit`, strict) and `npm run start` (webpack dev server on
+port 3009, see *Serving* below).
+
+### Layout
+
+| Path | What it is |
+|---|---|
+| `Client/package.json` | The Kentico admin boilerplate's dependency set, versions pinned exactly. |
+| `Client/webpack.config.js` | The boilerplate config with `orgName: "yourco"`, `projectName: "xperience-search-admin"`. |
+| `Client/babel.config.json`, `Client/tsconfig.json` | Boilerplate, unchanged apart from `noUnusedLocals`. |
+| `Client/src/entry.tsx` | Exports every component the admin application may load. |
+| `Client/src/query-tester/QueryTesterTemplate.tsx` | Client template of the query tester. |
+| `Client/src/analytics/AnalyticsDashboardTemplate.tsx` | Client template of the dashboard. |
+| `Client/src/analytics/ReportTable.tsx`, `VolumeChart.tsx` | The dashboard's table and SVG bar chart. |
+
+### The four names that must agree
+
+A page's `templateName` is `@<orgName>/<projectName>/<ComponentName>`, and the admin application
+appends `Template` to the component name. Change any one of these and all four must change together:
+
+| Where | Value |
+|---|---|
+| `Client/webpack.config.js` | `orgName: "yourco"`, `projectName: "xperience-search-admin"` |
+| `XpSearch.Admin.csproj` | `<AdminOrgName>yourco</AdminOrgName>`, `<AdminClientPath>`'s `<ProjectName>xperience-search-admin</ProjectName>` |
+| `XpSearchAdminClientModule.cs` | `RegisterClientModule("yourco", "xperience-search-admin")` |
+| `UIPage` registrations | `"@yourco/xperience-search-admin/QueryTester"`, `"@yourco/xperience-search-admin/AnalyticsDashboard"` |
+
+So `QueryTesterTemplate` (exported from `entry.tsx`) backs `.../QueryTester`.
+
+### Serving
+
+The module is served in **Embedded** mode: the `Kentico.Xperience.Admin` targets turn everything
+under `AdminClientPath` into embedded resources of `XpSearch.Admin.dll`, so the NuGet package carries
+its own admin UI and a host application needs no configuration and no dev server. Embedded is the
+default when a module has no `Mode` configured, so a host's `appsettings.json` can stay untouched.
+
+For front-end work, `Proxy` mode is faster — the host serves the templates from your webpack dev
+server instead of the assembly. In the host application:
+
+```json
+"CMSAdminClientModuleSettings": {
+  "yourco-xperience-search-admin": {
+    "Mode": "Proxy",
+    "Port": 3009
+  }
+}
+```
+
+Then run `npm run start` in `src/XpSearch.Admin/Client`. Remove the setting before shipping.
+
+### Adding a page
+
+1. Write the template in `Client/src/<area>/<Name>Template.tsx` and export it from `entry.tsx`.
+2. Write the back end as `Page<TClientProperties>` with a `TemplateClientProperties` subclass, and
+   register it with `[assembly: UIPage(..., "@yourco/xperience-search-admin/<Name>", order)]`.
+3. Fetch data with `[PageCommand]` handlers and `usePageCommand` on the client. Give every command a
+   `Permission` from the set `SearchTuningApplication` declares.
+4. `npm run typecheck`, `npm run build`, `dotnet build src/XpSearch.Admin`.
+
+Constraints worth knowing before you start: dynamic `import()` is not supported in admin client
+modules, and `react`, `react-dom`, `react-router`, `i18next` and `@hello-pangea/dnd` are shared at
+runtime — never bundle your own copy.
+
+### Reference
+
+- Prepare your environment for admin development:
+  <https://docs.kentico.com/documentation/developers-and-admins/customization/extend-the-administration-interface/prepare-your-environment-for-admin-development>
+- UI pages:
+  <https://docs.kentico.com/documentation/developers-and-admins/customization/extend-the-administration-interface/ui-pages>
+- UI page commands:
+  <https://docs.kentico.com/documentation/developers-and-admins/customization/extend-the-administration-interface/ui-pages/ui-page-commands>
+- UI page permission checks:
+  <https://docs.kentico.com/documentation/developers-and-admins/customization/extend-the-administration-interface/ui-pages/ui-page-permission-checks>

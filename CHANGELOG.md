@@ -31,7 +31,31 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
   listing filtered by index and ordered newest first. `XpSearch.Admin` now references
   `XpSearch.Ingestion`; the reasoning is in ADR-0014.
 - **Not yet:** redirect rules are stored but not applied — the JSON contract has no redirect member
-  (KNOWN-LIMITATIONS). The query tester (spec §8.4) is still pending.
+  (KNOWN-LIMITATIONS).
+
+- **Added:** the **Query tester** page (spec §8.4), under *Search tuning*. Pick an index, type a query
+  and an optional language, and see the ranking twice side by side: **with rules** (what a visitor
+  gets) and **without rules** (no rules, synonyms, stopwords or field weights at all). Each result
+  shows its position, final score, base score and the boosts and rules that applied to it, and each
+  side lists how the query itself was rewritten. Results that differ between the two sides are marked
+  moved up, moved down, added or removed. Both sides run with `explain=true`; neither is served from
+  the search cache, and neither is written to the analytics query log. See
+  `docs/guides/relevance-tuning.md` and ADR-0016.
+- **Added:** the **Analytics** dashboard (spec §9.3), under *Search tuning*: index selector, 7/30/90-day
+  presets or a custom `yyyy-mm-dd` range, and all six reports from `ISearchAnalyticsService` — search
+  volume over time (bar chart with a table fallback), zero-result queries, top queries, click-through
+  rate and mean clicked position by query, and slowest queries. Every zero-result row has a **Create
+  rule** button that opens the rule form with the index and the query pre-filled. See
+  `docs/guides/analytics.md`.
+- **Added:** an admin client module in `src/XpSearch.Admin/Client` (organization `yourco`, project
+  `xperience-search-admin`), built with webpack and embedded into `XpSearch.Admin.dll`, so a consumer
+  gets both pages from the NuGet package with no `appsettings.json` change and no dev server.
+  **Building `XpSearch.Admin` now requires `npm ci && npm run build` in `src/XpSearch.Admin/Client`
+  first** — the build fails with instructions when the bundle is missing. See
+  `docs/guides/admin-client-development.md`.
+- **Changed:** the *Search tuning* application now declares the `VIEW`, `CREATE`, `UPDATE` and `DELETE`
+  permissions, so they can be assigned to roles in **Role management**; the two new pages and their
+  page commands evaluate them (`VIEW` to read, `CREATE` for the *Create rule* deep link).
 
 - **Added:** search analytics (spec §9). Four custom activity types (`xpsearch_query`,
   `xpsearch_noresults`, `xpsearch_click`, `xpsearch_conversion`) are created on startup and logged

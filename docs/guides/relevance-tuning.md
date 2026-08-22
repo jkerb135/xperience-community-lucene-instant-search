@@ -140,19 +140,57 @@ the search response — a developer can read it from the browser's network tab i
 your site can be configured to expose it. Ask once for the ids of the pages you care about and keep
 the list; they are stable and do not change when you edit the page.
 
-### Checking your work
+### Checking your work: the Query tester
 
-Add `&explain=true` to a search request and every result comes back with a list of what affected it:
+**Search tuning → Query tester** answers the only question that matters after you save a rule: did it
+do what you meant?
 
-- `rule:Flagship machine first` — this rule applied.
-- `weight:Title×3` — this field weight applied.
-- `synonym:couch` — the search was widened with this word.
+1. Pick the **Index** you tuned.
+2. Type the **Query** a visitor would type. Leave **Language** empty unless you are checking one
+   language in particular (`en`, `de`, …).
+3. Press **Run**.
 
-A dedicated **Query tester** page that shows this side by side, with and without rules, is planned;
-until it ships, ask a developer to run one search with `explain=true` for you.
+You get two columns of the same search:
+
+- **With rules** — exactly what a visitor gets right now: your rules, synonyms, stopwords and field
+  weights all applied.
+- **Without rules** — the same query with none of them. This is the "before" picture.
+
+Every result on both sides shows:
+
+- its **position** and title,
+- **score** — the final relevance number, after everything,
+- **base score** — the raw text-match score, before any rule or weight touched it. If the two are the
+  same, nothing changed that result's score,
+- one line per rule, weight or synonym that applied to *that* result, for example
+  `rule:Flagship machine first`.
+
+Above the results, **How the query was rewritten** lists what applied to the whole search:
+`synonym:couch` (the search was widened with this word), `weight:Title×3` (this field weight applied),
+`rule:Winter campaign` (a boost or filter rule applied at query time).
+
+Results that differ between the two columns are marked:
+
+| Mark | Means |
+|---|---|
+| ▲ Moved up by a rule | Your pin or boost lifted it. |
+| ▼ Moved down by a rule | Your bury, or someone else's boost, pushed it down. |
+| + Added by a rule | It was not in the plain results at all — a pin put it there. |
+| − Removed by a rule | It was in the plain results and your bury or filter took it out. |
+
+Reading it: if the two columns are identical, your rule did not match — check the **When the
+visitor's search** condition and the **Words to look for**, and check the schedule. If a result moved
+but not far enough, raise the boost or use a pin instead.
+
+Two things worth knowing. The tester always runs a fresh search, so a rule you saved a second ago is
+already visible even though live searches may still be served from cache for a moment. And testing
+never shows up in **Analytics** — tester runs are not written to the query log.
 
 ### The other pages in this application
 
+- **Analytics** — what visitors searched for, what they clicked and, above all, what found nothing.
+  See `docs/guides/analytics.md`; every zero-result row has a **Create rule** button that opens the
+  rule form with the query already filled in.
 - **API keys** — for systems that push data into search. When you create a key it is shown **once**,
   in the message at the top of the screen. Copy it then; it cannot be shown again.
 - **Index status** — how many documents each index holds and where they came from, plus a **Rebuild
