@@ -8,6 +8,10 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Fixed:** a redirect no longer disappears when the response comes from the cache. The default
+  response cache re-issues `queryId` on every hit by copying the cached response, and that copy
+  dropped `redirect`, so a host with caching enabled always saw `"redirect": null`. The copy is
+  now a clone, so any future contract member is carried over too.
 - **Fixed:** `_source` is facetable in practice, not only in the schema. Every document - Xperience
   content and externally pushed alike - now carries a `FacetField` for it alongside the term, so
   `facets: ["_source"]` returns counts and `filters.facets` can drill down to one provenance. The term

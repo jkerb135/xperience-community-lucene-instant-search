@@ -53,19 +53,7 @@ public sealed class CachedSearchPipeline : ISearchPipeline
             .GetOrAddAsync(request.Index, key, token => inner.ExecuteAsync(request, token), cancellationToken)
             .ConfigureAwait(false);
 
-        return WithQueryId(cached, request.QueryId);
+        return cached.WithQueryId(
+            string.IsNullOrWhiteSpace(request.QueryId) ? Guid.NewGuid().ToString() : request.QueryId);
     }
-
-    private static SearchResponse WithQueryId(SearchResponse response, string? queryId) =>
-        new()
-        {
-            Results = response.Results,
-            Facets = response.Facets,
-            Page = response.Page,
-            PageSize = response.PageSize,
-            Total = response.Total,
-            TotalPages = response.TotalPages,
-            TookMs = response.TookMs,
-            QueryId = string.IsNullOrWhiteSpace(queryId) ? Guid.NewGuid().ToString() : queryId
-        };
 }

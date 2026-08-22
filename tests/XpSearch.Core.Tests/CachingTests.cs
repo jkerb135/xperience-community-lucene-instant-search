@@ -1,3 +1,6 @@
+using System.Globalization;
+using System.Reflection;
+
 using Kentico.Xperience.Lucene.Core.Indexing;
 
 using Lucene.Net.Documents;
@@ -68,6 +71,67 @@ internal sealed class CachingTests
             Assert.That(one.QueryId, Is.EqualTo("first"));
             Assert.That(two.QueryId, Is.EqualTo("second"), "each caller gets its own correlation id back");
         });
+    }
+
+    [Test]
+    public async Task ACachedResponse_KeepsTheRedirectItWasCachedWith()
+    {
+        var pipeline = Cached(new SearchResponse
+        {
+            Results = [],
+            Redirect = new SearchRedirect { Rule = "Espresso landing page", Url = "/promotions/espresso" }
+        });
+
+        await pipeline.ExecuteAsync(TestHarness.Request("espresso"), CancellationToken.None);
+        var hit = await pipeline.ExecuteAsync(TestHarness.Request("espresso"), CancellationToken.None);
+
+        Assert.That(hit.Redirect?.Url, Is.EqualTo("/promotions/espresso"));
+    }
+
+    /// <summary>
+    /// Guards the copy the decorator makes to re-issue <c>queryId</c>: every other contract member has
+    /// to survive it, including one added to <see cref="SearchResponse"/> after this test was written.
+    /// </summary>
+    [Test]
+    public async Task ACachedResponse_CarriesEveryOtherContractMemberBack()
+    {
+        var properties = typeof(SearchResponse).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        var cachedInstance = new SearchResponse();
+        foreach (var property in properties)
+        {
+            property.SetValue(cachedInstance, NonDefault(property.PropertyType));
+        }
+
+        var pipeline = Cached(cachedInstance);
+        var request = TestHarness.Request("espresso");
+        request.QueryId = "mine";
+
+        await pipeline.ExecuteAsync(TestHarness.Request("espresso"), CancellationToken.None);
+        var hit = await pipeline.ExecuteAsync(request, CancellationToken.None);
+
+        Expect.Multiple(() =>
+        {
+            foreach (var property in properties.Where(p => p.Name != nameof(SearchResponse.QueryId)))
+            {
+                Assert.That(property.GetValue(hit), Is.EqualTo(property.GetValue(cachedInstance)), property.Name);
+            }
+
+            Assert.That(hit.QueryId, Is.EqualTo("mine"));
+            Assert.That(cachedInstance.QueryId, Is.EqualTo(NonDefault(typeof(string))), "the cached instance must not be mutated");
+        });
+    }
+
+    private static object NonDefault(Type type)
+    {
+        var actual = Nullable.GetUnderlyingType(type) ?? type;
+
+        return actual switch
+        {
+            _ when actual == typeof(string) => "non-default",
+            _ when actual.IsArray => Array.CreateInstance(actual.GetElementType()!, 0),
+            _ when actual.IsValueType => Convert.ChangeType(7, actual, CultureInfo.InvariantCulture),
+            _ => Activator.CreateInstance(actual)!
+        };
     }
 
     [Test]
@@ -175,6 +239,18 @@ internal sealed class CachingTests
         var cache = new MemorySearchCache();
 
         return (new CachedSearchPipeline(inner, cache, Microsoft.Extensions.Options.Options.Create(effective)), inner, cache);
+    }
+
+    private static CachedSearchPipeline Cached(SearchResponse response) =>
+        new(
+            new FixedPipeline(response),
+            new MemorySearchCache(),
+            Microsoft.Extensions.Options.Options.Create(new XpSearchOptions()));
+
+    private sealed class FixedPipeline(SearchResponse response) : ISearchPipeline
+    {
+        public Task<SearchResponse> ExecuteAsync(SearchRequest request, CancellationToken cancellationToken) =>
+            Task.FromResult(response);
     }
 
     private sealed class CountingPipeline : ISearchPipeline
