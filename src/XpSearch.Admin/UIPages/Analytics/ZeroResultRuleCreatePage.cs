@@ -64,12 +64,9 @@ public class ZeroResultRuleCreatePage : RuleCreate
     protected override RuleModel CreateModel()
     {
         var model = base.CreateModel();
-        (string indexName, string query) = RuleSeed.Decode(Seed);
 
-        if (!string.IsNullOrEmpty(indexName))
-        {
-            model.IndexName = indexName;
-        }
+        // The index comes from the URL's index segment; only the query part of the seed is used.
+        (_, string query) = RuleSeed.Decode(Seed);
 
         model.Pattern = query;
         model.Name = string.IsNullOrEmpty(query) ? model.Name : $"Rule for '{query}'";

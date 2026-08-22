@@ -8,9 +8,6 @@ namespace XpSearch.Admin.UIPages.Analytics;
 /// <summary>What the dashboard asks for (spec §9.3).</summary>
 public sealed class AnalyticsRequest
 {
-    /// <summary>Gets or sets the code name of the index, or an empty string for every index.</summary>
-    public string IndexName { get; set; } = string.Empty;
-
     /// <summary>Gets or sets the first day of the range, as <c>yyyy-MM-dd</c> in UTC.</summary>
     public string From { get; set; } = string.Empty;
 
@@ -24,9 +21,6 @@ public sealed class AnalyticsRequest
 /// <summary>Which zero-result query a "Create rule" action was invoked for.</summary>
 public sealed class CreateRuleRequest
 {
-    /// <summary>Gets or sets the code name of the index the rule will apply to.</summary>
-    public string IndexName { get; set; } = string.Empty;
-
     /// <summary>Gets or sets the query text to pre-fill as the rule's pattern.</summary>
     public string Query { get; set; } = string.Empty;
 }

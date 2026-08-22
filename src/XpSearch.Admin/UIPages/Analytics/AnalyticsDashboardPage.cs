@@ -4,6 +4,7 @@ using CMS.Membership;
 
 using Kentico.Xperience.Admin.Base;
 
+using Kentico.Xperience.Lucene.Admin;
 using Kentico.Xperience.Lucene.Core.Indexing;
 
 using XpSearch.Admin.UIPages;
@@ -11,12 +12,12 @@ using XpSearch.Admin.UIPages.Analytics;
 using XpSearch.Core.Analytics;
 
 [assembly: UIPage(
-    parentType: typeof(SearchTuningApplication),
+    parentType: typeof(IndexTuningSection),
     slug: "analytics",
     uiPageType: typeof(AnalyticsDashboardPage),
     name: "Analytics",
     templateName: "@yourco/xperience-search-admin/AnalyticsDashboard",
-    order: 600)]
+    order: 700)]
 
 namespace XpSearch.Admin.UIPages.Analytics;
 
@@ -26,8 +27,11 @@ public class AnalyticsDashboardClientProperties : TemplateClientProperties
     /// <summary>Gets or sets the code names of every registered index.</summary>
     public IEnumerable<string> IndexNames { get; set; } = [];
 
-    /// <summary>Gets or sets the index selected when the page opens, or an empty string for every index.</summary>
+    /// <summary>Gets or sets the index the reports cover.</summary>
     public string SelectedIndexName { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets whether the index comes from the URL and cannot be changed on the page.</summary>
+    public bool IndexLocked { get; set; }
 
     /// <summary>Gets or sets today's date in UTC, as <c>yyyy-MM-dd</c>, so the presets agree with the server.</summary>
     public string Today { get; set; } = string.Empty;
@@ -75,15 +79,23 @@ public class AnalyticsDashboardPage : Page<AnalyticsDashboardClientProperties>
         this.time = time;
     }
 
+    /// <summary>Gets or sets the identifier of the index the page is scoped to, taken from the URL.</summary>
+    [PageParameter(typeof(IntPageModelBinder), typeof(IndexEditPage))]
+    public int IndexIdentifier { get; set; }
+
+    /// <summary>Gets the code name of the index in the URL, or an empty string when it is not registered.</summary>
+    private string IndexName => IndexScope.Resolve(indexManager, IndexIdentifier);
+
     /// <inheritdoc />
     public override Task<AnalyticsDashboardClientProperties> ConfigureTemplateProperties(AnalyticsDashboardClientProperties properties)
     {
         ArgumentNullException.ThrowIfNull(properties);
 
-        properties.IndexNames = [.. indexManager.GetAllIndices()
-            .Select(index => index.IndexName)
-            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)];
-        properties.SelectedIndexName = string.Empty;
+        string indexName = IndexName;
+
+        properties.IndexNames = [indexName];
+        properties.SelectedIndexName = indexName;
+        properties.IndexLocked = true;
         properties.Today = time.GetUtcNow().UtcDateTime.ToString(AnalyticsReportDto.DateFormat, CultureInfo.InvariantCulture);
 
         return Task.FromResult(properties);
@@ -110,7 +122,7 @@ public class AnalyticsDashboardPage : Page<AnalyticsDashboardClientProperties>
 
         var report = await analytics.GetReportAsync(
             new SearchAnalyticsQuery(
-                request.IndexName ?? string.Empty,
+                IndexName,
                 from.ToDateTime(TimeOnly.MinValue),
                 to.ToDateTime(TimeOnly.MaxValue),
                 Math.Clamp(request.Limit, 1, MaxLimit)),
@@ -128,10 +140,10 @@ public class AnalyticsDashboardPage : Page<AnalyticsDashboardClientProperties>
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        string path = pageLinkGenerator.GetPath<ZeroResultRuleCreatePage>(new PageParameterValues
-        {
-            { typeof(ZeroResultRuleCreatePage), RuleSeed.Encode(request.IndexName ?? string.Empty, request.Query ?? string.Empty) }
-        });
+        var parameters = IndexScope.Route(IndexIdentifier);
+        parameters.Add(typeof(ZeroResultRuleCreatePage), RuleSeed.Encode(IndexName, request.Query ?? string.Empty));
+
+        string path = pageLinkGenerator.GetPath<ZeroResultRuleCreatePage>(parameters);
 
         return Task.FromResult(NavigateTo(path));
     }

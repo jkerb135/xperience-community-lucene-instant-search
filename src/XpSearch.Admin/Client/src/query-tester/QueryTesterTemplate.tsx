@@ -22,6 +22,8 @@ import { usePageCommand } from '@kentico/xperience-admin-base';
 interface QueryTesterProps {
   readonly indexNames: string[];
   readonly selectedIndexName: string;
+  /** True when the page hangs under one index, so the index is shown rather than chosen. */
+  readonly indexLocked: boolean;
 }
 
 type ResultChange = 'Unchanged' | 'MovedUp' | 'MovedDown' | 'Injected' | 'Removed';
@@ -51,7 +53,6 @@ interface RunResult {
 }
 
 interface RunData {
-  readonly indexName: string;
   readonly query: string;
   readonly language: string;
   readonly pageSize: number;
@@ -151,7 +152,7 @@ const SideColumn = ({ side, title, description }: { readonly side: Side; readonl
   </section>
 );
 
-export const QueryTesterTemplate = ({ indexNames, selectedIndexName }: QueryTesterProps) => {
+export const QueryTesterTemplate = ({ indexNames, selectedIndexName, indexLocked }: QueryTesterProps) => {
   const [indexName, setIndexName] = useState(selectedIndexName);
   const [query, setQuery] = useState('');
   const [language, setLanguage] = useState('');
@@ -167,7 +168,7 @@ export const QueryTesterTemplate = ({ indexNames, selectedIndexName }: QueryTest
 
   const submit = () => {
     setRunning(true);
-    void run({ indexName, query, language, pageSize: 10 });
+    void run({ query, language, pageSize: 10 });
   };
 
   return (
@@ -185,11 +186,17 @@ export const QueryTesterTemplate = ({ indexNames, selectedIndexName }: QueryTest
         style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'flex-end' }}
       >
         <div style={{ minWidth: '240px' }}>
-          <Select label="Index" value={indexName} onChange={(value) => setIndexName(value ?? '')}>
-            {indexNames.map((name) => (
-              <MenuItem key={name} primaryLabel={name} value={name} />
-            ))}
-          </Select>
+          {indexLocked ? (
+            <p style={{ margin: 0 }}>
+              Index: <strong>{indexName}</strong>
+            </p>
+          ) : (
+            <Select label="Index" value={indexName} onChange={(value) => setIndexName(value ?? '')}>
+              {indexNames.map((name) => (
+                <MenuItem key={name} primaryLabel={name} value={name} />
+              ))}
+            </Select>
+          )}
         </div>
         <div style={{ minWidth: '240px' }}>
           <Input label="Query" value={query} onChange={(event) => setQuery(event.target.value)} />

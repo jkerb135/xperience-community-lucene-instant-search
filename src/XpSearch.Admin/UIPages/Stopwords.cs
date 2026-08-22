@@ -5,13 +5,14 @@ using Kentico.Xperience.Admin.Base.FormAnnotations;
 using Kentico.Xperience.Admin.Base.Forms;
 using Kentico.Xperience.Admin.Base.Forms.Internal;
 
+using Kentico.Xperience.Lucene.Admin;
 using Kentico.Xperience.Lucene.Core.Indexing;
 
 using XpSearch.Admin.Persistence;
 using XpSearch.Admin.UIPages;
 
 [assembly: UIPage(
-    parentType: typeof(SearchTuningApplication),
+    parentType: typeof(IndexTuningSection),
     slug: "stopwords",
     uiPageType: typeof(StopwordListing),
     name: "Stopwords",
@@ -45,11 +46,10 @@ using XpSearch.Admin.UIPages;
 namespace XpSearch.Admin.UIPages;
 
 /// <summary>The stopword list of one index: an index and a block of words, one per line.</summary>
-public class StopwordModel
+public class StopwordModel : IIndexScopedModel
 {
-    /// <summary>Gets or sets the code name of the index the list belongs to.</summary>
-    [RequiredValidationRule]
-    [DropDownComponent(Label = "Index", Order = 1)]
+    /// <summary>Gets or sets the code name of the index the list belongs to. Set from the URL, not editable.</summary>
+    [TextInputComponent(Label = "Index", Order = 1)]
     public string IndexName { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the stopwords, one per line.</summary>
@@ -83,19 +83,32 @@ public class StopwordModel
 /// <summary>Lists the stopword lists, one per index (spec §8.1).</summary>
 public class StopwordListing : ListingPage
 {
+    private readonly ILuceneIndexManager indexManager;
+
+    /// <summary>Initializes a new instance of the <see cref="StopwordListing"/> class.</summary>
+    /// <param name="indexManager">The integration's index registry, used to resolve the index in the URL.</param>
+    public StopwordListing(ILuceneIndexManager indexManager) => this.indexManager = indexManager;
+
+    /// <summary>Gets or sets the identifier of the index the listing is scoped to, taken from the URL.</summary>
+    [PageParameter(typeof(IntPageModelBinder), typeof(IndexEditPage))]
+    public int IndexIdentifier { get; set; }
+
     /// <inheritdoc />
     protected override string ObjectType => XpSearchStopwordListInfo.OBJECT_TYPE;
 
     /// <inheritdoc />
     public override Task ConfigurePage()
     {
+        string indexName = IndexScope.Resolve(indexManager, IndexIdentifier);
+
         PageConfiguration.ColumnConfigurations
-            .AddColumn(nameof(XpSearchStopwordListInfo.StopwordListIndexName), "Index", searchable: true, sortable: true)
             .AddColumn(nameof(XpSearchStopwordListInfo.StopwordListWords), "Words to ignore");
 
-        PageConfiguration.HeaderActions.AddLink<StopwordCreate>("New stopword list");
-        PageConfiguration.AddEditRowAction<StopwordEdit>();
+        PageConfiguration.HeaderActions.AddLink<StopwordCreate>("New stopword list", parameters: IndexScope.Route(IndexIdentifier));
+        PageConfiguration.AddEditRowAction<StopwordEdit>(parameters: IndexScope.Route(IndexIdentifier));
         PageConfiguration.TableActions.AddDeleteAction(nameof(Delete), "Delete");
+        PageConfiguration.QueryModifiers.AddModifier((query, _) =>
+            query.WhereEquals(nameof(XpSearchStopwordListInfo.StopwordListIndexName), indexName));
 
         return base.ConfigurePage();
     }
@@ -107,7 +120,7 @@ public class StopwordEditSection : EditSectionPage<XpSearchStopwordListInfo>
 }
 
 /// <summary>Edits the stopwords of one index.</summary>
-public class StopwordEdit : TuningEditPage<StopwordModel>
+public class StopwordEdit : IndexScopedEditPage<StopwordModel>
 {
     private readonly IInfoProvider<XpSearchStopwordListInfo> provider;
 
@@ -127,8 +140,11 @@ public class StopwordEdit : TuningEditPage<StopwordModel>
         this.provider = provider;
 
     /// <summary>Gets or sets the identifier of the edited list, taken from the URL.</summary>
-    [PageParameter(typeof(IntPageModelBinder))]
+    [PageParameter(typeof(IntPageModelBinder), typeof(StopwordEditSection))]
     public int ObjectId { get; set; }
+
+    /// <inheritdoc />
+    protected override string? EditedIndexName => provider.Get(ObjectId)?.StopwordListIndexName;
 
     /// <inheritdoc />
     protected override StopwordModel CreateModel() =>
@@ -146,7 +162,7 @@ public class StopwordEdit : TuningEditPage<StopwordModel>
 }
 
 /// <summary>Creates the stopword list of an index.</summary>
-public class StopwordCreate : TuningEditPage<StopwordModel>
+public class StopwordCreate : IndexScopedEditPage<StopwordModel>
 {
     private readonly IInfoProvider<XpSearchStopwordListInfo> provider;
 
@@ -169,8 +185,7 @@ public class StopwordCreate : TuningEditPage<StopwordModel>
     protected override Type? RedirectTo => typeof(StopwordListing);
 
     /// <inheritdoc />
-    protected override StopwordModel CreateModel() =>
-        new() { IndexName = IndexNames().FirstOrDefault() ?? string.Empty };
+    protected override StopwordModel CreateModel() => new();
 
     /// <inheritdoc />
     protected override Task<string> PersistAsync(StopwordModel submitted, CancellationToken cancellationToken)

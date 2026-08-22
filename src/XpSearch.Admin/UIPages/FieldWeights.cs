@@ -5,18 +5,19 @@ using Kentico.Xperience.Admin.Base.FormAnnotations;
 using Kentico.Xperience.Admin.Base.Forms;
 using Kentico.Xperience.Admin.Base.Forms.Internal;
 
+using Kentico.Xperience.Lucene.Admin;
 using Kentico.Xperience.Lucene.Core.Indexing;
 
 using XpSearch.Admin.Persistence;
 using XpSearch.Admin.UIPages;
 
 [assembly: UIPage(
-    parentType: typeof(SearchTuningApplication),
-    slug: "field-weights",
+    parentType: typeof(IndexTuningSection),
+    slug: "weights",
     uiPageType: typeof(FieldWeightListing),
     name: "Field weights",
     templateName: TemplateNames.LISTING,
-    order: 300)]
+    order: 500)]
 
 [assembly: UIPage(
     parentType: typeof(FieldWeightListing),
@@ -45,11 +46,10 @@ using XpSearch.Admin.UIPages;
 namespace XpSearch.Admin.UIPages;
 
 /// <summary>The form behind one per-field score multiplier (spec §8.2).</summary>
-public class FieldWeightModel
+public class FieldWeightModel : IIndexScopedModel
 {
-    /// <summary>Gets or sets the code name of the index the weight applies to.</summary>
-    [RequiredValidationRule]
-    [DropDownComponent(Label = "Index", Order = 1)]
+    /// <summary>Gets or sets the code name of the index the weight applies to. Set from the URL, not editable.</summary>
+    [TextInputComponent(Label = "Index", Order = 1)]
     public string IndexName { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the schema field the weight applies to.</summary>
@@ -94,20 +94,33 @@ public class FieldWeightModel
 /// <summary>Lists the field weights, per index (spec §8.1).</summary>
 public class FieldWeightListing : ListingPage
 {
+    private readonly ILuceneIndexManager indexManager;
+
+    /// <summary>Initializes a new instance of the <see cref="FieldWeightListing"/> class.</summary>
+    /// <param name="indexManager">The integration's index registry, used to resolve the index in the URL.</param>
+    public FieldWeightListing(ILuceneIndexManager indexManager) => this.indexManager = indexManager;
+
+    /// <summary>Gets or sets the identifier of the index the listing is scoped to, taken from the URL.</summary>
+    [PageParameter(typeof(IntPageModelBinder), typeof(IndexEditPage))]
+    public int IndexIdentifier { get; set; }
+
     /// <inheritdoc />
     protected override string ObjectType => XpSearchFieldWeightInfo.OBJECT_TYPE;
 
     /// <inheritdoc />
     public override Task ConfigurePage()
     {
+        string indexName = IndexScope.Resolve(indexManager, IndexIdentifier);
+
         PageConfiguration.ColumnConfigurations
-            .AddColumn(nameof(XpSearchFieldWeightInfo.WeightIndexName), "Index", searchable: true, sortable: true)
             .AddColumn(nameof(XpSearchFieldWeightInfo.WeightFieldName), "Field", searchable: true)
             .AddColumn(nameof(XpSearchFieldWeightInfo.WeightValue), "Weight");
 
-        PageConfiguration.HeaderActions.AddLink<FieldWeightCreate>("New field weight");
-        PageConfiguration.AddEditRowAction<FieldWeightEdit>();
+        PageConfiguration.HeaderActions.AddLink<FieldWeightCreate>("New field weight", parameters: IndexScope.Route(IndexIdentifier));
+        PageConfiguration.AddEditRowAction<FieldWeightEdit>(parameters: IndexScope.Route(IndexIdentifier));
         PageConfiguration.TableActions.AddDeleteAction(nameof(Delete), "Delete");
+        PageConfiguration.QueryModifiers.AddModifier((query, _) =>
+            query.WhereEquals(nameof(XpSearchFieldWeightInfo.WeightIndexName), indexName));
 
         return base.ConfigurePage();
     }
@@ -119,7 +132,7 @@ public class FieldWeightEditSection : EditSectionPage<XpSearchFieldWeightInfo>
 }
 
 /// <summary>Edits one field weight.</summary>
-public class FieldWeightEdit : TuningEditPage<FieldWeightModel>
+public class FieldWeightEdit : IndexScopedEditPage<FieldWeightModel>
 {
     private readonly IInfoProvider<XpSearchFieldWeightInfo> provider;
 
@@ -139,8 +152,11 @@ public class FieldWeightEdit : TuningEditPage<FieldWeightModel>
         this.provider = provider;
 
     /// <summary>Gets or sets the identifier of the edited weight, taken from the URL.</summary>
-    [PageParameter(typeof(IntPageModelBinder))]
+    [PageParameter(typeof(IntPageModelBinder), typeof(FieldWeightEditSection))]
     public int ObjectId { get; set; }
+
+    /// <inheritdoc />
+    protected override string? EditedIndexName => provider.Get(ObjectId)?.WeightIndexName;
 
     /// <inheritdoc />
     protected override FieldWeightModel CreateModel() =>
@@ -158,7 +174,7 @@ public class FieldWeightEdit : TuningEditPage<FieldWeightModel>
 }
 
 /// <summary>Creates a field weight.</summary>
-public class FieldWeightCreate : TuningEditPage<FieldWeightModel>
+public class FieldWeightCreate : IndexScopedEditPage<FieldWeightModel>
 {
     private readonly IInfoProvider<XpSearchFieldWeightInfo> provider;
 
@@ -181,8 +197,7 @@ public class FieldWeightCreate : TuningEditPage<FieldWeightModel>
     protected override Type? RedirectTo => typeof(FieldWeightListing);
 
     /// <inheritdoc />
-    protected override FieldWeightModel CreateModel() =>
-        new() { IndexName = IndexNames().FirstOrDefault() ?? string.Empty };
+    protected override FieldWeightModel CreateModel() => new();
 
     /// <inheritdoc />
     protected override Task<string> PersistAsync(FieldWeightModel submitted, CancellationToken cancellationToken)

@@ -9,7 +9,7 @@ using XpSearch.Admin.UIPages;
     identifier: SearchTuningApplication.IDENTIFIER,
     type: typeof(SearchTuningApplication),
     slug: "xpsearch-tuning",
-    name: "Search tuning",
+    name: "Search ingestion",
     category: BaseApplicationCategories.DEVELOPMENT,
     icon: Icons.Cogwheel,
     templateName: TemplateNames.SECTION_LAYOUT)]
@@ -17,23 +17,22 @@ using XpSearch.Admin.UIPages;
 namespace XpSearch.Admin.UIPages;
 
 /// <summary>
-/// The Search tuning application (spec §8.1, extended by §10.8): rules, synonyms, stopwords, field
-/// weights, API keys, index status and the ingestion log.
+/// The Search ingestion application (spec §10.8): the ingestion API keys and the ingestion log.
 /// </summary>
 /// <remarks>
 /// Registered per
 /// https://docs.kentico.com/documentation/developers-and-admins/customization/extend-the-administration-interface/ui-pages/ui-application-pages.
-/// Every page under it uses a built-in client template - no custom React (spec §8.1) - except the
-/// query tester (§8.4) and the analytics dashboard (§9.3), which genuinely need bespoke UI and come
-/// from this package's own client module. See docs/adr/0016-admin-client.md.
-/// The permissions are the four the application's pages evaluate: the built-in listing, create and
-/// edit templates evaluate VIEW, CREATE and UPDATE/DELETE on their own, and the two custom pages
-/// evaluate VIEW (and CREATE for the "Create rule" deep link) on their page commands
+/// Everything that belongs to one search index lives under the Lucene integration's index instead -
+/// see <see cref="IndexTuningSection"/> and docs/adr/0017-index-scoped-admin.md. The identifier and
+/// slug are unchanged, so existing role grants on this application keep working for the two pages
+/// that stayed.
+/// The permissions are the three its pages evaluate: the API key listing evaluates VIEW and its
+/// delete action DELETE, the create page evaluates CREATE, and the ingestion log listing evaluates
+/// VIEW
 /// (https://docs.kentico.com/documentation/developers-and-admins/customization/extend-the-administration-interface/ui-pages/ui-page-permission-checks).
 /// </remarks>
 [UIPermission(SystemPermissions.VIEW)]
 [UIPermission(SystemPermissions.CREATE)]
-[UIPermission(SystemPermissions.UPDATE)]
 [UIPermission(SystemPermissions.DELETE)]
 public class SearchTuningApplication : ApplicationPage
 {

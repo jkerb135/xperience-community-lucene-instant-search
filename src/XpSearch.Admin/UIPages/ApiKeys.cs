@@ -3,8 +3,6 @@ using Kentico.Xperience.Admin.Base.FormAnnotations;
 using Kentico.Xperience.Admin.Base.Forms;
 using Kentico.Xperience.Admin.Base.Forms.Internal;
 
-using Kentico.Xperience.Lucene.Core.Indexing;
-
 using XpSearch.Admin.UIPages;
 using XpSearch.Ingestion.Persistence;
 using XpSearch.Ingestion.Security;
@@ -99,16 +97,14 @@ public class ApiKeyCreate : TuningEditPage<ApiKeyModel>
     /// <summary>Initializes a new instance of the <see cref="ApiKeyCreate"/> class.</summary>
     /// <param name="formItemCollectionProvider">Builds the form components.</param>
     /// <param name="formDataBinder">Binds the submitted values.</param>
-    /// <param name="indexManager">The integration's index registry.</param>
     /// <param name="pageLinkGenerator">Generates admin URLs.</param>
     /// <param name="keys">Creates and hashes the key.</param>
     public ApiKeyCreate(
         IFormItemCollectionProvider formItemCollectionProvider,
         IFormDataBinder formDataBinder,
-        ILuceneIndexManager indexManager,
         IPageLinkGenerator pageLinkGenerator,
         IApiKeyService keys)
-        : base(formItemCollectionProvider, formDataBinder, indexManager, pageLinkGenerator) =>
+        : base(formItemCollectionProvider, formDataBinder, pageLinkGenerator) =>
         this.keys = keys;
 
     /// <inheritdoc />

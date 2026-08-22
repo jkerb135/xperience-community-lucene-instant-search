@@ -25,6 +25,8 @@ import { VolumeChart, VolumePoint } from './VolumeChart';
 
 interface AnalyticsDashboardProps {
   readonly indexNames: string[];
+  /** True when the page hangs under one index, so the index is shown rather than chosen. */
+  readonly indexLocked: boolean;
   readonly selectedIndexName: string;
   readonly today: string;
 }
@@ -61,14 +63,12 @@ interface Report {
 }
 
 interface LoadData {
-  readonly indexName: string;
   readonly from: string;
   readonly to: string;
   readonly limit: number;
 }
 
 interface CreateRuleData {
-  readonly indexName: string;
   readonly query: string;
 }
 
@@ -92,7 +92,7 @@ const position = (value: number | null): string => (value === null ? '—' : val
 
 const allIndexes = '*';
 
-export const AnalyticsDashboardTemplate = ({ indexNames, selectedIndexName, today }: AnalyticsDashboardProps) => {
+export const AnalyticsDashboardTemplate = ({ indexNames, selectedIndexName, indexLocked, today }: AnalyticsDashboardProps) => {
   const [indexName, setIndexName] = useState(selectedIndexName);
   const [from, setFrom] = useState(shiftDays(today, 29));
   const [to, setTo] = useState(today);
@@ -102,7 +102,7 @@ export const AnalyticsDashboardTemplate = ({ indexNames, selectedIndexName, toda
   const { execute: load } = usePageCommand<Report, LoadData>(
     Commands.Load,
     {
-      data: { indexName, from, to, limit: 20 },
+      data: { from, to, limit: 20 },
       executeOnMount: true,
       after: (response) => {
         setLoading(false);
@@ -118,7 +118,7 @@ export const AnalyticsDashboardTemplate = ({ indexNames, selectedIndexName, toda
     setFrom(nextFrom);
     setTo(nextTo);
     setLoading(true);
-    void load({ indexName, from: nextFrom, to: nextTo, limit: 20 });
+    void load({ from: nextFrom, to: nextTo, limit: 20 });
   };
 
   const topColumns: Array<Column<QueryRow>> = [
@@ -145,7 +145,7 @@ export const AnalyticsDashboardTemplate = ({ indexNames, selectedIndexName, toda
           size={ButtonSize.XS}
           title={`Create a rule for "${row.query}"`}
           onClick={() => {
-            void createRule({ indexName: indexName === '' ? '' : indexName, query: row.query });
+            void createRule({ query: row.query });
           }}
         />
       ),
@@ -171,16 +171,22 @@ export const AnalyticsDashboardTemplate = ({ indexNames, selectedIndexName, toda
         style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'flex-end' }}
       >
         <div style={{ minWidth: '240px' }}>
-          <Select
-            label="Index"
-            value={indexName === '' ? allIndexes : indexName}
-            onChange={(value) => setIndexName(value === allIndexes || value === undefined ? '' : value)}
-          >
-            <MenuItem primaryLabel="Every index" value={allIndexes} />
-            {indexNames.map((name) => (
-              <MenuItem key={name} primaryLabel={name} value={name} />
-            ))}
-          </Select>
+          {indexLocked ? (
+            <p style={{ margin: 0 }}>
+              Index: <strong>{indexName}</strong>
+            </p>
+          ) : (
+            <Select
+              label="Index"
+              value={indexName === '' ? allIndexes : indexName}
+              onChange={(value) => setIndexName(value === allIndexes || value === undefined ? '' : value)}
+            >
+              <MenuItem primaryLabel="Every index" value={allIndexes} />
+              {indexNames.map((name) => (
+                <MenuItem key={name} primaryLabel={name} value={name} />
+              ))}
+            </Select>
+          )}
         </div>
         <div style={{ minWidth: '160px' }}>
           <Input label="From" type="text" value={from} placeholder="yyyy-mm-dd" onChange={(event) => setFrom(event.target.value)} />

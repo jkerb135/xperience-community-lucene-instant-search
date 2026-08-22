@@ -2,13 +2,21 @@ using Kentico.Xperience.Admin.Base;
 using Kentico.Xperience.Admin.Base.Forms;
 using Kentico.Xperience.Admin.Base.Forms.Internal;
 
+using Kentico.Xperience.Lucene.Admin;
 using Kentico.Xperience.Lucene.Core.Indexing;
 
 namespace XpSearch.Admin.UIPages;
 
+/// <summary>A form model whose row belongs to exactly one search index.</summary>
+public interface IIndexScopedModel
+{
+    /// <summary>Gets or sets the code name of the index the row belongs to.</summary>
+    string IndexName { get; set; }
+}
+
 /// <summary>
-/// The shared plumbing of every editing page in the Search tuning application: a model-based edit
-/// page whose index drop-down is filled from the registered Lucene indexes.
+/// The shared plumbing of every model-based editing page in this package: one cached model, one
+/// persist step and an optional redirect after a successful submit.
 /// </summary>
 /// <typeparam name="TModel">The form model.</typeparam>
 /// <remarks>
@@ -23,31 +31,26 @@ public abstract class TuningEditPage<TModel> : ModelEditPage<TModel>
     /// <summary>Name of the model property that carries the index code name.</summary>
     protected const string IndexPropertyName = "IndexName";
 
-    private readonly ILuceneIndexManager indexManager;
     private readonly IPageLinkGenerator pageLinkGenerator;
     private TModel? model;
 
     /// <summary>Initializes a new instance of the <see cref="TuningEditPage{TModel}"/> class.</summary>
     /// <param name="formItemCollectionProvider">Builds the form components from the model's annotations.</param>
     /// <param name="formDataBinder">Binds the submitted values back onto the model.</param>
-    /// <param name="indexManager">The integration's index registry, used to fill index drop-downs.</param>
     /// <param name="pageLinkGenerator">Generates the URL a create page redirects to.</param>
     protected TuningEditPage(
         IFormItemCollectionProvider formItemCollectionProvider,
         IFormDataBinder formDataBinder,
-        ILuceneIndexManager indexManager,
         IPageLinkGenerator pageLinkGenerator)
         : base(formItemCollectionProvider, formDataBinder)
     {
-        ArgumentNullException.ThrowIfNull(indexManager);
         ArgumentNullException.ThrowIfNull(pageLinkGenerator);
 
-        this.indexManager = indexManager;
         this.pageLinkGenerator = pageLinkGenerator;
     }
 
     /// <inheritdoc />
-    protected override TModel Model => model ??= CreateModel();
+    protected override TModel Model => model ??= Prepare(CreateModel());
 
     /// <summary>
     /// Gets the page to redirect to after a successful save, or <see langword="null"/> to stay put.
@@ -55,46 +58,23 @@ public abstract class TuningEditPage<TModel> : ModelEditPage<TModel>
     /// </summary>
     protected virtual Type? RedirectTo => null;
 
-    /// <summary>Gets the code names of every registered index, for an index drop-down.</summary>
-    /// <returns>The index code names, ordered.</returns>
-    protected IReadOnlyList<string> IndexNames() =>
-    [
-        .. indexManager.GetAllIndices()
-            .Select(index => index.IndexName)
-            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
-    ];
+    /// <summary>Gets the URL parameter values <see cref="RedirectTo"/> needs, or <see langword="null"/> when it has none.</summary>
+    protected virtual PageParameterValues? RedirectParameters => null;
 
     /// <summary>Builds the initial model: an empty one for a create page, the stored row for an edit page.</summary>
     /// <returns>The model.</returns>
     protected abstract TModel CreateModel();
+
+    /// <summary>Last chance to adjust a freshly built model before the form renders it.</summary>
+    /// <param name="created">The model <see cref="CreateModel"/> produced.</param>
+    /// <returns>The model to render.</returns>
+    protected virtual TModel Prepare(TModel created) => created;
 
     /// <summary>Writes the submitted model to the database.</summary>
     /// <param name="submitted">The submitted model.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The message to show the user.</returns>
     protected abstract Task<string> PersistAsync(TModel submitted, CancellationToken cancellationToken);
-
-    /// <inheritdoc />
-    protected override async Task<ICollection<IFormItem>> GetFormItems()
-    {
-        var items = await base.GetFormItems();
-
-        // Post-configuring component properties from data the attribute notation cannot express is
-        // the documented use of GetFormItems on model-based edit pages.
-        string options = string.Join(
-            "\r\n",
-            IndexNames().Select(name => $"{name};{name}"));
-
-        foreach (var dropDown in items.OfType<DropDownComponent>())
-        {
-            if (string.Equals(dropDown.Name, IndexPropertyName, StringComparison.OrdinalIgnoreCase))
-            {
-                dropDown.Properties.Options = options;
-            }
-        }
-
-        return items;
-    }
 
     /// <inheritdoc />
     protected override async Task<ICommandResponse> ProcessFormData(TModel model, ICollection<IFormItem> formItems)
@@ -105,7 +85,7 @@ public abstract class TuningEditPage<TModel> : ModelEditPage<TModel>
 
         if (RedirectTo is { } target)
         {
-            return NavigateTo(pageLinkGenerator.GetPath(target));
+            return NavigateTo(pageLinkGenerator.GetPath(target, RedirectParameters));
         }
 
         return ResponseFrom(new FormSubmissionResult(FormSubmissionStatus.ValidationSuccess)
@@ -113,5 +93,94 @@ public abstract class TuningEditPage<TModel> : ModelEditPage<TModel>
             Items = await formItems.OnlyVisible().GetClientProperties()
         })
         .AddSuccessMessage(message);
+    }
+}
+
+/// <summary>
+/// An editing page inside <see cref="IndexTuningSection"/>: the index is not a choice, it is the one
+/// the URL points at. See docs/adr/0017-index-scoped-admin.md.
+/// </summary>
+/// <typeparam name="TModel">The form model.</typeparam>
+public abstract class IndexScopedEditPage<TModel> : TuningEditPage<TModel>
+    where TModel : class, IIndexScopedModel, new()
+{
+    private readonly ILuceneIndexManager indexManager;
+    private string? indexName;
+
+    /// <summary>Initializes a new instance of the <see cref="IndexScopedEditPage{TModel}"/> class.</summary>
+    /// <param name="formItemCollectionProvider">Builds the form components from the model's annotations.</param>
+    /// <param name="formDataBinder">Binds the submitted values back onto the model.</param>
+    /// <param name="indexManager">The integration's index registry, used to resolve the index in the URL.</param>
+    /// <param name="pageLinkGenerator">Generates the URL a create page redirects to.</param>
+    protected IndexScopedEditPage(
+        IFormItemCollectionProvider formItemCollectionProvider,
+        IFormDataBinder formDataBinder,
+        ILuceneIndexManager indexManager,
+        IPageLinkGenerator pageLinkGenerator)
+        : base(formItemCollectionProvider, formDataBinder, pageLinkGenerator)
+    {
+        ArgumentNullException.ThrowIfNull(indexManager);
+
+        this.indexManager = indexManager;
+    }
+
+    /// <summary>Gets or sets the identifier of the index the page is scoped to, taken from the URL.</summary>
+    [PageParameter(typeof(IntPageModelBinder), typeof(IndexEditPage))]
+    public int IndexIdentifier { get; set; }
+
+    /// <summary>Gets the code name of the index in the URL, or an empty string when it is not registered.</summary>
+    protected string IndexName => indexName ??= IndexScope.Resolve(indexManager, IndexIdentifier);
+
+    /// <inheritdoc />
+    protected override PageParameterValues? RedirectParameters => IndexScope.Route(IndexIdentifier);
+
+    /// <summary>
+    /// Gets the index of the row being edited, or <see langword="null"/> when the page creates a new
+    /// row. A row whose index differs from the URL's is refused on submit.
+    /// </summary>
+    protected virtual string? EditedIndexName => IndexName;
+
+    /// <inheritdoc />
+    protected override TModel Prepare(TModel created)
+    {
+        ArgumentNullException.ThrowIfNull(created);
+
+        created.IndexName = IndexName;
+
+        return created;
+    }
+
+    /// <inheritdoc />
+    protected override async Task<ICollection<IFormItem>> GetFormItems()
+    {
+        var items = await base.GetFormItems();
+
+        // The index comes from the URL, so it is shown rather than chosen. Post-configuring component
+        // properties the attribute notation cannot express is the documented use of GetFormItems.
+        foreach (var text in items.OfType<TextInputComponent>()
+            .Where(component => string.Equals(component.Name, IndexPropertyName, StringComparison.OrdinalIgnoreCase)))
+        {
+            text.Properties.EditMode = FormEditMode.ReadOnly;
+        }
+
+        return items;
+    }
+
+    /// <inheritdoc />
+    protected override Task<ICommandResponse> ProcessFormData(TModel model, ICollection<IFormItem> formItems)
+    {
+        ArgumentNullException.ThrowIfNull(model);
+
+        if (!IndexScope.Matches(EditedIndexName, IndexName))
+        {
+            return Task.FromResult<ICommandResponse>(
+                ResponseFrom(new FormSubmissionResult(FormSubmissionStatus.ValidationFailure))
+                    .AddErrorMessage("This record belongs to a different search index and was not saved."));
+        }
+
+        // The index field is read-only, so never trust what came back from the client for it.
+        model.IndexName = IndexName;
+
+        return base.ProcessFormData(model, formItems);
     }
 }
