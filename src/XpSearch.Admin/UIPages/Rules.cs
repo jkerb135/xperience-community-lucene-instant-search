@@ -93,7 +93,7 @@ public class RuleModel
     public decimal BoostValue { get; set; } = 1m;
 
     /// <summary>Gets or sets the filter expression, as comma-separated <c>field:value</c> pairs.</summary>
-    [TextInputComponent(Label = "Filter", Order = 10, Tooltip = "Comma-separated field:value pairs, for example Category:coffee, Tags:brewing.")]
+    [TextInputComponent(Label = "Filter", Order = 10, Tooltip = "Comma-separated attribute:value pairs, for example Category:coffee, Tags:brewing. Use the attribute names that appear in search results, such as contentType.")]
     public string FilterExpression { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the redirect destination.</summary>

@@ -3,6 +3,7 @@ using Kentico.Xperience.Lucene.Core;
 using Lucene.Net.Index;
 using Lucene.Net.Search;
 
+using XpSearch.Core.Abstractions;
 using XpSearch.Core.Tuning;
 
 namespace XpSearch.Core.Pipeline.Stages;
@@ -48,7 +49,7 @@ public sealed class BoostRulesStage : ISearchStage
     }
 
     /// <summary>Builds the query a rule targets: one document by id, or everything its filter expression selects.</summary>
-    private static Query? Target(TuningRule rule)
+    private static Query? Target(SearchContext context, TuningRule rule)
     {
         if (!string.IsNullOrWhiteSpace(rule.TargetId))
         {
@@ -66,15 +67,27 @@ public sealed class BoostRulesStage : ISearchStage
 
         foreach ((string field, string value) in pairs)
         {
-            query.Add(new TermQuery(new Term(field, value)), Occur.MUST);
+            query.Add(new TermQuery(TermFor(context, field, value)), Occur.MUST);
         }
 
         return query;
     }
 
+    /// <summary>
+    /// Resolves one <c>field:value</c> pair of a filter expression to the term the documents carry.
+    /// </summary>
+    /// <remarks>
+    /// A marketer writes the attribute name they see in a request or a facet, which for the base
+    /// fields is not the Lucene field name (<c>contentType</c> against <c>ContentTypeName</c>). A
+    /// name the schema does not know is used verbatim, so a rule can still reach a field detection
+    /// missed.
+    /// </remarks>
+    private static Term TermFor(SearchContext context, string field, string value) =>
+        new(context.Schema.Find(field)?.LuceneName ?? field, value);
+
     private static bool Boost(SearchContext context, TuningRule rule)
     {
-        if (Target(rule) is not { } target || rule.BoostValue <= 0)
+        if (Target(context, rule) is not { } target || rule.BoostValue <= 0)
         {
             return false;
         }
@@ -104,7 +117,7 @@ public sealed class BoostRulesStage : ISearchStage
 
         foreach ((string field, string value) in pairs)
         {
-            filter.Add(new TermQuery(new Term(field, value)), Occur.MUST);
+            filter.Add(new TermQuery(TermFor(context, field, value)), Occur.MUST);
         }
 
         context.BaseQuery = new BooleanQuery

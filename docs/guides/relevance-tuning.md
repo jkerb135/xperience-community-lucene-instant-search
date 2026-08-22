@@ -47,8 +47,10 @@ overrules it. If you are unsure, use boost first: it degrades gracefully when yo
 product, a legal page that keeps outranking the thing people actually wanted.
 
 **Filter** is written as `Field:value` pairs, separated by commas — for example
-`Category:coffee, Tags:brewing`. Both must match. The field names are the ones that appear in your
-search results; ask your developer for the list once and keep it somewhere.
+`Category:coffee, Tags:brewing`. Both must match. The field names are the attribute names that appear
+in your search results — the same ones the facet **Attribute** drop-down lists, including the four every
+document has (`title`, `url`, `contentType`, `language`); ask your developer for the list once and keep
+it somewhere.
 
 ### When a rule runs
 

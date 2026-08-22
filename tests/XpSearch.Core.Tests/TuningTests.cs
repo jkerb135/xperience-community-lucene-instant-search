@@ -310,6 +310,34 @@ internal sealed class TuningPipelineTests
         });
     }
 
+    /// <summary>
+    /// A rule is written against the attribute names a request uses, which for the base fields are
+    /// not the Lucene field names the documents carry.
+    /// </summary>
+    [Test]
+    public async Task Filter_ResolvesABaseAttributeToTheFieldTheDocumentsCarry()
+    {
+        var source = new FakeTuningSource
+        {
+            Rules =
+            [
+                RuleSelectionTests.Rule(
+                    consequence: RuleConsequence.Filter,
+                    filter: $"{TestCorpus.ContentTypeField}:Product")
+            ]
+        };
+
+        using var harness = Harness(source);
+
+        var response = await harness.Search(Request("espresso"));
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(response.Results, Is.Not.Empty, "'contentType' must reach the ContentTypeName field");
+            Assert.That(response.Results.Select(result => result.Id), Is.All.EqualTo("doc-3:en"));
+        });
+    }
+
     [Test]
     public async Task Synonyms_ExpandTheQueryIntoTheOtherTerm()
     {

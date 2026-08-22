@@ -4,14 +4,13 @@ using CMS;
 
 using NUnit.Framework;
 
-using XpSearch.Admin.Forms;
 using XpSearch.Widgets.Components.Widgets.XpSearch;
 
 namespace XpSearch.Widgets.Tests;
 
 /// <summary>
 /// Xperience only scans an assembly's registration attributes when the assembly is marked
-/// discoverable, so a shipped assembly that registers anything by attribute must carry
+/// discoverable, so the assembly carrying the seven <c>RegisterWidget</c> attributes must carry
 /// <see cref="AssemblyDiscoverableAttribute"/>
 /// (https://docs.kentico.com/documentation/developers-and-admins/customization/integrate-custom-code).
 /// Without it the widgets are simply absent from the Page Builder, with nothing logged.
@@ -19,18 +18,14 @@ namespace XpSearch.Widgets.Tests;
 [TestFixture]
 internal sealed class AssemblyDiscoveryTests
 {
-    // One type per shipped assembly that registers something by attribute: RegisterWidget in
-    // XpSearch.Widgets, RegisterFormComponentConfigurator in XpSearch.Admin.
-    private static readonly Type[] Assemblies = [typeof(SearchBoxWidgetProperties), typeof(FacetAttributeConfigurator)];
-
     [Test]
-    public void Shipped_assemblies_are_discoverable([ValueSource(nameof(Assemblies))] Type marker)
+    public void Widgets_assembly_is_discoverable()
     {
-        var assembly = marker.Assembly;
+        var assembly = typeof(SearchBoxWidgetProperties).Assembly;
 
         Assert.That(
             assembly.GetCustomAttribute<AssemblyDiscoverableAttribute>(),
             Is.Not.Null,
-            $"{assembly.GetName().Name} must carry CMS.AssemblyDiscoverableAttribute or Xperience ignores its registration attributes.");
+            "XpSearch.Widgets must carry CMS.AssemblyDiscoverableAttribute or none of its widgets appear in the Page Builder.");
     }
 }

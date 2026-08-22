@@ -70,8 +70,10 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
   `url`, `contentType`, `language`, with the document id staying the result's own `id` — and maps
   them onto the Lucene fields; a field detected from a content type keeps its Xperience name on both
   sides. The `results` widget gained `titleAttribute`, `urlAttribute` and `snippetAttributes`
-  params. **Breaking** for any client that read `attributes.Title`, `attributes.Url` or filtered on
-  `ContentTypeName` / `LanguageName`.
+  params. A tuning rule's `field:value` filter expression resolves its field through the schema too,
+  so `contentType:Article` reaches the `ContentTypeName` field the documents carry. **Breaking** for
+  any client that read `attributes.Title`, `attributes.Url` or filtered on `ContentTypeName` /
+  `LanguageName`.
 - **Fixed:** the facet configuration is derived from the detected schema before anything is mapped.
   The strategy used to register a dimension the first time it mapped a document carrying one, so a
   fresh index handed the Lucene client an empty `FacetsConfig` and a document with two tags in one

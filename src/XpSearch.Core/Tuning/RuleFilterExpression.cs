@@ -7,7 +7,9 @@ namespace XpSearch.Core.Tuning;
 /// <remarks>
 /// Deliberately not Lucene query syntax. The values come from a marketer typing into the admin UI,
 /// facet values are stored verbatim, and an exact term match is both what they mean and the thing
-/// that cannot go wrong. <c>Category:coffee, Tags:brewing</c> is the whole language.
+/// that cannot go wrong. <c>Category:coffee, Tags:brewing</c> is the whole language. The field of a
+/// pair is an attribute name as a request writes it; <c>BoostRulesStage</c> resolves it through the
+/// index schema, so <c>contentType</c> reaches the <c>ContentTypeName</c> field the documents carry.
 /// </remarks>
 public static class RuleFilterExpression
 {
