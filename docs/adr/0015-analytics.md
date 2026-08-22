@@ -51,10 +51,12 @@ for exactly this reason. The cost is that behind a load balancer a click may lan
 never saw the query, and then the activity value's query part is empty. Accepted: the aggregate CTR
 report, which is what the numbers are for, is unaffected.
 
-**Processing time comes from a timing stage, not from the response.** The pipeline sets `tookMs` after
-the last stage runs, so the logging stage cannot read it. `SearchTimingStage` (slot 99) stamps a
-`Stopwatch` timestamp into a `ConditionalWeakTable` keyed by the context, which keeps an
-analytics-only field off the shared `SearchContext`.
+**Processing time comes from the context, not from the response.** The pipeline sets `tookMs` after
+the last stage runs, so the logging stage cannot read it. `SearchContext` takes a `Stopwatch` timestamp
+in its constructor and exposes `Elapsed`; the logging stage and the pipeline both read it, so the
+logged time and the response's `tookMs` measure the same thing. (Superseded the original
+`SearchTimingStage`, an extra stage at slot 99 that stamped the timestamp into a
+`ConditionalWeakTable`.)
 
 **Retention is a scheduled task with a manual configuration.** `[assembly: RegisterScheduledTask]`
 makes `XpSearch.QueryLogRetention` selectable; the platform has no documented API for creating the task

@@ -85,7 +85,6 @@ public static class XpSearchServiceCollectionExtensions
         services.TryAddSingleton<XpSearchAnalyticsModuleInstaller>();
         services.TryAddSingleton<XpSearchActivityTypeInstaller>();
 
-        services.AddXpSearchStage<SearchTimingStage>();
         services.AddXpSearchStage<NormalizeRequestStage>();
         services.AddXpSearchStage<SynonymExpansionStage>();
         services.AddXpSearchStage<StopwordRemovalStage>();
