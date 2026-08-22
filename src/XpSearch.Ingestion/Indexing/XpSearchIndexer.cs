@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Text.Json;
 
 using Lucene.Net.Index;
+using Lucene.Net.Search;
 using Lucene.Net.Util;
 
 using Microsoft.Extensions.Options;
@@ -281,6 +282,16 @@ public sealed class XpSearchIndexer : IXpSearchIndexer
     private static string Outcome(List<IngestionError> errors) =>
         errors.Count == 0 ? "Accepted." : $"{errors.Count} document(s) rejected; first: {errors[0].Message}";
 
+    /// <summary>
+    /// Counts the live documents of the index, in total and per <c>_source</c>.
+    /// </summary>
+    /// <remarks>
+    /// The per-source counts are searches, not <c>IndexReader.DocFreq</c>: a term's document
+    /// frequency includes documents that have been deleted but whose segment has not been merged away
+    /// yet, so every replaced document was counted twice and the sources added up to more than
+    /// <c>NumDocs</c> (a reindexed 32-document index reported 64 under <c>xperience</c>). A search
+    /// applies the segments' live-document bits, so both figures count the same documents.
+    /// </remarks>
     private (long Total, Dictionary<string, long> BySource) CountBySource(string index) =>
         accessor.UseSearcher(index, searcher =>
         {
@@ -294,8 +305,15 @@ public sealed class XpSearchIndexer : IXpSearchIndexer
 
                 while (enumerator.MoveNext())
                 {
-                    var term = enumerator.Term;
-                    bySource[term.Utf8ToString()] = reader.DocFreq(new Term(LuceneFieldNames.SourceField, BytesRef.DeepCopyOf(term)));
+                    var term = new Term(LuceneFieldNames.SourceField, BytesRef.DeepCopyOf(enumerator.Term));
+                    var counter = new TotalHitCountCollector();
+
+                    searcher.Search(new TermQuery(term), counter);
+
+                    if (counter.TotalHits > 0)
+                    {
+                        bySource[term.Text] = counter.TotalHits;
+                    }
                 }
             }
 
