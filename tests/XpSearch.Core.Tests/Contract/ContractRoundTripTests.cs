@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Nodes;
 using NUnit.Framework;
 using XpSearch.Core.Contract;
@@ -151,7 +151,8 @@ public class ContractRoundTripTests
         {
             "ContractConstants", "EventRequest", "EventType", "FacetFilter", "FacetOperator", "FacetValue",
             "Filters", "HighlightOptions", "NumericFilter", "NumericOperator", "RankingInfo", "Result",
-            "SearchRequest", "SearchResponse", "SuggestRequest", "SuggestResponse", "Suggestion",
+            "SearchRedirect", "SearchRequest", "SearchResponse", "SuggestRequest", "SuggestResponse",
+            "Suggestion",
         }));
     }
 

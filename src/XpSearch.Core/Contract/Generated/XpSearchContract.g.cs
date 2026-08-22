@@ -356,6 +356,16 @@ namespace XpSearch.Core.Contract
         public string? QueryId { get; set; }
 
         /// <summary>
+        /// Required, and null whenever no redirect rule matched. Set when a relevance rule with the
+        /// Redirect consequence matched this query; the first such rule in precedence order
+        /// (priority, then id) wins. The results are still returned alongside it, because following
+        /// a redirect is the client's decision: the shipped search box navigates only for a query
+        /// the visitor submitted, never as they type.
+        /// </summary>
+        [JsonPropertyName("redirect")]
+        public SearchRedirect? Redirect { get; set; }
+
+        /// <summary>
         /// The results on the requested page, in ranked order.
         /// </summary>
         [JsonPropertyName("results")]
@@ -407,6 +417,26 @@ namespace XpSearch.Core.Contract
         /// </summary>
         [JsonPropertyName("value")]
         public string Value { get; set; }
+    }
+
+    /// <summary>
+    /// Where a matching redirect rule sends the visitor.
+    /// </summary>
+    public partial class SearchRedirect
+    {
+        /// <summary>
+        /// Required. Display name of the rule that matched, for logging and for the query tester.
+        /// </summary>
+        [JsonPropertyName("rule")]
+        public string Rule { get; set; }
+
+        /// <summary>
+        /// Required. Destination configured on the rule, exactly as the marketer typed it:
+        /// root-relative ("/support"), absolute ("https://example.com/support") or any other form
+        /// the browser can resolve.
+        /// </summary>
+        [JsonPropertyName("url")]
+        public string Url { get; set; }
     }
 
     /// <summary>

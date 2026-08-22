@@ -34,5 +34,6 @@
   "total": 46,
   "totalPages": 3,
   "tookMs": 14,
-  "queryId": "generated-guid"
+  "queryId": "generated-guid",
+  "redirect": null
 }
