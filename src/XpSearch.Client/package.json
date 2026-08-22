@@ -31,7 +31,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "rollup -c && tsc -p tsconfig.build.json && node scripts/package-assets.mjs",
+    "build": "node -e \"fs.rmSync('dist',{recursive:true,force:true})\" && rollup -c && tsc -p tsconfig.build.json && node scripts/package-assets.mjs",
     "contract:check": "node scripts/contract.mjs --check",
     "contract:gen": "node scripts/contract.mjs",
     "docs:check": "node scripts/migration-guide.mjs --check",
