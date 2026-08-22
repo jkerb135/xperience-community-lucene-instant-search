@@ -283,7 +283,7 @@ curl -s -X POST http://127.0.0.1:3131/api/xpsearch/query \
     ]
   },
   "page": 1, "pageSize": 2, "total": 9, "totalPages": 5,
-  "tookMs": 6, "queryId": "87343943-…"
+  "tookMs": 6, "queryId": "87343943-…", "redirect": null
 }
 ```
 

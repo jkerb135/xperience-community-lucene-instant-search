@@ -135,12 +135,30 @@ And the response:
   "total": 46,
   "totalPages": 3,
   "tookMs": 14,
-  "queryId": "generated-guid"
+  "queryId": "generated-guid",
+  "redirect": null
 }
 ```
 
 `total` is the number of matching documents across all pages, `totalPages` the page count, `tookMs` the
 server-side time excluding the network.
+
+#### `redirect` is present on every response
+
+`redirect` is `null` unless a relevance rule with the **Redirect** consequence matched the query, in which
+case it names the destination and the rule that chose it:
+
+```json
+"redirect": { "url": "/promotions/espresso", "rule": "Espresso landing page" }
+```
+
+The key is always there, so a client tests `response.redirect !== null` rather than probing for a member
+that only sometimes exists. The first matching redirect rule in the precedence order (priority, then id)
+wins, and the search still runs: the response carries its results next to the destination, because
+navigating away is the client's decision, not the server's. The shipped `searchBox` widget makes that
+decision for a query the visitor **submitted** and never as they type — see
+[Relevance tuning](relevance-tuning.md#redirect-rules) and
+[the widget reference](widget-reference.md#searchbox).
 
 #### A result is a closed object
 

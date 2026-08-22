@@ -40,6 +40,9 @@
   { "kind": "field", "ours": "SearchResponse.totalPages", "algolia": "nbPages", "note": "Renamed." },
   { "kind": "field", "ours": "SearchResponse.tookMs", "algolia": "processingTimeMS", "note": "Renamed." },
   { "kind": "field", "ours": "SearchResponse.queryId", "algolia": "queryID", "note": "Same meaning: the correlation id for click and conversion events." },
+  { "kind": "field", "ours": "SearchResponse.redirect", "algolia": "renderingContent.redirect.url, set by a Rule with the Redirect consequence", "note": "Always present and null when no rule matched, instead of a key that only appears sometimes. Neither service navigates for you; ours also returns the results, and the searchBox widget follows the URL only for a query the visitor submitted." },
+  { "kind": "field", "ours": "SearchResponse.redirect.url", "algolia": "renderingContent.redirect.url", "note": "Same meaning." },
+  { "kind": "field", "ours": "SearchResponse.redirect.rule", "algolia": "no equivalent (their redirect carries no rule identity)", "note": "Display name of the rule that matched, for logging and for the query tester." },
 
   { "kind": "field", "ours": "SuggestRequest.query", "algolia": "query against a query-suggestions index", "note": "Ours is one endpoint; whether it answers with documents or with popular queries is index configuration." },
   { "kind": "field", "ours": "SuggestRequest.limit", "algolia": "hitsPerPage", "note": "Renamed and capped server-side." },

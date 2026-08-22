@@ -436,18 +436,6 @@ and how to lift it.
 - **Ceiling:** a crash or a redeploy loses up to one worker interval (10 s) of query log rows.
 - **Upgrade path:** none planned — a missing aggregate row is not a missing document.
 
-## Redirect rules in `XpSearch.Admin/Persistence/XpSearchRuleInfo.cs` and `Pipeline/Stages/BoostRulesStage.cs`
-
-- **Simplified:** `RuleConsequence.Redirect` and `RuleRedirectUrl` are stored and editable, but no
-  stage acts on them. Spec §8.2 defines the field; the owned JSON contract (ADR-0010, amendment
-  2026-08-21) has no redirect member on `SearchResponse`, and adding one is a coordinated contract
-  change, not a unit-local one. `BoostRulesStage` skips the consequence outright.
-- **Ceiling:** a marketer can create a redirect rule that quietly does nothing. The **Then** option
-  and the guide both say so, which is the only mitigation there is.
-- **Upgrade path:** add a `redirect` member to `SearchResponse` in `contract/xpsearch-api.schema.json`,
-  regenerate, and have `BoostRulesStage` set it from the first matching redirect rule in precedence
-  order. The stored data survives unchanged.
-
 ## `PinnedAndBuriedStage` in `XpSearch.Core/Pipeline/Stages/PinnedAndBuriedStage.cs`
 
 - **Simplified:** pin and bury reorder the **current page** of results, which is all

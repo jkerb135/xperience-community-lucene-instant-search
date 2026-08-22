@@ -29,7 +29,7 @@ Say the search *espresso machine* should always show your flagship machine first
 Nothing is rebuilt and nothing is republished. The change is live within half a minute at worst, and
 usually immediately.
 
-### The four things a rule can do
+### The five things a rule can do
 
 | Then… | What happens | What you fill in |
 |---|---|---|
@@ -37,6 +37,7 @@ usually immediately.
 | **Boost a result** | The result is pushed up, but the search still decides the final order. A very relevant result can still beat it. | **Result id** (or **Filter**), **Boost multiplier** |
 | **Bury a result** | The result is removed from this search entirely. | **Result id** |
 | **Filter the results** | Only results matching the filter are shown. | **Filter** |
+| **Redirect the visitor** | The search returns a destination next to its results, and the search box sends the visitor there. | **Redirect URL** |
 
 **Pin or boost?** Pin when the answer is "this exact thing, first, no argument" — a campaign landing
 page, a flagship product. Boost when you mean "lean this way" — for example, make everything in the
@@ -77,9 +78,30 @@ This is the part worth reading twice.
    and rule B buries product X, and A has the lower priority number, X is pinned and B is ignored for
    that result.
 4. Boost and filter rules all apply, in that same order. Two boosts on the same result both count.
+5. For redirect, the **first matching rule wins**, and a redirect rule with an empty **Redirect URL**
+   is skipped, so a later one can still fire.
 
 If a rule seems not to be working, the usual cause is another rule with a lower priority number that
 got to the same result first.
+
+### Redirect rules
+
+Use one when a search has a single right answer that is not a search result: *returns* should land on
+the returns policy, *careers* on the jobs site. Fill in **Redirect URL** with a root-relative path
+(`/support`) or a full address (`https://jobs.example.com`).
+
+What happens is deliberately narrow, so a rule cannot trap anyone:
+
+- The search still runs. The response carries the normal results **and** the destination; the page
+  decides what to do with it.
+- The shipped search box navigates only when the visitor **submits** the search — presses Enter or the
+  search button. It never navigates while they are still typing, and never when a search runs because
+  someone opened or reloaded a link. So a visitor searching for *returns policy of our supplier* can
+  keep typing past the pattern.
+- A developer can switch the behaviour off entirely with `followRedirects: false` on the search box
+  widget, and read the destination themselves.
+
+The **Query tester** shows the rule as `rule:<name>` in the explanation, the same as every other rule.
 
 ### Synonyms
 
@@ -201,7 +223,5 @@ never shows up in **Analytics** — tester runs are not written to the query log
 
 ### Things that do not work yet
 
-- **Redirect** appears in the **Then** list and is saved, but nothing acts on it: the search response
-  has no redirect field yet. Do not rely on it.
 - Pin and bury act on the page of results the visitor is looking at. Pinning to position 3 affects
   the page that contains position 3, not the others.

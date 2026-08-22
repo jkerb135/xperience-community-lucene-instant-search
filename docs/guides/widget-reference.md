@@ -123,6 +123,7 @@ searchBox({
   showReset: true,
   showSubmit: false,
   autofocus: false,
+  followRedirects: true,
   queryHook: (query, apply) => apply(query.trim()),
 });
 ```
@@ -137,10 +138,20 @@ searchBox({
 | `showSubmit` | `false` | `true` renders a submit button. |
 | `autofocus` | `false` | Focuses the input on the first render. |
 | `queryHook` | — | `(query, apply) => void`. Nothing reaches the state unless you call `apply`. |
+| `followRedirects` | `true` | Navigate to `response.redirect.url` when a [redirect rule](relevance-tuning.md#redirect-rules) matched. Only ever for a submitted query. |
+| `windowRef` | `window` | The window to navigate. Injectable for tests and SSR. |
 
 Markup (`themes/MARKUP.md` → *searchBox*): `<form class="xps xps-search-box" role="search" novalidate>`
 with `xps-search-box__label`, `__field`, `__input`, `__loading`, `__reset` and optionally `__submit`.
 The root gains `xps-search-box--stalled` while a request outlives the stall threshold.
+
+Redirect rules: a search that matches one comes back with
+`redirect: { url, rule }` next to its results. The widget follows it with `window.location.assign`
+**only for a submitted query** — `Enter` or the submit button — never on a keystroke and never on the
+search a restored URL runs at page load, so a visitor can always type past the rule's pattern. It
+navigates once per response. Set `followRedirects: false` to handle it yourself: `withResults` exposes
+the same value as `redirect`, so a custom `results` template can render "Redirecting…" instead of the
+list.
 
 Accessibility: `role="search"`, the label is associated by `for`/`id` in every configuration, both
 icon buttons carry an `aria-label` with their glyph `aria-hidden`. Typing searches (debounced by the
