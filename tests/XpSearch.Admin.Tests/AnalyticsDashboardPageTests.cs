@@ -31,7 +31,7 @@ internal sealed class AnalyticsDashboardPageTests
         analytics.GetReportAsync(Arg.Any<SearchAnalyticsQuery>(), Arg.Any<CancellationToken>()).Returns(Task.FromResult(Report()));
 
         links = Substitute.For<IPageLinkGenerator>();
-        links.GetPath<ZeroResultRuleCreatePage>(Arg.Any<PageParameterValues>()).Returns("/admin/xpsearch-tuning/analytics/SEED");
+        links.GetPath<ZeroResultRuleCreatePage>(Arg.Any<PageParameterValues>()).Returns("/admin/lucene/indexes/tuning/7/analytics/SEED");
 
         page = new AnalyticsDashboardPage(
             Storage.Holding(IndexIdentifier, "articles"),
@@ -103,12 +103,16 @@ internal sealed class AnalyticsDashboardPageTests
 
         var parameters = (PageParameterValues)links.ReceivedCalls().Single().GetArguments()[0]!;
         parameters.TryGetValue(typeof(ZeroResultRuleCreatePage), out object? seed);
-        parameters.TryGetValue(typeof(Kentico.Xperience.Lucene.Admin.IndexEditPage), out object? index);
+        parameters.TryGetValue(typeof(IndexTuningSection), out object? index);
 
         Expect.Multiple(() =>
         {
             Assert.That(RuleSeed.Decode(seed as string), Is.EqualTo(("articles", "cold brew / iced")));
             Assert.That(index, Is.EqualTo(IndexIdentifier), "the create page also needs the index segment of the URL");
+            Assert.That(
+                parameters.Select(entry => entry.Key),
+                Is.EqualTo(new[] { typeof(IndexTuningSection), typeof(ZeroResultRuleCreatePage) }),
+                "two parameterized ancestors, so the values must be added in the order they appear in the URL");
             Assert.That(response, Is.Not.Null);
         });
     }

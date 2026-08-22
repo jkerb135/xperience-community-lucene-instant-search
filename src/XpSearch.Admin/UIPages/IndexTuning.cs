@@ -11,12 +11,21 @@ using XpSearch.Admin.UIPages;
 using IFormItemCollectionProvider = Kentico.Xperience.Admin.Base.Forms.Internal.IFormItemCollectionProvider;
 
 [assembly: UIPage(
-    parentType: typeof(IndexEditPage),
+    parentType: typeof(IndexListingPage),
     slug: "tuning",
+    uiPageType: typeof(IndexTuningRoot),
+    name: "Tuning",
+    templateName: TemplateNames.SECTION_LAYOUT,
+    order: 200)]
+
+[assembly: UIPage(
+    parentType: typeof(IndexTuningRoot),
+    slug: PageParameterConstants.PARAMETERIZED_SLUG,
     uiPageType: typeof(IndexTuningSection),
     name: "Tuning",
     templateName: TemplateNames.SECTION_LAYOUT,
-    order: 100)]
+    order: 100,
+    ParameterDefaultValue = "1")]
 
 [assembly: UIPage(
     parentType: typeof(IndexTuningSection),
@@ -31,14 +40,28 @@ using IFormItemCollectionProvider = Kentico.Xperience.Admin.Base.Forms.Internal.
 namespace XpSearch.Admin.UIPages;
 
 /// <summary>
+/// The static <c>tuning</c> URL segment under the Lucene integration's index listing. Renders
+/// nothing of its own: a SECTION_LAYOUT page with a single child displays that child and no menu.
+/// </summary>
+/// <remarks>
+/// It exists only so that <see cref="IndexTuningSection"/>'s parameterized slug does not become a
+/// second parameterized child of the listing alongside the integration's own index edit page, a
+/// shape Kentico does not document
+/// (https://docs.kentico.com/documentation/developers-and-admins/customization/extend-the-administration-interface/ui-pages/reference-ui-page-templates/side-navigation-ui-page-template).
+/// </remarks>
+public class IndexTuningRoot : SecondaryMenuSectionPage
+{
+}
+
+/// <summary>
 /// The per-index tuning section: everything that belongs to one search index, reached by clicking
 /// the index in <c>Lucene Search</c> → <c>indexes</c>. See docs/adr/0017-index-scoped-admin.md.
 /// </summary>
 /// <remarks>
-/// Hung under the Lucene integration's <see cref="IndexEditPage"/>, whose parameterized URL slug
-/// already carries the index identifier, so this page only contributes the static <c>tuning</c>
-/// segment and its children form the left navigation
-/// (https://docs.kentico.com/documentation/developers-and-admins/customization/extend-the-administration-interface/ui-pages).
+/// This page contributes the parameterized URL slug that carries the index identifier, and its
+/// children form the left navigation. It cannot hang under the integration's
+/// <see cref="IndexEditPage"/>: Xperience only allows a <c>SidePanel</c> or <c>Dialog</c> child
+/// under an EDIT-template parent, and rejecting the registration breaks the whole admin UI tree.
 /// <see cref="SecondaryMenuSectionPage"/> already opts itself out of the parent's navigation.
 /// </remarks>
 public class IndexTuningSection : SecondaryMenuSectionPage
@@ -69,7 +92,7 @@ public static class IndexScope
     /// <param name="indexIdentifier">The identifier from the URL.</param>
     /// <returns>The parameter values, keyed by the page that contributes the parameterized slug.</returns>
     public static PageParameterValues Route(int indexIdentifier) =>
-        new() { { typeof(IndexEditPage), indexIdentifier } };
+        new() { { typeof(IndexTuningSection), indexIdentifier } };
 
     /// <summary>
     /// Tells whether a stored row belongs to the index in the URL. A row reached through another
@@ -92,6 +115,10 @@ public static class IndexScope
 /// <c>ListingConfiguration.RowAction</c> is a single writable value, so this overwrites the
 /// integration's <c>AddEditRowAction&lt;IndexEditPage&gt;()</c>
 /// (https://docs.kentico.com/documentation/developers-and-admins/customization/extend-the-administration-interface/ui-pages/ui-page-extenders).
+/// <c>AddEditRowAction</c> appends the row's identifier to the target page's own parameterized slug
+/// (https://docs.kentico.com/documentation/developers-and-admins/customization/extend-the-administration-interface/ui-pages/reference-ui-page-templates/listing-ui-page-template#add-row-actions),
+/// which here is <see cref="IndexTuningSection"/>'s; no other slug on the path is parameterized, so
+/// no explicit parameters are needed.
 /// The integration's form itself stays reachable, as <see cref="IndexSettingsPage"/> inside the section.
 /// </remarks>
 public class IndexListingTuningExtender : PageExtender<IndexListingPage>
@@ -133,7 +160,7 @@ public class IndexSettingsPage : BaseIndexEditPage
     }
 
     /// <summary>Gets or sets the identifier of the index, taken from the URL.</summary>
-    [PageParameter(typeof(IntPageModelBinder), typeof(IndexEditPage))]
+    [PageParameter(typeof(IntPageModelBinder), typeof(IndexTuningSection))]
     public int IndexIdentifier { get; set; }
 
     /// <inheritdoc />

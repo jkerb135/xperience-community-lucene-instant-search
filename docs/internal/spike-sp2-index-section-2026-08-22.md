@@ -1,5 +1,14 @@
 # Spike SP-2 - a per-index section under the Lucene integration's `IndexEditPage`
 
+> **Superseded (CA-6, 2026-08-22).** The central claim below - that `Sp2Section` registered under
+> `IndexEditPage` resolved, with `GetPath<Sp2Section> = /lucene/indexes/2/tuning` - is contradicted by
+> the HW-7 host pass on the same host and package versions, where that registration threw
+> `InvalidOperationException: Node 'IndexTuningSection' must use either 'SidePanel' or 'Dialog' page
+> location because its parent uses the '@kentico/xperience-admin-base/Edit' template` for **every**
+> page in the tree (`docs/internal/host-pass-hw7-2026-08-22.md` §4). Treat the `GetPath` results here
+> as unreliable. Everything else the spike established - the `RowAction` setter, the left navigation,
+> ancestor page-parameter binding - still stands; see ADR-0017 for the shipped tree.
+
 **Date:** 2026-08-22
 **Status:** done, spike code deleted (`src/Search/Sp2Spike.cs` no longer exists)
 **Host:** Dancing Goat sample at `F:\Personal\CommunityProjects\src`, XbK 31.8.0, `Kentico.Xperience.Lucene` 15.0.5

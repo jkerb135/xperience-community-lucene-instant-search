@@ -133,7 +133,7 @@ A query suggestion carries `text` only — there is no document behind it. Leave
 ### The dashboard
 
 **Lucene Search → indexes → click the index → Tuning → Analytics** shows the whole log for that
-index and one date range (`/admin/lucene/indexes/{id}/tuning/analytics`). The index is the one you
+index and one date range (`/admin/lucene/indexes/tuning/{id}/analytics`). The index is the one you
 clicked; it is shown above the date range and cannot be changed, so there is no "every index" view —
 open each index's dashboard in turn.
 

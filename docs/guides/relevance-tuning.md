@@ -17,14 +17,14 @@ The sidebar has one entry per kind of tuning:
 
 | Sidebar entry | URL | What it is |
 |---|---|---|
-| **Settings** | `/admin/lucene/indexes/{id}/tuning/settings` | The index's own configuration (strategy, analyzer, channels) — the Lucene integration's form. |
-| **Rules** | `…/tuning/rules` | Pin, bury, boost, filter and redirect rules. |
-| **Synonyms** | `…/tuning/synonyms` | Words that mean the same thing. |
-| **Stopwords** | `…/tuning/stopwords` | Words ignored when someone searches. |
-| **Field weights** | `…/tuning/weights` | How much a match in one field counts. |
-| **Query tester** | `…/tuning/query-tester` | The same query with and without your tuning. |
-| **Analytics** | `…/tuning/analytics` | What visitors searched for, clicked, and did not find. |
-| **Status** | `…/tuning/status` | Document counts, last write, and the rebuild button. |
+| **Settings** | `/admin/lucene/indexes/tuning/{id}/settings` | The index's own configuration (strategy, analyzer, channels) — the Lucene integration's form. |
+| **Rules** | `…/{id}/rules` | Pin, bury, boost, filter and redirect rules. |
+| **Synonyms** | `…/{id}/synonyms` | Words that mean the same thing. |
+| **Stopwords** | `…/{id}/stopwords` | Words ignored when someone searches. |
+| **Field weights** | `…/{id}/weights` | How much a match in one field counts. |
+| **Query tester** | `…/{id}/query-tester` | The same query with and without your tuning. |
+| **Analytics** | `…/{id}/analytics` | What visitors searched for, clicked, and did not find. |
+| **Status** | `…/{id}/status` | Document counts, last write, and the rebuild button. |
 
 Everything you see on these pages applies to that one index. You never pick an index on a form; the
 index you clicked is the index you are editing, and it is shown read-only at the top of every form.

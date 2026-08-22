@@ -226,7 +226,7 @@ Everything that shapes results for an index lives inside the index:
 
 **Lucene Search → indexes → click the index → the *Tuning* sidebar** — Settings, Rules, Synonyms,
 Stopwords, Field weights, Query tester, Analytics and Status
-(`/admin/lucene/indexes/{id}/tuning/rules` and friends). Clicking an index row in the listing opens
+(`/admin/lucene/indexes/tuning/{id}/rules` and friends). Clicking an index row in the listing opens
 the sidebar directly.
 
 These pages are governed by the **Lucene Search** application in *Role management*: *View* to read

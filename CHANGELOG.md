@@ -15,7 +15,7 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
   form is the sidebar's *Settings* page. See ADR-0017.
 - **Changed (breaking):** the old URLs are gone. `/admin/xpsearch-tuning/rules`, `/synonyms`,
   `/stopwords`, `/field-weights`, `/query-tester`, `/analytics` and `/index-status` are now
-  `/admin/lucene/indexes/{id}/tuning/rules`, `/synonyms`, `/stopwords`, `/weights`, `/query-tester`,
+  `/admin/lucene/indexes/tuning/{id}/rules`, `/synonyms`, `/stopwords`, `/weights`, `/query-tester`,
   `/analytics` and `/status`. Re-point any bookmarks.
 - **Changed (breaking):** permissions for those pages are now assigned on the **Lucene Search**
   application in *Role management*, not on *Search tuning*. A UI page is governed by the nearest

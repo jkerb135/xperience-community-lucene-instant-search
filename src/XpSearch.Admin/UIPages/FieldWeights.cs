@@ -101,7 +101,7 @@ public class FieldWeightListing : ListingPage
     public FieldWeightListing(ILuceneConfigurationStorageService storageService) => this.storageService = storageService;
 
     /// <summary>Gets or sets the identifier of the index the listing is scoped to, taken from the URL.</summary>
-    [PageParameter(typeof(IntPageModelBinder), typeof(IndexEditPage))]
+    [PageParameter(typeof(IntPageModelBinder), typeof(IndexTuningSection))]
     public int IndexIdentifier { get; set; }
 
     /// <inheritdoc />

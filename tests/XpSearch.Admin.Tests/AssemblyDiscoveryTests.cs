@@ -2,6 +2,10 @@ using System.Reflection;
 
 using CMS;
 
+using Kentico.Xperience.Admin.Base;
+
+using Kentico.Xperience.Lucene.Admin;
+
 using NUnit.Framework;
 
 using XpSearch.Admin.Forms;
@@ -26,5 +30,25 @@ internal sealed class AssemblyDiscoveryTests
             assembly.GetCustomAttribute<AssemblyDiscoverableAttribute>(),
             Is.Not.Null,
             "XpSearch.Admin must carry CMS.AssemblyDiscoverableAttribute or Xperience ignores its registration attributes.");
+    }
+
+    /// <summary>
+    /// Xperience refuses a main-content page whose parent uses the EDIT template — and the refusal
+    /// takes down the whole admin UI tree, not just that page, so every admin page in the host
+    /// becomes unreachable (docs/internal/host-pass-hw7-2026-08-22.md §6.1).
+    /// </summary>
+    [Test]
+    public void No_page_renders_in_the_main_content_of_an_EDIT_template_parent()
+    {
+        var templates = typeof(FacetAttributeConfigurator).Assembly.GetCustomAttributes<UIPageAttribute>()
+            .Concat(typeof(IndexListingPage).Assembly.GetCustomAttributes<UIPageAttribute>())
+            .ToDictionary(page => page.Type, page => page.TemplateName);
+
+        var offenders = typeof(FacetAttributeConfigurator).Assembly.GetCustomAttributes<UIPageAttribute>()
+            .Where(page => page.ParentType is not null && templates.GetValueOrDefault(page.ParentType) == TemplateNames.EDIT)
+            .Where(page => page.Type.GetCustomAttribute<UIPageLocationAttribute>() is null)
+            .Select(page => page.Type.Name);
+
+        Assert.That(offenders, Is.Empty, "such a page must declare UIPageLocation SidePanel or Dialog, or hang elsewhere");
     }
 }

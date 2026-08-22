@@ -64,7 +64,7 @@ public class QueryTesterPage : Page<QueryTesterClientProperties>
     }
 
     /// <summary>Gets or sets the identifier of the index the page is scoped to, taken from the URL.</summary>
-    [PageParameter(typeof(IntPageModelBinder), typeof(IndexEditPage))]
+    [PageParameter(typeof(IntPageModelBinder), typeof(IndexTuningSection))]
     public int IndexIdentifier { get; set; }
 
     /// <summary>Gets the code name of the index in the URL, or an empty string when it is not registered.</summary>

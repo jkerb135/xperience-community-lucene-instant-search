@@ -1,4 +1,3 @@
-using Kentico.Xperience.Lucene.Admin;
 using Kentico.Xperience.Lucene.Core.Indexing;
 
 using NSubstitute;
@@ -49,7 +48,7 @@ internal sealed class IndexScopeTests
     {
         var route = IndexScope.Route(7);
 
-        route.TryGetValue(typeof(IndexEditPage), out object? value);
+        route.TryGetValue(typeof(IndexTuningSection), out object? value);
 
         Assert.That(value, Is.EqualTo(7));
     }

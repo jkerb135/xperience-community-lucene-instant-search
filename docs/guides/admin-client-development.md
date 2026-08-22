@@ -95,11 +95,12 @@ Then run `npm run start` in `src/XpSearch.Admin/Client`. Remove the setting befo
 
 #### Pages inside an index
 
-Both shipped templates hang under `IndexTuningSection`, so the index is not something the visitor
-picks. The pattern is:
+Both shipped templates hang under `IndexTuningSection`, at
+`/admin/lucene/indexes/tuning/{id}/<your-slug>`, so the index is not something the visitor picks:
+`IndexTuningSection` contributes the `{id}` segment. The pattern is:
 
 ```csharp
-[PageParameter(typeof(IntPageModelBinder), typeof(IndexEditPage))]
+[PageParameter(typeof(IntPageModelBinder), typeof(IndexTuningSection))]
 public int IndexIdentifier { get; set; }
 
 private string IndexName => IndexScope.Resolve(storageService, IndexIdentifier);

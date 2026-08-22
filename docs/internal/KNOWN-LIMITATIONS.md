@@ -469,24 +469,6 @@ and how to lift it.
 - **Upgrade path:** stand up Kentico's IoC container in the test fixture, or move the mapping onto
   plain records that the pages then copy field-by-field.
 
-## `IndexTuningSection` in `XpSearch.Admin/UIPages/IndexTuning.cs`
-
-- **Simplified:** the tuning sidebar is a `SecondaryMenuSectionPage` hung under the Lucene
-  integration's `IndexEditPage`, which uses the EDIT template. Kentico's documented example hangs such
-  a section under a LISTING page; nothing in the docs says an EDIT parent is supported. Spike SP-2
-  proved the section registers and that `IPageLinkGenerator.GetPath` produces
-  `/lucene/indexes/{id}/tuning/…`, but the admin SPA returns its HTML shell with 200 for every path,
-  so whether the secondary menu actually *renders* under an EDIT parent, and how the breadcrumb chain
-  reads, could not be observed headlessly.
-- **Ceiling:** correctness here is established by a logged-in human, not by CI — the HW-7 host pass
-  and the owner's own check. If the menu does not render, the pages are still reachable by URL but the
-  sidebar is not, and the design has to fall back to a section under `IndexListingPage` with its own
-  parameterized slug.
-- **Upgrade path:** if the render is wrong, register `IndexTuningSection` under `IndexListingPage`
-  with `PageParameterConstants.PARAMETERIZED_SLUG` instead and drop the explicit
-  `[PageParameter(..., typeof(IndexEditPage))]` bindings back to the parameterless overload; every
-  child page is otherwise unchanged.
-
 ## `IndexSettingsPage` in `XpSearch.Admin/UIPages/IndexTuning.cs`
 
 - **Simplified:** it duplicates the model getter and `ProcessFormData` of the integration's
