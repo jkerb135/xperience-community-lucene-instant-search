@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 using XpSearch.Admin.Persistence;
 using XpSearch.Admin.Tuning;
+using XpSearch.Admin.UIPages.QueryTester;
 using XpSearch.Core.Tuning;
 
 namespace Microsoft.Extensions.DependencyInjection;
@@ -27,6 +28,7 @@ public static class XpSearchAdminServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.TryAddSingleton<XpSearchTuningModuleInstaller>();
+        services.TryAddSingleton<IQueryTesterSearch, QueryTesterSearch>();
         services.Replace(ServiceDescriptor.Singleton<IRelevanceTuningSource, InfoRelevanceTuningSource>());
 
         return services;
