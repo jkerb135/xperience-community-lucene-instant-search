@@ -1,0 +1,153 @@
+using CMS.Websites.Routing;
+
+using Lucene.Net.Analysis.Standard;
+using Lucene.Net.Facet;
+using Lucene.Net.Util;
+
+using Microsoft.Extensions.Logging;
+
+using NSubstitute;
+
+using NUnit.Framework;
+
+using XpSearch.Admin.UIPages.QueryTester;
+using XpSearch.Core.Abstractions;
+using XpSearch.Core.Analytics;
+using XpSearch.Core.Contract;
+using XpSearch.Core.Pipeline;
+using XpSearch.Core.Pipeline.Stages;
+using XpSearch.Core.Tuning;
+
+namespace XpSearch.Admin.Tests;
+
+/// <summary>
+/// Covers the half of the query tester that cannot be substituted: that the "without rules" side
+/// really runs with no tuning at all (spec §8.4).
+/// </summary>
+[TestFixture]
+internal sealed class QueryTesterSearchTests
+{
+    private static readonly TuningRule Rule = new(
+        1,
+        "Espresso first",
+        Enabled: true,
+        RuleCondition.Always,
+        "espresso",
+        RuleConsequence.Pin,
+        "doc-1",
+        1,
+        1,
+        string.Empty,
+        string.Empty,
+        null,
+        null,
+        100);
+
+    [TestCase(true, 1)]
+    [TestCase(false, 0)]
+    public async Task ExecuteAsync_AppliesTheIndexTuningOnlyOnTheWithRulesSide(bool applyTuning, int expectedRules)
+    {
+        var recorder = new RecordingStage();
+        var search = Build(recorder);
+
+        await search.ExecuteAsync(Request(), applyTuning, CancellationToken.None);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(recorder.Tuning!.Rules, Has.Count.EqualTo(expectedRules));
+            Assert.That(recorder.Tuning!.Synonyms, Has.Count.EqualTo(expectedRules));
+            Assert.That(recorder.Tuning!.Stopwords, Has.Count.EqualTo(expectedRules));
+            Assert.That(recorder.Tuning!.FieldWeights, Has.Count.EqualTo(expectedRules));
+        });
+    }
+
+    [Test]
+    public async Task ExecuteAsync_KeepsTheQueryLevelExplanations()
+    {
+        var recorder = new RecordingStage();
+        recorder.OnExecute = context => context.QueryExplanations.Add("field weight: title x2");
+
+        var result = await Build(recorder).ExecuteAsync(Request(), applyTuning: true, CancellationToken.None);
+
+        Assert.That(
+            result.QueryExplanations,
+            Is.EqualTo(new[] { "synonym:coffee", "field weight: title x2" }),
+            "the tuning stage's own explanation and everything a later stage added");
+    }
+
+    [Test]
+    public async Task ExecuteAsync_DoesNotLogTheTestSearchIntoTheQueryLog()
+    {
+        var queue = Substitute.For<IQueryLogQueue>();
+        var logging = new LogActivityStage(
+            Substitute.For<ISearchActivityLogger>(),
+            Substitute.For<IQueryContextMap>(),
+            queue,
+            Substitute.For<IWebsiteChannelContext>(),
+            Substitute.For<ILogger<LogActivityStage>>());
+
+        await Build(new RecordingStage(), logging).ExecuteAsync(Request(), applyTuning: true, CancellationToken.None);
+
+        Assert.That(queue.ReceivedCalls(), Is.Empty, "a tester run must not skew the analytics dashboard");
+
+        // Control: the same stage does log when it is actually run.
+        await logging.ExecuteAsync(
+            new SearchContext(Request(), Schema(), new StandardAnalyzer(LuceneVersion.LUCENE_48), null, CancellationToken.None),
+            CancellationToken.None);
+
+        Assert.That(queue.ReceivedCalls().Count(), Is.EqualTo(1));
+    }
+
+    private static IndexSchema Schema() =>
+        new("articles", [new SchemaField("title", SearchFieldKind.Text, true, false, false, true)]);
+
+    private static SearchRequest Request() =>
+        new() { Index = "articles", Query = "espresso", Explain = true, Page = 1, PageSize = 10 };
+
+    private static QueryTesterSearch Build(params ISearchStage[] extraStages)
+    {
+        var accessor = Substitute.For<ILuceneIndexAccessor>();
+        accessor.Exists("articles").Returns(true);
+        accessor.GetAnalyzer("articles").Returns(new StandardAnalyzer(LuceneVersion.LUCENE_48));
+        accessor.GetFacetsConfig("articles").Returns((FacetsConfig?)null);
+
+        var schemaProvider = Substitute.For<IIndexSchemaProvider>();
+        schemaProvider.GetSchemaAsync("articles", Arg.Any<CancellationToken>()).Returns(Task.FromResult(Schema()));
+
+        var source = Substitute.For<IRelevanceTuningSource>();
+        source.GetRulesAsync("articles", Arg.Any<CancellationToken>()).Returns(Task.FromResult<IReadOnlyList<TuningRule>>([Rule]));
+        source.GetSynonymsAsync("articles", Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<TuningSynonym>>([new TuningSynonym(SynonymDirection.TwoWay, ["espresso", "coffee"], [])]));
+        source.GetStopwordsAsync("articles", Arg.Any<CancellationToken>()).Returns(Task.FromResult<IReadOnlyList<string>>(["the"]));
+        source.GetFieldWeightsAsync("articles", Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<FieldWeight>>([new FieldWeight("title", 2)]));
+
+        ISearchStage[] stages =
+        [
+            new SynonymExpansionStage(source, TimeProvider.System),
+            .. extraStages
+        ];
+
+        return new QueryTesterSearch(accessor, schemaProvider, stages, TimeProvider.System);
+    }
+
+    /// <summary>Stands in for the projection stage and records what the tuning stage produced.</summary>
+    private sealed class RecordingStage : ISearchStage
+    {
+        public TuningSet? Tuning { get; private set; }
+
+        public Action<SearchContext>? OnExecute { get; set; }
+
+        public int Order => SearchStageOrder.Project;
+
+        public Task ExecuteAsync(SearchContext context, CancellationToken cancellationToken)
+        {
+            Tuning = context.Tuning;
+            OnExecute?.Invoke(context);
+            context.Response = new SearchResponse { Results = [], Total = 0, Page = 1, PageSize = 10, TotalPages = 0 };
+
+            return Task.CompletedTask;
+        }
+    }
+
+}
