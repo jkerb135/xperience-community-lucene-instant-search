@@ -51,11 +51,19 @@ public class IndexTuningSection : SecondaryMenuSectionPage
 public static class IndexScope
 {
     /// <summary>Turns the index identifier carried by the URL into the index code name the tuning tables key on.</summary>
-    /// <param name="indexManager">The integration's index registry.</param>
+    /// <param name="storageService">Reads the stored index configuration.</param>
     /// <param name="indexIdentifier">The identifier from the URL.</param>
     /// <returns>The index code name, or an empty string when no such index is registered.</returns>
-    public static string Resolve(ILuceneIndexManager indexManager, int indexIdentifier) =>
-        indexManager is null ? string.Empty : indexManager.GetIndex(indexIdentifier)?.IndexName ?? string.Empty;
+    /// <remarks>
+    /// Blocking on the storage service is what the integration's own <see cref="IndexEditPage"/> does
+    /// to build its model; a UI page property getter has nowhere to await.
+    /// </remarks>
+    public static string Resolve(ILuceneConfigurationStorageService storageService, int indexIdentifier)
+    {
+        ArgumentNullException.ThrowIfNull(storageService);
+
+        return storageService.GetIndexDataOrNullAsync(indexIdentifier).GetAwaiter().GetResult()?.IndexName ?? string.Empty;
+    }
 
     /// <summary>Builds the URL parameter values every link to a page inside the section needs.</summary>
     /// <param name="indexIdentifier">The identifier from the URL.</param>

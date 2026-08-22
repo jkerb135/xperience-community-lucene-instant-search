@@ -175,11 +175,11 @@ public class RuleModel : IIndexScopedModel
 /// <summary>Lists the relevance rules (spec §8.1).</summary>
 public class RuleListing : ListingPage
 {
-    private readonly ILuceneIndexManager indexManager;
+    private readonly ILuceneConfigurationStorageService storageService;
 
     /// <summary>Initializes a new instance of the <see cref="RuleListing"/> class.</summary>
-    /// <param name="indexManager">The integration's index registry, used to resolve the index in the URL.</param>
-    public RuleListing(ILuceneIndexManager indexManager) => this.indexManager = indexManager;
+    /// <param name="storageService">Reads the stored index configuration, to resolve the index in the URL.</param>
+    public RuleListing(ILuceneConfigurationStorageService storageService) => this.storageService = storageService;
 
     /// <summary>Gets or sets the identifier of the index the listing is scoped to, taken from the URL.</summary>
     [PageParameter(typeof(IntPageModelBinder), typeof(IndexEditPage))]
@@ -191,7 +191,7 @@ public class RuleListing : ListingPage
     /// <inheritdoc />
     public override Task ConfigurePage()
     {
-        string indexName = IndexScope.Resolve(indexManager, IndexIdentifier);
+        string indexName = IndexScope.Resolve(storageService, IndexIdentifier);
 
         PageConfiguration.ColumnConfigurations
             .AddColumn(nameof(XpSearchRuleInfo.RuleName), "Rule", searchable: true)
@@ -222,16 +222,16 @@ public class RuleEdit : IndexScopedEditPage<RuleModel>
     /// <summary>Initializes a new instance of the <see cref="RuleEdit"/> class.</summary>
     /// <param name="formItemCollectionProvider">Builds the form components.</param>
     /// <param name="formDataBinder">Binds the submitted values.</param>
-    /// <param name="indexManager">The integration's index registry.</param>
+    /// <param name="storageService">Reads the stored index configuration.</param>
     /// <param name="pageLinkGenerator">Generates admin URLs.</param>
     /// <param name="provider">Provider of rule objects.</param>
     public RuleEdit(
         IFormItemCollectionProvider formItemCollectionProvider,
         IFormDataBinder formDataBinder,
-        ILuceneIndexManager indexManager,
+        ILuceneConfigurationStorageService storageService,
         IPageLinkGenerator pageLinkGenerator,
         IInfoProvider<XpSearchRuleInfo> provider)
-        : base(formItemCollectionProvider, formDataBinder, indexManager, pageLinkGenerator) =>
+        : base(formItemCollectionProvider, formDataBinder, storageService, pageLinkGenerator) =>
         this.provider = provider;
 
     /// <summary>Gets or sets the identifier of the edited rule, taken from the URL.</summary>
@@ -266,16 +266,16 @@ public class RuleCreate : IndexScopedEditPage<RuleModel>
     /// <summary>Initializes a new instance of the <see cref="RuleCreate"/> class.</summary>
     /// <param name="formItemCollectionProvider">Builds the form components.</param>
     /// <param name="formDataBinder">Binds the submitted values.</param>
-    /// <param name="indexManager">The integration's index registry.</param>
+    /// <param name="storageService">Reads the stored index configuration.</param>
     /// <param name="pageLinkGenerator">Generates admin URLs.</param>
     /// <param name="provider">Provider of rule objects.</param>
     public RuleCreate(
         IFormItemCollectionProvider formItemCollectionProvider,
         IFormDataBinder formDataBinder,
-        ILuceneIndexManager indexManager,
+        ILuceneConfigurationStorageService storageService,
         IPageLinkGenerator pageLinkGenerator,
         IInfoProvider<XpSearchRuleInfo> provider)
-        : base(formItemCollectionProvider, formDataBinder, indexManager, pageLinkGenerator) =>
+        : base(formItemCollectionProvider, formDataBinder, storageService, pageLinkGenerator) =>
         this.provider = provider;
 
     /// <inheritdoc />

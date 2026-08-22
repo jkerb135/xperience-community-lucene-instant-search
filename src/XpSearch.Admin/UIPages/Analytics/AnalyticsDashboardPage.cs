@@ -52,28 +52,28 @@ public class AnalyticsDashboardPage : Page<AnalyticsDashboardClientProperties>
     /// <summary>Most rows a report will return.</summary>
     public const int MaxLimit = 100;
 
-    private readonly ILuceneIndexManager indexManager;
+    private readonly ILuceneConfigurationStorageService storageService;
     private readonly ISearchAnalyticsService analytics;
     private readonly IPageLinkGenerator pageLinkGenerator;
     private readonly TimeProvider time;
 
     /// <summary>Initializes a new instance of the <see cref="AnalyticsDashboardPage"/> class.</summary>
-    /// <param name="indexManager">The integration's index registry, used to fill the index selector.</param>
+    /// <param name="storageService">Reads the stored index configuration, to resolve the index in the URL.</param>
     /// <param name="analytics">Produces the reports.</param>
     /// <param name="pageLinkGenerator">Generates the URL the "Create rule" action navigates to.</param>
     /// <param name="time">Clock, so the default range is the server's idea of today.</param>
     public AnalyticsDashboardPage(
-        ILuceneIndexManager indexManager,
+        ILuceneConfigurationStorageService storageService,
         ISearchAnalyticsService analytics,
         IPageLinkGenerator pageLinkGenerator,
         TimeProvider time)
     {
-        ArgumentNullException.ThrowIfNull(indexManager);
+        ArgumentNullException.ThrowIfNull(storageService);
         ArgumentNullException.ThrowIfNull(analytics);
         ArgumentNullException.ThrowIfNull(pageLinkGenerator);
         ArgumentNullException.ThrowIfNull(time);
 
-        this.indexManager = indexManager;
+        this.storageService = storageService;
         this.analytics = analytics;
         this.pageLinkGenerator = pageLinkGenerator;
         this.time = time;
@@ -84,7 +84,7 @@ public class AnalyticsDashboardPage : Page<AnalyticsDashboardClientProperties>
     public int IndexIdentifier { get; set; }
 
     /// <summary>Gets the code name of the index in the URL, or an empty string when it is not registered.</summary>
-    private string IndexName => IndexScope.Resolve(indexManager, IndexIdentifier);
+    private string IndexName => IndexScope.Resolve(storageService, IndexIdentifier);
 
     /// <inheritdoc />
     public override Task<AnalyticsDashboardClientProperties> ConfigureTemplateProperties(AnalyticsDashboardClientProperties properties)

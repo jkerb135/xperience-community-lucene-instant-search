@@ -39,7 +39,7 @@ public class IndexStatusModel : IIndexScopedModel
 /// </summary>
 /// <remarks>
 /// The built-in listing template can only list a registered object type, and index status is derived
-/// from <c>ILuceneIndexManager</c> and the ingestion store rather than stored in a table. Rather than
+/// from the search index and the ingestion store rather than stored in a table. Rather than
 /// write a React listing, the page reports the index in a read-only text area and uses the edit
 /// template's submit action as the rebuild trigger. See ADR-0014.
 /// </remarks>
@@ -52,7 +52,7 @@ public class IndexStatusPage : IndexScopedEditPage<IndexStatusModel>
     /// <summary>Initializes a new instance of the <see cref="IndexStatusPage"/> class.</summary>
     /// <param name="formItemCollectionProvider">Builds the form components.</param>
     /// <param name="formDataBinder">Binds the submitted values.</param>
-    /// <param name="indexManager">The integration's index registry.</param>
+    /// <param name="storageService">Reads the stored index configuration.</param>
     /// <param name="pageLinkGenerator">Generates admin URLs.</param>
     /// <param name="indexer">Reads document counts and health per index.</param>
     /// <param name="client">The integration's index writer, decorated so a rebuild replays external documents.</param>
@@ -60,12 +60,12 @@ public class IndexStatusPage : IndexScopedEditPage<IndexStatusModel>
     public IndexStatusPage(
         IFormItemCollectionProvider formItemCollectionProvider,
         IFormDataBinder formDataBinder,
-        ILuceneIndexManager indexManager,
+        ILuceneConfigurationStorageService storageService,
         IPageLinkGenerator pageLinkGenerator,
         IXpSearchIndexer indexer,
         ILuceneClient client,
         IIngestionLog log)
-        : base(formItemCollectionProvider, formDataBinder, indexManager, pageLinkGenerator)
+        : base(formItemCollectionProvider, formDataBinder, storageService, pageLinkGenerator)
     {
         this.indexer = indexer;
         this.client = client;

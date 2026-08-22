@@ -43,16 +43,16 @@ public class ZeroResultRuleCreatePage : RuleCreate
     /// <summary>Initializes a new instance of the <see cref="ZeroResultRuleCreatePage"/> class.</summary>
     /// <param name="formItemCollectionProvider">Builds the form components.</param>
     /// <param name="formDataBinder">Binds the submitted values.</param>
-    /// <param name="indexManager">The integration's index registry.</param>
+    /// <param name="storageService">Reads the stored index configuration.</param>
     /// <param name="pageLinkGenerator">Generates admin URLs.</param>
     /// <param name="provider">Provider of rule objects.</param>
     public ZeroResultRuleCreatePage(
         IFormItemCollectionProvider formItemCollectionProvider,
         IFormDataBinder formDataBinder,
-        ILuceneIndexManager indexManager,
+        ILuceneConfigurationStorageService storageService,
         IPageLinkGenerator pageLinkGenerator,
         IInfoProvider<XpSearchRuleInfo> provider)
-        : base(formItemCollectionProvider, formDataBinder, indexManager, pageLinkGenerator, provider)
+        : base(formItemCollectionProvider, formDataBinder, storageService, pageLinkGenerator, provider)
     {
     }
 

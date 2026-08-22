@@ -83,11 +83,11 @@ public class StopwordModel : IIndexScopedModel
 /// <summary>Lists the stopword lists, one per index (spec §8.1).</summary>
 public class StopwordListing : ListingPage
 {
-    private readonly ILuceneIndexManager indexManager;
+    private readonly ILuceneConfigurationStorageService storageService;
 
     /// <summary>Initializes a new instance of the <see cref="StopwordListing"/> class.</summary>
-    /// <param name="indexManager">The integration's index registry, used to resolve the index in the URL.</param>
-    public StopwordListing(ILuceneIndexManager indexManager) => this.indexManager = indexManager;
+    /// <param name="storageService">Reads the stored index configuration, to resolve the index in the URL.</param>
+    public StopwordListing(ILuceneConfigurationStorageService storageService) => this.storageService = storageService;
 
     /// <summary>Gets or sets the identifier of the index the listing is scoped to, taken from the URL.</summary>
     [PageParameter(typeof(IntPageModelBinder), typeof(IndexEditPage))]
@@ -99,7 +99,7 @@ public class StopwordListing : ListingPage
     /// <inheritdoc />
     public override Task ConfigurePage()
     {
-        string indexName = IndexScope.Resolve(indexManager, IndexIdentifier);
+        string indexName = IndexScope.Resolve(storageService, IndexIdentifier);
 
         PageConfiguration.ColumnConfigurations
             .AddColumn(nameof(XpSearchStopwordListInfo.StopwordListWords), "Words to ignore");
@@ -127,16 +127,16 @@ public class StopwordEdit : IndexScopedEditPage<StopwordModel>
     /// <summary>Initializes a new instance of the <see cref="StopwordEdit"/> class.</summary>
     /// <param name="formItemCollectionProvider">Builds the form components.</param>
     /// <param name="formDataBinder">Binds the submitted values.</param>
-    /// <param name="indexManager">The integration's index registry.</param>
+    /// <param name="storageService">Reads the stored index configuration.</param>
     /// <param name="pageLinkGenerator">Generates admin URLs.</param>
     /// <param name="provider">Provider of stopword list objects.</param>
     public StopwordEdit(
         IFormItemCollectionProvider formItemCollectionProvider,
         IFormDataBinder formDataBinder,
-        ILuceneIndexManager indexManager,
+        ILuceneConfigurationStorageService storageService,
         IPageLinkGenerator pageLinkGenerator,
         IInfoProvider<XpSearchStopwordListInfo> provider)
-        : base(formItemCollectionProvider, formDataBinder, indexManager, pageLinkGenerator) =>
+        : base(formItemCollectionProvider, formDataBinder, storageService, pageLinkGenerator) =>
         this.provider = provider;
 
     /// <summary>Gets or sets the identifier of the edited list, taken from the URL.</summary>
@@ -169,16 +169,16 @@ public class StopwordCreate : IndexScopedEditPage<StopwordModel>
     /// <summary>Initializes a new instance of the <see cref="StopwordCreate"/> class.</summary>
     /// <param name="formItemCollectionProvider">Builds the form components.</param>
     /// <param name="formDataBinder">Binds the submitted values.</param>
-    /// <param name="indexManager">The integration's index registry.</param>
+    /// <param name="storageService">Reads the stored index configuration.</param>
     /// <param name="pageLinkGenerator">Generates admin URLs.</param>
     /// <param name="provider">Provider of stopword list objects.</param>
     public StopwordCreate(
         IFormItemCollectionProvider formItemCollectionProvider,
         IFormDataBinder formDataBinder,
-        ILuceneIndexManager indexManager,
+        ILuceneConfigurationStorageService storageService,
         IPageLinkGenerator pageLinkGenerator,
         IInfoProvider<XpSearchStopwordListInfo> provider)
-        : base(formItemCollectionProvider, formDataBinder, indexManager, pageLinkGenerator) =>
+        : base(formItemCollectionProvider, formDataBinder, storageService, pageLinkGenerator) =>
         this.provider = provider;
 
     /// <inheritdoc />

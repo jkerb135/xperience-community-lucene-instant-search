@@ -48,18 +48,18 @@ public class QueryTesterPage : Page<QueryTesterClientProperties>
     /// <summary>Largest page size the tester will run, so a mistyped number cannot pull a whole index.</summary>
     public const int MaxPageSize = 50;
 
-    private readonly ILuceneIndexManager indexManager;
+    private readonly ILuceneConfigurationStorageService storageService;
     private readonly IQueryTesterSearch search;
 
     /// <summary>Initializes a new instance of the <see cref="QueryTesterPage"/> class.</summary>
-    /// <param name="indexManager">The integration's index registry, used to fill the index selector.</param>
+    /// <param name="storageService">Reads the stored index configuration, to resolve the index in the URL.</param>
     /// <param name="search">Runs the two sides of the comparison.</param>
-    public QueryTesterPage(ILuceneIndexManager indexManager, IQueryTesterSearch search)
+    public QueryTesterPage(ILuceneConfigurationStorageService storageService, IQueryTesterSearch search)
     {
-        ArgumentNullException.ThrowIfNull(indexManager);
+        ArgumentNullException.ThrowIfNull(storageService);
         ArgumentNullException.ThrowIfNull(search);
 
-        this.indexManager = indexManager;
+        this.storageService = storageService;
         this.search = search;
     }
 
@@ -68,7 +68,7 @@ public class QueryTesterPage : Page<QueryTesterClientProperties>
     public int IndexIdentifier { get; set; }
 
     /// <summary>Gets the code name of the index in the URL, or an empty string when it is not registered.</summary>
-    private string IndexName => IndexScope.Resolve(indexManager, IndexIdentifier);
+    private string IndexName => IndexScope.Resolve(storageService, IndexIdentifier);
 
     /// <inheritdoc />
     public override Task<QueryTesterClientProperties> ConfigureTemplateProperties(QueryTesterClientProperties properties)

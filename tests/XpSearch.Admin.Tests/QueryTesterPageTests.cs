@@ -8,6 +8,7 @@ using NSubstitute;
 
 using NUnit.Framework;
 
+using XpSearch.Admin.UIPages;
 using XpSearch.Admin.UIPages.QueryTester;
 using XpSearch.Core.Contract;
 
@@ -17,6 +18,8 @@ namespace XpSearch.Admin.Tests;
 [TestFixture]
 internal sealed class QueryTesterPageTests
 {
+    private const int IndexIdentifier = 7;
+
     private IQueryTesterSearch search = null!;
     private QueryTesterPage page = null!;
 
@@ -28,13 +31,16 @@ internal sealed class QueryTesterPageTests
             .ExecuteAsync(Arg.Any<SearchRequest>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
             .Returns(call => Task.FromResult(new QueryTesterSideResult(Empty(), [])));
 
-        page = new QueryTesterPage(Substitute.For<ILuceneIndexManager>(), search);
+        page = new QueryTesterPage(Storage.Holding(IndexIdentifier, "articles"), search)
+        {
+            IndexIdentifier = IndexIdentifier
+        };
     }
 
     [Test]
     public async Task Run_ExecutesBothSidesWithExplain()
     {
-        await page.Run(new QueryTesterRequest { IndexName = "articles", Query = "espresso" }, CancellationToken.None);
+        await page.Run(new QueryTesterRequest { Query = "espresso" }, CancellationToken.None);
 
         var requests = search
             .ReceivedCalls()
@@ -55,7 +61,7 @@ internal sealed class QueryTesterPageTests
     public async Task Run_ClampsThePageSizeAndOmitsAnEmptyLanguage()
     {
         await page.Run(
-            new QueryTesterRequest { IndexName = "articles", PageSize = 5000, Language = "  " },
+            new QueryTesterRequest { PageSize = 5000, Language = "  " },
             CancellationToken.None);
 
         var request = (SearchRequest)search.ReceivedCalls().First().GetArguments()[0]!;
@@ -70,7 +76,9 @@ internal sealed class QueryTesterPageTests
     [Test]
     public async Task Run_ReportsAMissingIndexWithoutSearching()
     {
-        var response = await page.Run(new QueryTesterRequest { IndexName = "  " }, CancellationToken.None);
+        var unregistered = new QueryTesterPage(Storage.Holding(IndexIdentifier, "articles"), search) { IndexIdentifier = 999 };
+
+        var response = await unregistered.Run(new QueryTesterRequest(), CancellationToken.None);
 
         Expect.Multiple(() =>
         {
@@ -86,9 +94,26 @@ internal sealed class QueryTesterPageTests
             .ExecuteAsync(Arg.Any<SearchRequest>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
             .Returns<Task<QueryTesterSideResult>>(_ => throw new XpSearch.Core.Abstractions.SearchValidationException("query", "Too long."));
 
-        var response = await page.Run(new QueryTesterRequest { IndexName = "articles" }, CancellationToken.None);
+        var response = await page.Run(new QueryTesterRequest(), CancellationToken.None);
 
         Assert.That(response.Result.Error, Does.Contain("Too long."));
+    }
+
+    /// <summary>
+    /// The tester runs against the index in the URL, never against one the client asked for, and the
+    /// client template is told the index is not a choice.
+    /// </summary>
+    [Test]
+    public async Task ConfigureTemplateProperties_LocksTheIndexToTheOneInTheUrl()
+    {
+        var properties = await page.ConfigureTemplateProperties(new QueryTesterClientProperties());
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(properties.SelectedIndexName, Is.EqualTo("articles"));
+            Assert.That(properties.IndexNames, Is.EqualTo(new[] { "articles" }));
+            Assert.That(properties.IndexLocked, Is.True);
+        });
     }
 
     [Test]

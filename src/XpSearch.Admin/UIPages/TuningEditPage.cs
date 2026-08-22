@@ -104,24 +104,24 @@ public abstract class TuningEditPage<TModel> : ModelEditPage<TModel>
 public abstract class IndexScopedEditPage<TModel> : TuningEditPage<TModel>
     where TModel : class, IIndexScopedModel, new()
 {
-    private readonly ILuceneIndexManager indexManager;
+    private readonly ILuceneConfigurationStorageService storageService;
     private string? indexName;
 
     /// <summary>Initializes a new instance of the <see cref="IndexScopedEditPage{TModel}"/> class.</summary>
     /// <param name="formItemCollectionProvider">Builds the form components from the model's annotations.</param>
     /// <param name="formDataBinder">Binds the submitted values back onto the model.</param>
-    /// <param name="indexManager">The integration's index registry, used to resolve the index in the URL.</param>
+    /// <param name="storageService">Reads the stored index configuration, to resolve the index in the URL.</param>
     /// <param name="pageLinkGenerator">Generates the URL a create page redirects to.</param>
     protected IndexScopedEditPage(
         IFormItemCollectionProvider formItemCollectionProvider,
         IFormDataBinder formDataBinder,
-        ILuceneIndexManager indexManager,
+        ILuceneConfigurationStorageService storageService,
         IPageLinkGenerator pageLinkGenerator)
         : base(formItemCollectionProvider, formDataBinder, pageLinkGenerator)
     {
-        ArgumentNullException.ThrowIfNull(indexManager);
+        ArgumentNullException.ThrowIfNull(storageService);
 
-        this.indexManager = indexManager;
+        this.storageService = storageService;
     }
 
     /// <summary>Gets or sets the identifier of the index the page is scoped to, taken from the URL.</summary>
@@ -129,7 +129,7 @@ public abstract class IndexScopedEditPage<TModel> : TuningEditPage<TModel>
     public int IndexIdentifier { get; set; }
 
     /// <summary>Gets the code name of the index in the URL, or an empty string when it is not registered.</summary>
-    protected string IndexName => indexName ??= IndexScope.Resolve(indexManager, IndexIdentifier);
+    protected string IndexName => indexName ??= IndexScope.Resolve(storageService, IndexIdentifier);
 
     /// <inheritdoc />
     protected override PageParameterValues? RedirectParameters => IndexScope.Route(IndexIdentifier);
