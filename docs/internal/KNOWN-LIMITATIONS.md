@@ -182,6 +182,31 @@ and how to lift it.
 - **Upgrade path:** decorate `IIndexSchemaProvider` with an `IProgressiveCache` entry keyed by index name,
   dependent on `cms.class|all`, so a content type change still invalidates it.
 
+## `Invalidate` in `XpSearch.Core/Search/LuceneIndexAccessor.cs`
+
+- **Simplified:** the integration's searcher cache is dropped by resolving its `internal`
+  `LuceneSearchCacheInvalidator` by type name and invoking `Invalidate` reflectively. There is no
+  public route: `LuceneIndexSearcherProvider`, the invalidator and `InvalidateSearchIndexWebFarmTask`
+  are all internal, and `DefaultLuceneClient` only invalidates on `Rebuild` and `DeleteIndex` — never
+  after the in-place upsert or delete that `ILuceneClient` performs.
+- **Ceiling:** an upgrade of `Kentico.Xperience.Lucene` that renames or moves that type turns every
+  write into an `InvalidOperationException`. `CachingTests.TheIntegrationsSearchCacheInvalidator_IsStillReachable`
+  fails first, at build time rather than in a host.
+- **Upgrade path:** if the integration ever makes the invalidator public or invalidates after
+  `UpsertRecords` itself, delete the reflection and call it (or drop the call entirely).
+
+## `RegisterSchemaDimensions` in `XpSearch.Core/Indexing/XpSearchIndexingStrategy.cs`
+
+- **Simplified:** the facet dimensions are read from `IIndexSchemaProvider` synchronously
+  (`GetAwaiter().GetResult()`) the first time `FacetsConfigFactory` is called on an instance, because
+  the integration's `FacetsConfigFactory` is a synchronous API and the schema comes from the database.
+- **Ceiling:** the strategy is transient, so a query that resolves it (to read the facet
+  configuration) pays one extra schema read — the same read the pipeline already makes per uncached
+  request, so the cost doubles rather than appears. Nothing deadlocks: ASP.NET Core has no
+  synchronization context.
+- **Upgrade path:** cache the resolved dimension set per strategy type behind the index configuration's
+  own cache dependency, or ask the integration for an async configuration hook.
+
 ## `FlattenLinkedItems` in `XpSearch.Core/Indexing/XpSearchIndexingOptions.cs`
 
 - **Simplified:** the registration names the content types the linked field can hold. The *document* is
