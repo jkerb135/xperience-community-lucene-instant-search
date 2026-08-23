@@ -43,6 +43,10 @@ public sealed class XpSearchTuningModuleInstaller
         Add(form, nameof(XpSearchRuleInfo.RuleIndexName), FieldDataType.Text, size: 100);
         Add(form, nameof(XpSearchRuleInfo.RuleName), FieldDataType.Text, size: 200);
         Add(form, nameof(XpSearchRuleInfo.RuleEnabled), FieldDataType.Boolean);
+
+        // Added after the first release: CombineWithForm in InstallClass merges it into an existing
+        // class without touching the rows already there, and an empty value means "everyone".
+        Add(form, nameof(XpSearchRuleInfo.RuleContactGroup), FieldDataType.Text, size: 100, allowEmpty: true);
         Add(form, nameof(XpSearchRuleInfo.RuleConditionType), FieldDataType.Integer);
         Add(form, nameof(XpSearchRuleInfo.RulePattern), FieldDataType.Text, size: 450, allowEmpty: true);
         Add(form, nameof(XpSearchRuleInfo.RuleConsequenceType), FieldDataType.Integer);

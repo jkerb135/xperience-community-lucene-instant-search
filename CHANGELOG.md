@@ -8,6 +8,27 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Added (personalisation):** a relevance rule can be scoped to a **contact group**, so the same
+  query ranks differently for a segment (boost, pin, bury, filter and redirect all honour it). The
+  rule form gains an object selector over `om.contactgroup` right after **Enabled**, the Rules
+  listing a **Contact group** column showing *Everyone* for an unscoped rule, and the **Query
+  tester** a **Contact group** drop-down that simulates a group so an admin can see the effect
+  without being a member. The visitor's groups are resolved once per request by a new pipeline stage
+  (`SearchStageOrder.ResolveContactGroups`, 150) behind the same consent gate the activity logger
+  uses — cookie level *Visitor* or higher, `ICurrentContactProvider.GetExistingContact`, never
+  creating a contact — and no consent means no group-scoped rule applies. A group-scoped rule shows
+  as `rule:<name> (contact group <code name>)` in `ranking.boosts`. See ADR-0021 and
+  [Personalise rules by contact group](docs/guides/relevance-tuning.md#personalise-rules-by-contact-group).
+- **Changed (schema):** `XpSearch.Rule` gains a nullable `RuleContactGroup` column (text, 100). The
+  tuning module installer adds it to an existing installation on the next application start, merging
+  it into the class without touching existing rows; an empty value means "everyone", so every rule
+  that exists today keeps behaving exactly as it does.
+- **Changed (breaking, extenders):** the `TuningRule` record gains a trailing `ContactGroup` member.
+  Custom `IRelevanceTuningSource` implementations and any code constructing `TuningRule`
+  positionally must pass it; `string.Empty` reproduces today's behaviour. `CachedSearchPipeline` also
+  takes an `IContactGroupResolver`, and the response cache key now includes the visitor's contact
+  groups so a personalised response is never served to a visitor in different groups.
+
 - **Changed (admin UI):** the **Analytics** and **Query tester** pages were rebuilt to the owner's
   design spec and are now assembled only from `@kentico/xperience-admin-components` — `Card`, `Table`
   with `ActionCell`, `Tag`, `Callout`, `NameToggleButtons`, `DateTimeInput`, `Select` and the layout

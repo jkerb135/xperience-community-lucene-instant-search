@@ -29,6 +29,7 @@ public static class XpSearchAdminServiceCollectionExtensions
 
         services.TryAddSingleton<XpSearchTuningModuleInstaller>();
         services.TryAddSingleton<IQueryTesterSearch, QueryTesterSearch>();
+        services.TryAddSingleton<IContactGroupCatalog, ContactGroupCatalog>();
         services.Replace(ServiceDescriptor.Singleton<IRelevanceTuningSource, InfoRelevanceTuningSource>());
 
         return services;

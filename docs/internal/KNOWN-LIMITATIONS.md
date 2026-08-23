@@ -566,3 +566,36 @@ and how to lift it.
   — the call sites are `QueryTesterTemplate`'s narrow branch, `ChangeTag` and `Explanations`. A style
   loader in `Client/webpack.config.js` plus one CSS module would retire `src/theme.ts`; it was not
   worth a build-chain dependency for three declarations. See ADR-0020.
+
+## Contact group scoping in `RuleSelection.InContactGroup` and `XpSearchRuleInfo.RuleContactGroup`
+
+- **Simplified:** a rule carries one contact group code name, not a set and not an expression. There
+  is no "any of these groups", no "not in this group", and no per-contact scoring.
+- **Ceiling:** an audience that is a combination of groups needs one rule per group, and the rules
+  duplicate everything but the scope. A marketer who wants "grinder shoppers who are not wholesale"
+  has to express it in the contact group's own dynamic condition instead.
+- **Upgrade path:** widen the column to a comma-separated list and turn `InContactGroup` into a set
+  intersection; the selector becomes `MaximumItems = 0`. The pipeline side already works on an
+  `IReadOnlySet<string>`, so only the parse and the predicate change.
+
+## Contact group resolution in `ContactGroupResolver.ResolveAsync`
+
+- **Simplified:** one query per HTTP request, memoized on `HttpContext.Items` and never beyond it.
+  Every search of a consented visitor costs one indexed read of `OM_ContactGroupMember` joined to the
+  group code names, even on an installation that has no group-scoped rule at all — the resolver runs
+  before the index's rules are known, because the cache key needs the answer.
+- **Ceiling:** on a high-traffic site with consented visitors this is one extra round trip per search.
+  Group membership is deliberately not cached across requests, because a stale membership shows the
+  wrong ranking silently.
+- **Upgrade path:** cache per contact for a short sliding window with a dependency on
+  `om.contactgroupmember`, accepting the staleness window; or skip the resolver entirely for indexes
+  whose rule set contains no scoped rule, which needs the rule load moved ahead of the cache lookup.
+
+## Rule listing contact group column in `ContactGroupCatalog.Label`
+
+- **Simplified:** the listing resolves each row's group display name with one `IInfoProvider.Get(codeName)`
+  call per row, served from Xperience's own info-object cache rather than joined in the query.
+- **Ceiling:** O(rows) lookups per listing page. Harmless at a page of rules; wrong shape for a listing
+  of thousands.
+- **Upgrade path:** load the whole catalog once per page render into a dictionary, or add the join to
+  the listing's `QueryModifiers`.

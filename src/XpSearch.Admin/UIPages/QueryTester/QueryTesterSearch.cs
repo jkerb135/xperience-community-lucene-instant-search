@@ -1,6 +1,7 @@
 using XpSearch.Core.Abstractions;
 using XpSearch.Core.Analytics;
 using XpSearch.Core.Contract;
+using XpSearch.Core.Personalization;
 using XpSearch.Core.Pipeline;
 using XpSearch.Core.Pipeline.Stages;
 using XpSearch.Core.Tuning;
@@ -27,9 +28,13 @@ public interface IQueryTesterSearch
     /// <see langword="true"/> to run the index's rules, synonyms, stopwords and field weights;
     /// <see langword="false"/> to run the query as Core alone would.
     /// </param>
+    /// <param name="contactGroup">
+    /// Code name of the contact group to simulate, so an admin can see a group-scoped rule fire
+    /// without being a member. Empty runs as the admin's own contact would.
+    /// </param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The response and the query-level explanations.</returns>
-    Task<QueryTesterSideResult> ExecuteAsync(SearchRequest request, bool applyTuning, CancellationToken cancellationToken);
+    Task<QueryTesterSideResult> ExecuteAsync(SearchRequest request, bool applyTuning, string contactGroup, CancellationToken cancellationToken);
 }
 
 /// <summary>
@@ -48,7 +53,9 @@ public interface IQueryTesterSearch
 /// </para>
 /// <para>
 /// <see cref="LogActivityStage"/> is dropped from both sides so testing a query does not enter the
-/// aggregate query log and skew the analytics dashboard (spec §9.2).
+/// aggregate query log and skew the analytics dashboard (spec §9.2). When a contact group is being
+/// simulated, <see cref="ResolveContactGroupsStage"/> is swapped for one that seeds that one group;
+/// both sides get the same treatment, so the comparison stays honest.
 /// </para>
 /// </remarks>
 public sealed class QueryTesterSearch : IQueryTesterSearch
@@ -81,17 +88,29 @@ public sealed class QueryTesterSearch : IQueryTesterSearch
     }
 
     /// <inheritdoc />
-    public async Task<QueryTesterSideResult> ExecuteAsync(SearchRequest request, bool applyTuning, CancellationToken cancellationToken)
+    public async Task<QueryTesterSideResult> ExecuteAsync(
+        SearchRequest request,
+        bool applyTuning,
+        string contactGroup,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
         var capture = new CaptureExplanationsStage();
+        bool simulate = !string.IsNullOrWhiteSpace(contactGroup);
 
         var sideStages = new List<ISearchStage>(
-            stages.Where(stage => stage is not LogActivityStage && (applyTuning || stage is not SynonymExpansionStage)))
+            stages.Where(stage => stage is not LogActivityStage
+                && (applyTuning || stage is not SynonymExpansionStage)
+                && !(simulate && stage is ResolveContactGroupsStage)))
         {
             capture
         };
+
+        if (simulate)
+        {
+            sideStages.Add(new SimulateContactGroupStage(contactGroup.Trim()));
+        }
 
         if (!applyTuning)
         {
@@ -103,6 +122,29 @@ public sealed class QueryTesterSearch : IQueryTesterSearch
             .ConfigureAwait(false);
 
         return new QueryTesterSideResult(response, capture.QueryExplanations);
+    }
+
+    /// <summary>
+    /// Puts one contact group on the context instead of resolving the admin's own, so the tester can
+    /// show what a member of that group would get (ADR-0021). It replaces
+    /// <see cref="ResolveContactGroupsStage"/> and runs in its slot, before any tuning stage.
+    /// </summary>
+    private sealed class SimulateContactGroupStage : ISearchStage
+    {
+        private readonly IReadOnlySet<string> group;
+
+        internal SimulateContactGroupStage(string codeName) => group = ContactGroupSets.Of([codeName]);
+
+        public int Order => SearchStageOrder.ResolveContactGroups;
+
+        public Task ExecuteAsync(SearchContext context, CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(context);
+
+            context.ContactGroups = group;
+
+            return Task.CompletedTask;
+        }
     }
 
     /// <summary>

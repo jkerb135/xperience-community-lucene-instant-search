@@ -48,8 +48,9 @@ internal sealed class RuleSelectionTests
         string redirectUrl = "",
         DateTime? from = null,
         DateTime? to = null,
-        int priority = 100) =>
-        new(id, name, enabled, condition, pattern, consequence, targetId, targetPosition, boost, filter, redirectUrl, from, to, priority);
+        int priority = 100,
+        string contactGroup = "") =>
+        new(id, name, enabled, condition, pattern, consequence, targetId, targetPosition, boost, filter, redirectUrl, from, to, priority, contactGroup);
 
     [Test]
     public void Matching_HonoursEveryConditionType()

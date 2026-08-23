@@ -43,6 +43,7 @@ internal sealed class StageOrderingTests
             new[]
             {
                 SearchStageOrder.Normalize,
+                SearchStageOrder.ResolveContactGroups,
                 SearchStageOrder.SynonymExpansion,
                 SearchStageOrder.StopwordRemoval,
                 SearchStageOrder.BuildQuery,

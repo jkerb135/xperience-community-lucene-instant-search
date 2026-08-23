@@ -238,14 +238,18 @@ internal sealed class CachingTests
         var inner = new CountingPipeline();
         var cache = new MemorySearchCache();
 
-        return (new CachedSearchPipeline(inner, cache, Microsoft.Extensions.Options.Options.Create(effective)), inner, cache);
+        return (
+            new CachedSearchPipeline(inner, cache, Microsoft.Extensions.Options.Options.Create(effective), new StubContactGroupResolver()),
+            inner,
+            cache);
     }
 
     private static CachedSearchPipeline Cached(SearchResponse response) =>
         new(
             new FixedPipeline(response),
             new MemorySearchCache(),
-            Microsoft.Extensions.Options.Options.Create(new XpSearchOptions()));
+            Microsoft.Extensions.Options.Options.Create(new XpSearchOptions()),
+            new StubContactGroupResolver());
 
     private sealed class FixedPipeline(SearchResponse response) : ISearchPipeline
     {

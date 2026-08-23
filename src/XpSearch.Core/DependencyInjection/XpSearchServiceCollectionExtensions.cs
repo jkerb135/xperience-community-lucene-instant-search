@@ -13,6 +13,7 @@ using XpSearch.Core.Facets;
 using XpSearch.Core.Highlighting;
 using XpSearch.Core.Indexing;
 using XpSearch.Core.Options;
+using XpSearch.Core.Personalization;
 using XpSearch.Core.Pipeline;
 using XpSearch.Core.Pipeline.Stages;
 using XpSearch.Core.Search;
@@ -76,6 +77,11 @@ public static class XpSearchServiceCollectionExtensions
         services.TryAddSingleton<IRelevanceTuningSource, EmptyRelevanceTuningSource>();
         services.TryAddSingleton(TimeProvider.System);
 
+        // Contact group personalisation (ADR-0021). Consent-gated and best-effort; without an HTTP
+        // context it answers "no groups" and only the unscoped rules apply.
+        services.AddHttpContextAccessor();
+        services.TryAddSingleton<IContactGroupResolver, ContactGroupResolver>();
+
         // Analytics (spec §9). The activity logger is consent-gated; the query log is not.
         services.TryAddSingleton<ISearchActivityLogger, SearchActivityLogger>();
         services.TryAddSingleton<IQueryContextMap, QueryContextMap>();
@@ -87,6 +93,7 @@ public static class XpSearchServiceCollectionExtensions
         services.TryAddSingleton<XpSearchActivityTypeInstaller>();
 
         services.AddXpSearchStage<NormalizeRequestStage>();
+        services.AddXpSearchStage<ResolveContactGroupsStage>();
         services.AddXpSearchStage<SynonymExpansionStage>();
         services.AddXpSearchStage<StopwordRemovalStage>();
         services.AddXpSearchStage<BuildQueryStage>();
@@ -104,7 +111,8 @@ public static class XpSearchServiceCollectionExtensions
         services.TryAddSingleton<ISearchPipeline>(provider => new CachedSearchPipeline(
             provider.GetRequiredService<SearchPipeline>(),
             provider.GetRequiredService<ISearchCache>(),
-            provider.GetRequiredService<Options.IOptions<XpSearchOptions>>()));
+            provider.GetRequiredService<Options.IOptions<XpSearchOptions>>(),
+            provider.GetRequiredService<IContactGroupResolver>()));
 
         services.DecorateLuceneClient<CacheEvictingLuceneClient>(
             (provider, inner) => new CacheEvictingLuceneClient(

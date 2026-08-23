@@ -62,6 +62,10 @@ public enum SynonymDirection
 /// <param name="ValidFrom">First moment the rule applies, in UTC. Null means "already".</param>
 /// <param name="ValidTo">Last moment the rule applies, in UTC. Null means "forever".</param>
 /// <param name="Priority">Conflict resolution order; lower runs first.</param>
+/// <param name="ContactGroup">
+/// Code name of the contact group the rule is scoped to. An empty string applies the rule to
+/// everyone (spec §8.2, ADR-0021).
+/// </param>
 public sealed record TuningRule(
     int Id,
     string Name,
@@ -76,7 +80,8 @@ public sealed record TuningRule(
     string RedirectUrl,
     DateTime? ValidFrom,
     DateTime? ValidTo,
-    int Priority);
+    int Priority,
+    string ContactGroup);
 
 /// <summary>One synonym group (spec §8.2).</summary>
 /// <param name="Direction">Whether the group expands both ways.</param>
@@ -93,7 +98,7 @@ public sealed record FieldWeight(string Field, double Weight);
 /// Everything the tuning stages need for one index, loaded once per request by
 /// <c>SynonymExpansionStage</c> and read by the later stages.
 /// </summary>
-/// <param name="Rules">Rules that are enabled, in schedule and matching the query, in precedence order.</param>
+/// <param name="Rules">Rules that are enabled, in schedule, in the visitor's contact groups and matching the query, in precedence order.</param>
 /// <param name="Synonyms">Enabled synonym groups.</param>
 /// <param name="Stopwords">Words removed from the query before it is parsed.</param>
 /// <param name="FieldWeights">Per-field score multipliers, keyed by schema field name.</param>

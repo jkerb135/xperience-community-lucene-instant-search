@@ -98,6 +98,17 @@ public class XpSearchRuleInfo : AbstractInfo<XpSearchRuleInfo, IInfoProvider<XpS
         set => SetValue(nameof(RuleEnabled), value);
     }
 
+    /// <summary>
+    /// Gets or sets the code name of the contact group the rule is scoped to. Empty applies the rule
+    /// to every visitor (ADR-0021).
+    /// </summary>
+    [DatabaseField]
+    public virtual string RuleContactGroup
+    {
+        get => ValidationHelper.GetString(GetValue(nameof(RuleContactGroup)), string.Empty, CultureInfo.InvariantCulture);
+        set => SetValue(nameof(RuleContactGroup), value);
+    }
+
     /// <summary>Gets or sets how the pattern is matched; see <see cref="XpSearch.Core.Tuning.RuleCondition"/>.</summary>
     [DatabaseField]
     public virtual int RuleConditionType
