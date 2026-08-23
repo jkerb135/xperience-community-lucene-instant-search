@@ -4,7 +4,6 @@ using CMS.Membership;
 
 using Kentico.Xperience.Admin.Base;
 
-using Kentico.Xperience.Lucene.Core;
 using Kentico.Xperience.Lucene.Core.Indexing;
 
 using XpSearch.Admin.UIPages;
