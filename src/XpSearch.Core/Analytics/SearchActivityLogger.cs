@@ -22,6 +22,12 @@ namespace XpSearch.Core.Analytics;
 /// (https://docs.kentico.com/guides/development/activities-and-marketing/enable-activity-tracking).
 /// </para>
 /// <para>
+/// Every activity carries the searched text as its <c>ActivityValue</c>, so one contact group
+/// condition reads the same way for all four types. A click and a conversion put the result id in
+/// <c>ActivityComment</c> and a click puts the one-based position in <c>ActivityItemDetailID</c>
+/// (https://docs.kentico.com/documentation/developers-and-admins/digital-marketing-setup/set-up-activities#default-activity-type-internals).
+/// </para>
+/// <para>
 /// Analytics is best-effort: every failure - including a missing request context - is swallowed and
 /// logged at Debug, because a search must never fail because of its own instrumentation.
 /// </para>
@@ -56,13 +62,13 @@ public sealed class SearchActivityLogger : ISearchActivityLogger
 
     /// <inheritdoc />
     public void LogClick(string query, string resultId, int position) =>
-        Log(XpSearchActivityTypes.Click, $"{query} | {resultId} | {position}");
+        Log(XpSearchActivityTypes.Click, query, resultId, position);
 
     /// <inheritdoc />
     public void LogConversion(string query, string resultId) =>
-        Log(XpSearchActivityTypes.Conversion, $"{query} | {resultId}");
+        Log(XpSearchActivityTypes.Conversion, query, resultId);
 
-    private void Log(string codeName, string value)
+    private void Log(string codeName, string query, string? resultId = null, int position = 0)
     {
         try
         {
@@ -75,7 +81,15 @@ public sealed class SearchActivityLogger : ISearchActivityLogger
 
             var type = XpSearchActivityTypes.All.First(activity => string.Equals(activity.CodeName, codeName, StringComparison.Ordinal));
 
-            activityLogger.Log(codeName, new CustomActivityData { ActivityTitle = type.DisplayName, ActivityValue = value });
+            activityLogger.Log(codeName, new CustomActivityData
+            {
+                ActivityTitle = type.DisplayName,
+                ActivityValue = query,
+                ActivityComment = resultId,
+
+                // Positions are one-based, so zero is this column's "not applicable".
+                ActivityItemDetailID = position
+            });
         }
         catch (Exception exception)
         {

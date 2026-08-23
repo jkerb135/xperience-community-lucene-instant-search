@@ -12,8 +12,9 @@ namespace XpSearch.Core.Analytics;
 /// </summary>
 /// <remarks>
 /// The query text of both activities is resolved from the <c>queryId</c> through
-/// <see cref="IQueryContextMap"/>. An event whose id is unknown - because it expired, or because the
-/// search was answered by another application instance - is still recorded, only with an empty query.
+/// <see cref="IQueryContextMap"/> and becomes the activity's value, which is what a contact group
+/// condition can be built on. An event whose id is unknown - because it expired, or because the
+/// search was answered by another application instance - is still recorded, only with an empty value.
 /// The sink never throws: <c>/events</c> answers 202 Accepted, which means accepted, not recorded.
 /// </remarks>
 public sealed class ActivitySearchEventSink : ISearchEventSink

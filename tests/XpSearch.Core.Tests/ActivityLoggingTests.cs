@@ -65,15 +65,33 @@ internal sealed class ActivityLoggingTests
     }
 
     [Test]
-    public void ConsentedClickAndConversion_LogTheDocumentedValueFormat()
+    public void ConsentedClickAndConversion_PutTheQueryInTheValueAndTheRestInTheOtherFields()
     {
         cookieLevel.GetCurrentCookieLevel().Returns(Visitor);
 
         logger.LogClick("mugs", "doc-1", 3);
         logger.LogConversion("mugs", "doc-1");
 
-        activities.Received(1).Log(XpSearchActivityTypes.Click, Arg.Is<CustomActivityData>(data => data.ActivityValue == "mugs | doc-1 | 3"));
-        activities.Received(1).Log(XpSearchActivityTypes.Conversion, Arg.Is<CustomActivityData>(data => data.ActivityValue == "mugs | doc-1"));
+        activities.Received(1).Log(
+            XpSearchActivityTypes.Click,
+            Arg.Is<CustomActivityData>(data =>
+                data.ActivityValue == "mugs" && data.ActivityComment == "doc-1" && data.ActivityItemDetailID == 3));
+        activities.Received(1).Log(
+            XpSearchActivityTypes.Conversion,
+            Arg.Is<CustomActivityData>(data =>
+                data.ActivityValue == "mugs" && data.ActivityComment == "doc-1"));
+    }
+
+    [Test]
+    public void ConsentedSearch_CarriesNoResultIdOrPosition()
+    {
+        cookieLevel.GetCurrentCookieLevel().Returns(Visitor);
+
+        logger.LogSearch("mugs", 7);
+
+        activities.Received(1).Log(
+            XpSearchActivityTypes.Query,
+            Arg.Is<CustomActivityData>(data => data.ActivityComment == null && data.ActivityItemDetailID == 0));
     }
 
     [Test]

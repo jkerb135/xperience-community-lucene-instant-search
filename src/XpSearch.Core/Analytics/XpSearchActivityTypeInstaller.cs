@@ -12,8 +12,11 @@ namespace XpSearch.Core.Analytics;
 /// (https://docs.kentico.com/documentation/developers-and-admins/digital-marketing-setup/set-up-activities/custom-activities);
 /// this creates the same <c>ActivityTypeInfo</c> objects through the generic provider API
 /// (https://docs.kentico.com/documentation/developers-and-admins/api/database-table-api), with the
-/// same fields the administration form fills in. A type that already exists is left alone, so a
-/// marketer who disabled one keeps that decision across restarts.
+/// same fields the administration form fills in. Of a type that already exists only the
+/// <c>ActivityTypeDescription</c> is rewritten - the description states what this library puts in the
+/// activity's fields and would otherwise go stale after an upgrade. The enabled flag and the display
+/// name are never touched, so a marketer who disabled or renamed a type keeps that decision across
+/// restarts.
 /// </remarks>
 public sealed class XpSearchActivityTypeInstaller
 {
@@ -28,7 +31,10 @@ public sealed class XpSearchActivityTypeInstaller
         this.provider = provider;
     }
 
-    /// <summary>Creates the missing activity types. Running it again changes nothing.</summary>
+    /// <summary>
+    /// Creates the missing activity types and refreshes the description of the ones that already
+    /// exist. Running it again on an unchanged database writes nothing.
+    /// </summary>
     public void Install()
     {
         foreach (var type in XpSearchActivityTypes.All)
@@ -40,6 +46,13 @@ public sealed class XpSearchActivityTypeInstaller
 
             if (existing is not null)
             {
+                if (!string.Equals(existing.ActivityTypeDescription, type.Description, StringComparison.Ordinal))
+                {
+                    existing.ActivityTypeDescription = type.Description;
+
+                    provider.Set(existing);
+                }
+
                 continue;
             }
 

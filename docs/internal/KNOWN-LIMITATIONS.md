@@ -547,6 +547,30 @@ and how to lift it.
   and bury reordering above.
 - **Upgrade path:** run both sides over a larger window than the page shown and diff the window.
 
+## Contact group targeting in `XpSearch.Core/Analytics/SearchActivityLogger.cs`
+
+- **Simplified:** the searched text is logged as `CustomActivityData.ActivityValue` so it is at least
+  *visible* wherever a marketer looks, but the library ships **no contact group condition rule** of
+  its own. Segmenting on a search activity is therefore all-or-nothing per activity type
+  (*performed Search without results*), never per value (*searched for "standing desk"*).
+- **Ceiling:** Xperience by Kentico 31.8 exposes no supported extension point for the condition
+  builder. Its rules are `cms.macrorule` objects, documented only as
+  ["used internally for the condition builder in contact groups, customer journeys and automation
+  processes"](https://docs.kentico.com/documentation/developers-and-admins/ci-cd/reference-ci-cd-object-types),
+  with no registration API — in contrast to automation steps, which have a documented
+  [`RegisterAutomationCondition<T>`](https://docs.kentico.com/documentation/developers-and-admins/digital-marketing-setup/automation-customization/automation-custom-steps)
+  attribute. The built-in *Contact has performed custom activity* rule takes an activity type and
+  nothing else; Kentico's Kbank demo needed the value filter
+  [custom built](https://docs.kentico.com/guides/customer-journeys/build-customer-journey) for that
+  site. Writing `MacroRuleInfo` rows directly would depend on an undocumented internal object type
+  and its rule XML, and would break silently on an upgrade.
+- **Upgrade path:** if a future release documents a way to register condition rules, add three thin
+  rules over `ActivityValue` (*Searched for*, *Searched with no results for*, *Clicked a search result
+  for*) in `XpSearch.Admin`. Until then a project that needs value targeting today can keep a custom
+  contact field (its own `ISearchActivityLogger` decorator writing the last searched terms) and use
+  the built-in *Contact field value* condition — at the cost of a contact write per search, which is
+  why the library does not do it.
+
 ## Design-spec substitutions in `QueryTesterTemplate.tsx` and `AnalyticsDashboardTemplate.tsx`
 
 - **Simplified:** the owner's design spec names a `Tabs` component for the narrow query tester and a

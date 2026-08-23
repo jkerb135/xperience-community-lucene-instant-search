@@ -2,7 +2,9 @@ namespace XpSearch.Core.Analytics;
 
 /// <summary>
 /// The four custom activity types the library logs (spec §9.1). The code names are what
-/// <c>ICustomActivityLogger.Log</c> is called with and what a contact group condition matches on.
+/// <c>ICustomActivityLogger.Log</c> is called with and what the built-in <em>Contact has performed
+/// custom activity</em> contact group condition matches on. All four carry the searched text as the
+/// activity value.
 /// </summary>
 public static class XpSearchActivityTypes
 {
@@ -23,8 +25,8 @@ public static class XpSearchActivityTypes
     [
         new(Query, "Search", "The visitor ran a search that returned at least one result. The activity value is the searched text."),
         new(NoResults, "Search without results", "The visitor ran a search that returned no results. The activity value is the searched text."),
-        new(Click, "Search result click", "The visitor opened a search result. The activity value is 'query | result id | position'."),
-        new(Conversion, "Search conversion", "A goal was reached after a search. The activity value is 'query | result id'.")
+        new(Click, "Search result click", "The visitor opened a search result. The activity value is the searched text; the result id is in the comment and its position in the item detail ID."),
+        new(Conversion, "Search conversion", "A goal was reached after a search. The activity value is the searched text; the result id is in the comment.")
     ];
 }
 
