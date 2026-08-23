@@ -8,6 +8,19 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Added (contact groups):** three search conditions are installed on start and appear in the
+  contact group condition picker under **Web activity** — *Contact has searched for text containing
+  {text}*, *Contact has searched without results for text containing {text}* and *Contact has clicked
+  a search result after searching for text containing {text}*. The `{text}` parameter is an optional
+  case-insensitive *contains* match against the searched text of the contact's `xpsearch_query`,
+  `xpsearch_noresults` and `xpsearch_click` activities, so a marketer can finally segment on **what**
+  a visitor searched for, not only that they searched. They are ordinary `cms.macrorule` rows
+  (`XpSearch.Core/ContactGroups/`); the installer never overwrites the *Enabled* flag of a rule that
+  already exists, so hiding one survives a restart. This supersedes the AN-2 note that the platform
+  had no seam for this — see the ADR-0015 addendum (AN-3) for the mechanism and its risks. Groups are
+  recalculated by evaluating the macro per contact (no SQL translation, see KNOWN-LIMITATIONS), and
+  the conditions carry no *in the last X days* parameter.
+
 - **Changed (breaking, activities):** `xpsearch_click` and `xpsearch_conversion` now log the
   **searched text** as their `ActivityValue`, the same as `xpsearch_query` and `xpsearch_noresults`,
   instead of the pipe-joined `query | resultId | position` / `query | resultId`. The result id moved
@@ -18,8 +31,7 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
   export that split the value on `|`. The `ISearchActivityLogger` method signatures are unchanged.
   `XpSearchActivityTypeInstaller` refreshes the *Description* of the four activity types on start so
   an upgraded project does not keep the old wording; the *Enabled* flag and the name are still never
-  overwritten. No contact group condition rule ships with the library: Xperience 31.8 has no supported
-  extension point for the condition builder — see
+  overwritten. See
   [Search activities in contact groups](docs/guides/analytics.md#search-activities-in-contact-groups)
   and the ADR-0015 addendum (AN-2).
 

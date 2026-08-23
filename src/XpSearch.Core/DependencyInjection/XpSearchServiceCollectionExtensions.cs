@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using XpSearch.Core.Abstractions;
 using XpSearch.Core.Analytics;
 using XpSearch.Core.Caching;
+using XpSearch.Core.ContactGroups;
 using XpSearch.Core.Endpoints;
 using XpSearch.Core.Facets;
 using XpSearch.Core.Highlighting;
@@ -85,6 +86,7 @@ public static class XpSearchServiceCollectionExtensions
         services.TryAddSingleton<ISearchAnalyticsService, SearchAnalyticsService>();
         services.TryAddSingleton<XpSearchAnalyticsModuleInstaller>();
         services.TryAddSingleton<XpSearchActivityTypeInstaller>();
+        services.TryAddSingleton<XpSearchContactGroupRuleInstaller>();
 
         services.AddXpSearchStage<NormalizeRequestStage>();
         services.AddXpSearchStage<SynonymExpansionStage>();

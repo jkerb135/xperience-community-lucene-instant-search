@@ -1,4 +1,4 @@
-using CMS;
+﻿using CMS;
 using CMS.Base;
 using CMS.Core;
 using CMS.DataEngine;
@@ -6,6 +6,7 @@ using CMS.DataEngine;
 using Microsoft.Extensions.DependencyInjection;
 
 using XpSearch.Core.Analytics;
+using XpSearch.Core.ContactGroups;
 
 [assembly: RegisterModule(typeof(XpSearchAnalyticsModule))]
 
@@ -48,5 +49,6 @@ public class XpSearchAnalyticsModule : Module
         // no analytics to install.
         services!.GetService<XpSearchAnalyticsModuleInstaller>()?.Install();
         services!.GetService<XpSearchActivityTypeInstaller>()?.Install();
+        services!.GetService<XpSearchContactGroupRuleInstaller>()?.Install();
     }
 }

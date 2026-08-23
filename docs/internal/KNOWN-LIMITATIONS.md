@@ -547,29 +547,41 @@ and how to lift it.
   and bury reordering above.
 - **Upgrade path:** run both sides over a larger window than the page shown and diff the window.
 
-## Contact group targeting in `XpSearch.Core/Analytics/SearchActivityLogger.cs`
+## No SQL translation for the search contact group rules in `XpSearch.Core/ContactGroups/XpSearchContactGroupRuleInstaller.cs`
 
-- **Simplified:** the searched text is logged as `CustomActivityData.ActivityValue` so it is at least
-  *visible* wherever a marketer looks, but the library ships **no contact group condition rule** of
-  its own. Segmenting on a search activity is therefore all-or-nothing per activity type
-  (*performed Search without results*), never per value (*searched for "standing desk"*).
-- **Ceiling:** Xperience by Kentico 31.8 exposes no supported extension point for the condition
-  builder. Its rules are `cms.macrorule` objects, documented only as
-  ["used internally for the condition builder in contact groups, customer journeys and automation
-  processes"](https://docs.kentico.com/documentation/developers-and-admins/ci-cd/reference-ci-cd-object-types),
-  with no registration API — in contrast to automation steps, which have a documented
-  [`RegisterAutomationCondition<T>`](https://docs.kentico.com/documentation/developers-and-admins/digital-marketing-setup/automation-customization/automation-custom-steps)
-  attribute. The built-in *Contact has performed custom activity* rule takes an activity type and
-  nothing else; Kentico's Kbank demo needed the value filter
-  [custom built](https://docs.kentico.com/guides/customer-journeys/build-customer-journey) for that
-  site. Writing `MacroRuleInfo` rows directly would depend on an undocumented internal object type
-  and its rule XML, and would break silently on an upgrade.
-- **Upgrade path:** if a future release documents a way to register condition rules, add three thin
-  rules over `ActivityValue` (*Searched for*, *Searched with no results for*, *Clicked a search result
-  for*) in `XpSearch.Admin`. Until then a project that needs value targeting today can keep a custom
-  contact field (its own `ISearchActivityLogger` decorator writing the last searched terms) and use
-  the built-in *Contact field value* condition — at the cost of a contact write per search, which is
-  why the library does not do it.
+- **Simplified:** the three rules the installer writes are evaluated by the macro engine only. The
+  matching `IMacroRuleInstanceTranslator` — a contact query
+  `ContactID IN (SELECT ActivityContactID FROM OM_Activity WHERE ...)` — was written and then dropped,
+  because the only way to register one is `MacroRuleMetadataContainer.RegisterMetadata`, and in
+  `Kentico.Xperience.Core` 31.8.0 both `MacroRuleMetadataContainer` and `MacroRuleMetadata` carry
+  `[Obsolete("Class was not intended for public use and will be removed in the next version.")]`
+  (verified by decompiling `CMS.ContactManagement.dll`; the interface itself is public and not
+  obsolete). A library cannot ship a call the vendor has already announced it will delete, and
+  `TreatWarningsAsErrors` would not compile it anyway.
+- **Ceiling:** recalculating a contact group that uses one of the rules runs the macro once per
+  contact, each evaluation a `SELECT TOP 1` against `OM_Activity` — fine for tens of thousands of
+  contacts on a nightly rebuild, slow for millions. Because no metadata is registered,
+  `MacroRuleTreeAnalyzer.GetAffectingItems` falls back to `ALL_ACTIVITIES`/`ALL_ATTRIBUTES` for these
+  rules, so a group is scheduled for recalculation on *every* activity and contact change rather than
+  only on the three search activities: correct, but more recalculation than necessary.
+- **Upgrade path:** when a supported registration API appears (or the obsolete one survives and is
+  un-deprecated), re-add the translator — it is three lines over
+  `XpSearchActivityQuery.ContactIds` — and register it with `affectingActivities` set to the rule's
+  activity types.
+
+## No time window on the search contact group rules in `XpSearch.Core/ContactGroups/XpSearchContactGroupRules.cs`
+
+- **Simplified:** each rule takes one text parameter and looks at the contact's whole activity
+  history. There is no *in the last X days* parameter, although the system rules have one (a
+  `Kentico.Administration.NumberInput` field plus `ToInt({days})` in the macro).
+- **Ceiling:** a group on *searched for "standing desk"* keeps a contact who searched two years ago,
+  so recency has to come from a second condition (**Contact has done any activity in the last X
+  days**) in the same condition group, which is coarser — it means *any* activity, not *this* one.
+- **Upgrade path:** add a second parameter to `XpSearchContactGroupRule.Parameters`, pass
+  `ToInt({days})` to the macro methods and add
+  `.WhereGreaterThan(nameof(ActivityInfo.ActivityCreated), DateTime.Now.AddDays(-days))` to
+  `XpSearchActivityQuery.ContactIds`. Left out because three rules with two parameters each is more
+  UI than the request needed, and marketers can combine conditions today.
 
 ## Design-spec substitutions in `QueryTesterTemplate.tsx` and `AnalyticsDashboardTemplate.tsx`
 

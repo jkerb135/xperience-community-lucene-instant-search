@@ -94,35 +94,52 @@ their own — `xpsearch_query`, `xpsearch_noresults`, `xpsearch_click` — are a
 2. **Contact group name**: *Searched and found nothing*. The **Code name** fills itself in.
 3. Write a **Description** — the next marketer needs to know what the group is for.
 4. In the **Conditions** area, select **Add**, then **Add condition group**.
-5. In the condition picker (a searchable list, grouped by category), type `custom activity` and pick
-   **Contact has performed custom activity**.
-6. The condition shows one parameter, an activity drop-down listing every enabled activity type.
-   Choose **Search without results**.
+5. In the condition picker (a searchable list, grouped by category), type `searched` and pick
+   **Contact has searched without results for text containing {text}**, under **Web activity**.
+6. Select the **{text}** placeholder and leave it empty — an empty text matches any search. (Fill it
+   in to narrow the group down; see below.)
 7. **Apply**, then **Save**.
 8. The group's **Contacts** tab now fills as visitors search. If you change the condition later, the
    **General** tab grows a **Recalculate contact group** button — use it, otherwise the group keeps
    the contacts the old condition put there.
 
-Swap the activity in step 6 for **Search** or **Search result click** for the other two groups.
+#### Segment on *what* a visitor searched for
 
-#### Segment on *that* a visitor searched, not *what*
+The library installs three conditions on startup, all in the **Web activity** category of the
+condition picker, all with the same single text parameter:
 
-The built-in **Contact has performed custom activity** condition matches on the activity **type**
-only. There is no parameter for the activity value, and Xperience by Kentico 31.8 exposes no
-supported way for a package to add one: the condition rules of the builder are `cms.macrorule`
-objects, which the platform documents as
-["used internally for the condition builder"](https://docs.kentico.com/documentation/developers-and-admins/ci-cd/reference-ci-cd-object-types)
-and provides no registration API for. Kentico's own Kbank demo, whose customer journey filters an
-activity that *"contains value"*, says so in the walkthrough: ["Targeting the value of the logged
-activity was custom built for the Kbank demo site; your website options might
-vary."](https://docs.kentico.com/guides/customer-journeys/build-customer-journey)
+| Condition | Matches a contact who |
+|---|---|
+| Contact has searched for text containing **{text}** | ran any search, with or without results (`xpsearch_query`, `xpsearch_noresults`) |
+| Contact has searched without results for text containing **{text}** | ran a search that returned nothing (`xpsearch_noresults`) |
+| Contact has clicked a search result after searching for text containing **{text}** | opened a result after searching (`xpsearch_click`) |
 
-So a contact group can hold *everyone who ran a search that found nothing*, but not *everyone who
-searched for **standing desk***. The searched text is still recorded on every activity — read it in
-**Contact management → a contact → Activities**, where the value is shown next to the activity, and
-in the **Analytics** dashboard, which aggregates the same searches for the whole site without needing
-consent. If you need value-level targeting, the practical route is a project-specific one (a custom
-contact field set from your own code, then the **Contact field value** condition).
+The **{text}** parameter is a *contains* match against the searched text, case insensitive on a
+default database, and it is matched against the activity value of *any* of the contact's search
+activities — not only the most recent one. Leave it empty to match any search of that kind.
+
+**Build a group of visitors interested in one thing:**
+
+1. **Contact groups → New contact group**, name it *Interested in standing desks*.
+2. **Conditions → Add → Add condition group**, type `searched` in the picker and pick **Contact has
+   searched for text containing {text}**.
+3. Select **{text}** and enter `standing desk`. A contact who searched for *standing desks*,
+   *Standing Desk mat* or *best standing desk* all match; a contact who searched for *desk* does not.
+4. **Apply**, **Save**, then **Recalculate contact group** on the **General** tab to fill the group
+   from the activities that are already logged.
+
+Two notes before you build a campaign on it:
+
+- **Matching is literal.** There is no stemming, no synonyms and no spelling correction on this side —
+  a group on `laptop` does not hold the visitor who searched for `laptops`. Prefer the shortest stem
+  that is still unambiguous (`standing desk`, not `standing desks`), and check the **Analytics**
+  dashboard's top queries for the words your visitors actually type.
+- **No time window.** The conditions look at the contact's whole activity history, however old. If you
+  need "in the last 30 days", combine them with the built-in **Contact has done any activity in the
+  last X days** condition in the same condition group.
+
+The searched text is also readable per contact, without any group: **Contact management → a contact →
+Activities** shows it as the activity value.
 
 #### Two things that surprise people
 
