@@ -1,3 +1,4 @@
+using CMS.ContactManagement;
 using CMS.DataEngine;
 
 using Kentico.Xperience.Admin.Base;
@@ -9,6 +10,7 @@ using Kentico.Xperience.Lucene.Admin;
 using Kentico.Xperience.Lucene.Core.Indexing;
 
 using XpSearch.Admin.Persistence;
+using XpSearch.Admin.Tuning;
 using XpSearch.Admin.UIPages;
 using XpSearch.Core.Tuning;
 
@@ -62,54 +64,70 @@ public class RuleModel : IIndexScopedModel
     [CheckBoxComponent(Label = "Enabled", Order = 3)]
     public bool Enabled { get; set; } = true;
 
+    /// <summary>
+    /// Gets or sets the contact group the rule is scoped to. Empty applies the rule to everyone.
+    /// </summary>
+    /// <remarks>
+    /// The object selector stores code names rather than GUIDs, which is what the documentation
+    /// recommends and what the query pipeline compares against
+    /// (https://docs.kentico.com/documentation/developers-and-admins/customization/extend-the-administration-interface/ui-form-components/reference-admin-ui-form-components#object-selector).
+    /// </remarks>
+    [ObjectSelectorComponent(
+        ContactGroupInfo.OBJECT_TYPE,
+        MaximumItems = 1,
+        Label = "Contact group",
+        Order = 4,
+        Tooltip = "Apply this rule only to visitors in this contact group. Empty applies it to everyone.")]
+    public IEnumerable<ObjectRelatedItem> ContactGroup { get; set; } = [];
+
     /// <summary>Gets or sets how the pattern is matched, as the numeric value of <see cref="RuleCondition"/>.</summary>
     [DropDownComponent(
         Label = "When the visitor's search",
-        Order = 4,
+        Order = 5,
         Options = "0;Contains the words below\r\n1;Is exactly the words below\r\n2;Starts with the words below\r\n3;Is anything at all")]
     public string Condition { get; set; } = "0";
 
     /// <summary>Gets or sets the query pattern.</summary>
-    [TextInputComponent(Label = "Words to look for", Order = 5)]
+    [TextInputComponent(Label = "Words to look for", Order = 6)]
     public string Pattern { get; set; } = string.Empty;
 
     /// <summary>Gets or sets what the rule does, as the numeric value of <see cref="RuleConsequence"/>.</summary>
     [DropDownComponent(
         Label = "Then",
-        Order = 6,
+        Order = 7,
         Options = "0;Pin a result to a position\r\n1;Bury a result\r\n2;Boost a result\r\n3;Filter the results\r\n4;Redirect the visitor")]
     public string Consequence { get; set; } = "0";
 
     /// <summary>Gets or sets the result id to pin, bury or boost.</summary>
-    [TextInputComponent(Label = "Result id", Order = 7, Tooltip = "The id from the search response, for pin, bury and boost.")]
+    [TextInputComponent(Label = "Result id", Order = 8, Tooltip = "The id from the search response, for pin, bury and boost.")]
     public string TargetId { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the one-based position a pinned result is moved to.</summary>
-    [NumberInputComponent(Label = "Pin to position", Order = 8, Tooltip = "1 is the top of the first page.")]
+    [NumberInputComponent(Label = "Pin to position", Order = 9, Tooltip = "1 is the top of the first page.")]
     public int TargetPosition { get; set; } = 1;
 
     /// <summary>Gets or sets the boost multiplier.</summary>
-    [DecimalNumberInputComponent(Label = "Boost multiplier", Order = 9, Tooltip = "Above 1 lifts the result, below 1 lowers it.")]
+    [DecimalNumberInputComponent(Label = "Boost multiplier", Order = 10, Tooltip = "Above 1 lifts the result, below 1 lowers it.")]
     public decimal BoostValue { get; set; } = 1m;
 
     /// <summary>Gets or sets the filter expression, as comma-separated <c>field:value</c> pairs.</summary>
-    [TextInputComponent(Label = "Filter", Order = 10, Tooltip = "Comma-separated attribute:value pairs, for example Category:coffee, Tags:brewing. Use the attribute names that appear in search results, such as contentType.")]
+    [TextInputComponent(Label = "Filter", Order = 11, Tooltip = "Comma-separated attribute:value pairs, for example Category:coffee, Tags:brewing. Use the attribute names that appear in search results, such as contentType.")]
     public string FilterExpression { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the redirect destination.</summary>
-    [TextInputComponent(Label = "Redirect URL", Order = 11, Tooltip = "Where a Redirect rule sends the visitor. Returned as the response's redirect member; the shipped search box follows it only for a submitted query.")]
+    [TextInputComponent(Label = "Redirect URL", Order = 12, Tooltip = "Where a Redirect rule sends the visitor. Returned as the response's redirect member; the shipped search box follows it only for a submitted query.")]
     public string RedirectUrl { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the first moment the rule applies, in UTC.</summary>
-    [DateTimeInputComponent(Label = "Runs from", Order = 12)]
+    [DateTimeInputComponent(Label = "Runs from", Order = 13)]
     public DateTime? ValidFrom { get; set; }
 
     /// <summary>Gets or sets the last moment the rule applies, in UTC.</summary>
-    [DateTimeInputComponent(Label = "Runs until", Order = 13)]
+    [DateTimeInputComponent(Label = "Runs until", Order = 14)]
     public DateTime? ValidTo { get; set; }
 
     /// <summary>Gets or sets the conflict resolution order; lower wins.</summary>
-    [NumberInputComponent(Label = "Priority", Order = 14, Tooltip = "When two rules disagree, the lower number wins.")]
+    [NumberInputComponent(Label = "Priority", Order = 15, Tooltip = "When two rules disagree, the lower number wins.")]
     public int Priority { get; set; } = 100;
 
     /// <summary>Copies the model onto a stored row.</summary>
@@ -122,6 +140,7 @@ public class RuleModel : IIndexScopedModel
         row.RuleIndexName = IndexName;
         row.RuleName = Name;
         row.RuleEnabled = Enabled;
+        row.RuleContactGroup = ContactGroup?.FirstOrDefault()?.ObjectCodeName ?? string.Empty;
         row.RuleConditionType = ParseOption(Condition);
         row.RulePattern = Pattern;
         row.RuleConsequenceType = ParseOption(Consequence);
@@ -149,6 +168,9 @@ public class RuleModel : IIndexScopedModel
             IndexName = row.RuleIndexName,
             Name = row.RuleName,
             Enabled = row.RuleEnabled,
+            ContactGroup = string.IsNullOrWhiteSpace(row.RuleContactGroup)
+                ? []
+                : [new ObjectRelatedItem { ObjectCodeName = row.RuleContactGroup }],
             Condition = row.RuleConditionType.ToString(System.Globalization.CultureInfo.InvariantCulture),
             Pattern = row.RulePattern,
             Consequence = row.RuleConsequenceType.ToString(System.Globalization.CultureInfo.InvariantCulture),
@@ -176,10 +198,16 @@ public class RuleModel : IIndexScopedModel
 public class RuleListing : ListingPage
 {
     private readonly ILuceneConfigurationStorageService storageService;
+    private readonly IContactGroupCatalog contactGroups;
 
     /// <summary>Initializes a new instance of the <see cref="RuleListing"/> class.</summary>
     /// <param name="storageService">Reads the stored index configuration, to resolve the index in the URL.</param>
-    public RuleListing(ILuceneConfigurationStorageService storageService) => this.storageService = storageService;
+    /// <param name="contactGroups">Resolves a stored contact group code name to what the marketer named it.</param>
+    public RuleListing(ILuceneConfigurationStorageService storageService, IContactGroupCatalog contactGroups)
+    {
+        this.storageService = storageService;
+        this.contactGroups = contactGroups;
+    }
 
     /// <summary>Gets or sets the identifier of the index the listing is scoped to, taken from the URL.</summary>
     [PageParameter(typeof(IntPageModelBinder), typeof(IndexTuningSection))]
@@ -196,6 +224,10 @@ public class RuleListing : ListingPage
         PageConfiguration.ColumnConfigurations
             .AddColumn(nameof(XpSearchRuleInfo.RuleName), "Rule", searchable: true)
             .AddColumn(nameof(XpSearchRuleInfo.RulePattern), "Words to look for")
+            .AddColumn(
+                nameof(XpSearchRuleInfo.RuleContactGroup),
+                "Contact group",
+                formatter: (value, _) => contactGroups.Label(value as string))
             .AddColumn(nameof(XpSearchRuleInfo.RulePriority), "Priority", sortable: true)
             .AddColumn(nameof(XpSearchRuleInfo.RuleEnabled), "Enabled");
 

@@ -7,6 +7,7 @@ using Lucene.Net.Search;
 
 using XpSearch.Core.Abstractions;
 using XpSearch.Core.Contract;
+using XpSearch.Core.Personalization;
 using XpSearch.Core.Tuning;
 
 namespace XpSearch.Core.Pipeline;
@@ -118,6 +119,13 @@ public sealed class SearchContext
 
     /// <summary>Gets or sets the relevance tuning configured for this index (spec §8.2).</summary>
     public TuningSet Tuning { get; set; } = TuningSet.Empty;
+
+    /// <summary>
+    /// Gets or sets the code names of the contact groups the visitor belongs to, resolved once per
+    /// request by <c>ResolveContactGroupsStage</c> (ADR-0021). Empty when there is no contact, no
+    /// consent to tracking, or no HTTP context - which leaves only the unscoped rules applying.
+    /// </summary>
+    public IReadOnlySet<string> ContactGroups { get; set; } = ContactGroupSets.None;
 
     /// <summary>
     /// Gets or sets the synonym-expanded query: one slot per query position, each holding the

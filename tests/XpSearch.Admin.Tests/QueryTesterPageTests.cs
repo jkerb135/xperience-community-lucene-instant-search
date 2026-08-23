@@ -8,6 +8,7 @@ using NSubstitute;
 
 using NUnit.Framework;
 
+using XpSearch.Admin.Tuning;
 using XpSearch.Admin.UIPages;
 using XpSearch.Admin.UIPages.QueryTester;
 using XpSearch.Core.Contract;
@@ -21,6 +22,7 @@ internal sealed class QueryTesterPageTests
     private const int IndexIdentifier = 7;
 
     private IQueryTesterSearch search = null!;
+    private IContactGroupCatalog contactGroups = null!;
     private IPageLinkGenerator links = null!;
     private QueryTesterPage page = null!;
 
@@ -29,13 +31,18 @@ internal sealed class QueryTesterPageTests
     {
         search = Substitute.For<IQueryTesterSearch>();
         search
-            .ExecuteAsync(Arg.Any<SearchRequest>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+            .ExecuteAsync(Arg.Any<SearchRequest>(), Arg.Any<bool>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(call => Task.FromResult(new QueryTesterSideResult(Empty(), [])));
+
+        contactGroups = Substitute.For<IContactGroupCatalog>();
+        contactGroups
+            .GetAllAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<IReadOnlyList<ContactGroupOption>>([new ContactGroupOption("grinder-shoppers", "Grinder shoppers")]));
 
         links = Substitute.For<IPageLinkGenerator>();
         links.GetPath<IndexStatusPage>(Arg.Any<PageParameterValues>()).Returns("/admin/lucene/indexes/tuning/7/status");
 
-        page = new QueryTesterPage(Storage.Holding(IndexIdentifier, "articles", "en", "es"), search, links)
+        page = new QueryTesterPage(Storage.Holding(IndexIdentifier, "articles", "en", "es"), search, links, contactGroups)
         {
             IndexIdentifier = IndexIdentifier
         };
@@ -80,7 +87,7 @@ internal sealed class QueryTesterPageTests
     [Test]
     public async Task Run_ReportsAMissingIndexWithoutSearching()
     {
-        var unregistered = new QueryTesterPage(Storage.Holding(IndexIdentifier, "articles"), search, links) { IndexIdentifier = 999 };
+        var unregistered = new QueryTesterPage(Storage.Holding(IndexIdentifier, "articles"), search, links, contactGroups) { IndexIdentifier = 999 };
 
         var response = await unregistered.Run(new QueryTesterRequest(), CancellationToken.None);
 
@@ -95,7 +102,7 @@ internal sealed class QueryTesterPageTests
     public async Task Run_TurnsAValidationFailureIntoAMessage()
     {
         search
-            .ExecuteAsync(Arg.Any<SearchRequest>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+            .ExecuteAsync(Arg.Any<SearchRequest>(), Arg.Any<bool>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns<Task<QueryTesterSideResult>>(_ => throw new XpSearch.Core.Abstractions.SearchValidationException("query", "Too long."));
 
         var response = await page.Run(new QueryTesterRequest(), CancellationToken.None);

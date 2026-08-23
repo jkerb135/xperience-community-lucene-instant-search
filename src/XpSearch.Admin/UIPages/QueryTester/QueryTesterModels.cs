@@ -16,6 +16,12 @@ public sealed class QueryTesterRequest
 
     /// <summary>Gets or sets how many results each side shows. Clamped server-side to 1..50.</summary>
     public int PageSize { get; set; } = 10;
+
+    /// <summary>
+    /// Gets or sets the code name of the contact group to simulate, or an empty string to run as the
+    /// admin's own contact would (ADR-0021).
+    /// </summary>
+    public string ContactGroup { get; set; } = string.Empty;
 }
 
 /// <summary>How a result moved when the relevance tuning was applied (spec §8.4).</summary>

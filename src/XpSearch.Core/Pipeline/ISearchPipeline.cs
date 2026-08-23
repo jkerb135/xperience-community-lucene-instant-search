@@ -15,6 +15,9 @@ public static class SearchStageOrder
     /// <summary>Validate and normalize the request: trim, lowercase, length cap, filter validation.</summary>
     public const int Normalize = 100;
 
+    /// <summary>Resolve the contact groups of the visitor, so rules can be scoped to one (ADR-0021).</summary>
+    public const int ResolveContactGroups = 150;
+
     /// <summary>Load the index's relevance tuning and expand the query with its synonyms.</summary>
     public const int SynonymExpansion = 200;
 

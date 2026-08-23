@@ -4,7 +4,8 @@ namespace XpSearch.Core.Pipeline.Stages;
 
 /// <summary>
 /// The first tuning stage (spec §8.3). Loads the index's rules, synonyms, stopwords and field
-/// weights once for the request, selects the rules that apply, and expands the query into slots of
+/// weights once for the request, selects the rules that apply - the one place a rule's schedule,
+/// query pattern and contact group scope are all checked - and expands the query into slots of
 /// interchangeable terms.
 /// </summary>
 /// <remarks>
@@ -44,7 +45,7 @@ public sealed class SynonymExpansionStage : ISearchStage
         var weights = await source.GetFieldWeightsAsync(index, cancellationToken).ConfigureAwait(false);
 
         context.Tuning = new TuningSet(
-            RuleSelection.Active(rules, context.QueryText, time.GetUtcNow().UtcDateTime),
+            RuleSelection.Active(rules, context.QueryText, time.GetUtcNow().UtcDateTime, context.ContactGroups),
             synonyms,
             stopwords,
             weights

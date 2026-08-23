@@ -41,7 +41,8 @@ internal sealed class QueryTesterSearchTests
         string.Empty,
         null,
         null,
-        100);
+        100,
+        string.Empty);
 
     [TestCase(true, 1)]
     [TestCase(false, 0)]
@@ -50,7 +51,7 @@ internal sealed class QueryTesterSearchTests
         var recorder = new RecordingStage();
         var search = Build(recorder);
 
-        await search.ExecuteAsync(Request(), applyTuning, CancellationToken.None);
+        await search.ExecuteAsync(Request(), applyTuning, string.Empty, CancellationToken.None);
 
         Expect.Multiple(() =>
         {
@@ -67,7 +68,7 @@ internal sealed class QueryTesterSearchTests
         var recorder = new RecordingStage();
         recorder.OnExecute = context => context.QueryExplanations.Add("field weight: title x2");
 
-        var result = await Build(recorder).ExecuteAsync(Request(), applyTuning: true, CancellationToken.None);
+        var result = await Build(recorder).ExecuteAsync(Request(), applyTuning: true, string.Empty, CancellationToken.None);
 
         Assert.That(
             result.QueryExplanations,
@@ -86,7 +87,7 @@ internal sealed class QueryTesterSearchTests
             Substitute.For<IWebsiteChannelContext>(),
             Substitute.For<ILogger<LogActivityStage>>());
 
-        await Build(new RecordingStage(), logging).ExecuteAsync(Request(), applyTuning: true, CancellationToken.None);
+        await Build(new RecordingStage(), logging).ExecuteAsync(Request(), applyTuning: true, string.Empty, CancellationToken.None);
 
         Assert.That(queue.ReceivedCalls(), Is.Empty, "a tester run must not skew the analytics dashboard");
 

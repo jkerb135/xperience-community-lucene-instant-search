@@ -39,11 +39,18 @@ import { mono, muted } from '../theme';
  * XpSearch.Admin.UIPages.QueryTester.QueryTesterPage. See docs/adr/0020-admin-page-design.md.
  */
 
+interface ContactGroup {
+  readonly codeName: string;
+  readonly displayName: string;
+}
+
 interface QueryTesterProps {
   /** The index under test. It comes from the URL, so it is shown and never chosen. */
   readonly selectedIndexName: string;
   /** The content languages the index is configured for. Empty when the index indexes every language. */
   readonly languages: string[];
+  /** The contact groups a run can be simulated as, so a group-scoped rule can be seen firing. */
+  readonly contactGroups: ContactGroup[];
 }
 
 type ResultChange = 'Unchanged' | 'MovedUp' | 'MovedDown' | 'Injected' | 'Removed';
@@ -76,6 +83,8 @@ interface RunData {
   readonly query: string;
   readonly language: string;
   readonly pageSize: number;
+  /** Code name of the contact group to simulate; empty runs as the signed-in admin's own contact. */
+  readonly contactGroup?: string;
 }
 
 const Commands = {
@@ -85,6 +94,7 @@ const Commands = {
 
 const pageSizes = [10, 25, 50];
 const anyLanguage = '';
+const realVisitor = '';
 
 const changes: Record<ResultChange, { readonly label: string; readonly icon: IconName; readonly color: Colors }> = {
   Unchanged: { label: 'Unchanged', icon: 'xp-minus', color: Colors.BackgroundTagGrey },
@@ -207,10 +217,11 @@ const Explanations = ({ lines, open }: { readonly lines: string[]; readonly open
   </Card>
 );
 
-export const QueryTesterTemplate = ({ selectedIndexName, languages }: QueryTesterProps) => {
+export const QueryTesterTemplate = ({ selectedIndexName, languages, contactGroups }: QueryTesterProps) => {
   const [query, setQuery] = useState('');
   const [language, setLanguage] = useState(anyLanguage);
   const [pageSize, setPageSize] = useState(pageSizes[0]);
+  const [contactGroup, setContactGroup] = useState(realVisitor);
   const [ran, setRan] = useState('');
   const [result, setResult] = useState<RunResult | undefined>(undefined);
   const [running, setRunning] = useState(false);
@@ -230,7 +241,7 @@ export const QueryTesterTemplate = ({ selectedIndexName, languages }: QueryTeste
     setLanguage(nextLanguage);
     setRan(query);
     setRunning(true);
-    void run({ query, language: nextLanguage, pageSize });
+    void run({ query, language: nextLanguage, pageSize, contactGroup });
   };
 
   const empty = query.trim() === '';
@@ -284,6 +295,18 @@ export const QueryTesterTemplate = ({ selectedIndexName, languages }: QueryTeste
               <Select label="Page size" value={String(pageSize)} onChange={(value) => setPageSize(Number(value) || pageSizes[0])}>
                 {pageSizes.map((size) => (
                   <MenuItem key={size} primaryLabel={String(size)} value={String(size)} />
+                ))}
+              </Select>
+            </Column>
+            <Column>
+              <Select
+                label="Contact group"
+                value={contactGroup}
+                onChange={(value) => setContactGroup(value ?? realVisitor)}
+              >
+                <MenuItem primaryLabel="Real visitor (your contact)" value={realVisitor} />
+                {contactGroups.map((group) => (
+                  <MenuItem key={group.codeName} primaryLabel={group.displayName} value={group.codeName} />
                 ))}
               </Select>
             </Column>

@@ -5,6 +5,7 @@ using Kentico.Xperience.Admin.Base;
 using Kentico.Xperience.Lucene.Admin;
 using Kentico.Xperience.Lucene.Core.Indexing;
 
+using XpSearch.Admin.Tuning;
 using XpSearch.Admin.UIPages;
 using XpSearch.Admin.UIPages.QueryTester;
 using XpSearch.Core.Abstractions;
@@ -28,6 +29,9 @@ public class QueryTesterClientProperties : TemplateClientProperties
 
     /// <summary>Gets or sets the content language names the index is configured for, in configuration order.</summary>
     public IEnumerable<string> Languages { get; set; } = [];
+
+    /// <summary>Gets or sets the contact groups the tester can simulate, by display name (ADR-0021).</summary>
+    public IEnumerable<ContactGroupOption> ContactGroups { get; set; } = [];
 }
 
 /// <summary>
@@ -48,23 +52,28 @@ public class QueryTesterPage : Page<QueryTesterClientProperties>
     private readonly ILuceneConfigurationStorageService storageService;
     private readonly IQueryTesterSearch search;
     private readonly IPageLinkGenerator pageLinkGenerator;
+    private readonly IContactGroupCatalog contactGroups;
 
     /// <summary>Initializes a new instance of the <see cref="QueryTesterPage"/> class.</summary>
     /// <param name="storageService">Reads the stored index configuration, to resolve the index in the URL.</param>
     /// <param name="search">Runs the two sides of the comparison.</param>
     /// <param name="pageLinkGenerator">Generates the URL the error callout's "Open status" action navigates to.</param>
+    /// <param name="contactGroups">Supplies the contact groups the simulation drop-down offers.</param>
     public QueryTesterPage(
         ILuceneConfigurationStorageService storageService,
         IQueryTesterSearch search,
-        IPageLinkGenerator pageLinkGenerator)
+        IPageLinkGenerator pageLinkGenerator,
+        IContactGroupCatalog contactGroups)
     {
         ArgumentNullException.ThrowIfNull(storageService);
         ArgumentNullException.ThrowIfNull(search);
         ArgumentNullException.ThrowIfNull(pageLinkGenerator);
+        ArgumentNullException.ThrowIfNull(contactGroups);
 
         this.storageService = storageService;
         this.search = search;
         this.pageLinkGenerator = pageLinkGenerator;
+        this.contactGroups = contactGroups;
     }
 
     /// <summary>Gets or sets the identifier of the index the page is scoped to, taken from the URL.</summary>
@@ -75,7 +84,7 @@ public class QueryTesterPage : Page<QueryTesterClientProperties>
     private string IndexName => IndexScope.Resolve(storageService, IndexIdentifier);
 
     /// <inheritdoc />
-    public override Task<QueryTesterClientProperties> ConfigureTemplateProperties(QueryTesterClientProperties properties)
+    public override async Task<QueryTesterClientProperties> ConfigureTemplateProperties(QueryTesterClientProperties properties)
     {
         ArgumentNullException.ThrowIfNull(properties);
 
@@ -84,7 +93,9 @@ public class QueryTesterPage : Page<QueryTesterClientProperties>
         properties.SelectedIndexName = index?.IndexName ?? string.Empty;
         properties.Languages = [.. index?.LanguageNames ?? []];
 
-        return Task.FromResult(properties);
+        properties.ContactGroups = await contactGroups.GetAllAsync(CancellationToken.None).ConfigureAwait(false);
+
+        return properties;
     }
 
     /// <summary>Opens the status page of the same index, the action the "could not be run" callout offers.</summary>
@@ -112,8 +123,10 @@ public class QueryTesterPage : Page<QueryTesterClientProperties>
 
         try
         {
-            var withRules = await search.ExecuteAsync(Build(request, indexName), applyTuning: true, cancellationToken).ConfigureAwait(false);
-            var withoutRules = await search.ExecuteAsync(Build(request, indexName), applyTuning: false, cancellationToken).ConfigureAwait(false);
+            string contactGroup = request.ContactGroup ?? string.Empty;
+
+            var withRules = await search.ExecuteAsync(Build(request, indexName), applyTuning: true, contactGroup, cancellationToken).ConfigureAwait(false);
+            var withoutRules = await search.ExecuteAsync(Build(request, indexName), applyTuning: false, contactGroup, cancellationToken).ConfigureAwait(false);
 
             return ResponseFrom(QueryTesterDiff.Compare(withRules, withoutRules));
         }

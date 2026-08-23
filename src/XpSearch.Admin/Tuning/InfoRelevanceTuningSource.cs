@@ -105,7 +105,8 @@ public sealed class InfoRelevanceTuningSource : IRelevanceTuningSource
                     row.RuleRedirectUrl,
                     row.RuleValidFrom,
                     row.RuleValidTo,
-                    row.RulePriority))
+                    row.RulePriority,
+                    row.RuleContactGroup))
             ];
         });
 

@@ -19,12 +19,17 @@ public static class SearchCacheKey
     /// <summary>Computes the cache key of a request.</summary>
     /// <param name="request">The request to key.</param>
     /// <param name="normalizedQuery">The query text after normalization, so that differently cased input shares an entry.</param>
+    /// <param name="contactGroups">
+    /// Code names of the visitor's contact groups. They are part of the key because a group-scoped
+    /// rule (ADR-0021) makes the response personal, and one visitor's results must not be served to
+    /// another.
+    /// </param>
     /// <returns>A hex SHA-256 of the canonical request.</returns>
     /// <remarks>
     /// <c>queryId</c> is deliberately excluded: it correlates analytics events with one search and
     /// would otherwise make every request a cache miss.
     /// </remarks>
-    public static string Compute(SearchRequest request, string normalizedQuery)
+    public static string Compute(SearchRequest request, string normalizedQuery, IReadOnlySet<string>? contactGroups = null)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -54,7 +59,10 @@ public static class SearchCacheKey
                     request.Highlight.PreTag ?? string.Empty,
                     request.Highlight.PostTag ?? string.Empty,
                     request.Highlight.SnippetLength ?? 0
-                }
+                },
+            ContactGroups = contactGroups is null
+                ? []
+                : contactGroups.OrderBy(group => group, StringComparer.OrdinalIgnoreCase).ToArray()
         };
 
         byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(canonical, KeyOptions)));

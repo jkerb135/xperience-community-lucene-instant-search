@@ -58,6 +58,77 @@ Say the search *espresso machine* should always show your flagship machine first
 Nothing is rebuilt and nothing is republished. The change is live within half a minute at worst, and
 usually immediately.
 
+### Personalise rules by contact group
+
+Every rule so far applies to everyone. Leave **Contact group** empty and it still does — the Rules
+listing shows *Everyone* in that column. Point it at a contact group and the rule only fires for
+visitors in that group; everyone else gets the plain ranking.
+
+The group is the one you already built in **Digital marketing → Contact groups**. Nothing about it
+changes here: you pick it, and the rule follows whatever the group's condition says, rebuild after
+rebuild.
+
+#### A worked example, on Dancing Goat
+
+Say people who search the site and find nothing are worth catching. Give them a group, then tune
+their search.
+
+1. **Build the group from search behaviour.** In **Digital marketing → Contact groups**, create
+   *Grinder shoppers* with a dynamic condition over the **Search without results** activity — the
+   activities this library logs are described in the analytics guide under
+   [Search activities in contact groups](analytics.md#search-activities-in-contact-groups). Save and
+   let it rebuild.
+2. **Scope a rule to it.** Open **Lucene Search → Products → Rules → New rule** and fill in:
+   - **Rule name** — `Promote grinders to grinder shoppers`.
+   - **Enabled** — leave selected.
+   - **Contact group** — select *Grinder shoppers*.
+   - **When the visitor's search** — *Contains the words below*.
+   - **Words to look for** — `coffee`.
+   - **Then** — *Boost a result*.
+   - **Result id** — the id of the grinder you want lifted.
+   - **Boost multiplier** — `2`.
+3. **Save.**
+
+The rule is now live for members of *Grinder shoppers* and invisible to everybody else. It obeys the
+same schedule, priority and conflict rules as any other rule — the contact group is one more
+condition on top, not a different kind of rule.
+
+#### Seeing it work without joining the group
+
+You are almost certainly not in *Grinder shoppers*, so the **Query tester** lets you borrow the
+group. Its **Contact group** drop-down offers **Real visitor (your contact)** (the default — the
+tester behaves exactly as it does for your own browsing) and every contact group in the system.
+
+Pick *Grinder shoppers*, type `coffee`, press **Run**. Both columns are computed as a member of that
+group would see them, so the comparison still means "with tuning / without tuning" and not "member
+versus stranger". The boosted result carries the line
+
+```
+rule:Promote grinders to grinder shoppers (contact group grinder-shoppers)
+```
+
+which is how a group-scoped rule always shows up in the explanation — the code name in brackets tells
+you *why* the rule fired for this run.
+
+To confirm it end to end on the real site, open the site in a browser session that has accepted
+tracking, do whatever puts you in the group, then search. If nothing changes, the usual causes are:
+
+- **The visitor has not consented to tracking.** Contact groups are only consulted for visitors whose
+  cookie level is *Visitor* or higher. Below that, the visitor is treated as being in no group at all
+  and only your unscoped rules apply. This is deliberate — a search must not depend on data the
+  visitor did not agree to.
+- **The group has not rebuilt yet.** A dynamic condition adds members on a rebuild; until then the
+  contact is not a member as far as the rule is concerned.
+- **The contact is not the one you think.** Contacts are per browser cookie; a private window is a
+  different person.
+
+#### What this cannot do
+
+- A rule targets **one** group. Two audiences means two rules — or one group whose condition covers
+  both, which is where "A and not B" belongs anyway.
+- There is no per-person tuning. The unit is the group, deliberately: a group has a name and a member
+  count you can point at, and everyone in it shares the same cached results.
+
 ### The five things a rule can do
 
 | Then… | What happens | What you fill in |
@@ -203,7 +274,10 @@ compare yet.
 3. **Language** offers the content languages this index is configured for, plus **Any language**
    (the default).
 4. **Page size** — how many results each side shows: 10, 25 or 50.
-5. Press **Run**.
+5. **Contact group** — **Real visitor (your contact)** by default, or any contact group to see what a
+   member of it would get. See
+   [Personalise rules by contact group](#personalise-rules-by-contact-group).
+6. Press **Run**.
 
 You get two cards holding the same search:
 
