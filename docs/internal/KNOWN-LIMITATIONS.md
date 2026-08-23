@@ -3,23 +3,27 @@
 Intentional simplifications, one entry each: where it lives, what was simplified, the ceiling it hits,
 and how to lift it.
 
-## `categoryTree` in `XpSearch.Client` — no behaviour, no renderer
+## Hierarchical facets in `XpSearchIndexingStrategy.AddTags` and `TaxonomyFacetProvider`
 
-- **Simplified:** `categoryTree` has a markup contract (`themes/MARKUP.md`), a fixture and a reserved
-  name in `FIRST_PARTY_WIDGET_TYPES`, but neither a behaviour nor a renderer, because the contract
-  cannot describe a hierarchy: `FacetValue` is `{ value, label, count }` and nothing else, and
-  `TaxonomyFacetProvider` emits no path or parent. A tree assembled in the browser by splitting
-  labels on a separator would be a guess about the taxonomy, not the taxonomy, so none was built.
-- **Ceiling:** taxonomy navigation - the one facet UI an editor asks for by name - cannot be built at
-  all. A `.xps-mount` naming `categoryTree` is one console error and a skipped widget, not a silent
-  no-op, and the name stays reserved so a project cannot take it first.
-- **Upgrade path:** a coordinated Core + contract change (a CR-3 unit the owner approves) adding the
-  ancestry to the wire. The proposal is **`FacetValue.path?: string[]`** - the value's ancestors from
-  the root, excluding the value itself, so `["Coffee", "Machines"]` for `Espresso` - rather than a
-  single `parent` field: it is what `TaxonomyFacetProvider` can produce in one pass, a renderer can
-  build the whole tree from it without a second lookup, and it is additive, so an existing client
-  ignores it. Then `withCategoryTree` reads `path`, and the renderer is the fixture that already
-  exists.
+- **Simplified:** a tag's ancestors are resolved **when the document is indexed** (ADR-0018) and
+  written onto it, and the ancestor titles are `TagInfo.TagTitle` - the default-language title -
+  because the language-specific ones live serialized in `TagInfo.TagMetadata`, keyed by content
+  language GUID, and deserializing every tag's metadata per language is not something a per-document
+  write can afford. The top-N cut (`XpSearchOptions.MaxFacetValues`) is applied to the whole
+  dimension, across every level, not per level.
+- **Ceiling:** moving or renaming a tag in the *Taxonomies* application does not change the documents
+  already indexed - counts and `path` stay as they were until a rebuild. A tag whose title is
+  translated shows its default-language title as the *ancestor* of another tag, while the tag a
+  document actually carries shows the language-specific title `ITaxonomyRetriever` returned: the same
+  tag can therefore read differently at two places in one tree. And on a wide taxonomy the cut can
+  drop a whole branch before its children are reached, so a deep node may be invisible even though
+  its ancestors are listed. `TaxonomyFacetProvider.EnsureAncestors` guarantees only the converse -
+  that a value's ancestors are never missing.
+- **Upgrade path:** for freshness, react to `TagInfo` changes by reindexing the affected items (the
+  seam is `ITagAncestrySource`, and Xperience already raises object events). For titles, give
+  `ITagAncestrySource.AncestorsOf` a language and have the default implementation read
+  `TagMetadata.Deserialize` behind the same cache entry. For the cut, count per level: ask for
+  `GetTopChildren` once per depth once the provider tracks depth, and cap each level separately.
 
 ## `searchable` in `XpSearch.Client/src/widgets/facetList.ts`
 

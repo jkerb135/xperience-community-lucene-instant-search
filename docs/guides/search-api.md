@@ -127,7 +127,7 @@ And the response:
     ],
     "tags": [
       { "value": "coffee", "label": "Coffee", "count": 40 },
-      { "value": "brewing", "label": "Brewing", "count": 18 }
+      { "value": "brewing", "label": "Brewing", "count": 18, "path": ["coffee"] }
     ]
   },
   "page": 1,
@@ -188,11 +188,51 @@ value as-is. The same rule holds for `Suggestion.url`, which *is* a contract mem
 - `value` is what you send back in `filters.facets` — for a taxonomy dimension, the tag **code name**.
 - `label` is what you display — for a taxonomy dimension, the tag **title**. For any other attribute it
   equals `value`.
+- `path` is present only on a taxonomy value that has ancestors — see below.
 - The list is ordered by `count` descending, then by `value` ascending, so a facet list is stable between
   searches without client-side sorting.
 
 Only the attributes you asked for appear, and within them only values with a non-zero count in the current
 result set — a value that no longer matches disappears rather than coming back as `0`.
+
+#### Hierarchical taxonomies
+
+An Xperience taxonomy is a tree, and a facet value that sits inside one carries **`path`** — the code
+names of its ancestors, root first, excluding the value itself:
+
+```jsonc
+"tags": [
+  { "value": "coffee",    "label": "Coffee",      "count": 9 },
+  { "value": "espresso",  "label": "Espresso",    "count": 8, "path": ["coffee"] },
+  { "value": "equipment", "label": "Equipment",   "count": 4 },
+  { "value": "grinder",   "label": "Grinders",    "count": 4, "path": ["equipment"] },
+  { "value": "beans",     "label": "Beans",       "count": 1, "path": ["coffee"] },
+  { "value": "brewing",   "label": "Brewing",     "count": 1 },
+  { "value": "milk",      "label": "Milk drinks", "count": 1, "path": ["brewing"] }
+]
+```
+
+(The response of the mock server's `espresso` query in the
+[JavaScript client guide](js-client.md#run-it-against-the-mock-server) — the same payload the
+`categoryTree` widget is tested against.)
+
+Three rules make a tree buildable from that list alone:
+
+- **`path` is absent, not empty**, for a root-level value and for every non-taxonomy attribute.
+- **Every ancestor a `path` names is itself in the same list**, with its own count. Nothing has to
+  be looked up, and there is no second request.
+- **A count rolls up.** A document tagged *Espresso* counts towards *Espresso* and towards *Coffee*,
+  so `coffee` is 9 of which `espresso` is 8. The same is true of filtering:
+  `{"attribute":"tags","values":["coffee"]}` matches the documents tagged with any descendant of
+  *Coffee*, with no special filter syntax.
+
+The dimension itself stays flat — `value` is one tag code name, never a `"lvl0 > lvl1"` string — so a
+client that ignores `path` sees exactly the facet list it saw before (ADR-0018). The shipped
+[`categoryTree` widget](widget-reference.md#categorytree) and the `withCategoryTree` behaviour read
+`path` and nothing else.
+
+Ancestry is resolved **when a document is indexed**, so moving a tag in the *Taxonomies* application
+needs a rebuild of the index before the new shape reaches the wire.
 
 #### Filters
 

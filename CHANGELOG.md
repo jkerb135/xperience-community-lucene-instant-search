@@ -8,6 +8,36 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Added (contract, minor):** `FacetValue.path` — the code names of a taxonomy value's ancestors,
+  root first, excluding the value itself, absent for a root-level value and for every non-taxonomy
+  attribute. Every ancestor a `path` names is itself present among the same facet's values with its
+  own count, so a client can build the whole tree from one facet. Additive and optional, so a client
+  that ignores it is unaffected and `X-XpSearch-Api-Version` (the semver **major**) stays at `1`.
+  See ADR-0018 and the [spec amendment](docs/spec/amendments/2026-08-23-facet-value-path.md).
+- **Added:** hierarchical taxonomy facets. `XpSearchIndexingStrategy` writes every **ancestor** of a
+  tag as a value of the same, still-flat dimension, so facet counts roll up (*Coffee* counts every
+  *Espresso* document) and `filters.facets` on a parent matches the documents tagged with its
+  descendants — with no change to the request shape and none to the query pipeline.
+- **Added:** the `categoryTree` widget and the `withCategoryTree` behaviour, and the
+  **Search - Category tree** Page Builder widget (`XpSearch.CategoryTree`). The widget renders the
+  `themes/MARKUP.md` category-tree contract: nested lists with a depth modifier per level, real
+  crawlable links, `aria-current="true"` on every node of the open path, and a disabled `<span>` at
+  count 0. Selection is one value at a time, because a parent's count already includes its
+  descendants. `categoryTree` is no longer a reserved name with nothing behind it.
+- **Changed (breaking, indexing):** **rebuild your indexes.** A tag's ancestors and its ancestry are
+  written into the document, and the `<dimension>_label` term went from `code name ␟ title` to
+  `code name ␟ path ␟ title`. An index written by an earlier version still searches, filters and
+  labels correctly — the two-part term is still read — but its counts do not roll up and its facet
+  values carry no `path` until it is rebuilt.
+- **Changed (breaking, API):** `XpSearchIndexingStrategy` takes a new constructor parameter,
+  `ITagAncestrySource`, after `ITaxonomyRetriever`. A derived strategy must add it to its own
+  constructor and pass it through; the guide's sample shows the new signature. The default
+  implementation, `TagAncestrySource`, reads the tag table once through `IInfoProvider<TagInfo>` and
+  caches it on `cms.tag|all` — `ITaxonomyRetriever` exposes a tag's `ParentID` but nothing that
+  resolves it to a tag.
+- **Changed:** `LuceneFieldNames.ComposeLabel` takes an optional `path`, and `SplitLabel` returns a
+  third element. Both still read the two-part form.
+
 - **Changed (breaking):** the relevance-tuning admin pages moved inside the search index. They are now
   reached at **Lucene Search → indexes → click an index → the *Tuning* sidebar**: *Settings*, *Rules*,
   *Synonyms*, *Stopwords*, *Field weights*, *Query tester*, *Analytics* and *Status*. Clicking an index

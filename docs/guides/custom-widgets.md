@@ -220,6 +220,7 @@ plus the behaviour's own data and actions:
 | `withSearchBox` | `queryHook?`, `followRedirects?`, `windowRef?` | `query`, `apply(q)`, `submit(q)`, `clear()`, `isStalled` |
 | `withResults` | `transformItems?` | `items`, `results`, `redirect`, `sendEvent(type, result, position?)` |
 | `withFacetList` | `attribute`, `operator?`, `limit?`, `showMore?`, `showMoreLimit?`, `sortBy?`, `transformItems?` | `items[{ label, value, count, isActive }]`, `apply(value)`, `urlFor(value)`, `canApply`, `canToggleShowMore`, `isShowingMore`, `toggleShowMore()`, `sendEvent` |
+| `withCategoryTree` | `attribute`, `limit?` | `items` (a tree of `{ value, label, count, path, isActive, children }`), `selected`, `apply(value)`, `urlFor(value)`, `isActive(value)`, `canApply` |
 | `withPagination` | `padding?`, `maxPages?` | `pages`, `current`, `totalPages`, `total`, `isFirstPage`, `isLastPage`, `canApply`, `apply(page)`, `urlFor(page)` |
 | `withResultStats` | — | `total`, `tookMs`, `query`, `page`, `totalPages`, `pageSize`, `hasResults` |
 | `withSortSelect` | `items` | `options`, `current`, `canApply`, `apply(value)`, `urlFor(value)` |
@@ -231,6 +232,12 @@ plus the behaviour's own data and actions:
 Page numbers are one-based everywhere, like the JSON contract. `withFacetList` declares its attribute to
 the request, so facet counts arrive without extra configuration, and it declares its `operator`, so
 `'and'` and `'or'` reach the wire correctly.
+
+`withCategoryTree` builds its tree from `FacetValue.path` (see
+[Search API](search-api.md#hierarchical-taxonomies)) and selects **one value at a time**: `apply(value)`
+replaces whatever the attribute held, and applying the value that is already selected clears it. Its
+`isActive` is true for the whole open path — the selected node *and* its ancestors — which is what a
+renderer needs for `aria-current` on every level.
 
 Accessibility state is handed to you rather than derived: `isActive` for `aria-pressed`/`aria-current`,
 `canApply` for `disabled`, `isStalled` for a spinner or an `aria-busy` region.
