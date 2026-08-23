@@ -7,10 +7,9 @@ shared parent and no order requirement.
 
 > **Status:** the core and the default widgets ship today: state, transport, the widget lifecycle,
 > the [behaviours](custom-widgets.md), routing, the event bus, the `.xps-mount` bootstrap, and the
-> twelve renderers documented in the [widget reference](widget-reference.md) — `searchBox`,
-> `results`, `facetList`, `pagination`, `resultStats`, `sortSelect`, `clearFilters`,
-> `activeFilters`, `toggleFilter`, `rangeFilter`, `loadMore`, `suggestions`. `categoryTree` is a
-> reserved name without a renderer; build it on the behaviours, exactly as the built-ins are built.
+> thirteen renderers documented in the [widget reference](widget-reference.md) — `searchBox`,
+> `results`, `facetList`, `categoryTree`, `pagination`, `resultStats`, `sortSelect`,
+> `clearFilters`, `activeFilters`, `toggleFilter`, `rangeFilter`, `loadMore`, `suggestions`.
 
 ### A working search page
 
@@ -228,7 +227,9 @@ gives the same key a different value logs one `console.warn` naming the key and 
 
 The package ships a dependency-free mock of the search API, so you can build UI before the endpoint
 exists. It serves 54 fixture documents with three facet attributes (`contentType`, `tags`, `language`),
-a numeric `price` and a `publishedAt`.
+a numeric `price` and a `publishedAt`. `tags` is a two-level taxonomy — `coffee > (beans, espresso)`,
+`equipment > grinder`, `brewing > milk` — so its values carry `path` and its counts roll up, which is
+what `categoryTree` needs.
 
 It ships in the npm package as `mock/server.mjs`, with a `xpsearch-mock` bin entry:
 
@@ -282,9 +283,11 @@ curl -s -X POST http://127.0.0.1:3131/api/xpsearch/query \
       { "value": "FAQ", "label": "FAQ", "count": 5 }
     ],
     "tags": [
-      { "value": "espresso", "label": "Espresso", "count": 8 },
-      { "value": "coffee", "label": "Coffee", "count": 4 },
-      { "value": "grinder", "label": "Grinders", "count": 4 }
+      { "value": "coffee", "label": "Coffee", "count": 9 },
+      { "value": "espresso", "label": "Espresso", "count": 8, "path": ["coffee"] },
+      { "value": "equipment", "label": "Equipment", "count": 4 },
+      { "value": "grinder", "label": "Grinders", "count": 4, "path": ["equipment"] },
+      { "value": "beans", "label": "Beans", "count": 1, "path": ["coffee"] }
       // …
     ]
   },
@@ -296,7 +299,9 @@ curl -s -X POST http://127.0.0.1:3131/api/xpsearch/query \
 Point an instance at it with `endpoint: 'http://127.0.0.1:3131/api/xpsearch/query'`. Facet counts are
 disjunctive — a value's count ignores the filter on its own attribute — so an `or` facet list keeps
 showing the alternatives a visitor can still pick, and each value carries the `label` a widget displays
-(`grinder` → *Grinders*), exactly as a taxonomy dimension does in a real index.
+(`grinder` → *Grinders*), exactly as a taxonomy dimension does in a real index. A child value also
+carries its ancestors in `path`, and its parent's count includes it (`coffee` is 9, of which
+`espresso` is 8), which is how a real index counts a hierarchical taxonomy.
 
 The mock is not a model of the Lucene pipeline: it matches substrings, scores by term matches and
 implements the wire behaviour only. It exists so the client, the docs and the default widgets have

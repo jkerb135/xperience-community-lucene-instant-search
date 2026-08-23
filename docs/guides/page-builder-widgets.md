@@ -1,6 +1,6 @@
 ## Page Builder widgets
 
-Xperience Search ships seven Page Builder widgets. An editor drags them onto a page in any section, in
+Xperience Search ships nine Page Builder widgets. An editor drags them onto a page in any section, in
 any order; each one renders a single configured mount element, and the JavaScript bundle assembles them
 into one working search. Nothing about the page layout has to be decided by a developer.
 
@@ -41,6 +41,7 @@ live-site code takes a dependency on `Kentico.Xperience.Admin` either way.
 | Search - Search box | `XpSearch.SearchBox` | `searchBox` |
 | Search - Results | `XpSearch.Results` | `results` |
 | Search - Facet list | `XpSearch.FacetList` | `facetList` |
+| Search - Category tree | `XpSearch.CategoryTree` | `categoryTree` |
 | Search - Pagination | `XpSearch.Pagination` | `pagination` or `loadMore` |
 | Search - Result stats | `XpSearch.ResultStats` | `resultStats` |
 | Search - Sort selector | `XpSearch.SortSelect` | `sortSelect` |
@@ -76,6 +77,7 @@ Then, per widget:
 | Search box | Placeholder · Show reset button · Focus on page load |
 | Results | Results per page · Result template · Fields to show (one attribute name per line — `title`, `url`, `contentType`, `language` or any field of your content types) |
 | Facet list | Attribute · Label · Operator (any / all of the selected values) · Values shown · Show a "show more" button |
+| Category tree | Attribute · Label · Nodes per level. Pick a **taxonomy** attribute: the tree comes from the tag hierarchy, and a flat attribute renders as one level. Selection is one value at a time, because a parent's count already includes its children |
 | Pagination | Style (numbered pages / load more button) — "load more" emits a `loadMore` mount instead of a `pagination` one, so place one or the other, never both |
 | Result stats | Text template (`{total}`, `{tookMs}`, `{query}`, `{page}`, `{totalPages}`) · Text before the first search |
 | Sort selector | Sort options (one `key;Label` per line) · Label · Hide the label visually |
@@ -87,8 +89,8 @@ applies rather than an empty string overriding it.
 
 #### The attribute drop-down is filled from the index
 
-The facet list's **Attribute** property is not a free-text field. It is a drop-down populated from the
-selected index's actual schema, listing only fields that are facetable. Pick the index first: until you
+The facet list's and the category tree's **Attribute** property is not a free-text field. It is a
+drop-down populated from the selected index's actual schema, listing only fields that are facetable. Pick the index first: until you
 do, the attribute field is hidden, and changing the index repopulates it.
 
 The range filter's **Attribute** property works the same way, but lists the index's numeric and date

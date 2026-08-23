@@ -1,4 +1,4 @@
-/**
+﻿/**
  * The widgets shipped with the library (spec 5.3). Every one of them is
  * `behaviour + default renderer` over the public behaviour API — the dogfooding rule of
  * spec 5.7 — and every one emits the markup contract in `themes/MARKUP.md`.
@@ -8,6 +8,7 @@ import type { Widget } from '../types';
 import { clearFilters, activeFilters } from './activeFilters';
 import { results } from './results';
 import { pagination } from './pagination';
+import { categoryTree } from './categoryTree';
 import { facetList } from './facetList';
 import { searchBox } from './searchBox';
 import { sortSelect } from './sortSelect';
@@ -26,6 +27,8 @@ export { results } from './results';
 export type { ResultsTemplates, ResultsWidgetParams } from './results';
 export { pagination } from './pagination';
 export type { PaginationWidgetParams } from './pagination';
+export { categoryTree } from './categoryTree';
+export type { CategoryTreeWidgetParams } from './categoryTree';
 export { facetList } from './facetList';
 export type { FacetListWidgetParams } from './facetList';
 export { searchBox } from './searchBox';
@@ -55,15 +58,12 @@ const fromMount =
   (config: MountConfig): Widget =>
     factory(config as unknown as TParams);
 
-/**
- * Resolved by `data-xps-widget` unless `registerWidgetType` overrode the name (spec 7.1).
- * `categoryTree` is the one reserved name with no widget behind it: see
- * docs/internal/KNOWN-LIMITATIONS.md.
- */
+/** Resolved by `data-xps-widget` unless `registerWidgetType` overrode the name (spec 7.1). */
 export const DEFAULT_WIDGETS: Readonly<Record<string, MountWidgetFactory>> = {
   searchBox: fromMount(searchBox),
   results: fromMount(results),
   facetList: fromMount(facetList),
+  categoryTree: fromMount(categoryTree),
   pagination: fromMount(pagination),
   resultStats: fromMount(resultStats),
   sortSelect: fromMount(sortSelect),

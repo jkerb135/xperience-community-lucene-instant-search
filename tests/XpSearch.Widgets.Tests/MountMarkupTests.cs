@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 
 using Microsoft.Extensions.Options;
 
@@ -204,6 +204,16 @@ internal sealed class MountMarkupTests
             Step = 5m,
             FromLabel = "Cheapest",
             ToLabel = "Dearest"
+    public void CategoryTree_emits_every_option_the_JavaScript_widget_takes()
+    {
+        var component = new CategoryTreeWidgetViewComponent(renderer, editor, catalog);
+
+        string markup = Render(component, new CategoryTreeWidgetProperties
+        {
+            Index = Index,
+            Attribute = "category",
+            Label = "Categories",
+            Limit = 5
         });
 
         var config = Rendered.Json(markup, "data-xps-config");
@@ -244,6 +254,24 @@ internal sealed class MountMarkupTests
             Assert.That(config.TryGetProperty("step", out _), Is.False);
             Assert.That(config.TryGetProperty("label", out _), Is.False);
             Assert.That(config.TryGetProperty("labels", out _), Is.False);
+            Assert.That(Rendered.Attribute(markup, "data-xps-widget"), Is.EqualTo("categoryTree"));
+            Assert.That(config.GetProperty("attribute").GetString(), Is.EqualTo("category"));
+            Assert.That(config.GetProperty("label").GetString(), Is.EqualTo("Categories"));
+            Assert.That(config.GetProperty("limit").GetInt32(), Is.EqualTo(5));
+        });
+    }
+
+    [Test]
+    public void CategoryTree_tells_the_editor_to_pick_an_attribute()
+    {
+        var component = new CategoryTreeWidgetViewComponent(renderer, new FakeEditorContext(XpSearchEditorMode.Edit), catalog);
+
+        var model = component.BuildModel(new CategoryTreeWidgetProperties { Index = Index });
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(model.Mount, Is.Null, "an unconfigured widget renders no mount");
+            Assert.That(model.EditorMessage, Does.Contain("attribute").IgnoreCase);
         });
     }
 

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <RootNamespace>XpSearch.Core</RootNamespace>
@@ -12,6 +12,10 @@
     <PackageReference Include="Kentico.Xperience.Lucene.Core" />
     <PackageReference Include="Lucene.Net.Highlighter" />
     <PackageReference Include="Lucene.Net.QueryParser" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="XpSearch.Core.Tests" />
   </ItemGroup>
 
   <ItemGroup>

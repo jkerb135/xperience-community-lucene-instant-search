@@ -31,6 +31,7 @@
   { "kind": "field", "ours": "SearchResponse.results[].ranking.boosts", "algolia": "no equivalent (their ranking criteria are fixed)", "note": "The boosts and rules that changed the score, in application order." },
   { "kind": "field", "ours": "SearchResponse.results[].ranking.position", "algolia": "_rankingInfo has no position; insights positions are client-computed", "note": "Ours is one-based across all pages." },
   { "kind": "field", "ours": "SearchResponse.facets", "algolia": "facets", "note": "Ordered arrays instead of a value-to-count map: JSON objects have no guaranteed order and no room for a label." },
+  { "kind": "field", "ours": "SearchResponse.facets[].path", "algolia": "the \"lvl0 > lvl1\" values of a hierarchical facet attribute", "note": "Ours names a value's ancestors as an array of tag code names on the value itself, so one taxonomy attribute is one facet rather than one attribute per level." },
   { "kind": "field", "ours": "SearchResponse.facets[].value", "algolia": "the map key", "note": "For a taxonomy dimension this is the tag code name." },
   { "kind": "field", "ours": "SearchResponse.facets[].label", "algolia": "no equivalent", "note": "The tag title, so a facet list never displays a code name. Xperience taxonomy tags have both." },
   { "kind": "field", "ours": "SearchResponse.facets[].count", "algolia": "the map value", "note": "Same meaning." },
@@ -86,12 +87,13 @@
   { "kind": "widget", "ours": "toggleFilter", "algolia": "toggleRefinement", "note": "Renamed." },
   { "kind": "widget", "ours": "suggestions (reserved, Phase 2.5)", "algolia": "autocomplete", "note": "Name reserved; not implemented yet." },
   { "kind": "widget", "ours": "rangeFilter (reserved, Phase 2.5)", "algolia": "rangeSlider / rangeInput", "note": "Name reserved; withRange already ships. The contract carries no numeric facet statistics, so bounds must be supplied." },
-  { "kind": "widget", "ours": "categoryTree (reserved, Phase 2.5)", "algolia": "hierarchicalMenu", "note": "Name reserved; hierarchical facet semantics are not decided yet." },
+  { "kind": "widget", "ours": "categoryTree", "algolia": "hierarchicalMenu", "note": "Same role, one option instead of a list of per-level attributes: it reads FacetValue.path. Selection is one value at a time, because a parent's count already includes its descendants." },
   { "kind": "widget", "ours": "loadMore (reserved, Phase 2.5)", "algolia": "infiniteHits", "note": "Name reserved; not implemented yet." },
 
   { "kind": "connector", "ours": "withSearchBox", "algolia": "connectSearchBox", "note": "The connector concept is kept; the prefix is with." },
   { "kind": "connector", "ours": "withResults", "algolia": "connectHits", "note": "Render state exposes results, not hits." },
   { "kind": "connector", "ours": "withFacetList", "algolia": "connectRefinementList", "note": "Items carry value, label and count straight from the response." },
+  { "kind": "connector", "ours": "withCategoryTree", "algolia": "connectHierarchicalMenu", "note": "Items are a tree built from FacetValue.path; apply(value) replaces the attribute's filter, and applying the open node clears it." },
   { "kind": "connector", "ours": "withPagination", "algolia": "connectPagination", "note": "pages and current are one-based." },
   { "kind": "connector", "ours": "withResultStats", "algolia": "connectStats", "note": "Renamed." },
   { "kind": "connector", "ours": "withSortSelect", "algolia": "connectSortBy", "note": "Renamed." },
@@ -102,5 +104,5 @@
   { "kind": "connector", "ours": "isActive", "algolia": "isRefined", "note": "Whether this value is currently selected." },
   { "kind": "connector", "ours": "canApply", "algolia": "canRefine", "note": "Whether the control has anything to do." },
   { "kind": "connector", "ours": "isStalled", "algolia": "isSearchStalled", "note": "Whether a request has been running longer than stalledSearchDelayMs." },
-  { "kind": "connector", "ours": "no equivalent", "algolia": "connectAutocomplete, connectHierarchicalMenu, connectGeoSearch, connectRatingMenu", "note": "Not implemented; see the gaps section." }
+  { "kind": "connector", "ours": "no equivalent", "algolia": "connectAutocomplete, connectGeoSearch, connectRatingMenu", "note": "Not implemented; see the gaps section." }
 ]

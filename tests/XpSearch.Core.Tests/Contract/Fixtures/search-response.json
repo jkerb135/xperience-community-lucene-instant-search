@@ -26,7 +26,7 @@
     ],
     "tags": [
       { "value": "coffee", "label": "Coffee", "count": 40 },
-      { "value": "brewing", "label": "Brewing", "count": 18 }
+      { "value": "brewing", "label": "Brewing", "count": 18, "path": ["coffee"] }
     ]
   },
   "page": 1,

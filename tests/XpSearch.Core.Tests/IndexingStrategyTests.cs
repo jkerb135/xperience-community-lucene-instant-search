@@ -1,4 +1,4 @@
-using CMS.ContentEngine;
+﻿using CMS.ContentEngine;
 using CMS.Websites;
 
 using Kentico.Xperience.Lucene.Core.Indexing;
@@ -66,6 +66,57 @@ internal sealed class IndexingStrategyTests
         });
     }
 
+    /// <summary>
+    /// ADR-0018: the dimension stays flat and every ancestor is written as a value of its own, so
+    /// counts roll up and a drill-down on a parent matches its descendants with no query-side
+    /// change. Ancestors go first, and each label term carries its own, shorter path.
+    /// </summary>
+    [Test]
+    public async Task Map_WritesEveryAncestorOfATagAsAValueOfItsOwn()
+    {
+        var ancestry = new StubAncestry(new()
+        {
+            [Espresso] = [new TagAncestor("drinks", "Drinks"), new TagAncestor("coffee", "Coffee")]
+        });
+
+        var data = Container(ProductCoffee, values: new() { [Tags.Name] = TaxonomyDataType.ColumnValue(Espresso, Filter) });
+        var strategy = Strategy(data, new XpSearchIndexingOptions(), Fields(ProductCoffee, Tags), ancestry: ancestry);
+
+        var document = await strategy.MapToLuceneDocumentOrNull(Item(ProductCoffee));
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(
+                FacetValues(document!, Tags.Name),
+                Is.EqualTo(new[] { "drinks", "coffee", "espresso", "filter" }),
+                "ancestors are written before the tag, root first");
+            Assert.That(Values(document!, LuceneFieldNames.LabelFieldName(Tags)), Is.EquivalentTo(new[]
+            {
+                LuceneFieldNames.ComposeLabel("drinks", "Drinks"),
+                LuceneFieldNames.ComposeLabel("coffee", "Coffee", ["drinks"]),
+                LuceneFieldNames.ComposeLabel("espresso", "Espresso", ["drinks", "coffee"]),
+                LuceneFieldNames.ComposeLabel("filter", "Filter")
+            }));
+        });
+    }
+
+    [Test]
+    public async Task Map_WritesASharedAncestorOnlyOnce()
+    {
+        var shared = new TagAncestor("drinks", "Drinks");
+        var ancestry = new StubAncestry(new() { [Espresso] = [shared], [Filter] = [shared] });
+
+        var data = Container(ProductCoffee, values: new() { [Tags.Name] = TaxonomyDataType.ColumnValue(Espresso, Filter) });
+        var strategy = Strategy(data, new XpSearchIndexingOptions(), Fields(ProductCoffee, Tags), ancestry: ancestry);
+
+        var document = await strategy.MapToLuceneDocumentOrNull(Item(ProductCoffee));
+
+        Assert.That(
+            FacetValues(document!, Tags.Name),
+            Is.EqualTo(new[] { "drinks", "espresso", "filter" }),
+            "a repeated facet path would make FacetsConfig.Build reject the document");
+    }
+
     [Test]
     public async Task Map_SkipsAndLogsAnItemWhoseFieldCannotBeRead()
     {
@@ -120,6 +171,7 @@ internal sealed class IndexingStrategyTests
                 Executor(Container(ProductCoffee, values: [])),
                 Substitute.For<IWebPageUrlRetriever>(),
                 TaxonomyRetriever(),
+                new FlatAncestry(),
                 Fields(ProductCoffee),
                 Substitute.For<ILuceneIndexAccessor>(),
                 Substitute.For<IIndexSchemaProvider>(),
@@ -233,7 +285,8 @@ internal sealed class IndexingStrategyTests
         XpSearchIndexingOptions options,
         IContentTypeFieldSource fields,
         ILogger<XpSearchIndexingStrategy>? logger = null,
-        IndexSchema? schema = null)
+        IndexSchema? schema = null,
+        ITagAncestrySource? ancestry = null)
     {
         var accessor = Substitute.For<ILuceneIndexAccessor>();
         var schemaProvider = Substitute.For<IIndexSchemaProvider>();
@@ -248,6 +301,7 @@ internal sealed class IndexingStrategyTests
             Executor(data),
             Substitute.For<IWebPageUrlRetriever>(),
             TaxonomyRetriever(),
+            ancestry ?? new FlatAncestry(),
             fields,
             accessor,
             schemaProvider,
@@ -347,18 +401,32 @@ internal sealed class IndexingStrategyTests
         IContentQueryExecutor executor,
         IWebPageUrlRetriever urlRetriever,
         ITaxonomyRetriever taxonomyRetriever,
+        ITagAncestrySource tagAncestry,
         IContentTypeFieldSource fieldSource,
         ILuceneIndexAccessor accessor,
         IIndexSchemaProvider schemaProvider,
         XpSearchIndexingOptions options,
         ILogger<XpSearchIndexingStrategy> logger)
-        : XpSearchIndexingStrategy(executor, urlRetriever, taxonomyRetriever, fieldSource, accessor, schemaProvider, options, logger)
+        : XpSearchIndexingStrategy(executor, urlRetriever, taxonomyRetriever, tagAncestry, fieldSource, accessor, schemaProvider, options, logger)
     {
         protected override async Task ContributeAsync(IndexingContext context, Document document, CancellationToken cancellationToken)
         {
             await context.AddFieldAsync(Name, "Cortado", cancellationToken);
             await context.AddTaxonomyAsync(Tags, [new TagReference { Identifier = Espresso }], cancellationToken);
         }
+    }
+
+    /// <summary>Every tag is a root: the taxonomies most tests use have no hierarchy.</summary>
+    private sealed class FlatAncestry : ITagAncestrySource
+    {
+        public IReadOnlyList<TagAncestor> AncestorsOf(Guid tagIdentifier) => [];
+    }
+
+    /// <summary>A fixed ancestry, keyed by tag identifier.</summary>
+    private sealed class StubAncestry(Dictionary<Guid, TagAncestor[]> byIdentifier) : ITagAncestrySource
+    {
+        public IReadOnlyList<TagAncestor> AncestorsOf(Guid tagIdentifier) =>
+            byIdentifier.TryGetValue(tagIdentifier, out var ancestors) ? ancestors : [];
     }
 
     private sealed class StubFieldSource(Dictionary<string, IReadOnlyList<SchemaField>> byContentType) : IContentTypeFieldSource

@@ -20,12 +20,13 @@ public sealed class MySearchIndexingStrategy : XpSearchIndexingStrategy
         IContentQueryExecutor executor,
         IWebPageUrlRetriever urlRetriever,
         ITaxonomyRetriever taxonomyRetriever,
+        ITagAncestrySource tagAncestry,
         IContentTypeFieldSource fieldSource,
         ILuceneIndexAccessor accessor,
         IIndexSchemaProvider schemaProvider,
         XpSearchIndexingOptions indexingOptions,
         ILogger<XpSearchIndexingStrategy> logger)
-        : base(executor, urlRetriever, taxonomyRetriever, fieldSource, accessor, schemaProvider, indexingOptions, logger)
+        : base(executor, urlRetriever, taxonomyRetriever, tagAncestry, fieldSource, accessor, schemaProvider, indexingOptions, logger)
     {
     }
 }
@@ -120,12 +121,35 @@ query result hands the column back as it is stored, so the strategy converts it 
 registered for the field data type `taxonomy` (`DataTypeManager.ConvertToSystemType`) rather than casting
 it — which works for every content type, including ones with no generated class. For each reference the
 strategy resolves the tags
-through `ITaxonomyRetriever.RetrieveTags(identifiers, languageName)` and writes three things per tag:
+through `ITaxonomyRetriever.RetrieveTags(identifiers, languageName)` and writes four things per tag:
 
 - a `FacetField(fieldName, tag.Name)` — the facet dimension, named after your field, registered
   multi-valued on the index's `FacetsConfig`;
 - a stored `StringField(fieldName, tag.Name)` — so the tag comes back as a hit attribute;
-- a `TextField(fieldName_text, tag.Title)` — so a visitor searching for the tag's display title matches.
+- a `TextField(fieldName_text, tag.Title)` — so a visitor searching for the tag's display title matches;
+- a `StringField(fieldName_label, …)` pairing the code name with the title and the tag's ancestry, which
+  is where a facet value's `label` and `path` come from.
+
+#### A tag's ancestors are indexed with it
+
+Xperience taxonomies are hierarchies. For each tag, the strategy also writes **every ancestor of that
+tag** as a value of the same, still-flat dimension — root first, each with its own shorter path — so a
+document tagged *Espresso* carries *Coffee* and *Machines* too. Two things follow for free:
+counts roll up (the count on *Coffee* includes every *Espresso* document), and a filter on a parent
+matches its descendants with no hierarchy logic in the query pipeline. The wire shape is
+[`FacetValue.path`](search-api.md#hierarchical-taxonomies); the decision is [ADR-0018](../adr/0018-hierarchical-facets.md).
+
+Ancestry comes from `ITagAncestrySource`. The default implementation reads the tag table once through
+`IInfoProvider<TagInfo>` and caches it in Xperience's data cache with a dependency on `cms.tag|all`,
+because `ITaxonomyRetriever` gives a tag's `ParentID` but no way to resolve that identifier to a tag.
+Replace the registration if your project resolves ancestry differently:
+
+```csharp
+builder.Services.AddSingleton<ITagAncestrySource, MyTagAncestrySource>();
+```
+
+Because ancestry is baked into the document, **moving a tag in the Taxonomies application needs an
+index rebuild** before the new shape reaches the wire.
 
 That is all a request needs to use it:
 

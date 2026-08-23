@@ -1,4 +1,4 @@
-/**
+﻿/**
  * `@yourco/xperience-search` — the core entry point (spec 5.2).
  * The behaviours live at `@yourco/xperience-search/behaviors`.
  */
@@ -27,6 +27,7 @@ export { widgetId } from './widgets/dom';
 export { defaultRouteToState, defaultStateToRoute } from './routing';
 export {
   activeFilters,
+  categoryTree,
   clearFilters,
   facetList,
   loadMore,
@@ -41,6 +42,7 @@ export {
 } from './widgets';
 export type {
   ActiveFiltersWidgetParams,
+  CategoryTreeWidgetParams,
   ClearFiltersWidgetParams,
   FacetListWidgetParams,
   LoadMoreWidgetParams,

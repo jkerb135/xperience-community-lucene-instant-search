@@ -9,6 +9,7 @@ import { QUERY_ROUTE, SUGGEST_ROUTE } from '../contract/constants';
 import { createSearch } from '../instance';
 import type { SearchInstance } from '../types';
 import {
+  categoryTree,
   clearFilters,
   activeFilters,
   loadMore,
@@ -36,7 +37,7 @@ const settled = (search: SearchInstance, predicate: () => boolean): Promise<void
 describe('the demo widget set against the mock server', () => {
   it('searches, refines, sorts, paginates and clears', async () => {
     document.body.innerHTML = `<div id="box"></div><div id="resultStats"></div><div id="sort"></div>
-      <div id="facet"></div><div id="chips"></div><div id="clear"></div>
+      <div id="facet"></div><div id="tree"></div><div id="chips"></div><div id="clear"></div>
       <div id="results"></div><div id="pages"></div>`;
 
     const search = createSearch({
@@ -57,6 +58,7 @@ describe('the demo widget set against the mock server', () => {
         ],
       }),
       facetList({ container: '#facet', attribute: 'contentType', label: 'Content type' }),
+      categoryTree({ container: '#tree', attribute: 'tags', label: 'Categories' }),
       activeFilters({ container: '#chips' }),
       clearFilters({ container: '#clear' }),
       results({ container: '#results' }),
@@ -91,6 +93,33 @@ describe('the demo widget set against the mock server', () => {
     for (const item of list()) {
       expect(item.querySelector('.xps-result__meta-item')?.textContent).toBe(value);
     }
+
+    // Drill into the taxonomy: the mock's `tags` are hierarchical, so the tree nests and a
+    // parent's count is the roll-up of everything below it.
+    const tree = document.querySelector('.xps-category-tree') as HTMLElement;
+    const nested = tree.querySelector('.xps-category-tree__list--lvl1') as HTMLElement;
+    expect(nested).not.toBeNull();
+    const child = nested.querySelector('a[data-xps-value]') as HTMLAnchorElement;
+    const parentValue = child.closest('.xps-category-tree__list')!
+      .closest('.xps-category-tree__item')!
+      .querySelector('a[data-xps-value]')!
+      .getAttribute('data-xps-value');
+    child.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    await settled(
+      search,
+      () => tree.querySelectorAll('[aria-current="true"]').length === 2
+    );
+    // The child and its parent are both on the open path.
+    expect(
+      [...tree.querySelectorAll('a[aria-current="true"]')].map((link) =>
+        link.getAttribute('data-xps-value')
+      )
+    ).toEqual([parentValue, child.getAttribute('data-xps-value')]);
+
+    // Selecting the open node again clears the attribute.
+    const open = [...tree.querySelectorAll<HTMLAnchorElement>('a[aria-current="true"]')].pop()!;
+    open.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    await settled(search, () => tree.querySelectorAll('[aria-current="true"]').length === 0);
 
     // Sort.
     const select = document.querySelector('.xps-sort-select .xps-select__control') as HTMLSelectElement;

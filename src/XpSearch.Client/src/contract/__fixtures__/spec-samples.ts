@@ -63,9 +63,10 @@ export const specSearchResponse: SearchResponse = {
       { value: 'Article', label: 'Article', count: 34 },
       { value: 'Product', label: 'Product', count: 12 },
     ],
+    // A taxonomy dimension: `brewing` is a child tag of `coffee`, so it names it in `path`.
     tags: [
       { value: 'coffee', label: 'Coffee', count: 40 },
-      { value: 'brewing', label: 'Brewing', count: 18 },
+      { value: 'brewing', label: 'Brewing', count: 18, path: ['coffee'] },
     ],
   },
   page: 1,

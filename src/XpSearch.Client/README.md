@@ -1,6 +1,6 @@
 # @yourco/xperience-search
 
-The JavaScript client and default widgets for Xperience Search: a search instance, nine widgets,
+The JavaScript client and default widgets for Xperience Search: a search instance, thirteen widgets,
 the behaviour API custom widgets are built on, and the `.xps-mount` bootstrap that hydrates the
 Page Builder widgets.
 

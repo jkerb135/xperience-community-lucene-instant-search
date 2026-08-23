@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 
 using CMS.ContentEngine;
 using CMS.DataEngine;
@@ -34,6 +34,7 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
     private readonly IContentQueryExecutor executor;
     private readonly IWebPageUrlRetriever urlRetriever;
     private readonly ITaxonomyRetriever taxonomyRetriever;
+    private readonly ITagAncestrySource tagAncestry;
     private readonly IContentTypeFieldSource fieldSource;
     private readonly ILuceneIndexAccessor accessor;
     private readonly IIndexSchemaProvider schemaProvider;
@@ -54,6 +55,7 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
     /// <param name="executor">Executes the untyped content query that loads the item's field values.</param>
     /// <param name="urlRetriever">Resolves the web page URL stored on the document.</param>
     /// <param name="taxonomyRetriever">Resolves tag identifiers to tag code names and titles.</param>
+    /// <param name="tagAncestry">Resolves a tag's ancestors, which are indexed alongside it so counts roll up.</param>
     /// <param name="fieldSource">Detects the searchable fields of a content type.</param>
     /// <param name="accessor">The Lucene seam, used to find the indexes this strategy is configured for.</param>
     /// <param name="schemaProvider">Supplies those indexes' detected schema, which the facet dimensions come from.</param>
@@ -63,6 +65,7 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
         IContentQueryExecutor executor,
         IWebPageUrlRetriever urlRetriever,
         ITaxonomyRetriever taxonomyRetriever,
+        ITagAncestrySource tagAncestry,
         IContentTypeFieldSource fieldSource,
         ILuceneIndexAccessor accessor,
         IIndexSchemaProvider schemaProvider,
@@ -72,6 +75,7 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
         ArgumentNullException.ThrowIfNull(executor);
         ArgumentNullException.ThrowIfNull(urlRetriever);
         ArgumentNullException.ThrowIfNull(taxonomyRetriever);
+        ArgumentNullException.ThrowIfNull(tagAncestry);
         ArgumentNullException.ThrowIfNull(fieldSource);
         ArgumentNullException.ThrowIfNull(accessor);
         ArgumentNullException.ThrowIfNull(schemaProvider);
@@ -81,6 +85,7 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
         this.executor = executor;
         this.urlRetriever = urlRetriever;
         this.taxonomyRetriever = taxonomyRetriever;
+        this.tagAncestry = tagAncestry;
         this.fieldSource = fieldSource;
         this.accessor = accessor;
         this.schemaProvider = schemaProvider;
@@ -449,6 +454,10 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
         // what a visitor would type. See the tag selector in the admin form component reference.
         var tags = await taxonomyRetriever.RetrieveTags(identifiers, languageName, cancellationToken).ConfigureAwait(false);
 
+        // One dimension value may be reached twice - two tags sharing an ancestor, or a document
+        // tagged with both a parent and its child - and Lucene rejects a repeated facet path.
+        var written = new HashSet<string>(StringComparer.Ordinal);
+
         foreach (var tag in tags)
         {
             if (string.IsNullOrWhiteSpace(tag.Name))
@@ -456,17 +465,65 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
                 continue;
             }
 
-            document.Add(new FacetField(field.LuceneName, tag.Name));
-            document.Add(new StringField(field.LuceneName, tag.Name, Field.Store.YES));
-            document.Add(new TextField(LuceneFieldNames.SearchFieldName(field), tag.Title ?? tag.Name, Field.Store.NO));
+            // The dimension stays flat (ADR-0018): every ancestor is written as a value in its own
+            // right, so counts roll up and a drill-down on a parent matches its descendants without
+            // the query side knowing anything about the hierarchy. Ancestors go first, so their
+            // taxonomy ordinals stay below their descendants' and a tie in the top-N cut favours
+            // the more general value.
+            var ancestors = tagAncestry.AncestorsOf(tag.Identifier);
 
-            // The pair, verbatim and un-analyzed, so the query side can read every code name's
-            // title straight out of the term dictionary and put it in the facet value's label.
-            document.Add(new StringField(
-                LuceneFieldNames.LabelFieldName(field),
-                LuceneFieldNames.ComposeLabel(tag.Name, tag.Title ?? tag.Name),
-                Field.Store.NO));
+            for (int i = 0; i < ancestors.Count; i++)
+            {
+                WriteTag(document, field, ancestors[i].Name, ancestors[i].Title, PathOf(ancestors, i), written);
+            }
+
+            WriteTag(document, field, tag.Name, tag.Title ?? tag.Name, PathOf(ancestors, ancestors.Count), written);
         }
+    }
+
+    /// <summary>Writes one taxonomy value - a tag or one of its ancestors - the way the base mapping does.</summary>
+    /// <param name="document">The document being built.</param>
+    /// <param name="field">The taxonomy field the value belongs to.</param>
+    /// <param name="value">The tag code name.</param>
+    /// <param name="title">The tag title.</param>
+    /// <param name="path">Code names of the value's ancestors, root first, excluding the value itself.</param>
+    /// <param name="written">Code names already written for this field on this document.</param>
+    internal static void WriteTag(
+        Document document,
+        SchemaField field,
+        string value,
+        string title,
+        IReadOnlyList<string> path,
+        HashSet<string> written)
+    {
+        if (!written.Add(value))
+        {
+            return;
+        }
+
+        document.Add(new FacetField(field.LuceneName, value));
+        document.Add(new StringField(field.LuceneName, value, Field.Store.YES));
+        document.Add(new TextField(LuceneFieldNames.SearchFieldName(field), title, Field.Store.NO));
+
+        // Code name, ancestry and title, verbatim and un-analyzed, so the query side can read the
+        // whole taxonomy out of the term dictionary in one pass and hand a facet value both its
+        // label and its path.
+        document.Add(new StringField(
+            LuceneFieldNames.LabelFieldName(field),
+            LuceneFieldNames.ComposeLabel(value, title, path),
+            Field.Store.NO));
+    }
+
+    private static string[] PathOf(IReadOnlyList<TagAncestor> ancestors, int count)
+    {
+        var path = new string[count];
+
+        for (int i = 0; i < count; i++)
+        {
+            path[i] = ancestors[i].Name;
+        }
+
+        return path;
     }
 
     /// <summary>Registers every facetable field of the indexes this strategy serves, once.</summary>

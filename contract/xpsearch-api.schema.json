@@ -382,6 +382,13 @@
         "count": {
           "type": "integer",
           "description": "Required. Number of matching documents carrying this value."
+        },
+        "path": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Optional. For a taxonomy dimension, the code names of the value's ancestors from the root down to its parent, excluding the value itself ([\"Coffee\",\"Machines\"] for Espresso). Absent for a root-level value and for non-taxonomy attributes. Every ancestor named here is itself present in the same facet's values with its own count, so a tree can be built from the values alone."
         }
       }
     },

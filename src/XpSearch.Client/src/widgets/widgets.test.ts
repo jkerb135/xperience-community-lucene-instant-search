@@ -13,6 +13,7 @@ import type { SearchInstance, Widget } from '../types';
 import { html } from '../templates/html';
 import { widgetId } from './dom';
 import {
+  categoryTree,
   clearFilters,
   activeFilters,
   loadMore,
@@ -57,6 +58,16 @@ const RESPONSE: SearchResponse = {
       { value: 'Article', label: 'Article', count: 24 },
       { value: 'Product', label: 'Product', count: 11 },
       { value: 'Event', label: 'Event', count: 0 },
+    ],
+    // A three-level taxonomy, shaped exactly like themes/fixtures/category-tree.html.
+    category: [
+      { value: 'coffee', label: 'Coffee', count: 42 },
+      { value: 'machines', label: 'Machines', count: 18, path: ['coffee'] },
+      { value: 'espresso', label: 'Espresso', count: 11, path: ['coffee', 'machines'] },
+      { value: 'filter', label: 'Filter', count: 7, path: ['coffee', 'machines'] },
+      { value: 'grinders', label: 'Grinders', count: 24, path: ['coffee'] },
+      { value: 'tea', label: 'Tea', count: 9 },
+      { value: 'accessories', label: 'Accessories', count: 0 },
     ],
   },
   page: 1,
@@ -549,6 +560,111 @@ describe('facetList', () => {
     const none = root.querySelector('.xps-facet-list__no-results') as HTMLElement;
     expect(none.hidden).toBe(false);
     expect(none.getAttribute('role')).toBe('status');
+  });
+});
+
+describe('categoryTree', () => {
+  const mount = (params: Record<string, unknown> = {}): HTMLElement => {
+    const host = container('tree');
+    search = start([
+      categoryTree({ container: host, attribute: 'category', label: 'Categories', ...params }),
+    ]);
+    return host.querySelector('.xps-category-tree') as HTMLElement;
+  };
+
+  const values = (list: Element | null): string[] =>
+    [...(list?.children ?? [])].map(
+      (item) => item.querySelector('.xps-category-tree__value')?.textContent ?? ''
+    );
+
+  it('renders the nested lists of the markup contract', async () => {
+    const root = mount();
+    await settled(search!);
+    expect(root.tagName).toBe('NAV');
+    expect(classesOf(root)).toEqual(['xps', 'xps-category-tree']);
+    expect(root.getAttribute('aria-label')).toBe('Categories');
+
+    const title = root.querySelector('.xps-category-tree__title') as HTMLElement;
+    expect(title.tagName).toBe('H3');
+    expect(title.textContent).toBe('Categories');
+
+    const level0 = root.querySelector('.xps-category-tree__list--lvl0') as HTMLElement;
+    expect(level0.tagName).toBe('UL');
+    expect(values(level0)).toEqual(['Coffee', 'Tea', 'Accessories']);
+
+    const coffee = level0.children[0] as HTMLElement;
+    expect(classesOf(coffee)).toEqual([
+      'xps-category-tree__item',
+      'xps-category-tree__item--parent',
+    ]);
+    const level1 = coffee.querySelector('.xps-category-tree__list--lvl1') as HTMLElement;
+    expect(values(level1)).toEqual(['Grinders', 'Machines']);
+    const level2 = level1.querySelector('.xps-category-tree__list--lvl2') as HTMLElement;
+    expect(values(level2)).toEqual(['Espresso', 'Filter']);
+
+    // Counts and crawlable links on every enabled node.
+    expect(coffee.querySelector('.xps-category-tree__count')?.textContent).toBe('42');
+    const link = coffee.querySelector('a.xps-category-tree__link') as HTMLAnchorElement;
+    expect(link.getAttribute('href')).toContain('category=coffee');
+  });
+
+  it('renders a count of zero as a disabled span, not a link', async () => {
+    const root = mount();
+    await settled(search!);
+    const accessories = root.querySelector('.xps-category-tree__list--lvl0')!.children[2] as HTMLElement;
+
+    expect(classesOf(accessories)).toEqual([
+      'xps-category-tree__item',
+      'xps-category-tree__item--disabled',
+    ]);
+    const control = accessories.querySelector('.xps-category-tree__link') as HTMLElement;
+    expect(control.tagName).toBe('SPAN');
+    expect(control.getAttribute('aria-disabled')).toBe('true');
+  });
+
+  it('marks the whole open path selected with aria-current', async () => {
+    const root = mount();
+    await settled(search!);
+    (root.querySelector('a[data-xps-value="espresso"]') as HTMLAnchorElement).click();
+    expect(search?.state.filters.facets[0]?.values).toEqual(['espresso']);
+
+    await vi.waitFor(() =>
+      expect(root.querySelectorAll('[aria-current="true"]').length).toBe(3)
+    );
+    expect(
+      [...root.querySelectorAll('.xps-category-tree__item--selected')].map(
+        (item) => item.querySelector('.xps-category-tree__value')?.textContent
+      )
+    ).toEqual(['Coffee', 'Machines', 'Espresso']);
+  });
+
+  it('replaces the selection instead of adding to it, and clears on a second click', async () => {
+    const root = mount();
+    await settled(search!);
+    (root.querySelector('a[data-xps-value="machines"]') as HTMLAnchorElement).click();
+    expect(search?.state.filters.facets[0]?.values).toEqual(['machines']);
+
+    (root.querySelector('a[data-xps-value="tea"]') as HTMLAnchorElement).click();
+    expect(search?.state.filters.facets[0]?.values).toEqual(['tea']);
+
+    // The second click on the open node only closes it once the response marked it selected.
+    await vi.waitFor(() =>
+      expect(root.querySelector('a[data-xps-value="tea"]')?.getAttribute('aria-current')).toBe('true')
+    );
+    (root.querySelector('a[data-xps-value="tea"]') as HTMLAnchorElement).click();
+    expect(search?.state.filters.facets).toEqual([]);
+  });
+
+  it('caps each level at limit and hides itself when there is nothing to navigate', async () => {
+    const root = mount({ limit: 1 });
+    await settled(search!);
+    expect(values(root.querySelector('.xps-category-tree__list--lvl0'))).toEqual(['Coffee']);
+    expect(values(root.querySelector('.xps-category-tree__list--lvl1'))).toEqual(['Grinders']);
+
+    const empty = container('tree-empty');
+    const other = start([categoryTree({ container: empty, attribute: 'nothing' })]);
+    await settled(other);
+    expect((empty.querySelector('.xps-category-tree') as HTMLElement).hidden).toBe(true);
   });
 });
 
@@ -1304,8 +1420,10 @@ describe('the samples in docs/guides/widget-reference.md', () => {
     const price = container('filter-price');
     const list = container('search-results');
     const suggest = container('search-suggest');
+    const tree = container('facet-category');
     search = start([
       rangeFilter({ container: '#filter-price', attribute: 'price', label: 'Price', min: 0, max: 500, step: 5 }),
+      categoryTree({ container: '#facet-category', attribute: 'category', label: 'Categories', limit: 10 }),
       loadMore({ container: '#search-results', autoLoad: true }),
       suggestions({
         container: '#search-suggest',
@@ -1319,5 +1437,6 @@ describe('the samples in docs/guides/widget-reference.md', () => {
     expect(price.querySelector('.xps-range-filter')).not.toBeNull();
     expect(list.querySelectorAll('.xps-load-more__item').length).toBe(3);
     expect(suggest.querySelector('.xps-suggestions__input')).not.toBeNull();
+    expect(tree.querySelector('.xps-category-tree__list--lvl2')).not.toBeNull();
   });
 });

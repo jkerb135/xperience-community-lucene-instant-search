@@ -1,6 +1,6 @@
 ## Widget reference
 
-The twelve widgets that ship with `@yourco/xperience-search`, the templating helpers they hand to your
+The thirteen widgets that ship with `@yourco/xperience-search`, the templating helpers they hand to your
 templates, and the markup each one emits. Every widget is a behaviour plus a default renderer — the
 same public API a [custom widget](custom-widgets.md) uses — so anything a built-in can do, yours can
 too.
@@ -262,6 +262,46 @@ back in `filters.facets` is its code name, so a facet list never displays an int
 
 **`searchable` filters the values already returned for this facet**, in the browser. There is no
 facet-search endpoint in the JSON contract, so it cannot reach values beyond `limit`/`showMoreLimit`.
+
+## `categoryTree`
+
+Taxonomy navigation: one facet attribute rendered as a drill-down tree.
+
+```js
+categoryTree({
+  container: '#facet-category',
+  attribute: 'category',
+  label: 'Categories',
+  limit: 10,
+});
+```
+
+| Option | Default | What it does |
+|---|---|---|
+| `container` | — | Selector or element. Required. |
+| `attribute` | — | The facet attribute. Required; the widget asks the server to count it. |
+| `label` | the attribute name | Heading text and the `aria-label` of the `<nav>`. |
+| `limit` | `10` | Nodes kept per level, most documents first. |
+
+The tree is built from `FacetValue.path` — the code names of a value's ancestors, root first
+(see the [search API guide](search-api.md#hierarchical-taxonomies)). A flat attribute has no paths
+and renders as one level, which is a `facetList` without the checkboxes.
+
+**Selection is one value at a time.** Choosing a node replaces whatever was selected on the
+attribute; choosing the node that is already open clears the attribute. That is not a limitation of
+the widget but of what the counts mean: the server rolls a parent's count up over its descendants,
+so filtering on *Coffee* already includes *Espresso*, and selecting both would say nothing new.
+
+Markup: `<nav class="xps xps-category-tree">` with `__title` and nested `__list` elements carrying
+one depth modifier each (`--lvl0`, `--lvl1`, …). Each `__item` carries `--parent` when it has
+children, `--selected` on every node of the open path, and `--disabled` at count 0. Inside is
+`__link` with `__value` and `__count`. The whole root is `hidden` when there is nothing to navigate.
+
+Accessibility: every enabled node is a real `<a href>` carrying `urlFor(value)`, so a filtered
+category page is crawlable and opens in a new tab; a plain left click is intercepted and filters
+instead. Every node of the open path — not just the deepest — carries `aria-current="true"`, so a
+screen-reader user hears where they are in the tree. A node nothing matches any more is a
+`<span aria-disabled="true">`, never a dead link.
 
 ## `pagination`
 
@@ -546,7 +586,7 @@ and every interpolation is yours to `escapeHtml`. The untrusted values are facet
 
 ## Page Builder mounts
 
-All twelve widgets resolve by name from a `.xps-mount` element, so the Page Builder widgets (spec §7.1)
+All thirteen widgets resolve by name from a `.xps-mount` element, so the Page Builder widgets (spec §7.1)
 need no JavaScript of their own:
 
 ```html
@@ -561,7 +601,3 @@ need no JavaScript of their own:
 `registerWidgetType('searchBox', …)` overrides a built-in of the same name; custom types must
 contain a dot. See [Building a custom widget](custom-widgets.md) and
 [Page Builder widgets](page-builder-widgets.md).
-
-`categoryTree` is the one reserved name with no widget behind it: a hierarchy needs a facet shape
-the JSON contract does not have (`FacetValue` is flat), so it waits on a coordinated contract change —
-see [KNOWN-LIMITATIONS](../internal/KNOWN-LIMITATIONS.md).

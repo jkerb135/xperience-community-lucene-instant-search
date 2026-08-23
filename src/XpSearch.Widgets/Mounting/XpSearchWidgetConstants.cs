@@ -1,4 +1,4 @@
-namespace XpSearch.Widgets;
+﻿namespace XpSearch.Widgets;
 
 /// <summary>
 /// Identifiers and defaults shared by the Page Builder widgets (spec §7).
@@ -22,6 +22,9 @@ public static class XpSearchWidgetConstants
 
     /// <summary>Widget identifier of the facet list widget.</summary>
     public const string FacetListIdentifier = "XpSearch.FacetList";
+
+    /// <summary>Widget identifier of the category tree widget.</summary>
+    public const string CategoryTreeIdentifier = "XpSearch.CategoryTree";
 
     /// <summary>Widget identifier of the pagination widget.</summary>
     public const string PaginationIdentifier = "XpSearch.Pagination";

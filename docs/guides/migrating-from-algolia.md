@@ -88,6 +88,7 @@ Request and response fields, client options, and the analytics events.
 | `SearchResponse.results[].ranking.boosts` | no equivalent (their ranking criteria are fixed) | The boosts and rules that changed the score, in application order. |
 | `SearchResponse.results[].ranking.position` | _rankingInfo has no position; insights positions are client-computed | Ours is one-based across all pages. |
 | `SearchResponse.facets` | `facets` | Ordered arrays instead of a value-to-count map: JSON objects have no guaranteed order and no room for a label. |
+| `SearchResponse.facets[].path` | the "lvl0 > lvl1" values of a hierarchical facet attribute | Ours names a value's ancestors as an array of tag code names on the value itself, so one taxonomy attribute is one facet rather than one attribute per level. |
 | `SearchResponse.facets[].value` | the map key | For a taxonomy dimension this is the tag code name. |
 | `SearchResponse.facets[].label` | no equivalent | The tag title, so a facet list never displays a code name. Xperience taxonomy tags have both. |
 | `SearchResponse.facets[].count` | the map value | Same meaning. |
@@ -147,7 +148,7 @@ not written yet.
 | `toggleFilter` | `toggleRefinement` | Renamed. |
 | suggestions (reserved, Phase 2.5) | `autocomplete` | Name reserved; not implemented yet. |
 | rangeFilter (reserved, Phase 2.5) | rangeSlider / rangeInput | Name reserved; withRange already ships. The contract carries no numeric facet statistics, so bounds must be supplied. |
-| categoryTree (reserved, Phase 2.5) | `hierarchicalMenu` | Name reserved; hierarchical facet semantics are not decided yet. |
+| `categoryTree` | `hierarchicalMenu` | Same role, one option instead of a list of per-level attributes: it reads FacetValue.path. Selection is one value at a time, because a parent's count already includes its descendants. |
 | loadMore (reserved, Phase 2.5) | `infiniteHits` | Name reserved; not implemented yet. |
 
 ### Behaviour map
@@ -159,6 +160,7 @@ A connector becomes a **behaviour**: same idea, `with` prefix, and verbs that sa
 | `withSearchBox` | `connectSearchBox` | The connector concept is kept; the prefix is with. |
 | `withResults` | `connectHits` | Render state exposes results, not hits. |
 | `withFacetList` | `connectRefinementList` | Items carry value, label and count straight from the response. |
+| `withCategoryTree` | `connectHierarchicalMenu` | Items are a tree built from FacetValue.path; apply(value) replaces the attribute's filter, and applying the open node clears it. |
 | `withPagination` | `connectPagination` | pages and current are one-based. |
 | `withResultStats` | `connectStats` | Renamed. |
 | `withSortSelect` | `connectSortBy` | Renamed. |
@@ -169,7 +171,7 @@ A connector becomes a **behaviour**: same idea, `with` prefix, and verbs that sa
 | `isActive` | `isRefined` | Whether this value is currently selected. |
 | `canApply` | `canRefine` | Whether the control has anything to do. |
 | `isStalled` | `isSearchStalled` | Whether a request has been running longer than stalledSearchDelayMs. |
-| no equivalent | connectAutocomplete, connectHierarchicalMenu, connectGeoSearch, connectRatingMenu | Not implemented; see the gaps section. |
+| no equivalent | connectAutocomplete, connectGeoSearch, connectRatingMenu | Not implemented; see the gaps section. |
 
 ### Migration steps
 

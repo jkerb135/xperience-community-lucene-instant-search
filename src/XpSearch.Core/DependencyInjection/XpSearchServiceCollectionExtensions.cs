@@ -1,4 +1,4 @@
-using Kentico.Xperience.Lucene.Core.Indexing;
+﻿using Kentico.Xperience.Lucene.Core.Indexing;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
@@ -62,6 +62,7 @@ public static class XpSearchServiceCollectionExtensions
         services.TryAddSingleton<IDataClassDefinitionSource, DataClassInfoDefinitionSource>();
         services.TryAddSingleton<IIndexContentTypeSource, LuceneIndexContentTypeSource>();
         services.TryAddSingleton<IContentTypeFieldSource, FormInfoContentTypeFieldSource>();
+        services.TryAddSingleton<ITagAncestrySource, TagAncestrySource>();
         services.TryAddSingleton<IIndexSchemaProvider, IndexSchemaProvider>();
         services.TryAddSingleton<IFacetProvider, TaxonomyFacetProvider>();
         services.TryAddSingleton<IHighlighter, LuceneHighlighter>();

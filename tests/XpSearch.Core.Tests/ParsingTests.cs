@@ -1,4 +1,4 @@
-using NUnit.Framework;
+﻿using NUnit.Framework;
 
 using XpSearch.Core.Abstractions;
 using XpSearch.Core.Indexing;
@@ -110,13 +110,36 @@ internal sealed class ParsingTests
     [Test]
     public void LuceneFieldNames_RoundTripALabelTerm()
     {
-        (string? value, string? title) = LuceneFieldNames.SplitLabel(LuceneFieldNames.ComposeLabel("coffee", "Coffee beans"));
+        (string? value, string? title, string[] path) =
+            LuceneFieldNames.SplitLabel(LuceneFieldNames.ComposeLabel("latte", "Latte", ["drinks", "espresso-drinks"]));
+
+        (string? rootValue, string? rootTitle, string[] rootPath) =
+            LuceneFieldNames.SplitLabel(LuceneFieldNames.ComposeLabel("coffee", "Coffee beans"));
+
+        // A title is free text, so it may contain the character that separates the path segments.
+        (_, string? awkward, string[] awkwardPath) =
+            LuceneFieldNames.SplitLabel(LuceneFieldNames.ComposeLabel("odd", $"A{LuceneFieldNames.PathSeparator}B", ["root"]));
 
         Expect.Multiple(() =>
         {
-            Assert.That(value, Is.EqualTo("coffee"));
-            Assert.That(title, Is.EqualTo("Coffee beans"));
+            Assert.That(value, Is.EqualTo("latte"));
+            Assert.That(title, Is.EqualTo("Latte"));
+            Assert.That(path, Is.EqualTo(new[] { "drinks", "espresso-drinks" }));
+
+            Assert.That(rootValue, Is.EqualTo("coffee"));
+            Assert.That(rootTitle, Is.EqualTo("Coffee beans"));
+            Assert.That(rootPath, Is.Empty, "a root-level tag has no ancestors");
+
+            Assert.That(awkward, Is.EqualTo($"A{LuceneFieldNames.PathSeparator}B"));
+            Assert.That(awkwardPath, Is.EqualTo(new[] { "root" }));
+
             Assert.That(LuceneFieldNames.SplitLabel("coffee").Value, Is.Null, "a term without a separator is not a label");
+
+            // The two-part form written before hierarchical facets still reads.
+            (string? legacyValue, string? legacyTitle, string[] legacyPath) =
+                LuceneFieldNames.SplitLabel($"coffee{LuceneFieldNames.LabelSeparator}Coffee beans");
+            Assert.That((legacyValue, legacyTitle), Is.EqualTo(("coffee", "Coffee beans")));
+            Assert.That(legacyPath, Is.Empty);
         });
     }
 }

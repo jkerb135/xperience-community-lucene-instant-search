@@ -74,6 +74,14 @@ public class ContractRoundTripTests
             Assert.That(tags[0].Label, Is.EqualTo("Coffee"));
             Assert.That(tags[0].Count, Is.EqualTo(40));
             Assert.That(tags.Select(value => value.Count), Is.Ordered.Descending);
+
+            // A taxonomy value names its ancestors; a root-level one has no path at all.
+            Assert.That(tags[0].Path, Is.Null);
+            Assert.That(tags[1].Path, Is.EqualTo(new[] { "coffee" }));
+            Assert.That(
+                JsonSerializer.Serialize(tags[0]),
+                Does.Not.Contain("path"),
+                "an absent path is omitted from the wire, not written as null");
         }
     }
 
