@@ -14,14 +14,15 @@ internal static class Storage
     /// <summary>A storage service that knows exactly one index.</summary>
     /// <param name="indexIdentifier">The identifier the index is registered under.</param>
     /// <param name="indexName">The index code name.</param>
+    /// <param name="languages">The content languages the index is configured for.</param>
     /// <returns>The substitute.</returns>
-    public static ILuceneConfigurationStorageService Holding(int indexIdentifier, string indexName)
+    public static ILuceneConfigurationStorageService Holding(int indexIdentifier, string indexName, params string[] languages)
     {
         var storage = Substitute.For<ILuceneConfigurationStorageService>();
 
         storage.GetIndexDataOrNullAsync(Arg.Any<int>()).Returns((LuceneIndexModel?)null);
         storage.GetIndexDataOrNullAsync(indexIdentifier)
-            .Returns(new LuceneIndexModel { Id = indexIdentifier, IndexName = indexName });
+            .Returns(new LuceneIndexModel { Id = indexIdentifier, IndexName = indexName, LanguageNames = [.. languages] });
 
         return storage;
     }

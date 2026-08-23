@@ -193,38 +193,58 @@ the list; they are stable and do not change when you edit the page.
 **Query tester** in the index's Tuning sidebar answers the only question that matters after you save
 a rule: did it do what you meant?
 
-1. The **Index** is the one you are in — it is shown above the form and cannot be changed.
-2. Type the **Query** a visitor would type. Leave **Language** empty unless you are checking one
-   language in particular (`en`, `de`, …).
-3. Press **Run**.
+Before you run anything the page shows a quick tip explaining what the comparison is, and two empty
+panels where the columns will appear. There is nothing else to read, because there is nothing to
+compare yet.
 
-You get two columns of the same search:
+1. The **Index** is the one you are in — it is named under the headline and cannot be changed.
+2. Type the **Query** a visitor would type. It is required: until you type something, **Run** is
+   disabled and the field reads *Enter a query to compare results. Required.*
+3. **Language** offers the content languages this index is configured for, plus **Any language**
+   (the default).
+4. **Page size** — how many results each side shows: 10, 25 or 50.
+5. Press **Run**.
 
-- **With rules** — exactly what a visitor gets right now: your rules, synonyms, stopwords and field
+You get two cards holding the same search:
+
+- **With tuning** — exactly what a visitor gets right now: your rules, synonyms, stopwords and field
   weights all applied.
-- **Without rules** — the same query with none of them. This is the "before" picture.
+- **Without tuning** — the same query with none of them. This is the "before" picture.
+
+Each card opens with a strip reading *N results · N ms · N changed*, so you can see at a glance
+whether the tuning moved anything at all.
 
 Every result on both sides shows:
 
-- its **position** and title,
+- its **position** and title, and its URL,
 - **score** — the final relevance number, after everything,
 - **base score** — the raw text-match score, before any rule or weight touched it. If the two are the
   same, nothing changed that result's score,
+- a tag saying how it differs from the other side,
 - one line per rule, weight or synonym that applied to *that* result, for example
   `rule:Flagship machine first`.
 
-Above the results, **How the query was rewritten** lists what applied to the whole search:
-`synonym:couch` (the search was widened with this word), `weight:Title×3` (this field weight applied),
-`rule:Winter campaign` (a boost or filter rule applied at query time).
+Under the columns, **Rewritten query per pipeline stage** lists what applied to the whole search, one
+line per stage: `synonym:couch` (the search was widened with this word), `weight:Title×3` (this field
+weight applied), `rule:Winter campaign` (a boost or filter rule applied at query time).
 
-Results that differ between the two columns are marked:
+Every result carries a tag, so a row is never marked by colour alone:
 
-| Mark | Means |
+| Tag | Means |
 |---|---|
 | ▲ Moved up by a rule | Your pin or boost lifted it. |
 | ▼ Moved down by a rule | Your bury, or someone else's boost, pushed it down. |
 | + Added by a rule | It was not in the plain results at all — a pin put it there. |
-| − Removed by a rule | It was in the plain results and your bury or filter took it out. |
+| ⃠ Removed by a rule | It was in the plain results and your bury or filter took it out. |
+| – Unchanged | Same position on both sides. |
+
+**When the query cannot be run** — the index is not registered, or Lucene has nothing searchable for
+the language you picked — a friendly-warning callout replaces both columns, with **Open status** to
+go straight to the index's Status page and, when the index holds another language, a button to try
+that one instead.
+
+Below 1366 px the two columns become a **With tuning / Without tuning** toggle over one list, and the
+pipeline stages collapse.
 
 Reading it: if the two columns are identical, your rule did not match — check the **When the
 visitor's search** condition and the **Words to look for**, and check the schedule. If a result moved

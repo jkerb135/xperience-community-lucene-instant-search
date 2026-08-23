@@ -8,6 +8,21 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Changed (admin UI):** the **Analytics** and **Query tester** pages were rebuilt to the owner's
+  design spec and are now assembled only from `@kentico/xperience-admin-components` — `Card`, `Table`
+  with `ActionCell`, `Tag`, `Callout`, `NameToggleButtons`, `DateTimeInput`, `Select` and the layout
+  primitives — with no hand-rolled tables, no inline-styled hit rows and no stylesheet. Analytics
+  gains four KPI tiles (total searches, zero-result rate, click-through rate, average clicked
+  position), a two-series chart, an empty-range state and a friendly-warning error state; the query
+  tester gains a quick tip before the first run, a required-query helper text that disables **Run**,
+  a language drop-down filled from the index's own languages, per-side *N results · N ms · N changed*
+  strips, and an error callout that links to the index's Status page. Both pages go to a single
+  column below 1366 px. The index is no longer a selector on either page, so the
+  `indexNames`/`indexLocked` client properties are gone. See ADR-0020.
+- **Added:** `SearchAnalyticsReport.ZeroResultSearches` and `.Clicks`,
+  `SearchVolumePoint.ZeroResultVolume` and `QueryVolume.P95ProcessingTimeMs` — the four figures the
+  new dashboard shows, all computed in the single log read the service already did. Code
+  constructing these records positionally must add the arguments.
 - **Changed (repository layout):** the JavaScript client moved from `src/XpSearch.Client` to
   `src/XpSearch.Widgets/Client`, so it sits inside the package that ships it, the same way
   `src/XpSearch.Admin/Client` holds the admin UI module. Nothing about the product changed: the npm

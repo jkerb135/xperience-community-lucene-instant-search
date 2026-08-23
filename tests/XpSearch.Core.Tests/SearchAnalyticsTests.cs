@@ -42,6 +42,8 @@ internal sealed class SearchAnalyticsTests
         Assert.That(report.TotalSearches, Is.EqualTo(9));
         Assert.That(report.TopQueries.Select(entry => entry.Query), Is.EqualTo(new[] { "mugs", "kettle", "teapot", "slow" }).AsCollection);
         Assert.That(report.TopQueries[0].Volume, Is.EqualTo(4));
+        Assert.That(report.TopQueries[0].P95ProcessingTimeMs, Is.EqualTo(90), "the dashboard shows p95 on the top queries table too");
+        Assert.That(report.ZeroResultSearches, Is.EqualTo(2), "the zero-result rate tile divides this by TotalSearches");
 
         var zero = report.ZeroResultQueries.Single();
 
@@ -64,6 +66,7 @@ internal sealed class SearchAnalyticsTests
         Assert.That(kettle.ClickThroughRate, Is.Zero);
         Assert.That(kettle.AverageClickedPosition, Is.Null);
         Assert.That(report.AverageClickedPosition, Is.EqualTo(2));
+        Assert.That(report.Clicks, Is.EqualTo(2), "the click-through rate tile divides this by TotalSearches");
     }
 
     [Test]
@@ -74,6 +77,11 @@ internal sealed class SearchAnalyticsTests
         Assert.That(
             report.VolumeOverTime.Select(point => point.Volume),
             Is.EqualTo(new[] { 4, 2, 3, 0 }).AsCollection);
+
+        // The chart's second series: only the two "teapot" searches, on the third day.
+        Assert.That(
+            report.VolumeOverTime.Select(point => point.ZeroResultVolume),
+            Is.EqualTo(new[] { 0, 0, 2, 0 }).AsCollection);
     }
 
     [Test]

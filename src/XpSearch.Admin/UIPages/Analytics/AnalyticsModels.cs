@@ -28,7 +28,7 @@ public sealed class CreateRuleRequest
 /// <summary>One row of the top queries and slowest queries reports.</summary>
 /// <param name="Query">The normalized query text.</param>
 /// <param name="Volume">How many times it was searched for.</param>
-/// <param name="P95ProcessingTimeMs">The 95th percentile of its processing time; zero outside the slowest queries report.</param>
+/// <param name="P95ProcessingTimeMs">The 95th percentile of its processing time.</param>
 public sealed record QueryRow(string Query, int Volume, int P95ProcessingTimeMs);
 
 /// <summary>One row of the zero-result queries report.</summary>
@@ -48,7 +48,8 @@ public sealed record ClickThroughRow(string Query, int Volume, int Clicks, doubl
 /// <summary>One point of the search volume chart.</summary>
 /// <param name="Day">The day, as <c>yyyy-MM-dd</c> in UTC.</param>
 /// <param name="Volume">How many searches ran that day.</param>
-public sealed record VolumePoint(string Day, int Volume);
+/// <param name="ZeroResultVolume">How many of those searches found nothing.</param>
+public sealed record VolumePoint(string Day, int Volume, int ZeroResultVolume);
 
 /// <summary>Everything the dashboard renders (spec §9.3).</summary>
 /// <param name="TopQueries">The most searched queries.</param>
@@ -58,6 +59,8 @@ public sealed record VolumePoint(string Day, int Volume);
 /// <param name="VolumeOverTime">Searches per day, oldest first.</param>
 /// <param name="SlowestQueries">The queries with the highest 95th percentile processing time.</param>
 /// <param name="TotalSearches">How many searches the range holds.</param>
+/// <param name="ZeroResultSearches">How many of those searches found nothing, for the zero-result rate tile.</param>
+/// <param name="Clicks">How many of those searches led to a click, for the click-through rate tile.</param>
 /// <param name="Error">A message to show instead of the reports, or an empty string when the load succeeded.</param>
 public sealed record AnalyticsReportDto(
     IReadOnlyList<QueryRow> TopQueries,
@@ -67,6 +70,8 @@ public sealed record AnalyticsReportDto(
     IReadOnlyList<VolumePoint> VolumeOverTime,
     IReadOnlyList<QueryRow> SlowestQueries,
     int TotalSearches,
+    int ZeroResultSearches,
+    int Clicks,
     string Error)
 {
     /// <summary>The date format the dashboard exchanges days in.</summary>
@@ -75,7 +80,7 @@ public sealed record AnalyticsReportDto(
     /// <summary>Gets an empty report carrying a message.</summary>
     /// <param name="message">What to tell the user.</param>
     /// <returns>The report.</returns>
-    public static AnalyticsReportDto Failed(string message) => new([], [], [], null, [], [], 0, message);
+    public static AnalyticsReportDto Failed(string message) => new([], [], [], null, [], [], 0, 0, 0, message);
 
     /// <summary>Maps the service's report onto what the client renders.</summary>
     /// <param name="report">The report the analytics service produced.</param>
@@ -85,7 +90,7 @@ public sealed record AnalyticsReportDto(
         ArgumentNullException.ThrowIfNull(report);
 
         return new AnalyticsReportDto(
-            [.. report.TopQueries.Select(row => new QueryRow(row.Query, row.Volume, 0))],
+            [.. report.TopQueries.Select(row => new QueryRow(row.Query, row.Volume, row.P95ProcessingTimeMs))],
             [.. report.ZeroResultQueries.Select(row => new ZeroResultRow(
                 row.Query,
                 row.Volume,
@@ -99,9 +104,12 @@ public sealed record AnalyticsReportDto(
             report.AverageClickedPosition,
             [.. report.VolumeOverTime.Select(point => new VolumePoint(
                 point.Day.ToString(DateFormat, CultureInfo.InvariantCulture),
-                point.Volume))],
+                point.Volume,
+                point.ZeroResultVolume))],
             [.. report.SlowestQueries.Select(row => new QueryRow(row.Query, row.Volume, row.P95ProcessingTimeMs))],
             report.TotalSearches,
+            report.ZeroResultSearches,
+            report.Clicks,
             string.Empty);
     }
 }

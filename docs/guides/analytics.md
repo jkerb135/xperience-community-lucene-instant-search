@@ -137,23 +137,41 @@ index and one date range (`/admin/lucene/indexes/tuning/{id}/analytics`). The in
 clicked; it is shown above the date range and cannot be changed, so there is no "every index" view —
 open each index's dashboard in turn.
 
-1. Pick the **Index**, or leave it on **Every index**.
-2. Pick the range: **Last 7 days**, **Last 30 days**, **Last 90 days**, or type **From** and **To**
-   yourself as `yyyy-mm-dd` and press **Apply**. Both dates are in UTC and both are included.
+The headline reads *Analytics*, and under it a line naming the index, the provider, the range and the
+total number of searches — *Index **ProductIndex** · Lucene · 1 Jul – 30 Jul 2026 · 4,812 searches*.
 
-What you get:
+The controls sit in one card under the headline:
 
-- **Search volume over time** — one bar per day. *Show the numbers* opens the same data as a table.
+1. **Range** — a **7 days / 30 days / 90 days** toggle. Picking one reloads immediately.
+2. **From** and **To** — date pickers, both in UTC, both included. Editing either one leaves the
+   range toggle unselected until the span matches a preset again.
+3. **Rows** — how many rows each table holds: 10, 25 (the default), 50 or 100.
+4. **Load** — reruns the report. It shows a spinner and disables itself while the load is in flight.
+
+What you get, in the order the page shows it:
+
+- Four **KPI tiles**: *Total searches*, *Zero-result rate*, *Click-through rate* and *Avg clicked
+  position*. A tile with nothing to divide by reads `—` rather than `0%`.
+- **Searches over time** — two lines, total searches and zero-result searches, one point per day.
+  *Show the numbers* opens the same data as a table.
 - **Zero-result queries** — what visitors asked for and did not find, most searched first, with the
-  date it was last asked. This is the report to read first.
-- **Top queries** — what visitors search for most.
-- **Click-through rate by query** — how often a search led to a click, and the mean position of the
-  thing clicked. A high volume with a low rate means the results are wrong; a good rate with a high
-  average position means the right result is too far down (a case for a pin).
+  date it was last asked, and a **Create rule** action on every row. This is the report to read
+  first, and the only table on the page that changes anything.
+- **Top queries** — what visitors search for most, with the 95th percentile of their processing time.
+- **Click-through** — how often a search led to a click, and the mean position of the thing clicked.
+  A high volume with a low rate means the results are wrong; a good rate with a high average position
+  means the right result is too far down (a case for a pin). The card's footer repeats the average
+  clicked position across all queries.
 - **Slowest queries** — the 95th percentile of server-side processing time per query.
 
-The header line gives the total number of searches in the range and the average clicked position
-across all of them.
+**When the range holds no searches** the four tiles read `—` and one card replaces the chart and all
+four tables: *No searches in this range*, with a **Load last 30 days** button.
+
+**When the load fails** a friendly-warning callout takes the place of every number — *Analytics could
+not be loaded*, the reason, and a **Load again** button. No partial figures are shown, because a
+half-read log would be misleading. The controls stay usable.
+
+Below 1366 px the tiles go two per row and the two table columns stack, zero-result queries first.
 
 #### From a zero-result query to a fix
 
@@ -194,8 +212,10 @@ public class SearchInsights(ISearchAnalyticsService analytics)
 
 `SearchAnalyticsReport` carries `TopQueries`, `ZeroResultQueries` (with volume and last sighting),
 `ClickThrough` (rate and mean clicked position per query), `AverageClickedPosition`, `VolumeOverTime`
-(one point per day across the whole range, including days nobody searched), `SlowestQueries` (95th
-percentile of `LogProcessingTimeMs`) and `TotalSearches`.
+(one point per day across the whole range, including days nobody searched, each carrying `Volume` and
+`ZeroResultVolume`), `SlowestQueries` (95th percentile of `LogProcessingTimeMs`), `TotalSearches`,
+`ZeroResultSearches` and `Clicks`. `TopQueries` carries `P95ProcessingTimeMs` too, so the top-queries
+table can show it without a second read.
 
 ### Replacing a piece
 

@@ -4,26 +4,46 @@ import {
   ButtonColor,
   ButtonSize,
   ButtonType,
+  Callout,
+  CalloutPlacementType,
+  CalloutType,
+  Card,
+  Colors,
+  Cols,
+  Column,
   Headline,
   HeadlineSize,
+  Icon,
+  Inline,
   Input,
+  LayoutAlignment,
   MenuItem,
+  NameToggleButtons,
+  Row,
   Select,
+  Spacing,
   Spinner,
+  Stack,
+  Tag,
+  useMediaBreakpoints,
 } from '@kentico/xperience-admin-components';
+import type { IconName } from '@kentico/xperience-admin-components';
 import { usePageCommand } from '@kentico/xperience-admin-base';
 
+import { mono, muted } from '../theme';
+
 /*
- * Client template of the query tester (spec 8.4). Registered as
- * "@yourco/xperience-search-admin/QueryTester"; the back end is XpSearch.Admin.UIPages.QueryTester.QueryTesterPage.
- * https://docs.kentico.com/documentation/developers-and-admins/customization/extend-the-administration-interface/ui-pages
+ * Client template of the query tester (spec 8.4), built to the owner's design spec:
+ * https://claude.ai/design/p/d9cffec1-046f-46e2-b611-d162418351f9 (artboards 2a-2d). Registered as
+ * "@yourco/xperience-search-admin/QueryTester"; the back end is
+ * XpSearch.Admin.UIPages.QueryTester.QueryTesterPage. See docs/adr/0020-admin-page-design.md.
  */
 
 interface QueryTesterProps {
-  readonly indexNames: string[];
+  /** The index under test. It comes from the URL, so it is shown and never chosen. */
   readonly selectedIndexName: string;
-  /** True when the page hangs under one index, so the index is shown rather than chosen. */
-  readonly indexLocked: boolean;
+  /** The content languages the index is configured for. Empty when the index indexes every language. */
+  readonly languages: string[];
 }
 
 type ResultChange = 'Unchanged' | 'MovedUp' | 'MovedDown' | 'Injected' | 'Removed';
@@ -60,104 +80,142 @@ interface RunData {
 
 const Commands = {
   Run: 'Run',
+  OpenStatus: 'OpenStatus',
 };
 
-const changeLabels: Record<ResultChange, string> = {
-  Unchanged: '',
-  MovedUp: 'Moved up by a rule',
-  MovedDown: 'Moved down by a rule',
-  Injected: 'Added by a rule',
-  Removed: 'Removed by a rule',
-};
+const pageSizes = [10, 25, 50];
+const anyLanguage = '';
 
-const changeMarks: Record<ResultChange, string> = {
-  Unchanged: '',
-  MovedUp: '▲',
-  MovedDown: '▼',
-  Injected: '+',
-  Removed: '−',
+const changes: Record<ResultChange, { readonly label: string; readonly icon: IconName; readonly color: Colors }> = {
+  Unchanged: { label: 'Unchanged', icon: 'xp-minus', color: Colors.BackgroundTagGrey },
+  MovedUp: { label: 'Moved up by a rule', icon: 'xp-arrow-up', color: Colors.BackgroundTagSkyBlue },
+  MovedDown: { label: 'Moved down by a rule', icon: 'xp-arrow-down', color: Colors.BackgroundTagYellow },
+  Injected: { label: 'Added by a rule', icon: 'xp-plus', color: Colors.BackgroundTagNeonGreen },
+  Removed: { label: 'Removed by a rule', icon: 'xp-ban-sign', color: Colors.BackgroundTagRose },
 };
 
 const round = (value: number): string => value.toFixed(3);
 
-const ChangeMark = ({ change }: { readonly change: ResultChange }) => {
-  if (change === 'Unchanged') {
-    return null;
-  }
+/** "English (en)" where the browser knows the code, the bare code where it does not. */
+const languageLabel = (code: string): string => {
+  const name = new Intl.DisplayNames(undefined, { type: 'language', fallback: 'code' }).of(code);
 
-  return (
-    <span
-      style={{
-        marginLeft: '8px',
-        padding: '0 6px',
-        borderRadius: '4px',
-        border: '1px solid currentColor',
-        fontSize: '12px',
-      }}
-    >
-      <span aria-hidden="true">{changeMarks[change]} </span>
-      {changeLabels[change]}
-    </span>
-  );
+  return name === undefined || name === code ? code : `${name} (${code})`;
 };
 
+const changed = (side: Side): number => side.hits.filter((hit) => hit.change !== 'Unchanged').length;
+
+/** The change marker: an icon and a label, so it never depends on the tag colour alone. */
+const ChangeTag = ({ change }: { readonly change: ResultChange }) => (
+  <Inline spacing={Spacing.XS}>
+    <Icon name={changes[change].icon} />
+    <Tag label={changes[change].label} readOnly background={{ color: changes[change].color }} />
+  </Inline>
+);
+
 const HitRow = ({ hit }: { readonly hit: Hit }) => (
-  <li style={{ padding: '8px 0', borderBottom: '1px solid rgba(0,0,0,.1)' }}>
-    <div>
-      <strong>
-        {hit.position}. {hit.title || hit.id}
-      </strong>
-      <ChangeMark change={hit.change} />
-    </div>
-    {hit.url ? <div style={{ fontSize: '12px' }}>{hit.url}</div> : null}
-    <div style={{ fontSize: '12px' }}>
-      score {round(hit.score)} (base score {round(hit.baseScore)})
-    </div>
-    {hit.boosts.length > 0 ? (
-      <ul style={{ fontSize: '12px', margin: '4px 0 0 16px' }}>
-        {hit.boosts.map((boost) => (
-          <li key={boost}>{boost}</li>
-        ))}
-      </ul>
-    ) : null}
-  </li>
-);
-
-const SideColumn = ({ side, title, description }: { readonly side: Side; readonly title: string; readonly description: string }) => (
-  <section style={{ flex: '1 1 0', minWidth: '320px' }} aria-label={title}>
-    <Headline size={HeadlineSize.S}>{title}</Headline>
-    <p style={{ fontSize: '12px' }}>{description}</p>
-    <p style={{ fontSize: '12px' }}>
-      {side.total} result(s), {side.tookMs} ms
-    </p>
-    {side.queryExplanations.length > 0 ? (
-      <>
-        <Headline size={HeadlineSize.S}>How the query was rewritten</Headline>
-        <ul style={{ fontSize: '12px', margin: '0 0 8px 16px' }}>
-          {side.queryExplanations.map((line) => (
-            <li key={line}>{line}</li>
+  <Card>
+    <Row spacing={Spacing.M}>
+      <Column width={3}>
+        <strong>{hit.position}</strong>
+      </Column>
+      <Column cols={Cols.Col8}>
+        <Stack spacing={Spacing.XS}>
+          <strong>{hit.title || hit.id}</strong>
+          {hit.url === '' ? null : <p style={mono}>{hit.url}</p>}
+          <ChangeTag change={hit.change} />
+          {hit.boosts.map((boost) => (
+            <p key={boost} style={muted}>
+              {boost}
+            </p>
           ))}
-        </ul>
-      </>
-    ) : null}
-    {side.hits.length === 0 ? (
-      <p>No results.</p>
-    ) : (
-      <ol style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-        {side.hits.map((hit) => (
-          <HitRow key={hit.id} hit={hit} />
-        ))}
-      </ol>
-    )}
-  </section>
+        </Stack>
+      </Column>
+      <Column cols={Cols.Col2}>
+        <Stack align={LayoutAlignment.End}>
+          <strong>{round(hit.score)}</strong>
+          <p style={muted}>{round(hit.baseScore)}</p>
+        </Stack>
+      </Column>
+    </Row>
+  </Card>
 );
 
-export const QueryTesterTemplate = ({ indexNames, selectedIndexName, indexLocked }: QueryTesterProps) => {
-  const [indexName, setIndexName] = useState(selectedIndexName);
+const Stats = ({ side }: { readonly side: Side }) => (
+  <div aria-live="polite">
+    <Inline spacing={Spacing.L}>
+      <span>
+        <strong>{side.total}</strong> results
+      </span>
+      <span>
+        <strong>{side.tookMs}</strong> ms
+      </span>
+      <span>
+        <strong>{changed(side)}</strong> changed
+      </span>
+    </Inline>
+  </div>
+);
+
+const Hits = ({ side }: { readonly side: Side }) => (
+  <Stack spacing={Spacing.M}>
+    <Stats side={side} />
+    {side.hits.length === 0 ? (
+      <p style={muted}>No results.</p>
+    ) : (
+      side.hits.map((hit) => <HitRow key={hit.id} hit={hit} />)
+    )}
+  </Stack>
+);
+
+const SideCard = ({ side, title, note }: { readonly side: Side; readonly title: string; readonly note: string }) => (
+  <Card
+    fullHeight
+    headline={<Headline size={HeadlineSize.S}>{title}</Headline>}
+    description={<Tag label={note} readOnly background={{ color: Colors.BackgroundTagGrey }} />}
+  >
+    <Hits side={side} />
+  </Card>
+);
+
+const Placeholder = ({ label }: { readonly label: string }) => (
+  <Card fullHeight>
+    <p style={muted}>{label}</p>
+  </Card>
+);
+
+const Explanations = ({ lines, open }: { readonly lines: string[]; readonly open: boolean }) => (
+  <Card
+    headline={<Headline size={HeadlineSize.S}>Rewritten query per pipeline stage</Headline>}
+    description={<p style={muted}>{`${lines.length} stage${lines.length === 1 ? '' : 's'}`}</p>}
+  >
+    <details open={open}>
+      <summary>Show the stages</summary>
+      <Stack spacing={Spacing.S}>
+        {lines.map((line, index) => (
+          <Row key={line} spacing={Spacing.L}>
+            <Column width={4}>
+              <p style={mono}>{`${index + 1} ·`}</p>
+            </Column>
+            <Column cols={Cols.Col9}>
+              <p style={mono}>{line}</p>
+            </Column>
+          </Row>
+        ))}
+      </Stack>
+    </details>
+  </Card>
+);
+
+export const QueryTesterTemplate = ({ selectedIndexName, languages }: QueryTesterProps) => {
   const [query, setQuery] = useState('');
-  const [language, setLanguage] = useState('');
+  const [language, setLanguage] = useState(anyLanguage);
+  const [pageSize, setPageSize] = useState(pageSizes[0]);
+  const [ran, setRan] = useState('');
   const [result, setResult] = useState<RunResult | undefined>(undefined);
   const [running, setRunning] = useState(false);
+  const [side, setSide] = useState('withRules');
+  const { sm: narrow } = useMediaBreakpoints();
 
   const { execute: run } = usePageCommand<RunResult, RunData>(Commands.Run, {
     after: (response) => {
@@ -166,77 +224,163 @@ export const QueryTesterTemplate = ({ indexNames, selectedIndexName, indexLocked
     },
   });
 
-  const submit = () => {
+  const { execute: openStatus } = usePageCommand<void, void>(Commands.OpenStatus);
+
+  const submit = (nextLanguage: string) => {
+    setLanguage(nextLanguage);
+    setRan(query);
     setRunning(true);
-    void run({ query, language, pageSize: 10 });
+    void run({ query, language: nextLanguage, pageSize });
   };
 
-  return (
-    <div style={{ padding: '16px' }}>
-      <Headline size={HeadlineSize.L}>Query tester</Headline>
-      <p>
-        Runs the query twice: once the way a visitor sees it, and once with none of this index&apos;s rules, synonyms,
-        stopwords or field weights.
-      </p>
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          submit();
-        }}
-        style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'flex-end' }}
-      >
-        <div style={{ minWidth: '240px' }}>
-          {indexLocked ? (
-            <p style={{ margin: 0 }}>
-              Index: <strong>{indexName}</strong>
-            </p>
-          ) : (
-            <Select label="Index" value={indexName} onChange={(value) => setIndexName(value ?? '')}>
-              {indexNames.map((name) => (
-                <MenuItem key={name} primaryLabel={name} value={name} />
-              ))}
-            </Select>
-          )}
-        </div>
-        <div style={{ minWidth: '240px' }}>
-          <Input label="Query" value={query} onChange={(event) => setQuery(event.target.value)} />
-        </div>
-        <div style={{ minWidth: '160px' }}>
-          <Input
-            label="Language"
-            explanationText="Optional, for example en."
-            value={language}
-            onChange={(event) => setLanguage(event.target.value)}
-          />
-        </div>
-        <Button
-          label="Run"
-          type={ButtonType.Submit}
-          color={ButtonColor.Primary}
-          size={ButtonSize.M}
-          inProgress={running}
-          disabled={indexName === ''}
-        />
-      </form>
+  const empty = query.trim() === '';
+  const failed = !running && result !== undefined && result.error !== '';
+  const loaded = !running && result !== undefined && result.error === '';
+  const fallback = languages.find((code) => code !== language);
 
-      <div aria-live="polite" style={{ marginTop: '24px' }}>
-        {running ? <Spinner /> : null}
-        {!running && result && result.error !== '' ? <p role="alert">{result.error}</p> : null}
-        {!running && result && result.error === '' ? (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '32px' }}>
-            <SideColumn
-              side={result.withRules}
-              title="With rules"
-              description="What a visitor searching this index gets right now."
-            />
-            <SideColumn
-              side={result.withoutRules}
-              title="Without rules"
-              description="The same query with no relevance tuning applied at all."
-            />
-          </div>
-        ) : null}
+  const subtitle = loaded
+    ? narrow
+      ? ` · “${ran}”`
+      : ' · results with the index’s tuning applied, next to the same query without it'
+    : '';
+
+  return (
+    <Stack spacing={Spacing.XL}>
+      <div>
+        <Headline size={HeadlineSize.L}>Query tester</Headline>
+        <p style={muted}>
+          Index <strong>{selectedIndexName}</strong>
+          {subtitle}
+        </p>
       </div>
-    </div>
+
+      <Card>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            submit(language);
+          }}
+        >
+          <Row spacing={Spacing.L} alignY={LayoutAlignment.End}>
+            <Column cols={narrow ? Cols.Col12 : Cols.Col6}>
+              <Input
+                label="Query"
+                markAsRequired
+                placeholder="e.g. espresso"
+                explanationText={empty ? 'Enter a query to compare results. Required.' : undefined}
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+              />
+            </Column>
+            <Column>
+              <Select label="Language" value={language} onChange={(value) => setLanguage(value ?? anyLanguage)}>
+                <MenuItem primaryLabel="Any language" value={anyLanguage} />
+                {languages.map((code) => (
+                  <MenuItem key={code} primaryLabel={languageLabel(code)} value={code} />
+                ))}
+              </Select>
+            </Column>
+            <Column>
+              <Select label="Page size" value={String(pageSize)} onChange={(value) => setPageSize(Number(value) || pageSizes[0])}>
+                {pageSizes.map((size) => (
+                  <MenuItem key={size} primaryLabel={String(size)} value={String(size)} />
+                ))}
+              </Select>
+            </Column>
+            <Column>
+              <Button
+                label="Run"
+                type={ButtonType.Submit}
+                color={ButtonColor.Primary}
+                size={ButtonSize.M}
+                inProgress={running}
+                disabled={empty}
+              />
+            </Column>
+          </Row>
+        </form>
+      </Card>
+
+      {running ? <Spinner /> : null}
+
+      {failed ? (
+        <Callout
+          type={CalloutType.FriendlyWarning}
+          placement={CalloutPlacementType.OnDesk}
+          subheadline="Friendly warning"
+          headline="The query could not be run"
+          actionButton={
+            <Inline spacing={Spacing.M}>
+              <Button
+                label="Open status"
+                color={ButtonColor.Secondary}
+                onClick={() => {
+                  void openStatus();
+                }}
+              />
+              {fallback === undefined ? null : (
+                <Button label={`Try ${languageLabel(fallback)}`} color={ButtonColor.Tertiary} onClick={() => submit(fallback)} />
+              )}
+            </Inline>
+          }
+        >
+          <p role="alert">{result.error}</p>
+        </Callout>
+      ) : null}
+
+      {!running && result === undefined ? (
+        <>
+          <Callout
+            type={CalloutType.QuickTip}
+            placement={CalloutPlacementType.OnDesk}
+            subheadline="Quick tip"
+            headline="What this page shows"
+          >
+            Running a query gives you two result lists: one with the tuning of this index applied, one against the raw
+            index. Positions, scores and the rules that moved a document are marked on every row, so you can tell whether
+            a rule did what you meant.
+          </Callout>
+          <Row spacing={Spacing.L}>
+            <Column cols={narrow ? Cols.Col12 : Cols.Col6}>
+              <Placeholder label="With tuning — results appear here" />
+            </Column>
+            <Column cols={narrow ? Cols.Col12 : Cols.Col6}>
+              <Placeholder label="Without tuning — results appear here" />
+            </Column>
+          </Row>
+        </>
+      ) : null}
+
+      {loaded && narrow ? (
+        <Card>
+          <Stack spacing={Spacing.M}>
+            <NameToggleButtons
+              selectedItemId={side}
+              items={[
+                { id: 'withRules', label: `With tuning (${result.withRules.total})` },
+                { id: 'withoutRules', label: `Without tuning (${result.withoutRules.total})` },
+              ]}
+              onChange={setSide}
+            />
+            <Hits side={side === 'withRules' ? result.withRules : result.withoutRules} />
+          </Stack>
+        </Card>
+      ) : null}
+
+      {loaded && !narrow ? (
+        <Row spacing={Spacing.L}>
+          <Column cols={Cols.Col6}>
+            <SideCard side={result.withRules} title="With tuning" note="Rules, synonyms, stopwords, field weights" />
+          </Column>
+          <Column cols={Cols.Col6}>
+            <SideCard side={result.withoutRules} title="Without tuning" note="Raw index, no rules applied" />
+          </Column>
+        </Row>
+      ) : null}
+
+      {loaded && result.withRules.queryExplanations.length > 0 ? (
+        <Explanations lines={result.withRules.queryExplanations} open={!narrow} />
+      ) : null}
+    </Stack>
   );
 };

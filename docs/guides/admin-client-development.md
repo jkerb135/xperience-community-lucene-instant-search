@@ -34,7 +34,14 @@ port 3009, see *Serving* below).
 | `Client/src/entry.tsx` | Exports every component the admin application may load. |
 | `Client/src/query-tester/QueryTesterTemplate.tsx` | Client template of the query tester. |
 | `Client/src/analytics/AnalyticsDashboardTemplate.tsx` | Client template of the dashboard. |
-| `Client/src/analytics/ReportTable.tsx`, `VolumeChart.tsx` | The dashboard's table and SVG bar chart. |
+| `Client/src/analytics/ReportTable.tsx`, `VolumeChart.tsx` | The dashboard's report card (a `Card` around the stock `Table`) and its inline-SVG chart. |
+| `Client/src/theme.ts` | The three text treatments no component exposes, built from the package's `Colors` tokens. There is no stylesheet and no style loader. |
+
+Both pages are built to the owner's design spec
+(<https://claude.ai/design/p/d9cffec1-046f-46e2-b611-d162418351f9>) and may only use
+`@kentico/xperience-admin-components`. Check a component and its prop names in
+`node_modules/@kentico/xperience-admin-components/dist/entry.d.ts` before using it — that file is the
+authority. See ADR-0020.
 
 ### The four names that must agree
 
