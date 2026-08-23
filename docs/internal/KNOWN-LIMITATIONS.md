@@ -477,15 +477,44 @@ and how to lift it.
   reusable component (rather than only `BaseIndexEditPage` plus a sealed registration), derive from it
   and delete the copy. Failing that, ask the integration to accept a `parentType` override.
 
-## Index status page in `XpSearch.Admin/UIPages/IndexStatus.cs`
+## Rebuild progress on `IndexStatusPage.Rebuild` in `XpSearch.Admin/UIPages/IndexStatus.cs`
 
-- **Simplified:** the built-in listing template lists a registered object type, and index status is
-  computed from the search index and the ingestion store. The page therefore reports the index it is
-  scoped to as text in a read-only text area and reuses the edit template's submit action as the
-  rebuild trigger. The counts are read synchronously while the page is built.
-- **Ceiling:** no sorting, no per-row actions, and one blocking status read on page load.
-- **Upgrade path:** a React listing component, alongside the query tester (spec §8.4), fed by
-  `IXpSearchIndexer.GetStatusAsync`.
+- **Simplified:** the "Rebuild in progress" state carries the start time of the rebuild and no
+  numerator. `Kentico.Xperience.Lucene` 15.0.5 exposes no rebuild progress: `ILuceneClient` is
+  `Rebuild` / `UpsertRecords` / `DeleteRecords` / `DeleteIndex` / `GetStatistics`, and
+  `LuceneIndexStatisticsModel` carries only `Name`, `Entries` and `UpdatedAt` — a live count, not a
+  target — while `LuceneQueueWorker` is internal
+  ([`ILuceneClient.cs`](https://github.com/Kentico/xperience-by-kentico-lucene/blob/v15.0.5/src/Kentico.Xperience.Lucene.Core/Indexing/ILuceneClient.cs),
+  [`LuceneIndexStatisticsModel.cs`](https://github.com/Kentico/xperience-by-kentico-lucene/blob/v15.0.5/src/Kentico.Xperience.Lucene.Core/Indexing/LuceneIndexStatisticsModel.cs),
+  [`LuceneQueueWorker.cs`](https://github.com/Kentico/xperience-by-kentico-lucene/blob/v15.0.5/src/Kentico.Xperience.Lucene.Core/LuceneQueueWorker.cs)).
+  A "44 of 152" would have to be invented, so it is not shown. The state also lives only in the page
+  session that triggered the rebuild: `Load` clears it, because nothing can be asked whether a
+  rebuild is still running.
+- **Ceiling:** an operator who reloads the page during a rebuild sees the ordinary health tag and
+  counts that are still climbing, with no sign a rebuild is in flight.
+- **Upgrade path:** count the documents the ingestion queue's `Replay` work item writes and record a
+  started/finished pair in the ingestion log, then derive both the numerator and "still running" from
+  the log rather than from the page session.
+
+## Recent ingestion window on `IndexStatusPage` in `XpSearch.Admin/UIPages/IndexStatus.cs`
+
+- **Simplified:** the page reads the ten newest ingestion log entries of the index and, while the
+  index is degraded, sorts the failed ones to the top of those ten. It does not search further back
+  for failures, and the table's "Source" column is the log's `KeyPrefix` (who wrote) rather than the
+  document `_source`, which the log does not record.
+- **Ceiling:** a failure older than the ten newest entries is invisible on the status page even
+  though health is degraded; the full history is on the Ingestion log listing.
+- **Upgrade path:** a second `ReadRecentAsync` call filtered to failures, merged ahead of the ten.
+
+## Narrow-viewport ingestion rows in `XpSearch.Admin/Client/src/status/IndexStatusTemplate.module.css`
+
+- **Simplified:** `Table` sizes its cells with inline `min-width`/`max-width`, so the 1024 board's
+  "message on a second line" is achieved by overriding those inline widths through the cell's
+  `data-testid="table-cell-message"` attribute inside the page's own module stylesheet.
+- **Ceiling:** the override depends on a components-library DOM attribute. If a future release drops
+  it, the message column simply scrolls horizontally again instead of wrapping.
+- **Upgrade path:** a `Table` prop for a full-width overflow cell, or rows built from `Row`/`Column`
+  once the components library offers an invalid-row treatment outside `Table`.
 
 ## Synonym expansion in `XpSearch.Core/Tuning/SynonymExpansion.cs`
 
@@ -499,7 +528,7 @@ and how to lift it.
 
 ## Admin client templates in `XpSearch.Admin/Client/src/**`
 
-- **Simplified:** the two React templates have no render tests. The Kentico admin client boilerplate
+- **Simplified:** the three React templates have no render tests. The Kentico admin client boilerplate
   ships no test runner, and adding jest or vitest plus a DOM and mocks for `usePageCommand` would be
   more machinery than the templates contain logic. Everything with a decision in it — the with/without
   marking, the explanation split, the report mapping, the deep-link token — is a pure function on the

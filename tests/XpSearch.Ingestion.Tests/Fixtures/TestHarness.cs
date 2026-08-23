@@ -125,6 +125,13 @@ internal sealed class RecordingIngestionLog : IIngestionLog
 
         return Task.CompletedTask;
     }
+
+    public Task<IReadOnlyList<IngestionLogEntry>> ReadRecentAsync(string indexName, int count, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<IngestionLogEntry>>(
+            Entries.Where(entry => entry.IndexName == indexName)
+                .OrderByDescending(entry => entry.At)
+                .Take(count)
+                .ToList());
 }
 
 /// <summary>

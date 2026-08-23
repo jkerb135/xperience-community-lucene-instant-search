@@ -8,6 +8,20 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Changed (admin UI):** the per-index **Status** page is now a custom React template
+  (`@yourco/xperience-search-admin/IndexStatus`) instead of an edit form whose only field was a
+  read-only text area. It shows the health tag with its explanation, the document/source/last-write
+  figures, a stacked *Documents by source* bar with a share table, and the last ten ingestion log
+  entries — failed ones first, with the invalid-row treatment **and** a *Failed* tag while the index
+  is degraded. **Rebuild index** is a destructive page action behind a confirmation dialog and the
+  Lucene integration's *Rebuild* permission, and reports back with a success notification and a
+  *Rebuild in progress* tag. Built only from `@kentico/xperience-admin-components`; follows ADR-0020
+  (AD-4a). See [Reading the Status page](docs/guides/relevance-tuning.md#reading-the-status-page).
+- **Added:** `IIngestionLog.ReadRecentAsync(indexName, count, cancellationToken)` — the read side of
+  the ingestion log, so a page can show the recent entries of one index without going through the
+  listing. Breaking for anyone who implemented `IIngestionLog` themselves; the HTTP contract
+  (`contract/xpsearch-ingestion.schema.json`) is untouched, and the status page's `failedWrites`
+  comes from the ingestion queue rather than from the wire `IndexStatus`.
 - **Changed (repository layout):** the JavaScript client moved from `src/XpSearch.Client` to
   `src/XpSearch.Widgets/Client`, so it sits inside the package that ships it, the same way
   `src/XpSearch.Admin/Client` holds the admin UI module. Nothing about the product changed: the npm
