@@ -34,4 +34,7 @@ public static class XpSearchWidgetConstants
 
     /// <summary>Widget identifier of the suggestions widget.</summary>
     public const string SuggestionsIdentifier = "XpSearch.Suggestions";
+
+    /// <summary>Widget identifier of the range filter widget.</summary>
+    public const string RangeFilterIdentifier = "XpSearch.RangeFilter";
 }

@@ -8,6 +8,9 @@ using XpSearch.Core.Facets;
 [assembly: RegisterFormComponentConfigurator(
     XpSearchConstants.FacetAttributeConfiguratorIdentifier,
     typeof(FacetAttributeConfigurator))]
+[assembly: RegisterFormComponentConfigurator(
+    XpSearchConstants.NumericAttributeConfiguratorIdentifier,
+    typeof(NumericAttributeConfigurator))]
 
 namespace XpSearch.Admin.Forms;
 
@@ -22,7 +25,7 @@ namespace XpSearch.Admin.Forms;
 /// dependency on <c>Kentico.Xperience.Admin</c>, and it reaches the option-building logic through
 /// <c>XpSearch.Core</c> so this package does not depend on <c>XpSearch.Widgets</c> (spec §2.2).
 /// </remarks>
-public sealed class FacetAttributeConfigurator : FormComponentConfigurator<DropDownComponent>
+public class FacetAttributeConfigurator : FormComponentConfigurator<DropDownComponent>
 {
     private readonly IIndexSchemaProvider schemaProvider;
 
@@ -33,6 +36,12 @@ public sealed class FacetAttributeConfigurator : FormComponentConfigurator<DropD
         ArgumentNullException.ThrowIfNull(schemaProvider);
         this.schemaProvider = schemaProvider;
     }
+
+    /// <summary>
+    /// Gets the fields the drop-down offers. <see langword="null"/> - the default - offers the
+    /// facetable ones.
+    /// </summary>
+    protected virtual Func<SchemaField, bool>? Include => null;
 
     /// <inheritdoc />
     public override async Task Configure(
@@ -45,7 +54,7 @@ public sealed class FacetAttributeConfigurator : FormComponentConfigurator<DropD
 
         formFieldValueProvider.TryGet<string>(XpSearchConstants.IndexPropertyName, out string? indexName);
 
-        string? options = await FacetAttributeOptions.BuildOptionsAsync(schemaProvider, indexName, cancellationToken);
+        string? options = await FacetAttributeOptions.BuildOptionsAsync(schemaProvider, indexName, cancellationToken, Include);
 
         if (options is null)
         {
@@ -55,6 +64,22 @@ public sealed class FacetAttributeConfigurator : FormComponentConfigurator<DropD
 
         formComponent.Properties.Options = options;
     }
+}
+
+/// <summary>
+/// Fills a range filter's attribute drop-down with the numeric and date fields of the selected index.
+/// </summary>
+public sealed class NumericAttributeConfigurator : FacetAttributeConfigurator
+{
+    /// <summary>Initializes a new instance of the <see cref="NumericAttributeConfigurator"/> class.</summary>
+    /// <param name="schemaProvider">Supplies the schema of the selected index.</param>
+    public NumericAttributeConfigurator(IIndexSchemaProvider schemaProvider)
+        : base(schemaProvider)
+    {
+    }
+
+    /// <inheritdoc />
+    protected override Func<SchemaField, bool>? Include => FacetAttributeOptions.IsRangeFilterable;
 }
 
 /// <summary>A visibility condition that never shows the field, used to hide a dependent drop-down.</summary>

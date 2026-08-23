@@ -4,6 +4,7 @@ using CMS;
 
 using NUnit.Framework;
 
+using XpSearch.Widgets;
 using XpSearch.Widgets.Components.Widgets.XpSearch;
 
 namespace XpSearch.Widgets.Tests;
@@ -27,5 +28,20 @@ internal sealed class AssemblyDiscoveryTests
             assembly.GetCustomAttribute<AssemblyDiscoverableAttribute>(),
             Is.Not.Null,
             "XpSearch.Widgets must carry CMS.AssemblyDiscoverableAttribute or none of its widgets appear in the Page Builder.");
+    }
+
+    [Test]
+    public void The_range_filter_widget_is_registered()
+    {
+        var widget = typeof(RangeFilterWidgetProperties).Assembly
+            .GetCustomAttributes<Kentico.PageBuilder.Web.Mvc.RegisterWidgetAttribute>()
+            .SingleOrDefault(registration => registration.Identifier == XpSearchWidgetConstants.RangeFilterIdentifier);
+
+        Assert.That(widget, Is.Not.Null);
+        Expect.Multiple(() =>
+        {
+            Assert.That(widget!.Name, Is.EqualTo("Search - Range filter"));
+            Assert.That(widget.IconClass, Is.Not.Empty);
+        });
     }
 }

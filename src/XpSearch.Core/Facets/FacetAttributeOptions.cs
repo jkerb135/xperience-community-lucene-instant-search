@@ -15,20 +15,39 @@ namespace XpSearch.Core.Facets;
 public static class FacetAttributeOptions
 {
     /// <summary>
-    /// Builds the <c>value;label</c> option lines of the facetable fields of an index.
+    /// Matches the fields a range filter can work on: a Lucene <c>double</c> or an epoch-seconds date,
+    /// both filterable with <c>filters.numeric</c>.
+    /// </summary>
+    /// <param name="field">The schema field.</param>
+    /// <returns><see langword="true"/> when the field holds a number or a date.</returns>
+    public static bool IsRangeFilterable(SchemaField field)
+    {
+        ArgumentNullException.ThrowIfNull(field);
+
+        return field.Kind is SearchFieldKind.Number or SearchFieldKind.Date;
+    }
+
+    /// <summary>
+    /// Builds the <c>value;label</c> option lines of the fields of an index an attribute drop-down
+    /// may offer.
     /// </summary>
     /// <param name="schemaProvider">Supplies the index schema.</param>
     /// <param name="indexName">Code name of the selected index, or empty when nothing is selected.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="include">
+    /// Which fields to offer. Defaults to the facetable ones, which is what the facet list widget's
+    /// drop-down needs; <see cref="IsRangeFilterable"/> is what the range filter's needs.
+    /// </param>
     /// <returns>
     /// The option lines in the format <c>DropDownComponent.Options</c> expects, or
-    /// <see langword="null"/> when no index is selected, the index is unknown, or it has no facetable
-    /// field - in each of those cases the field should be hidden.
+    /// <see langword="null"/> when no index is selected, the index is unknown, or no field matches -
+    /// in each of those cases the field should be hidden.
     /// </returns>
     public static async Task<string?> BuildOptionsAsync(
         IIndexSchemaProvider schemaProvider,
         string? indexName,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Func<SchemaField, bool>? include = null)
     {
         ArgumentNullException.ThrowIfNull(schemaProvider);
 
@@ -48,7 +67,7 @@ public static class FacetAttributeOptions
         }
 
         var lines = schema.Fields
-            .Where(field => field.Facetable)
+            .Where(include ?? (field => field.Facetable))
             .Select(field => $"{field.Name};{field.Name}")
             .ToList();
 

@@ -72,6 +72,30 @@ internal sealed class UnconfiguredStateTests
         });
     }
 
+    [TestCase(null, null, "attribute")]
+    [TestCase(null, 100.0, "Minimum")]
+    [TestCase(10.0, 10.0, "Minimum")]
+    [TestCase(100.0, 10.0, "Minimum")]
+    public void A_range_filter_without_an_attribute_or_without_usable_bounds_is_unconfigured(
+        double? minimum, double? maximum, string expected)
+    {
+        var component = new RangeFilterWidgetViewComponent(renderer, new FakeEditorContext(XpSearchEditorMode.Edit), twoIndexes);
+
+        var model = component.BuildModel(new RangeFilterWidgetProperties
+        {
+            Index = "site-content",
+            Attribute = expected == "attribute" ? string.Empty : "price",
+            Minimum = (decimal?)minimum,
+            Maximum = (decimal?)maximum
+        });
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(model.Mount, Is.Null);
+            Assert.That(model.EditorMessage, Does.Contain(expected));
+        });
+    }
+
     [Test]
     public void A_sort_selector_whose_keys_the_API_would_reject_is_unconfigured()
     {

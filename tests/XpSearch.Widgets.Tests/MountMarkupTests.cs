@@ -189,6 +189,65 @@ internal sealed class MountMarkupTests
     }
 
     [Test]
+    public void RangeFilter_emits_its_bounds_as_JSON_numbers_and_nests_the_input_labels()
+    {
+        var component = new RangeFilterWidgetViewComponent(renderer, editor, catalog);
+
+        string markup = Render(component, new RangeFilterWidgetProperties
+        {
+            Index = Index,
+            InstanceId = "search-1",
+            Attribute = "price",
+            Label = "Price",
+            Minimum = 0m,
+            Maximum = 500m,
+            Step = 5m,
+            FromLabel = "Cheapest",
+            ToLabel = "Dearest"
+        });
+
+        var config = Rendered.Json(markup, "data-xps-config");
+        Expect.Multiple(() =>
+        {
+            Assert.That(Rendered.Attribute(markup, "data-xps-widget"), Is.EqualTo("rangeFilter"));
+            Assert.That(config.GetProperty("attribute").GetString(), Is.EqualTo("price"));
+            Assert.That(config.GetProperty("min").ValueKind, Is.EqualTo(JsonValueKind.Number));
+            Assert.That(config.GetProperty("min").GetDecimal(), Is.EqualTo(0m));
+            Assert.That(config.GetProperty("max").GetDecimal(), Is.EqualTo(500m));
+            Assert.That(config.GetProperty("step").GetDecimal(), Is.EqualTo(5m));
+            Assert.That(config.GetProperty("label").GetString(), Is.EqualTo("Price"));
+            Assert.That(config.GetProperty("labels").GetProperty("from").GetString(), Is.EqualTo("Cheapest"));
+            Assert.That(config.GetProperty("labels").GetProperty("to").GetString(), Is.EqualTo("Dearest"));
+        });
+
+        TestContext.Out.WriteLine(markup);
+    }
+
+    [Test]
+    public void RangeFilter_leaves_out_what_the_editor_did_not_set_so_the_JavaScript_defaults_apply()
+    {
+        var component = new RangeFilterWidgetViewComponent(renderer, editor, catalog);
+
+        string markup = Render(component, new RangeFilterWidgetProperties
+        {
+            Index = Index,
+            Attribute = " publishedAt ",
+            Minimum = 1m,
+            Maximum = 2m,
+            Step = null
+        });
+
+        var config = Rendered.Json(markup, "data-xps-config");
+        Expect.Multiple(() =>
+        {
+            Assert.That(config.GetProperty("attribute").GetString(), Is.EqualTo("publishedAt"));
+            Assert.That(config.TryGetProperty("step", out _), Is.False);
+            Assert.That(config.TryGetProperty("label", out _), Is.False);
+            Assert.That(config.TryGetProperty("labels", out _), Is.False);
+        });
+    }
+
+    [Test]
     public void Pagination_style_picks_the_JavaScript_widget_rather_than_becoming_an_option()
     {
         var component = new PaginationWidgetViewComponent(renderer, editor, catalog);

@@ -8,6 +8,14 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Added:** a **Search - Range filter** Page Builder widget (`XpSearch.RangeFilter`), which emits a
+  `rangeFilter` mount. Its **Attribute** drop-down is filled from the selected index's numeric and date
+  fields by a new form component configurator (`XpSearchConstants.NumericAttributeConfiguratorIdentifier`);
+  **Minimum**, **Maximum**, **Step** and the two input labels are editor properties, because the search
+  response carries no statistics the bounds could be derived from. A widget without usable bounds shows
+  the unconfigured instruction block. See
+  [Page Builder widgets](docs/guides/page-builder-widgets.md#the-range-filters-bounds-are-hand-configured).
+
 - **Changed (breaking):** the relevance-tuning admin pages moved inside the search index. They are now
   reached at **Lucene Search → indexes → click an index → the *Tuning* sidebar**: *Settings*, *Rules*,
   *Synonyms*, *Stopwords*, *Field weights*, *Query tester*, *Analytics* and *Status*. Clicking an index

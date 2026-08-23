@@ -31,10 +31,10 @@ That is the whole developer-side setup. The widgets register themselves through 
 they appear in the Page Builder widget list as soon as the package is referenced.
 
 Reference `YourCo.Xperience.Search.Admin` as well. It carries the form component configurator behind the
-facet list's attribute drop-down; without it that one field stays hidden. Nothing else needs it, and no
+facet list's and the range filter's attribute drop-downs; without it those fields stay hidden. Nothing else needs it, and no
 live-site code takes a dependency on `Kentico.Xperience.Admin` either way.
 
-### The seven widgets
+### The widgets
 
 | Widget in the Page Builder | Identifier | Emits `data-xps-widget` |
 |---|---|---|
@@ -45,6 +45,7 @@ live-site code takes a dependency on `Kentico.Xperience.Admin` either way.
 | Search - Result stats | `XpSearch.ResultStats` | `resultStats` |
 | Search - Sort selector | `XpSearch.SortSelect` | `sortSelect` |
 | Search - Suggestions | `XpSearch.Suggestions` | `suggestions` |
+| Search - Range filter | `XpSearch.RangeFilter` | `rangeFilter` |
 
 Every widget renders exactly this, and nothing else:
 
@@ -78,6 +79,7 @@ Then, per widget:
 | Pagination | Style (numbered pages / load more button) — "load more" emits a `loadMore` mount instead of a `pagination` one, so place one or the other, never both |
 | Result stats | Text template (`{total}`, `{tookMs}`, `{query}`, `{page}`, `{totalPages}`) · Text before the first search |
 | Sort selector | Sort options (one `key;Label` per line) · Label · Hide the label visually |
+| Range filter | Attribute (numeric or date) · Label · Minimum · Maximum · Step · "From" label · "To" label — see [The range filter's bounds are hand-configured](#the-range-filters-bounds-are-hand-configured) |
 | Suggestions | Mode (matching documents / popular queries) · Maximum items. Whether an index answers with documents or with query suggestions is server-side configuration; the property records the editor's intent and does not change the request |
 
 A blank text property is left out of `data-xps-config` entirely, so the JavaScript widget's own default
@@ -88,6 +90,38 @@ applies rather than an empty string overriding it.
 The facet list's **Attribute** property is not a free-text field. It is a drop-down populated from the
 selected index's actual schema, listing only fields that are facetable. Pick the index first: until you
 do, the attribute field is hidden, and changing the index repopulates it.
+
+The range filter's **Attribute** property works the same way, but lists the index's numeric and date
+fields instead — the ones a `filters.numeric` comparison can be built from. An index with no numeric
+or date field leaves the drop-down hidden, which is the sign that a range filter has nothing to filter
+on there.
+
+#### The range filter's bounds are hand-configured
+
+| Property | Required | What it does |
+|---|---|---|
+| Attribute | yes | The numeric or date field to filter, picked from the index schema |
+| Label | no | Heading above the control. Empty falls back to the attribute name |
+| Minimum / Maximum | yes | The two ends of the control. The maximum must be greater than the minimum |
+| Step | no | Step of the sliders and the number inputs. Defaults to `1` |
+| "From" / "To" label | no | Visible labels of the two number inputs. Empty leaves `From` and `To` |
+
+**The editor has to know the bounds.** The search response carries no statistics about the corpus, so
+there is nowhere for a server-computed minimum and maximum to arrive — the widget cannot discover that
+prices in the index run from 3 to 480. Until a widget has both bounds, and a maximum above its minimum,
+it shows the unconfigured instruction block rather than a slider that filters nothing.
+
+A configured range filter renders exactly this:
+
+```html
+<div class="xps-mount" data-xps-config="{&quot;attribute&quot;:&quot;price&quot;,&quot;min&quot;:0,&quot;max&quot;:500,&quot;step&quot;:5,&quot;label&quot;:&quot;Price&quot;,&quot;labels&quot;:{&quot;from&quot;:&quot;Cheapest&quot;,&quot;to&quot;:&quot;Dearest&quot;}}" data-xps-instance="search-1" data-xps-instance-config="{&quot;index&quot;:&quot;site-content&quot;}" data-xps-widget="rangeFilter"></div>
+```
+
+The bounds and the step stay JSON numbers, and the two input labels are left out of the JSON entirely
+when the editor did not set them, so the JavaScript widget's own `From` / `To` apply.
+
+A date attribute is indexed as Unix epoch seconds, so its bounds are entered as epoch seconds too —
+`1704067200` is 2024-01-01. Give such a filter a **Label** and "From" / "To" labels that say so.
 
 #### Sort options are validated
 

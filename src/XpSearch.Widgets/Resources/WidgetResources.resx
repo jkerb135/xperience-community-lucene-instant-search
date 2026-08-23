@@ -76,6 +76,9 @@
   <data name="Hint_SelectAttribute" xml:space="preserve">
     <value>Select the attribute this facet filters on.</value>
   </data>
+  <data name="Hint_RangeBounds" xml:space="preserve">
+    <value>Enter a Minimum and a Maximum for the range, with the maximum greater than the minimum.</value>
+  </data>
   <data name="Hint_SortOptions" xml:space="preserve">
     <value>Enter at least one valid sort option, one per line, in the form key;Label.</value>
   </data>

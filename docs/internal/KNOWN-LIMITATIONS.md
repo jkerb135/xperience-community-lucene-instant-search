@@ -52,7 +52,8 @@ and how to lift it.
   without them, because the JSON contract carries no numeric facet statistics — there is nowhere for a
   server-computed min/max to arrive.
 - **Ceiling:** a range slider over an unknown corpus has to be hand-configured, and its ends do not
-  follow the current result set.
+  follow the current result set. The `XpSearch.RangeFilter` Page Builder widget inherits this: its
+  Minimum and Maximum are editor properties, and it renders the unconfigured block without them.
 - **Upgrade path:** add facet statistics to `SearchResponse` (a contract change, so a coordinated event)
   and read them in the behaviour, keeping the params as an override. The `rangeFilter` renderer ships
   and needs no change: it already renders itself `disabled` when the bounds are missing, and would
@@ -286,17 +287,6 @@ and how to lift it.
 - **Upgrade path:** run the query in `ResultsWidgetViewComponent.InvokeAsync`, render
   `SearchResultTemplate.ViewName` per result into the mount element, and have the `results` widget adopt
   the existing children on its first render instead of replacing them.
-
-## No Page Builder widget for `rangeFilter` in `XpSearch.Widgets`
-
-- **Simplified:** the `rangeFilter` JavaScript widget ships, but no Page Builder widget emits its
-  mount. Its two required properties are the bounds, and an editor cannot know them - they are a
-  property of the corpus, which the contract does not report (see the `withRange` entry above).
-- **Ceiling:** a range slider has to be placed in the page template with `@Html.XpSearchMount(...)`
-  or hand-written `.xps-mount` markup, not dropped in by an editor.
-- **Upgrade path:** a small widget with Attribute (schema-driven drop-down, numeric fields only),
-  Minimum, Maximum and Step properties, once someone wants it - or, better, after facet statistics
-  land, with the bounds left empty by default.
 
 ## `SortOptionsValidation.IsValidKey` in `XpSearch.Widgets`
 

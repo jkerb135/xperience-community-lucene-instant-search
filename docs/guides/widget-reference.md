@@ -421,7 +421,9 @@ rangeFilter({ container: '#filter-price', attribute: 'price', label: 'Price', mi
 The bounds are configuration, not data: the JSON contract carries no numeric facet statistics, so
 there is nowhere for a server-computed min/max to arrive. With no `min`/`max` the widget renders the
 whole control `disabled` with "No … range in these results." rather than pretending to filter — see
-[KNOWN-LIMITATIONS](../internal/KNOWN-LIMITATIONS.md).
+[KNOWN-LIMITATIONS](../internal/KNOWN-LIMITATIONS.md). The **Search - Range filter** Page Builder
+widget takes the same bounds as editor properties and refuses to render without them; see
+[Page Builder widgets](page-builder-widgets.md#the-range-filters-bounds-are-hand-configured).
 
 Dragging updates the numbers and the values line; the search runs on `change` (mouse release, or the
 commit of a held arrow key), so a drag is one request and not one per pixel. Neither end can cross

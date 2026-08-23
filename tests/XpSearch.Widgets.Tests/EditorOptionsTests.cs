@@ -1,6 +1,13 @@
+using System.Reflection;
+
+using Kentico.Xperience.Admin.Base.FormAnnotations;
+
 using NUnit.Framework;
 
+using XpSearch.Core;
 using XpSearch.Core.Options;
+using XpSearch.Widgets.Components.Widgets.XpSearch;
+using XpSearch.Widgets.Mounting;
 using XpSearch.Widgets.Options;
 using XpSearch.Widgets.Sorting;
 using XpSearch.Widgets.Templates;
@@ -66,6 +73,24 @@ internal sealed class EditorOptionsTests
         var items = (await provider.GetOptionItems()).ToList();
 
         Assert.That(items.Select(item => item.Text), Is.EqualTo(new[] { "Compact row", "Product card" }));
+    }
+
+    [Test]
+    public void The_range_filter_attribute_dropdown_asks_for_the_numeric_configurator()
+    {
+        var attribute = typeof(RangeFilterWidgetProperties).GetProperty(nameof(RangeFilterWidgetProperties.Attribute))!
+            .GetCustomAttribute<FormComponentConfigurationAttribute>();
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(attribute, Is.Not.Null);
+            Assert.That(attribute!.Identifier, Is.EqualTo(XpSearchConstants.NumericAttributeConfiguratorIdentifier));
+            // The drop-down must be ordered after the index it depends on.
+            Assert.That(
+                typeof(RangeFilterWidgetProperties).GetProperty(nameof(RangeFilterWidgetProperties.Attribute))!
+                    .GetCustomAttribute<DropDownComponentAttribute>()!.Order,
+                Is.GreaterThan(XpSearchMountWidgetProperties.OrderIndex));
+        });
     }
 
     [Test]
