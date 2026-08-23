@@ -72,3 +72,35 @@ application. Defaults: 180 days, 1000 rows per batch.
   it into SQL `GROUP BY` is a store-level change that no caller would notice.
 - Queued log rows are lost if the process dies before the worker drains — deliberately, unlike
   ingestion (ADR-0005), because a missing analytics row is not a missing document.
+
+## Addendum, 2026-08-23 (AN-2): the activity value is the query, and only the query
+
+`xpsearch_click` used to log `"query | resultId | position"` and `xpsearch_conversion`
+`"query | resultId"`. A marketer cannot segment on a pipe-joined string, and the value is the only
+field a contact group condition can ever reach, so the composite made click and conversion useless for
+the thing activities exist for. All four types now log the **searched text** as `ActivityValue`; the
+result id goes to `CustomActivityData.ActivityComment` and the one-based position to
+`ActivityItemDetailID` (zero when there is none — positions are one-based). Breaking for anyone who
+parsed the old value; the `ISearchActivityLogger` signatures are unchanged.
+
+`XpSearchActivityTypeInstaller` now rewrites `ActivityTypeDescription` on a type that already exists,
+because the description states what this library puts in the activity's fields and would otherwise
+describe the old layout forever. `ActivityTypeEnabled` and `ActivityTypeDisplayName` are still never
+touched, so the promise above — a marketer's decision survives a restart — still holds.
+
+**No contact group rule was added, because the platform has no seam for one.** The built-in
+*Contact has performed custom activity* condition matches on the activity type only. The condition
+rules behind the builder are `cms.macrorule` objects, which the platform documents as
+["used internally for the condition builder in contact groups, customer journeys and automation
+processes"](https://docs.kentico.com/documentation/developers-and-admins/ci-cd/reference-ci-cd-object-types)
+and for which 31.8 publishes no registration API — unlike automation, which has a documented
+[`RegisterAutomationCondition<T>`](https://docs.kentico.com/documentation/developers-and-admins/digital-marketing-setup/automation-customization/automation-custom-steps).
+Kentico's own Kbank demo, whose journey stage filters an activity that *"contains value"*, notes that
+["targeting the value of the logged activity was custom
+built"](https://docs.kentico.com/guides/customer-journeys/build-customer-journey) for that demo.
+Writing `MacroRuleInfo` rows by hand would be building on an internal object type behind the
+platform's back; the alternative — a custom contact field maintained from the search pipeline — buys
+value targeting at the cost of writing to every contact on every search. Neither is worth it. The
+guide tells marketers to segment on *that* a visitor searched and to read *what* in the activity log
+and the dashboard.
+

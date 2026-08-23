@@ -3,8 +3,8 @@
 Every search this library answers is recorded twice, for two different audiences.
 
 - **Xperience activities** — per contact, consent-gated. They land in the standard contact activity
-  log, so a marketer can build a contact group out of "searched for *pricing*" and personalize content
-  with it.
+  log, so a marketer can build a contact group out of "ran a search that found nothing" and
+  personalize content with it (see *Search activities in contact groups*).
 - **The `XpSearch.QueryLog` module class** — anonymous aggregates. No contact, no visitor identifier,
   nothing personal, so it is written for every visitor whether or not they consented to tracking. It
   is what the top-queries, zero-result and click-through reports read, and what query suggestions are
@@ -31,16 +31,23 @@ Then create the retention task configuration once (see *Retention*, below). That
 
 ### What gets logged, and where
 
-| Activity code name | Logged when | Activity value |
-|---|---|---|
-| `xpsearch_query` | a search returned at least one result | the normalized query |
-| `xpsearch_noresults` | a search returned nothing | the normalized query |
-| `xpsearch_click` | `POST /api/xpsearch/events` with `type: "click"` | `query \| resultId \| position` |
-| `xpsearch_conversion` | `POST /api/xpsearch/events` with `type: "conversion"` | `query \| resultId` |
+| Activity code name | Logged when | Activity value | Other fields |
+|---|---|---|---|
+| `xpsearch_query` | a search returned at least one result | the normalized query | — |
+| `xpsearch_noresults` | a search returned nothing | the normalized query | — |
+| `xpsearch_click` | `POST /api/xpsearch/events` with `type: "click"` | the normalized query | comment = result id, item detail ID = one-based position |
+| `xpsearch_conversion` | `POST /api/xpsearch/events` with `type: "conversion"` | the normalized query | comment = result id |
+
+**All four activities carry the searched text, and nothing else, as their value.** That is the field
+a marketer segments on, so one condition reads the same way whichever activity it is built on. What
+the visitor clicked travels in the other columns Xperience gives a custom activity
+(`CustomActivityData.ActivityComment` and `ActivityItemDetailID`), where it stays out of the way of
+filtering.
 
 The four activity types are created on application start by `XpSearchActivityTypeInstaller`, so they
-appear in **Contact management → Activity types** without anybody adding them by hand. A type that
-already exists is left alone — if a marketer disables one, it stays disabled.
+appear in **Contact management → Activity types** without anybody adding them by hand. Of a type that
+already exists only the *Description* is refreshed on start — the enabled flag and the name are left
+alone, so if a marketer disables or renames one, it stays that way.
 
 The query and no-results activities are written by `LogActivityStage`, the last stage of the query
 pipeline (slot `SearchStageOrder.LogActivity`, 1200). Click and conversion are written by
@@ -75,6 +82,57 @@ the visitor's decision with no further work.
 
 The query log is unaffected by any of this. It stores no personal data, so the reports below are
 complete even on a site where nobody consents to tracking.
+
+### Search activities in contact groups
+
+A contact group turns "did this" into an audience. The three search activities a visitor produces on
+their own — `xpsearch_query`, `xpsearch_noresults`, `xpsearch_click` — are all usable as conditions.
+
+**Build a group of visitors who searched and found nothing:**
+
+1. Open the **Contact groups** application and select **New contact group**.
+2. **Contact group name**: *Searched and found nothing*. The **Code name** fills itself in.
+3. Write a **Description** — the next marketer needs to know what the group is for.
+4. In the **Conditions** area, select **Add**, then **Add condition group**.
+5. In the condition picker (a searchable list, grouped by category), type `custom activity` and pick
+   **Contact has performed custom activity**.
+6. The condition shows one parameter, an activity drop-down listing every enabled activity type.
+   Choose **Search without results**.
+7. **Apply**, then **Save**.
+8. The group's **Contacts** tab now fills as visitors search. If you change the condition later, the
+   **General** tab grows a **Recalculate contact group** button — use it, otherwise the group keeps
+   the contacts the old condition put there.
+
+Swap the activity in step 6 for **Search** or **Search result click** for the other two groups.
+
+#### Segment on *that* a visitor searched, not *what*
+
+The built-in **Contact has performed custom activity** condition matches on the activity **type**
+only. There is no parameter for the activity value, and Xperience by Kentico 31.8 exposes no
+supported way for a package to add one: the condition rules of the builder are `cms.macrorule`
+objects, which the platform documents as
+["used internally for the condition builder"](https://docs.kentico.com/documentation/developers-and-admins/ci-cd/reference-ci-cd-object-types)
+and provides no registration API for. Kentico's own Kbank demo, whose customer journey filters an
+activity that *"contains value"*, says so in the walkthrough: ["Targeting the value of the logged
+activity was custom built for the Kbank demo site; your website options might
+vary."](https://docs.kentico.com/guides/customer-journeys/build-customer-journey)
+
+So a contact group can hold *everyone who ran a search that found nothing*, but not *everyone who
+searched for **standing desk***. The searched text is still recorded on every activity — read it in
+**Contact management → a contact → Activities**, where the value is shown next to the activity, and
+in the **Analytics** dashboard, which aggregates the same searches for the whole site without needing
+consent. If you need value-level targeting, the practical route is a project-specific one (a custom
+contact field set from your own code, then the **Contact field value** condition).
+
+#### Two things that surprise people
+
+- **Consent.** A visitor below cookie level *Visitor* produces no activities at all, so they can never
+  enter one of these groups. Groups built on search activities describe your consenting visitors only.
+  The Analytics dashboard, which reads the anonymous query log, describes everybody.
+- **Only browser traffic counts.** Activities are logged for the *current contact*, which the platform
+  resolves from the contact cookie on the request. A search issued by a server-to-server call, a
+  scheduled job, or the admin **Query tester** carries no contact and logs no activity — it still
+  lands in the query log. If a contact group looks emptier than the dashboard suggests, that is why.
 
 ### The query log
 

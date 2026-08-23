@@ -8,6 +8,21 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Changed (breaking, activities):** `xpsearch_click` and `xpsearch_conversion` now log the
+  **searched text** as their `ActivityValue`, the same as `xpsearch_query` and `xpsearch_noresults`,
+  instead of the pipe-joined `query | resultId | position` / `query | resultId`. The result id moved
+  to `CustomActivityData.ActivityComment` and the one-based click position to `ActivityItemDetailID`
+  (`0` when there is none). The value is the only field a contact group condition can reach, so it now
+  holds the one thing worth segmenting on. **Anything built on the old format needs updating** — a
+  contact group, customer journey or automation condition matching the old value, and any report or
+  export that split the value on `|`. The `ISearchActivityLogger` method signatures are unchanged.
+  `XpSearchActivityTypeInstaller` refreshes the *Description* of the four activity types on start so
+  an upgraded project does not keep the old wording; the *Enabled* flag and the name are still never
+  overwritten. No contact group condition rule ships with the library: Xperience 31.8 has no supported
+  extension point for the condition builder — see
+  [Search activities in contact groups](docs/guides/analytics.md#search-activities-in-contact-groups)
+  and the ADR-0015 addendum (AN-2).
+
 - **Changed (admin UI):** the per-index **Status** page is now a custom React template
   (`@yourco/xperience-search-admin/IndexStatus`) instead of an edit form whose only field was a
   read-only text area. It shows the health tag with its explanation, the document/source/last-write

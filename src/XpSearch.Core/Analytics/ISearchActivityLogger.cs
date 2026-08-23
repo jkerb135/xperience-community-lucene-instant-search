@@ -20,13 +20,19 @@ public interface ISearchActivityLogger
     /// <param name="total">How many documents matched.</param>
     void LogSearch(string query, int total);
 
-    /// <summary>Logs <c>xpsearch_click</c> with the value <c>query | resultId | position</c>.</summary>
+    /// <summary>
+    /// Logs <c>xpsearch_click</c> with the query as its value, the result id in
+    /// <c>ActivityComment</c> and the position in <c>ActivityItemDetailID</c>.
+    /// </summary>
     /// <param name="query">The normalized text of the search that produced the result.</param>
     /// <param name="resultId">Id of the clicked result.</param>
     /// <param name="position">One-based position of the result in the list.</param>
     void LogClick(string query, string resultId, int position);
 
-    /// <summary>Logs <c>xpsearch_conversion</c> with the value <c>query | resultId</c>.</summary>
+    /// <summary>
+    /// Logs <c>xpsearch_conversion</c> with the query as its value and the result id in
+    /// <c>ActivityComment</c>.
+    /// </summary>
     /// <param name="query">The normalized text of the search that produced the result.</param>
     /// <param name="resultId">Id of the result the goal is attributed to.</param>
     void LogConversion(string query, string resultId);
