@@ -24,6 +24,13 @@ module.exports = (opts, argv) => {
           exclude: [/node_modules/],
           loader: "babel-loader",
         },
+        // css-loader turns *.module.css into CSS modules on its own, so page styles stay scoped.
+        // Extending the boilerplate config with CSS loaders is Kentico's documented route:
+        // https://docs.kentico.com/documentation/developers-and-admins/configuration/rich-text-editor-configuration/rich-text-editor-customization
+        {
+          test: /\.css$/,
+          use: ["style-loader", "css-loader"],
+        },
       ],
     },
     output: {

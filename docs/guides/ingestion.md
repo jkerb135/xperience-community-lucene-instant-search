@@ -183,7 +183,9 @@ documents get theirs from the request, from the API key's integration or from
   source it deletes every *external* source. Neither can touch Xperience content, and asking for
   `source=xperience` is a `400`.
 - **Counts are per source.** `GET …/status` reports `documents.bySource`, so "did the PIM sync land"
-  is one request. Both `documents.total` and every `bySource` entry count *live* documents in the
+  is one request. The same numbers, with a per-source bar and the last ten log entries, are on the
+  **Status** page of the index (**Lucene Search → indexes → *index* → Tuning → Status**); see
+  [Reading the Status page](relevance-tuning.md#reading-the-status-page). Both `documents.total` and every `bySource` entry count *live* documents in the
   current index generation - deleted and replaced copies that Lucene has not merged away yet are not
   counted - so the entries always add up to the total.
 - **`_source` is facetable.** Ask for it in `facets` to get the counts a search sees, or filter to one

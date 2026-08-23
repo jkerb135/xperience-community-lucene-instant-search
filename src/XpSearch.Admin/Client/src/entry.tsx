@@ -3,3 +3,4 @@
 // https://docs.kentico.com/documentation/developers-and-admins/customization/extend-the-administration-interface/prepare-your-environment-for-admin-development
 export * from './query-tester/QueryTesterTemplate';
 export * from './analytics/AnalyticsDashboardTemplate';
+export * from './status/IndexStatusTemplate';

@@ -31,6 +31,13 @@ public interface IIngestionLog
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A task that completes when the entry is stored.</returns>
     Task WriteAsync(IngestionLogEntry entry, CancellationToken cancellationToken);
+
+    /// <summary>Reads the most recent operations recorded against one index, newest first.</summary>
+    /// <param name="indexName">Code name of the index.</param>
+    /// <param name="count">How many entries to return at most.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The entries, newest first.</returns>
+    Task<IReadOnlyList<IngestionLogEntry>> ReadRecentAsync(string indexName, int count, CancellationToken cancellationToken);
 }
 
 /// <summary>

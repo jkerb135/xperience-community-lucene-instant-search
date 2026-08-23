@@ -244,7 +244,39 @@ never shows up in **Analytics** — tester runs are not written to the query log
   that opens the rule form with the query already filled in.
 - **Status** — how many documents this index holds and where they came from, plus a **Rebuild index**
   button. A rebuild empties the index and writes it again; search results are incomplete while it
-  runs, so do it out of hours.
+  runs, so do it out of hours. See [Reading the Status page](#reading-the-status-page).
+
+### Reading the Status page
+
+The page answers three questions, top to bottom.
+
+**Is the index healthy?** The first card carries a **Healthy** or **Degraded** tag — the word, not
+just a colour — next to the document count, the number of sources and the last external write.
+
+- *Healthy* means every queued external write reached Lucene. Counts are eventually consistent while
+  work is queued; a short lag is normal and is **not** reported as degraded.
+- *Degraded* means a queued write was **rejected** by Lucene and will not be retried on its own. The
+  card then shows **Failed writes** instead of **Sources**, and a warning above the tables explains
+  what to do: read the failed entries, ask the source system to push the batch again, and rebuild if
+  you cannot tell which documents were lost. **Copy failure details** puts the failed rows on the
+  clipboard as tab-separated text for a ticket.
+
+**Where did the documents come from?** *Documents by source* stacks one bar segment per `_source` and
+lists the counts and shares. `xperience` is content indexed by the CMS; every other source is an
+external system pushing through the ingestion API, so its count changes without a content update in
+Xperience. A source that appears only in failed log entries is called out under the table — it has
+never written successfully, so none of its documents are in the index.
+
+**What happened recently?** *Recent ingestion* is the last ten log entries for this index, newest
+first. While the index is degraded the failed entries are lifted to the top of those ten; each is
+marked with the invalid-row treatment **and** a **Failed** tag, so the state never depends on colour
+alone. The full history, across every index, is on the **Ingestion log** page.
+
+**Rebuild index** always asks for confirmation before it runs. Once triggered, the health tag is
+replaced by a **Rebuild in progress** tag and spinner with the start time. There is no progress
+percentage: the Lucene integration reports no rebuild progress, so the page does not invent one, and
+reloading the page returns it to the ordinary health view (see
+`docs/internal/KNOWN-LIMITATIONS.md`).
 
 ### And two pages that are not per-index
 

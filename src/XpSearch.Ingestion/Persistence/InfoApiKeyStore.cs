@@ -116,4 +116,29 @@ public sealed class InfoIngestionLog : IIngestionLog
 
         return Task.CompletedTask;
     }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<IngestionLogEntry>> ReadRecentAsync(string indexName, int count, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(indexName);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
+
+        var rows = await provider.Get()
+            .WhereEquals(nameof(XpSearchIngestionLogInfo.LogIndexName), indexName)
+            .OrderByDescending(nameof(XpSearchIngestionLogInfo.LogCreatedAt))
+            .TopN(count)
+            .GetEnumerableTypedResultAsync(cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+
+        return rows.Select(row => new IngestionLogEntry(
+                row.LogKeyPrefix,
+                row.LogIndexName,
+                row.LogOperation,
+                row.LogDocumentCount,
+                row.LogSucceeded,
+                row.LogMessage,
+                // Stored as UTC in a column without an offset, so the kind is stated rather than assumed.
+                DateTime.SpecifyKind(row.LogCreatedAt, DateTimeKind.Utc)))
+            .ToList();
+    }
 }
