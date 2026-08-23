@@ -45,6 +45,8 @@ internal sealed class AssemblyDiscoveryTests
             Assert.That(widget!.Name, Is.EqualTo("Search - Range filter"));
             Assert.That(widget.IconClass, Is.Not.Empty);
         });
+    }
+
     /// <summary>
     /// Every identifier declared in <see cref="XpSearchWidgetConstants"/> is actually registered:
     /// a widget class that is added without its registration attribute (or with a mistyped

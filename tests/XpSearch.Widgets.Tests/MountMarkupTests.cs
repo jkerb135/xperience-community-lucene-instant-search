@@ -204,16 +204,6 @@ internal sealed class MountMarkupTests
             Step = 5m,
             FromLabel = "Cheapest",
             ToLabel = "Dearest"
-    public void CategoryTree_emits_every_option_the_JavaScript_widget_takes()
-    {
-        var component = new CategoryTreeWidgetViewComponent(renderer, editor, catalog);
-
-        string markup = Render(component, new CategoryTreeWidgetProperties
-        {
-            Index = Index,
-            Attribute = "category",
-            Label = "Categories",
-            Limit = 5
         });
 
         var config = Rendered.Json(markup, "data-xps-config");
@@ -254,6 +244,25 @@ internal sealed class MountMarkupTests
             Assert.That(config.TryGetProperty("step", out _), Is.False);
             Assert.That(config.TryGetProperty("label", out _), Is.False);
             Assert.That(config.TryGetProperty("labels", out _), Is.False);
+        });
+    }
+
+    [Test]
+    public void CategoryTree_emits_every_option_the_JavaScript_widget_takes()
+    {
+        var component = new CategoryTreeWidgetViewComponent(renderer, editor, catalog);
+
+        string markup = Render(component, new CategoryTreeWidgetProperties
+        {
+            Index = Index,
+            Attribute = "category",
+            Label = "Categories",
+            Limit = 5
+        });
+
+        var config = Rendered.Json(markup, "data-xps-config");
+        Expect.Multiple(() =>
+        {
             Assert.That(Rendered.Attribute(markup, "data-xps-widget"), Is.EqualTo("categoryTree"));
             Assert.That(config.GetProperty("attribute").GetString(), Is.EqualTo("category"));
             Assert.That(config.GetProperty("label").GetString(), Is.EqualTo("Categories"));
