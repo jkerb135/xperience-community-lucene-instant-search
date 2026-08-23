@@ -412,6 +412,17 @@ namespace XpSearch.Core.Contract
         public string Label { get; set; }
 
         /// <summary>
+        /// Optional. For a taxonomy dimension, the code names of the value's ancestors from the root
+        /// down to its parent, excluding the value itself (["Coffee","Machines"] for Espresso).
+        /// Absent for a root-level value and for non-taxonomy attributes. Every ancestor named here
+        /// is itself present in the same facet's values with its own count, so a tree can be built
+        /// from the values alone.
+        /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonPropertyName("path")]
+        public string[]? Path { get; set; }
+
+        /// <summary>
         /// Required. The value to send back in filters.facets. For a taxonomy dimension this is the
         /// tag code name.
         /// </summary>
