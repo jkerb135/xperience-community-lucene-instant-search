@@ -9,7 +9,7 @@ namespace XpSearch.Core.Tests.Contract;
 /// Proves the generated contract types (Contract/Generated/XpSearchContract.g.cs) match the wire
 /// shape frozen in spec §4.2. The fixtures are the spec's own samples with the JSONC comments
 /// stripped; the TypeScript side checks the same two payloads in
-/// <c>XpSearch.Client/src/contract/__fixtures__/spec-samples.ts</c>.
+/// <c>XpSearch.Widgets/Client/src/contract/__fixtures__/spec-samples.ts</c>.
 /// The one edit to the samples is the amendment's <c>"baseScore": 6.10</c>, written here in canonical
 /// form as <c>6.1</c> - the same number, but <see cref="JsonNode.DeepEquals"/> compares number
 /// literals, not values, so the trailing zero would fail the round trip for no contract reason.

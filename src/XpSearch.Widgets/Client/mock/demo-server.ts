@@ -12,7 +12,7 @@ import { handleApiRequest, CORPUS } from './server.ts';
 import { QUERY_ROUTE } from '../src/contract/constants.ts';
 
 const CLIENT_ROOT = resolve(import.meta.dirname, '..');
-const THEMES_ROOT = resolve(CLIENT_ROOT, '../../themes');
+const THEMES_ROOT = resolve(CLIENT_ROOT, '../../../themes');
 
 const CONTENT_TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',

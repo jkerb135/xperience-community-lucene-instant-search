@@ -19,7 +19,7 @@ dotnet build src/XpSearch.Admin
 
 `dotnet build src/XpSearch.Admin` fails with a clear message if `Client/dist` holds no bundle. The
 output is gitignored, so this is the first thing to run on a fresh clone — the same rule as
-`src/XpSearch.Client` for `XpSearch.Widgets`.
+`src/XpSearch.Widgets/Client` for `XpSearch.Widgets`.
 
 Other scripts: `npm run typecheck` (`tsc --noEmit`, strict) and `npm run start` (webpack dev server on
 port 3009, see *Serving* below).

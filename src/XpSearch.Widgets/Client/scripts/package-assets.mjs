@@ -7,7 +7,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const clientDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const themesSrc = resolve(clientDir, '../../themes/src');
+const themesSrc = resolve(clientDir, '../../../themes/src');
 
 // 1. themes/*.css — the same two files the .NET package serves as static web assets.
 const themesOut = join(clientDir, 'themes');

@@ -11,9 +11,9 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const clientDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const mapPath = resolve(clientDir, '../../contract/algolia-map.json');
-const templatePath = resolve(clientDir, '../../contract/migrating-from-algolia.template.md');
-const outPath = resolve(clientDir, '../../docs/guides/migrating-from-algolia.md');
+const mapPath = resolve(clientDir, '../../../contract/algolia-map.json');
+const templatePath = resolve(clientDir, '../../../contract/migrating-from-algolia.template.md');
+const outPath = resolve(clientDir, '../../../docs/guides/migrating-from-algolia.md');
 
 /** Which `kind` values each generated section renders, in order. */
 const SECTION_KINDS = {
@@ -63,7 +63,7 @@ function render() {
   const out = [
     [
       '<!-- Generated from contract/algolia-map.json and contract/migrating-from-algolia.template.md',
-      '     by src/XpSearch.Client/scripts/migration-guide.mjs. DO NOT EDIT.',
+      '     by src/XpSearch.Widgets/Client/scripts/migration-guide.mjs. DO NOT EDIT.',
       '     Regenerate with: npm run docs:migration   CI guard: npm run docs:check -->',
     ].join('\n'),
   ];

@@ -2,7 +2,7 @@
 
 This file, together with `themes/fixtures/*.html`, is the contract between the stylesheets
 (`themes/src/shell.css`, `themes/src/default.css`) and the default widget renderers in
-`XpSearch.Client`. The fixtures are the normative form: they are the exact DOM a widget must
+`XpSearch.Widgets/Client`. The fixtures are the normative form: they are the exact DOM a widget must
 produce with no custom templates. This file explains what each class and attribute means.
 
 Changing a class name or an ARIA attribute here is a breaking change for anyone who has

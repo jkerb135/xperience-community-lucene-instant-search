@@ -25,7 +25,7 @@ and how to lift it.
   `TagMetadata.Deserialize` behind the same cache entry. For the cut, count per level: ask for
   `GetTopChildren` once per depth once the provider tracks depth, and cap each level separately.
 
-## `searchable` in `XpSearch.Client/src/widgets/facetList.ts`
+## `searchable` in `XpSearch.Widgets/Client/src/widgets/facetList.ts`
 
 - **Simplified:** `searchable: true` renders a facet-search input that filters the values **already
   rendered**, in the browser, by case-insensitive substring. There is no facet-search endpoint in the
@@ -37,7 +37,7 @@ and how to lift it.
   `withFacetList` a `searchFacetValues` render-state member, and have the widget call it instead of
   filtering locally; the markup and the option name do not change.
 
-## The loading template in `XpSearch.Client/src/widgets/results.ts`
+## The loading template in `XpSearch.Widgets/Client/src/widgets/results.ts`
 
 - **Simplified:** `templates.loading` (and the default skeleton rows) render only while a **first**
   search is in flight *and* a render happens during it — in practice, once the instance's stall
@@ -50,7 +50,7 @@ and how to lift it.
   `templates.empty` that reads well as an idle state, or give the instance a `status` render pass on
   `start()` so the widget can distinguish "about to search" from "idle".
 
-## `withRange` in `XpSearch.Client/src/behaviors/range.ts`
+## `withRange` in `XpSearch.Widgets/Client/src/behaviors/range.ts`
 
 - **Simplified:** the control's bounds come from `params.min`/`max`, and `canApply` is false
   without them, because the JSON contract carries no numeric facet statistics — there is nowhere for a
@@ -63,7 +63,7 @@ and how to lift it.
   and needs no change: it already renders itself `disabled` when the bounds are missing, and would
   simply stop being disabled.
 
-## Default route mapping in `XpSearch.Client/src/routing.ts`
+## Default route mapping in `XpSearch.Widgets/Client/src/routing.ts`
 
 - **Simplified:** `defaultStateToRoute` owns the params `q`, `page` and `sort`, one param per facet
   attribute, `<attribute>_op` for a non-default facet operator, and
@@ -75,7 +75,7 @@ and how to lift it.
 - **Upgrade path:** add a documented `routing.prefix` option that namespaces every param (`s1_q`,
   `s1_tags`) when a second instance needs the URL too.
 
-## `mock/server.ts` in `XpSearch.Client`
+## `mock/server.ts` in `XpSearch.Widgets/Client`
 
 - **Simplified:** the mock matches query terms as lowercase substrings over title, body and tags, scores
   by term hits with a title bonus, and highlights by regex over the HTML-encoded snippet. It models the
@@ -98,7 +98,7 @@ and how to lift it.
 - **Upgrade path:** drop the `NoWarn` when Kentico.Xperience.Lucene moves to a stable Lucene.Net release,
   and let the warning fail the build again.
 
-## `csharpEdits` in `XpSearch.Client/scripts/contract.mjs`
+## `csharpEdits` in `XpSearch.Widgets/Client/scripts/contract.mjs`
 
 - **Simplified:** even with `--features attributes-only`, quicktype's C# output publishes types that are
   not part of the contract (the placeholder `XpSearchContract`, `DateOnlyConverter`, `TimeOnlyConverter`)
@@ -370,7 +370,7 @@ and how to lift it.
 - **Upgrade path:** swap the partition's limiter for a distributed one backed by the cache the host
   already runs; the partition key is already the right shard key.
 
-## `"private": true` in `src/XpSearch.Client/package.json`
+## `"private": true` in `src/XpSearch.Widgets/Client/package.json`
 
 - **Simplified:** the npm package is complete — `dist/`, `themes/shell.css`, `themes/default.css`, a
   runnable `mock/server.mjs` and a `README.md`, all verified by `npm pack --dry-run` — but the
