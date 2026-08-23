@@ -1,7 +1,7 @@
 ## Migrating from Algolia
 
 The hand-written half of `migrating-from-algolia.md`. The tables are generated from
-`contract/algolia-map.json` by `src/XpSearch.Client/scripts/migration-guide.mjs`; run
+`contract/algolia-map.json` by `src/XpSearch.Widgets/Client/scripts/migration-guide.mjs`; run
 `npm run docs:migration` after editing either file, and `npm run docs:check` fails the build if the
 committed guide has drifted from them. Do not edit the generated page directly.
 

@@ -12,6 +12,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Client\ is the npm package (@yourco/xperience-search) that builds the bundle below; none of
+         it is MSBuild input. Without these the SDK's default globs take 114 files as None and — the
+         one that would change the package — package.json, package-lock.json, tsconfig*.json and
+         size-limit.json as Content, which a Razor class library packs. Same shape as
+         src\XpSearch.Admin, widened from node_modules\ to the whole folder. -->
+    <Compile Remove="Client\**" />
+    <EmbeddedResource Remove="Client\**" />
+    <None Remove="Client\**" />
+    <Content Remove="Client\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\XpSearch.Core\XpSearch.Core.csproj" />
   </ItemGroup>
 
@@ -34,11 +46,11 @@
        exist yet when the project is evaluated, so the SDK's wwwroot glob would miss them. -->
   <Target Name="CopyXpSearchClientAssets" BeforeTargets="ResolveStaticWebAssetsInputs;BeforeBuild">
     <PropertyGroup>
-      <XpSearchBundle>$(MSBuildThisFileDirectory)..\XpSearch.Client\dist\xpsearch.umd.js</XpSearchBundle>
+      <XpSearchBundle>$(MSBuildThisFileDirectory)Client\dist\xpsearch.umd.js</XpSearchBundle>
       <XpSearchThemeDir>$(MSBuildThisFileDirectory)..\..\themes\src</XpSearchThemeDir>
     </PropertyGroup>
     <Error Condition="!Exists('$(XpSearchBundle)')"
-           Text="XpSearch.Widgets needs the JavaScript bundle: run 'npm ci &amp;&amp; npm run build' in src/XpSearch.Client (expected $(XpSearchBundle))." />
+           Text="XpSearch.Widgets needs the JavaScript bundle: run 'npm ci &amp;&amp; npm run build' in src/XpSearch.Widgets/Client (expected $(XpSearchBundle))." />
     <Copy SourceFiles="$(XpSearchBundle);$(XpSearchThemeDir)\shell.css;$(XpSearchThemeDir)\default.css"
           DestinationFolder="$(MSBuildThisFileDirectory)wwwroot\xpsearch"
           SkipUnchangedFiles="true" />

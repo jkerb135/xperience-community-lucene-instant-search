@@ -51,7 +51,7 @@ for (const project of ['XpSearch.Core', 'XpSearch.Widgets', 'XpSearch.Admin']) {
   run('dotnet', ['pack', join('src', project), '-c', 'Release', '-o', feed], repoRoot);
 }
 
-run('npm', ['pack', '--pack-destination', feed], join(repoRoot, 'src', 'XpSearch.Client'));
+run('npm', ['pack', '--pack-destination', feed], join(repoRoot, 'src', 'XpSearch.Widgets', 'Client'));
 
 // npm resolves a `file:` tarball through the lockfile's integrity hash, so a freshly packed
 // tarball at the same path is only picked up once the previous resolution is gone.

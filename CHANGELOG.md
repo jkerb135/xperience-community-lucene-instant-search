@@ -8,6 +8,13 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Changed (repository layout):** the JavaScript client moved from `src/XpSearch.Client` to
+  `src/XpSearch.Widgets/Client`, so it sits inside the package that ships it, the same way
+  `src/XpSearch.Admin/Client` holds the admin UI module. Nothing about the product changed: the npm
+  package is still `@yourco/xperience-search` with the same entry points, the bundle is still
+  `dist/xpsearch.umd.js`, and the widgets are still served from
+  `/_content/YourCo.Xperience.Search.Widgets/xpsearch/`. Contributors run `npm ci` in the new path.
+  See ADR-0019.
 - **Added:** a **Search - Range filter** Page Builder widget (`XpSearch.RangeFilter`), which emits a
   `rangeFilter` mount. Its **Attribute** drop-down is filled from the selected index's numeric and date
   fields by a new form component configurator (`XpSearchConstants.NumericAttributeConfiguratorIdentifier`);

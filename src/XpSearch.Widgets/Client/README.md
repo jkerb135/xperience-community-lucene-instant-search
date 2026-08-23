@@ -47,5 +47,5 @@ They live in `docs/guides/` in the repository and are published as the project w
 ## Note for contributors
 
 Scripts prefixed `repo:` (`repo:mock`, `repo:demo`) run only inside the repository — they reference
-`mock/server.ts`, `demo/` and `../../themes`, none of which are in the tarball. From the package,
+`mock/server.ts`, `demo/` and `../../../themes`, none of which are in the tarball. From the package,
 use `npx xpsearch-mock`.
