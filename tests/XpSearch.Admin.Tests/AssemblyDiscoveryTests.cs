@@ -9,6 +9,7 @@ using Kentico.Xperience.Lucene.Admin;
 using NUnit.Framework;
 
 using XpSearch.Admin.Forms;
+using XpSearch.Core;
 
 namespace XpSearch.Admin.Tests;
 
@@ -30,6 +31,24 @@ internal sealed class AssemblyDiscoveryTests
             assembly.GetCustomAttribute<AssemblyDiscoverableAttribute>(),
             Is.Not.Null,
             "XpSearch.Admin must carry CMS.AssemblyDiscoverableAttribute or Xperience ignores its registration attributes.");
+    }
+
+    [Test]
+    public void Both_attribute_dropdown_configurators_are_registered_under_their_identifiers()
+    {
+        var configurators = typeof(FacetAttributeConfigurator).Assembly
+            .GetCustomAttributes<Kentico.Xperience.Admin.Base.Forms.RegisterFormComponentConfiguratorAttribute>()
+            .ToDictionary(registration => registration.Identifier, registration => registration.ConfiguratorType);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(
+                configurators.GetValueOrDefault(XpSearchConstants.FacetAttributeConfiguratorIdentifier),
+                Is.EqualTo(typeof(FacetAttributeConfigurator)));
+            Assert.That(
+                configurators.GetValueOrDefault(XpSearchConstants.NumericAttributeConfiguratorIdentifier),
+                Is.EqualTo(typeof(NumericAttributeConfigurator)));
+        });
     }
 
     /// <summary>

@@ -26,6 +26,8 @@ internal static class WidgetResources
 
     internal static string Hint_SelectAttribute => Get(nameof(Hint_SelectAttribute));
 
+    internal static string Hint_RangeBounds => Get(nameof(Hint_RangeBounds));
+
     internal static string Hint_SortOptions => Get(nameof(Hint_SortOptions));
 
     private static string Get(string name) =>

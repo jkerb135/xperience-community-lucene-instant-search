@@ -61,6 +61,40 @@ internal sealed class FacetAttributeOptionsTests
     }
 
     [Test]
+    public async Task A_predicate_narrows_the_options_to_the_range_filterable_fields()
+    {
+        var provider = SchemaProvider(
+            "site-content",
+            new SchemaField("title", SearchFieldKind.Text, true, false, false, true),
+            new SchemaField("tags", SearchFieldKind.Taxonomy, true, true, false, true),
+            new SchemaField("price", SearchFieldKind.Number, false, true, true, true),
+            new SchemaField("publishedAt", SearchFieldKind.Date, false, false, true, true));
+
+        string? numeric = await FacetAttributeOptions.BuildOptionsAsync(
+            provider, "site-content", CancellationToken.None, FacetAttributeOptions.IsRangeFilterable);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(numeric, Is.EqualTo("price;price\r\npublishedAt;publishedAt"));
+            // The default is unchanged: the facet drop-down still offers the facetable fields.
+            Assert.That(
+                FacetAttributeOptions.BuildOptionsAsync(provider, "site-content", CancellationToken.None).Result,
+                Is.EqualTo("tags;tags\r\nprice;price"));
+        });
+    }
+
+    [Test]
+    public async Task An_index_with_no_numeric_or_date_field_offers_nothing_so_the_field_is_hidden()
+    {
+        var provider = SchemaProvider("site-content", Field("tags", true), Field("title", false));
+
+        Assert.That(
+            await FacetAttributeOptions.BuildOptionsAsync(
+                provider, "site-content", CancellationToken.None, FacetAttributeOptions.IsRangeFilterable),
+            Is.Null);
+    }
+
+    [Test]
     public void An_index_name_is_trimmed_before_the_schema_is_looked_up()
     {
         var provider = SchemaProvider("site-content", Field("tags", true));
