@@ -38,7 +38,7 @@ public sealed class SearchAnalyticsService : ISearchAnalyticsService
 
         return new SearchAnalyticsReport(
             TopQueries: [.. byQuery
-                .Select(group => new QueryVolume(group.Key, group.Count()))
+                .Select(group => new QueryVolume(group.Key, group.Count(), Percentile95([.. group.Select(row => row.ProcessingTimeMs)])))
                 .OrderByDescending(entry => entry.Volume)
                 .ThenBy(entry => entry.Query, StringComparer.Ordinal)
                 .Take(limit)],
@@ -61,7 +61,9 @@ public sealed class SearchAnalyticsService : ISearchAnalyticsService
                 .OrderByDescending(entry => entry.P95ProcessingTimeMs)
                 .ThenBy(entry => entry.Query, StringComparer.Ordinal)
                 .Take(limit)],
-            TotalSearches: rows.Count);
+            TotalSearches: rows.Count,
+            ZeroResultSearches: rows.Count(row => row.ResultCount == 0),
+            Clicks: clicked.Count);
     }
 
     private static QueryClickThrough ToClickThrough(IGrouping<string, QueryLogEntry> group)
@@ -85,7 +87,7 @@ public sealed class SearchAnalyticsService : ISearchAnalyticsService
     {
         var counts = rows
             .GroupBy(row => DateOnly.FromDateTime(row.Timestamp))
-            .ToDictionary(group => group.Key, group => group.Count());
+            .ToDictionary(group => group.Key, group => (Volume: group.Count(), Zero: group.Count(row => row.ResultCount == 0)));
 
         var day = DateOnly.FromDateTime(query.FromUtc);
         var last = DateOnly.FromDateTime(query.ToUtc);
@@ -93,7 +95,8 @@ public sealed class SearchAnalyticsService : ISearchAnalyticsService
 
         while (day <= last)
         {
-            points.Add(new SearchVolumePoint(day, counts.TryGetValue(day, out int count) ? count : 0));
+            counts.TryGetValue(day, out var count);
+            points.Add(new SearchVolumePoint(day, count.Volume, count.Zero));
             day = day.AddDays(1);
         }
 

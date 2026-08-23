@@ -1,74 +1,75 @@
 import type { ReactNode } from 'react';
-import { Headline, HeadlineSize } from '@kentico/xperience-admin-components';
+import {
+  Card,
+  CellType,
+  ColumnContentType,
+  Colors,
+  Headline,
+  HeadlineSize,
+  Inline,
+  Spacing,
+  Table,
+  Tag,
+} from '@kentico/xperience-admin-components';
+import type { TableColumn, TableRow } from '@kentico/xperience-admin-components';
+
+import { muted } from '../theme';
 
 /*
- * A plain semantic table. The design system's Table component is built for listing pages - it is
- * virtualized and driven by column/cell descriptors - which buys nothing for six small reports and
- * costs the row-level action markup. See docs/adr/0016-admin-client.md.
+ * The report card the analytics dashboard repeats four times: a Card holding a stock Table, with an
+ * optional count Tag next to the headline and an optional footer figure. See
+ * docs/adr/0020-admin-page-design.md.
  */
 
-export interface Column<TRow> {
-  readonly key: string;
-  readonly caption: string;
-  readonly numeric?: boolean;
-  readonly render: (row: TRow) => ReactNode;
+/** Builds the descriptor a stock Table column needs, with the defaults every report shares. */
+export const column = (
+  name: string,
+  caption: string,
+  options?: { readonly minWidth?: number; readonly maxWidth?: number; readonly contentType?: ColumnContentType },
+): TableColumn => ({
+  name,
+  caption,
+  visible: true,
+  minWidth: options?.minWidth ?? 120,
+  maxWidth: options?.maxWidth ?? 0,
+  contentType: options?.contentType ?? ColumnContentType.Text,
+  sortable: false,
+  searchable: false,
+});
+
+/** Builds a read-only string cell. */
+export const text = (columnName: string, value: string) => ({
+  type: CellType.String,
+  columnName,
+  value,
+});
+
+interface ReportTableProps {
+  readonly headline: string;
+  /** Small count chip next to the headline, for example "309 searches · 5 queries". */
+  readonly count?: string;
+  /** Right-aligned note in the headline row. */
+  readonly note?: string;
+  readonly columns: TableColumn[];
+  readonly rows: TableRow[];
+  readonly emptyText: string;
+  readonly footer?: ReactNode;
+  /** Line of guidance under the table, for example what the row action does. */
+  readonly hint?: string;
 }
 
-interface ReportTableProps<TRow> {
-  readonly title: string;
-  readonly description?: string;
-  readonly columns: Array<Column<TRow>>;
-  readonly rows: TRow[];
-  readonly rowKey: (row: TRow) => string;
-  readonly emptyText?: string;
-}
-
-export const ReportTable = <TRow,>({
-  title,
-  description,
-  columns,
-  rows,
-  rowKey,
-  emptyText = 'No searches in this range.',
-}: ReportTableProps<TRow>) => (
-  <section style={{ flex: '1 1 420px', minWidth: '320px' }}>
-    <Headline size={HeadlineSize.S}>{title}</Headline>
-    {description ? <p style={{ fontSize: '12px' }}>{description}</p> : null}
-    {rows.length === 0 ? (
-      <p>{emptyText}</p>
-    ) : (
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <caption style={{ position: 'absolute', width: '1px', height: '1px', overflow: 'hidden', clip: 'rect(0 0 0 0)' }}>
-          {title}
-        </caption>
-        <thead>
-          <tr>
-            {columns.map((column) => (
-              <th
-                key={column.key}
-                scope="col"
-                style={{ textAlign: column.numeric ? 'right' : 'left', borderBottom: '1px solid rgba(0,0,0,.2)', padding: '4px 8px' }}
-              >
-                {column.caption}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={rowKey(row)}>
-              {columns.map((column) => (
-                <td
-                  key={column.key}
-                  style={{ textAlign: column.numeric ? 'right' : 'left', borderBottom: '1px solid rgba(0,0,0,.1)', padding: '4px 8px' }}
-                >
-                  {column.render(row)}
-                </td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    )}
-  </section>
+export const ReportTable = ({ headline, count, note, columns, rows, emptyText, footer, hint }: ReportTableProps) => (
+  <Card
+    headline={
+      <Inline spacing={Spacing.S}>
+        <Headline size={HeadlineSize.S}>{headline}</Headline>
+        {count === undefined ? null : <Tag label={count} readOnly background={{ color: Colors.BackgroundTagMajorelleBlue }} />}
+      </Inline>
+    }
+    description={note === undefined ? undefined : <p style={muted}>{note}</p>}
+    footer={footer}
+  >
+    {rows.length === 0 ? <p style={muted}>{emptyText}</p> : <Table columns={columns} rows={rows} isHeaderVisible />}
+    {hint === undefined ? null : <p style={muted}>{hint}</p>}
+  </Card>
 );

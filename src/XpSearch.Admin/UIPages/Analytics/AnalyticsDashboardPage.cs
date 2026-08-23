@@ -24,14 +24,8 @@ namespace XpSearch.Admin.UIPages.Analytics;
 /// <summary>Initial state of the analytics dashboard client template.</summary>
 public class AnalyticsDashboardClientProperties : TemplateClientProperties
 {
-    /// <summary>Gets or sets the code names of every registered index.</summary>
-    public IEnumerable<string> IndexNames { get; set; } = [];
-
-    /// <summary>Gets or sets the index the reports cover.</summary>
+    /// <summary>Gets or sets the index the reports cover. It comes from the URL and is never a choice.</summary>
     public string SelectedIndexName { get; set; } = string.Empty;
-
-    /// <summary>Gets or sets whether the index comes from the URL and cannot be changed on the page.</summary>
-    public bool IndexLocked { get; set; }
 
     /// <summary>Gets or sets today's date in UTC, as <c>yyyy-MM-dd</c>, so the presets agree with the server.</summary>
     public string Today { get; set; } = string.Empty;
@@ -91,11 +85,7 @@ public class AnalyticsDashboardPage : Page<AnalyticsDashboardClientProperties>
     {
         ArgumentNullException.ThrowIfNull(properties);
 
-        string indexName = IndexName;
-
-        properties.IndexNames = [indexName];
-        properties.SelectedIndexName = indexName;
-        properties.IndexLocked = true;
+        properties.SelectedIndexName = IndexName;
         properties.Today = time.GetUtcNow().UtcDateTime.ToString(AnalyticsReportDto.DateFormat, CultureInfo.InvariantCulture);
 
         return Task.FromResult(properties);

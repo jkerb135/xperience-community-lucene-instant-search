@@ -53,13 +53,17 @@ internal sealed class AnalyticsDashboardPageTests
         {
             Assert.That(report.Error, Is.Empty);
             Assert.That(report.TopQueries.Select(row => row.Query), Is.EqualTo(new[] { "espresso" }));
+            Assert.That(report.TopQueries[0].P95ProcessingTimeMs, Is.EqualTo(38), "the top queries table shows p95 too");
             Assert.That(report.ZeroResultQueries[0].LastSeen, Is.EqualTo("2026-08-20"));
             Assert.That(report.ClickThrough[0].ClickThroughRate, Is.EqualTo(0.5).Within(0.001));
             Assert.That(report.ClickThrough[0].AverageClickedPosition, Is.EqualTo(2.5).Within(0.001));
             Assert.That(report.AverageClickedPosition, Is.EqualTo(3.5).Within(0.001));
             Assert.That(report.VolumeOverTime.Select(point => point.Day), Is.EqualTo(new[] { "2026-08-19" }));
+            Assert.That(report.VolumeOverTime[0].ZeroResultVolume, Is.EqualTo(2), "the chart draws a second series");
             Assert.That(report.SlowestQueries[0].P95ProcessingTimeMs, Is.EqualTo(412));
             Assert.That(report.TotalSearches, Is.EqualTo(9));
+            Assert.That(report.ZeroResultSearches, Is.EqualTo(3), "the zero-result rate tile divides these two");
+            Assert.That(report.Clicks, Is.EqualTo(4), "the click-through rate tile divides these two");
         });
     }
 
@@ -138,8 +142,6 @@ internal sealed class AnalyticsDashboardPageTests
         Expect.Multiple(() =>
         {
             Assert.That(properties.SelectedIndexName, Is.EqualTo("articles"));
-            Assert.That(properties.IndexNames, Is.EqualTo(new[] { "articles" }));
-            Assert.That(properties.IndexLocked, Is.True);
             Assert.That(properties.Today, Is.EqualTo("2026-08-21"));
         });
     }
@@ -178,13 +180,15 @@ internal sealed class AnalyticsDashboardPageTests
 
     private static SearchAnalyticsReport Report() =>
         new(
-            [new QueryVolume("espresso", 5)],
+            [new QueryVolume("espresso", 5, 38)],
             [new ZeroResultQuery("cold brew", 3, new DateTime(2026, 8, 20, 12, 0, 0, DateTimeKind.Utc))],
             [new QueryClickThrough("espresso", 4, 2, 0.5, 2.5)],
             3.5,
-            [new SearchVolumePoint(new DateOnly(2026, 8, 19), 9)],
+            [new SearchVolumePoint(new DateOnly(2026, 8, 19), 9, 2)],
             [new SlowQuery("espresso", 5, 412)],
-            9);
+            9,
+            3,
+            4);
 
     private sealed class FakeTime(DateTime utcNow) : TimeProvider
     {

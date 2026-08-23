@@ -21,6 +21,7 @@ internal sealed class QueryTesterPageTests
     private const int IndexIdentifier = 7;
 
     private IQueryTesterSearch search = null!;
+    private IPageLinkGenerator links = null!;
     private QueryTesterPage page = null!;
 
     [SetUp]
@@ -31,7 +32,10 @@ internal sealed class QueryTesterPageTests
             .ExecuteAsync(Arg.Any<SearchRequest>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
             .Returns(call => Task.FromResult(new QueryTesterSideResult(Empty(), [])));
 
-        page = new QueryTesterPage(Storage.Holding(IndexIdentifier, "articles"), search)
+        links = Substitute.For<IPageLinkGenerator>();
+        links.GetPath<IndexStatusPage>(Arg.Any<PageParameterValues>()).Returns("/admin/lucene/indexes/tuning/7/status");
+
+        page = new QueryTesterPage(Storage.Holding(IndexIdentifier, "articles", "en", "es"), search, links)
         {
             IndexIdentifier = IndexIdentifier
         };
@@ -76,7 +80,7 @@ internal sealed class QueryTesterPageTests
     [Test]
     public async Task Run_ReportsAMissingIndexWithoutSearching()
     {
-        var unregistered = new QueryTesterPage(Storage.Holding(IndexIdentifier, "articles"), search) { IndexIdentifier = 999 };
+        var unregistered = new QueryTesterPage(Storage.Holding(IndexIdentifier, "articles"), search, links) { IndexIdentifier = 999 };
 
         var response = await unregistered.Run(new QueryTesterRequest(), CancellationToken.None);
 
@@ -111,8 +115,23 @@ internal sealed class QueryTesterPageTests
         Expect.Multiple(() =>
         {
             Assert.That(properties.SelectedIndexName, Is.EqualTo("articles"));
-            Assert.That(properties.IndexNames, Is.EqualTo(new[] { "articles" }));
-            Assert.That(properties.IndexLocked, Is.True);
+            Assert.That(properties.Languages, Is.EqualTo(new[] { "en", "es" }), "the language selector only offers what the index holds");
+        });
+    }
+
+    /// <summary>The "could not be run" callout offers the status page of the same index.</summary>
+    [Test]
+    public async Task OpenStatus_NavigatesToTheStatusPageOfTheIndexInTheUrl()
+    {
+        var response = await page.OpenStatus();
+
+        var parameters = (PageParameterValues)links.ReceivedCalls().Single().GetArguments()[0]!;
+        parameters.TryGetValue(typeof(IndexTuningSection), out object? index);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(index, Is.EqualTo(IndexIdentifier));
+            Assert.That(response, Is.Not.Null);
         });
     }
 

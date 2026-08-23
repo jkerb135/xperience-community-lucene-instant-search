@@ -81,11 +81,18 @@ public static class IndexScope
     /// Blocking on the storage service is what the integration's own <see cref="IndexEditPage"/> does
     /// to build its model; a UI page property getter has nowhere to await.
     /// </remarks>
-    public static string Resolve(ILuceneConfigurationStorageService storageService, int indexIdentifier)
+    public static string Resolve(ILuceneConfigurationStorageService storageService, int indexIdentifier) =>
+        ResolveModel(storageService, indexIdentifier)?.IndexName ?? string.Empty;
+
+    /// <summary>Reads the whole stored configuration of the index carried by the URL.</summary>
+    /// <param name="storageService">Reads the stored index configuration.</param>
+    /// <param name="indexIdentifier">The identifier from the URL.</param>
+    /// <returns>The stored index, or <see langword="null"/> when no such index is registered.</returns>
+    public static LuceneIndexModel? ResolveModel(ILuceneConfigurationStorageService storageService, int indexIdentifier)
     {
         ArgumentNullException.ThrowIfNull(storageService);
 
-        return storageService.GetIndexDataOrNullAsync(indexIdentifier).GetAwaiter().GetResult()?.IndexName ?? string.Empty;
+        return storageService.GetIndexDataOrNullAsync(indexIdentifier).GetAwaiter().GetResult();
     }
 
     /// <summary>Builds the URL parameter values every link to a page inside the section needs.</summary>

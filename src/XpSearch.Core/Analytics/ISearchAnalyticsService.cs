@@ -10,7 +10,8 @@ public sealed record SearchAnalyticsQuery(string IndexName, DateTime FromUtc, Da
 /// <summary>How often a query was searched for.</summary>
 /// <param name="Query">The normalized query text.</param>
 /// <param name="Volume">How many times it was searched for.</param>
-public sealed record QueryVolume(string Query, int Volume);
+/// <param name="P95ProcessingTimeMs">The 95th percentile of its server-side processing time.</param>
+public sealed record QueryVolume(string Query, int Volume, int P95ProcessingTimeMs);
 
 /// <summary>A query that found nothing - the report a content team acts on (spec §9.3).</summary>
 /// <param name="Query">The normalized query text.</param>
@@ -29,7 +30,8 @@ public sealed record QueryClickThrough(string Query, int Volume, int Clicks, dou
 /// <summary>Search volume on one day.</summary>
 /// <param name="Day">The day, in UTC.</param>
 /// <param name="Volume">How many searches ran that day.</param>
-public sealed record SearchVolumePoint(DateOnly Day, int Volume);
+/// <param name="ZeroResultVolume">How many of those searches found nothing.</param>
+public sealed record SearchVolumePoint(DateOnly Day, int Volume, int ZeroResultVolume);
 
 /// <summary>How slow a query is.</summary>
 /// <param name="Query">The normalized query text.</param>
@@ -45,6 +47,8 @@ public sealed record SlowQuery(string Query, int Volume, int P95ProcessingTimeMs
 /// <param name="VolumeOverTime">Searches per day, oldest first, with no gaps for empty days.</param>
 /// <param name="SlowestQueries">The queries with the highest 95th percentile processing time.</param>
 /// <param name="TotalSearches">How many searches the range holds.</param>
+/// <param name="ZeroResultSearches">How many of those searches found nothing.</param>
+/// <param name="Clicks">How many of those searches led to a click.</param>
 public sealed record SearchAnalyticsReport(
     IReadOnlyList<QueryVolume> TopQueries,
     IReadOnlyList<ZeroResultQuery> ZeroResultQueries,
@@ -52,7 +56,9 @@ public sealed record SearchAnalyticsReport(
     double? AverageClickedPosition,
     IReadOnlyList<SearchVolumePoint> VolumeOverTime,
     IReadOnlyList<SlowQuery> SlowestQueries,
-    int TotalSearches);
+    int TotalSearches,
+    int ZeroResultSearches,
+    int Clicks);
 
 /// <summary>
 /// Reads the aggregate query log into the reports of spec §9.3. The dashboard page only renders what

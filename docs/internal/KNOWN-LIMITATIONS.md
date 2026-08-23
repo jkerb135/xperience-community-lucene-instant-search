@@ -546,3 +546,23 @@ and how to lift it.
   `MovedDown`, because the with-rules page no longer holds it. Same class of approximation as the pin
   and bury reordering above.
 - **Upgrade path:** run both sides over a larger window than the page shown and diff the window.
+
+## Design-spec substitutions in `QueryTesterTemplate.tsx` and `AnalyticsDashboardTemplate.tsx`
+
+- **Simplified:** the owner's design spec names a `Tabs` component for the narrow query tester and a
+  `Tag` carrying an icon for every change marker. `@kentico/xperience-admin-components` 31.8.0 has
+  neither: its only tab export is `VerticalTab` (a single left-rail item) and `TagProps` has no
+  `icon`. The narrow view uses `NameToggleButtons`, the package's horizontal segmented control, and a
+  marker is an `Inline` of a stock `Icon` next to the `Tag`. The pipeline-stage panel collapses with a
+  native `<details>` rather than a component, and the "results appear here" placeholders are plain
+  `Card`s rather than the artboard's dashed outlines, because a dashed border would need a stylesheet
+  and the module has no style loader. The pages also carry three inline style objects
+  (`src/theme.ts`) for low-emphasis prose, monospace panels and the KPI figure.
+- **Ceiling:** the narrow toggle does not carry `role="tablist"`/`aria-controls`, so a screen reader
+  hears two buttons rather than a tab set; the collapsed panel is a native disclosure, styled by the
+  browser rather than by the theme; and the three inline styles do not respond to a theme that
+  changes type scale, only to one that changes the `Colors` tokens they read.
+- **Upgrade path:** when the package ships a `Tabs` component and an icon slot on `Tag`, swap them in
+  — the call sites are `QueryTesterTemplate`'s narrow branch, `ChangeTag` and `Explanations`. A style
+  loader in `Client/webpack.config.js` plus one CSS module would retire `src/theme.ts`; it was not
+  worth a build-chain dependency for three declarations. See ADR-0020.

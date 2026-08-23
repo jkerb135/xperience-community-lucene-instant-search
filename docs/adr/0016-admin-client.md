@@ -72,7 +72,8 @@ arbitrary text and a slug is one URL segment, so index and query travel as one b
 returns `NavigateTo(IPageLinkGenerator.GetPath<ZeroResultRuleCreatePage>(...))`. AD-1's own pages are
 untouched.
 
-**Design-system components for chrome, hand-written markup for the data.** `Button`, `Input`,
+**Design-system components for chrome, hand-written markup for the data.** *(Superseded by ADR-0020:
+both pages were rebuilt to the owner's design spec and now use the component library throughout.)* `Button`, `Input`,
 `Select`/`MenuItem`, `Headline` and `Spinner` come from `@kentico/xperience-admin-components`. The
 report tables are plain semantic `<table>` markup: the design system's `Table` is built for listing
 pages — virtualized, driven by column and cell descriptors — which buys nothing for six small reports
