@@ -1,4 +1,4 @@
-/**
+﻿/**
  * The `.xps-mount` bootstrap (spec 7.1) and the custom-widget registry (spec 5.7).
  *
  * Markup a Page Builder widget emits:
@@ -109,7 +109,6 @@ export const FIRST_PARTY_WIDGET_TYPES: readonly string[] = [
   'clearFilters',
   'activeFilters',
   'toggleFilter',
-  // Reserved for the Phase 2.5 widgets, so a project cannot take one of these names first.
   'suggestions',
   'rangeFilter',
   'categoryTree',

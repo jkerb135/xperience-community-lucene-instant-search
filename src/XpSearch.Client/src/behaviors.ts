@@ -1,11 +1,8 @@
-/**
+﻿/**
  * `@yourco/xperience-search/behaviors` — behaviour without rendering (spec 5.7).
  *
  * A behaviour is what other libraries call a connector: it computes the render state and the
  * verbs (`apply`, `urlFor`, `isActive`, `canApply`, `isStalled`) and leaves the markup to you.
- *
- * `withCategoryTree` is deliberately absent: a hierarchy needs a facet shape the contract does
- * not have (`FacetValue` is flat). See docs/internal/KNOWN-LIMITATIONS.md.
  */
 export { withActiveFilters } from './behaviors/activeFilters';
 export type {
@@ -13,6 +10,12 @@ export type {
   ActiveFiltersBehaviorParams,
   ActiveFiltersRenderState,
 } from './behaviors/activeFilters';
+export { withCategoryTree } from './behaviors/categoryTree';
+export type {
+  CategoryTreeBehaviorParams,
+  CategoryTreeItem,
+  CategoryTreeRenderState,
+} from './behaviors/categoryTree';
 export { withFacetList } from './behaviors/facetList';
 export type {
   FacetListBehaviorParams,

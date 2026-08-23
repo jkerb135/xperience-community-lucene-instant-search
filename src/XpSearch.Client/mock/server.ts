@@ -1,4 +1,4 @@
-/**
+﻿/**
  * A contract-faithful mock of the search API, for tests, docs examples and demos.
  * No dependencies, no build step: Node strips the types (`node mock/server.ts`).
  *
@@ -62,7 +62,34 @@ const TAG_LABELS: Record<string, string> = {
   beans: 'Beans',
   grinder: 'Grinders',
   milk: 'Milk drinks',
+  equipment: 'Equipment',
 };
+
+/**
+ * The parent of each tag, keyed by code name — `tags` is a hierarchical taxonomy, as an Xperience
+ * one is. Two levels: `coffee > (beans, espresso)`, `equipment > grinder`, `brewing > milk`.
+ */
+const TAG_PARENTS: Record<string, string> = {
+  beans: 'coffee',
+  espresso: 'coffee',
+  grinder: 'equipment',
+  milk: 'brewing',
+};
+
+/** A tag's ancestors, root first, excluding the tag itself — the contract's `FacetValue.path`. */
+const ancestorsOf = (tag: string): string[] => {
+  const parent = TAG_PARENTS[tag];
+  return parent === undefined ? [] : [...ancestorsOf(parent), parent];
+};
+
+/**
+ * A document carries its tags' ancestors as well, which is exactly what the Lucene indexer writes:
+ * counts then roll up and a filter on a parent matches the documents tagged with its descendants,
+ * with no hierarchy logic anywhere else.
+ */
+const withAncestors = (tags: string[]): string[] => [
+  ...new Set(tags.flatMap((tag) => [...ancestorsOf(tag), tag])),
+];
 
 /** 54 documents: 3 content types, 6 tags, 2 languages, a price and a publish date. */
 export const CORPUS: Doc[] = Array.from({ length: 54 }, (_, i) => {
@@ -75,7 +102,7 @@ export const CORPUS: Doc[] = Array.from({ length: 54 }, (_, i) => {
     // `i % 5` first: a plain `i % 3` would line up with the topic and tag cycles and leave
     // whole content types unmatched by any query.
     contentType: CONTENT_TYPES[(i % 5) % CONTENT_TYPES.length]!,
-    tags: [TAGS[i % TAGS.length]!, TAGS[(i + 2) % TAGS.length]!],
+    tags: withAncestors([TAGS[i % TAGS.length]!, TAGS[(i + 2) % TAGS.length]!]),
     language: LANGUAGES[i % LANGUAGES.length]!,
     price: 5 + (i % 12) * 5,
     publishedAt: EPOCH - i * 86_400,
@@ -199,7 +226,11 @@ export function query(request: SearchRequest): SearchResponse {
     }
     // Count descending, then value ascending — the order the contract promises.
     facets[attribute] = [...counts]
-      .map(([value, count]) => ({ value, label: labelOf(attribute, value), count }))
+      .map(([value, count]) => {
+        const path = attribute === 'tags' ? ancestorsOf(value) : [];
+        // `path` is absent, not empty, for a root value and for a non-taxonomy attribute.
+        return { value, label: labelOf(attribute, value), count, ...(path.length > 0 ? { path } : {}) };
+      })
       .sort((a, b) => b.count - a.count || (a.value < b.value ? -1 : a.value > b.value ? 1 : 0));
   }
 

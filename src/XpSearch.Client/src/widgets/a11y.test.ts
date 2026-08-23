@@ -18,6 +18,7 @@ import { query, suggest } from '../../mock/server.ts';
 import { createSearch } from '../instance';
 import type { SearchInstance } from '../types';
 import {
+  categoryTree,
   clearFilters,
   activeFilters,
   loadMore,
@@ -51,7 +52,7 @@ function page(): SearchInstance {
   document.body.innerHTML = `<main>
     <h1>Search</h1>
     <div id="box"></div><div id="sort"></div><div id="resultStats"></div>
-    <div id="facet"></div><div id="toggle"></div><div id="chips"></div><div id="clear"></div>
+    <div id="facet"></div><div id="tree"></div><div id="toggle"></div><div id="chips"></div><div id="clear"></div>
     <div id="range"></div><div id="suggest"></div>
     <div id="results"></div><div id="pages"></div><div id="more"></div>
   </main>`;
@@ -81,6 +82,7 @@ function page(): SearchInstance {
       showMore: true,
       limit: 2,
     }),
+    categoryTree({ container: '#tree', attribute: 'tags', label: 'Categories' }),
     toggleFilter({ container: '#toggle', attribute: 'language', value: 'en', label: 'English' }),
     activeFilters({
       container: '#chips',
@@ -105,7 +107,7 @@ const violations = async (): Promise<string[]> => {
 };
 
 describe('accessibility (axe-core)', () => {
-  it('reports no violations for the twelve widgets with results', async () => {
+  it('reports no violations for the thirteen widgets with results', async () => {
     const search = page();
     search.actions.setQuery('espresso').search();
     await vi.waitFor(() => expect(search.results?.total).toBeGreaterThan(0), { timeout: 3000 });
