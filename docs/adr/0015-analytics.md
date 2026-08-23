@@ -104,3 +104,48 @@ value targeting at the cost of writing to every contact on every search. Neither
 guide tells marketers to segment on *that* a visitor searched and to read *what* in the activity log
 and the dashboard.
 
+
+## Addendum, 2026-08-23 (AN-3): there is an extension point, and we use it
+
+The AN-2 addendum above is wrong on its central claim. Contact group conditions *can* be added by a
+package. The mechanism is undocumented but entirely public API, and the owner supplied a working
+reference implementation from another Xperience project (an `ContactIsInCounty` rule registered the
+same way). Three pieces, all in `XpSearch.Core/ContactGroups/`:
+
+1. **The rule row.** A `MacroRuleInfo` (`CMS.MacroEngine`) written through
+   `IInfoProvider<MacroRuleInfo>` at module init, with `MacroRuleIsCustom = true` and
+   `MacroRuleUsageLocation = MacroRuleUsageLocation.ContactGroupCondition` — a public, non-obsolete
+   `[Flags]` enum in 31.8.0 whose members are `None`, `ContactGroupCondition`,
+   `AutomationConditionStep` and `CustomerJourneysStage`. `MacroRuleText` carries the sentence the
+   picker shows with `{parameter}` placeholders; `MacroRuleParameters` is a form definition, one
+   `Kentico.Administration.TextInput` field named `text`, copied field-for-field from the system rule
+   `CMSContactHasPerformedCustomActivityWithValue`. The rule is linked into a category through
+   `MacroRuleMacroRuleCategoryInfo`; we use `WebActivity` (*Web activity*), the category all three
+   system activity rules sit in.
+2. **The evaluation.** A `MacroMethodContainer` registered with
+   `[assembly: RegisterExtension(typeof(XpSearchContactMacroMethods), typeof(ContactInfo))]`, which is
+   the documented way to add macro methods; `MacroRuleCondition` calls it as
+   `Contact.XpSearchSearchedFor("{text}")`.
+3. **The SQL fast path** — deliberately *not* shipped. See KNOWN-LIMITATIONS: the
+   `IMacroRuleInstanceTranslator` interface is public and clean, but its only registration point,
+   `MacroRuleMetadataContainer.RegisterMetadata`, is marked obsolete "will be removed in the next
+   version" in 31.8.0. Groups therefore recalculate by evaluating the macro per contact, which is
+   correct and is exactly what the reference implementation does (its metadata registration is
+   commented out for the same reason).
+
+Why the AN-2 conclusion missed it: the `cms.macrorule` object type is documented only as an
+internal CI/CD object, and nothing in the digital-marketing documentation mentions adding condition
+rules. The reason marketers cannot segment on a search value out of the box is narrower than "no
+seam" — the system rule `CMSContactHasPerformedCustomActivityWithValue` does exactly what we need but
+ships with `MacroRuleUsageLocation = AutomationConditionStep`, so it is offered in automation and not
+in contact groups. We do not touch that row; we register our own three.
+
+**Risk accepted:** `MacroRuleInfo` rows and the parameter form XML are undocumented. An upgrade can
+change the form schema or the enum, and the failure mode is a rule that renders wrong in the picker
+(the installer is idempotent, so a corrected definition ships as a normal library upgrade). The
+installer is defensive about what it can be: it writes nothing when the row is unchanged, never
+overwrites `MacroRuleEnabled` on a rule that already exists, and skips the category link if the
+category is missing.
+
+**Where it lives:** `XpSearch.Core`, next to `XpSearchActivityTypeInstaller` — not `XpSearch.Admin`.
+The live site process recalculates contact groups too, so the macro methods must be loaded there.
