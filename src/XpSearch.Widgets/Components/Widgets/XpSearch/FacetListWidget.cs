@@ -14,7 +14,7 @@ using XpSearch.Widgets.Resources;
     name: "Search - Facet list",
     propertiesType: typeof(FacetListWidgetProperties),
     Description = "Displays filter checkboxes for one attribute of the search index.",
-    IconClass = "icon-filter",
+    IconClass = "icon-funnel",
     AllowCache = false)]
 
 namespace XpSearch.Widgets.Components.Widgets.XpSearch;
