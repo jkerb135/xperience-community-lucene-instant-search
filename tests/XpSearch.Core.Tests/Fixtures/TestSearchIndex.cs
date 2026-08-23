@@ -1,4 +1,4 @@
-using Kentico.Xperience.Lucene.Core;
+﻿using Kentico.Xperience.Lucene.Core;
 
 using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.Standard;
@@ -42,6 +42,7 @@ internal sealed class TestSearchIndex : ILuceneIndexAccessor, IDisposable
 
         config.SetMultiValued(TestCorpus.CategoryField, true);
         config.SetMultiValued(TestCorpus.TagsField, true);
+        config.SetMultiValued(TestCorpus.TopicField, true);
 
         Write(documents);
     }
@@ -139,6 +140,7 @@ internal sealed class TestSearchIndex : ILuceneIndexAccessor, IDisposable
 
         AddTaxonomy(document, TestCorpus.CategoryField, source.Categories, withTaxonomy);
         AddTaxonomy(document, TestCorpus.TagsField, source.Tags, withTaxonomy);
+        AddTaxonomy(document, TestCorpus.TopicField, source.Topics, withTaxonomy);
 
         if (source.Price is { } price)
         {
@@ -155,21 +157,36 @@ internal sealed class TestSearchIndex : ILuceneIndexAccessor, IDisposable
         return document;
     }
 
+    /// <summary>
+    /// Writes a dimension exactly the way the strategy does - through its own
+    /// <c>WriteTag</c>, ancestors first - so the fixture cannot drift from what a rebuild produces.
+    /// A document with no taxonomy sidecar keeps the terms but drops the facet fields, which is
+    /// what a strategy returning a null <c>FacetsConfig</c> writes.
+    /// </summary>
     private static void AddTaxonomy(Document document, string dimension, IReadOnlyList<string> values, bool withTaxonomy)
     {
+        var field = TestCorpus.Schema.Find(dimension)!;
+        var written = new HashSet<string>(StringComparer.Ordinal);
+        var scratch = new Document();
+
         foreach (string value in values)
         {
-            if (withTaxonomy)
+            var ancestors = TestCorpus.AncestorsOf(value);
+
+            for (int i = 0; i < ancestors.Length; i++)
             {
-                document.Add(new FacetField(dimension, value));
+                XpSearchIndexingStrategy.WriteTag(scratch, field, ancestors[i], TestCorpus.TitleOf(ancestors[i]), ancestors[..i], written);
             }
 
-            document.Add(new StringField(dimension, value, Field.Store.YES));
-            document.Add(new TextField(dimension + LuceneFieldNames.TextSuffix, TestCorpus.TitleOf(value), Field.Store.NO));
-            document.Add(new StringField(
-                dimension + LuceneFieldNames.LabelSuffix,
-                LuceneFieldNames.ComposeLabel(value, TestCorpus.TitleOf(value)),
-                Field.Store.NO));
+            XpSearchIndexingStrategy.WriteTag(scratch, field, value, TestCorpus.TitleOf(value), ancestors, written);
+        }
+
+        foreach (var indexable in scratch.Fields)
+        {
+            if (withTaxonomy || indexable is not FacetField)
+            {
+                document.Add(indexable);
+            }
         }
     }
 }

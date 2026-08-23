@@ -1,4 +1,4 @@
-using XpSearch.Core.Abstractions;
+﻿using XpSearch.Core.Abstractions;
 
 namespace XpSearch.Core.Indexing;
 
@@ -24,11 +24,14 @@ public static class LuceneFieldNames
     /// <summary>Suffix of the analyzed field that makes taxonomy tag titles free-text searchable.</summary>
     public const string TextSuffix = "_text";
 
-    /// <summary>Suffix of the indexed field that pairs a taxonomy tag code name with its title.</summary>
+    /// <summary>Suffix of the indexed field that pairs a taxonomy tag code name with its title and its ancestry.</summary>
     public const string LabelSuffix = "_label";
 
-    /// <summary>Separates the code name from the title inside a label term. ASCII unit separator: never part of either.</summary>
+    /// <summary>Separates the three parts of a label term. ASCII unit separator: never part of any of them.</summary>
     public const char LabelSeparator = '\u001f';
+
+    /// <summary>Separates the ancestor code names inside the path part of a label term. ASCII record separator: never part of a code name.</summary>
+    public const char PathSeparator = '\u001e';
 
     /// <summary>Gets the field whose terms map the code names of a taxonomy dimension to their titles.</summary>
     /// <param name="field">The schema field, which must be a taxonomy dimension.</param>
@@ -40,20 +43,50 @@ public static class LuceneFieldNames
         return field.LuceneName + LabelSuffix;
     }
 
-    /// <summary>Composes one label term out of a tag code name and its title.</summary>
+    /// <summary>Composes one label term out of a tag code name, its title and its ancestry.</summary>
     /// <param name="value">The tag code name, which is what a facet filter refers to.</param>
     /// <param name="title">The tag title, which is what a facet list displays.</param>
+    /// <param name="path">Code names of the tag's ancestors, root first, excluding the tag itself. Empty for a root-level tag.</param>
     /// <returns>The term to index in <see cref="LabelFieldName"/>.</returns>
-    public static string ComposeLabel(string value, string title) => $"{value}{LabelSeparator}{title}";
+    /// <remarks>
+    /// The term is <c>value, separator, path, separator, title</c>. The title comes last because it
+    /// is the only free-text part: everything up to the second separator is parsed, and whatever
+    /// follows is the title.
+    /// </remarks>
+    public static string ComposeLabel(string value, string title, IReadOnlyList<string>? path = null) =>
+        $"{value}{LabelSeparator}{string.Join(PathSeparator, path ?? [])}{LabelSeparator}{title}";
 
-    /// <summary>Splits a label term back into its code name and title.</summary>
+    /// <summary>Splits a label term back into its code name, title and ancestry.</summary>
     /// <param name="term">A term of a label field.</param>
-    /// <returns>The code name and the title, both <see langword="null"/> when the term is malformed.</returns>
-    public static (string? Value, string? Title) SplitLabel(string term)
+    /// <returns>The code name, the title and the ancestor code names. Value and title are <see langword="null"/> when the term is malformed.</returns>
+    /// <remarks>
+    /// A two-part term - the form written before hierarchical facets - still reads, with an empty path.
+    /// </remarks>
+    public static (string? Value, string? Title, string[] Path) SplitLabel(string term)
     {
-        int at = term?.IndexOf(LabelSeparator) ?? -1;
+        int first = term?.IndexOf(LabelSeparator) ?? -1;
 
-        return at > 0 && at < term!.Length - 1 ? (term[..at], term[(at + 1)..]) : (null, null);
+        if (first <= 0 || first >= term!.Length - 1)
+        {
+            return (null, null, []);
+        }
+
+        string rest = term[(first + 1)..];
+        int second = rest.IndexOf(LabelSeparator);
+
+        if (second < 0)
+        {
+            return (term[..first], rest, []);
+        }
+
+        if (second == rest.Length - 1)
+        {
+            return (null, null, []);
+        }
+
+        string path = rest[..second];
+
+        return (term[..first], rest[(second + 1)..], path.Length == 0 ? [] : path.Split(PathSeparator));
     }
 
     /// <summary>Gets the doc-values field a sort on the given attribute reads.</summary>
