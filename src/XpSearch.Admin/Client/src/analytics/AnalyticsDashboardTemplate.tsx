@@ -26,7 +26,7 @@ import {
   Stack,
   useMediaBreakpoints,
 } from '@kentico/xperience-admin-components';
-import type { TableAction, TableRow } from '@kentico/xperience-admin-components';
+import type { TableRow } from '@kentico/xperience-admin-components';
 import { usePageCommand } from '@kentico/xperience-admin-base';
 
 import { column, ReportTable, text } from './ReportTable';
@@ -258,15 +258,13 @@ export const AnalyticsDashboardTemplate = ({ selectedIndexName, today }: Analyti
       ]
     : [];
 
-  const zeroResultAction: TableAction = {
-    identifier: 'create-rule',
-    label: 'Create rule',
-    title: 'Create a rule seeded with this query',
-    icon: 'xp-plus',
-    disabled: false,
-    destructive: false,
-  };
-
+  /*
+   * A component cell rather than the stock ActionCell (HW-10 defect 5): ActionCell renders its
+   * actions as icon-only Buttons, and Button sets aria-label from its `label` prop, falling back to
+   * the literal string "button" - which is how the action announced. TableAction has no aria hook of
+   * its own, so the button is rendered here with the row's query in its label, which is both the
+   * visible text and the accessible name.
+   */
   const zeroResultRows: TableRow[] = loaded
     ? report.zeroResultQueries.map((row) => ({
         identifier: row.query,
@@ -277,12 +275,19 @@ export const AnalyticsDashboardTemplate = ({ selectedIndexName, today }: Analyti
           text('volume', count(row.volume)),
           text('lastSeen', dayFormat.format(toDate(row.lastSeen))),
           {
-            type: CellType.Action,
+            type: CellType.Component,
             columnName: 'action',
-            actions: [zeroResultAction],
-            onInvokeAction: async () => {
-              await createRule({ query: row.query });
-            },
+            component: () => (
+              <Button
+                label={`Create rule for ${row.query}`}
+                icon="xp-plus"
+                color={ButtonColor.Tertiary}
+                size={ButtonSize.XS}
+                onClick={() => {
+                  void createRule({ query: row.query });
+                }}
+              />
+            ),
           },
         ],
       }))
@@ -301,7 +306,7 @@ export const AnalyticsDashboardTemplate = ({ selectedIndexName, today }: Analyti
         column('query', 'Query', { minWidth: 200 }),
         column('volume', 'Volume', { minWidth: 88, maxWidth: 88 }),
         column('lastSeen', 'Last seen', { minWidth: 160, maxWidth: 180 }),
-        column('action', '', { minWidth: 124, maxWidth: 124, contentType: ColumnContentType.Action }),
+        column('action', '', { minWidth: 220, maxWidth: 240, contentType: ColumnContentType.Component }),
       ]}
       rows={zeroResultRows}
       emptyText="Every search in this range found something."

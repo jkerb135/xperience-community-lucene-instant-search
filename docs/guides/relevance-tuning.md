@@ -18,7 +18,7 @@ The sidebar has one entry per kind of tuning:
 | Sidebar entry | URL | What it is |
 |---|---|---|
 | **Settings** | `/admin/lucene/indexes/tuning/{id}/settings` | The index's own configuration (strategy, analyzer, channels) — the Lucene integration's form. |
-| **Rules** | `…/{id}/rules` | Pin, bury, boost, filter and redirect rules. |
+| **Rules** | `…/{id}/rules` | If/then rules: pin, hide, boost, bury, filter, rewrite, redirect, custom data. |
 | **Synonyms** | `…/{id}/synonyms` | Words that mean the same thing. |
 | **Stopwords** | `…/{id}/stopwords` | Words ignored when someone searches. |
 | **Field weights** | `…/{id}/weights` | How much a match in one field counts. |
@@ -42,26 +42,93 @@ Say the search *espresso machine* should always show your flagship machine first
 
 1. Open **Lucene Search** in the administration menu (it sits under **Development**) and select the
    index you want to tune, for example *Products*.
-2. Select **Rules** in the sidebar, then **New rule**.
-3. Fill in:
-   - **Rule name** — `Flagship machine first`. Give it a name you will recognise in six months.
-   - **Enabled** — leave selected.
-   - **When the visitor's search** — *Contains the words below*.
-   - **Words to look for** — `espresso machine`.
-   - **Then** — *Pin a result to a position*.
-   - **Result id** — the id of the product, for example `f3c1…:en` (see *Finding a result id* below).
-   - **Pin to position** — `1`.
-   - **Priority** — leave at `100`.
-4. Select **Save**.
-5. Search for *espresso machine* on the site. Your flagship machine is first.
+2. Select **Rules** in the sidebar, then **New rule**. The rule builder opens.
+3. In the settings strip along the top, type the **Rule name** — `Flagship machine first`. Give it a
+   name you will recognise in six months. Leave **Enabled** selected and **Priority** at `100`.
+4. Under **Condition(s) — If**, select **Add condition**. A panel slides in from the right. Turn
+   **Query** on, leave the operator at *Contains*, type `espresso machine`, and select **Apply**. The
+   panel closes and the condition reads back as `Query contains “espresso machine”`.
+5. Under **Consequence(s) — Then**, select **Add consequence** and pick **Pin an item**. Fill in the
+   **Item** (the id of the product, for example `f3c1…:en` — see *Finding a result id* below) and
+   **Position** `1`. Select **Save rule**.
+
+Search for *espresso machine* on the site. Your flagship machine is first.
 
 Nothing is rebuilt and nothing is republished. The change is live within half a minute at worst, and
 usually immediately.
 
+### The rule builder, region by region
+
+The builder is one screen. Nothing is saved until you select **Save rule**, including anything you
+did in the side panel.
+
+**The settings strip.** Rule name, Enabled, Priority, and the two schedule fields **Runs from** and
+**Until** (`yyyy-mm-dd`, UTC; leave both empty and the rule runs forever). These describe the rule,
+not what it matches.
+
+**The If column.** One card per condition, each showing a read-only summary of what it matches —
+every part that is turned on, joined with a middle dot:
+
+```
+Condition 1   Query contains “grinder” · plurals & synonyms
+Condition 2   Filter ProductFieldCategory is Grinders · Contact group Grinder shoppers · any language
+```
+
+You do not edit a condition on this screen. **Edit** on a card, or **Add condition** in the dashed
+area below them, opens the side panel. A brand-new rule shows a *Start with a condition* tip instead
+of cards, and **Save rule** stays disabled until there is one — see *What stops a save* below.
+
+**The side panel.** Three switches: **Query**, **Filters** and **Context**. Turn one on and its
+fields appear under it.
+
+- **Query** — the operator (*Contains*, *Is exactly*, *Starts with*), the words, and
+  **Match plurals & synonyms** (this is the *analyzed* comparison described below).
+- **Filters** — one or more `attribute is value` rows, all of which must be selected on the request.
+  Type the attribute name; the same names that appear in your search results.
+- **Context** — **Contact group** (*Everyone* by default) and **Language** (*Any* by default).
+
+**Apply** writes your changes back to the card's summary and closes the panel — it does not save
+anything. **Discard**, the close button, `Esc` and a click outside all throw the changes away. While
+the panel is open the keyboard stays inside it. On a narrow screen it covers the page instead of
+sitting beside it.
+
+A rule matches **one** query pattern and has **one** contact group and language, so only one card can
+own the Query switch and only one can own Context. Turning a second one on is refused with a message
+rather than silently overwriting the first. Filters add up across cards.
+
+**The Then column.** One card per consequence, applied top to bottom. **Add consequence** opens a
+menu of the ten kinds listed below; a kind already used stays available, because a rule may pin
+several items or chain rewrites. Each card has its own fields and a **Remove**.
+
+**What stops a save.** **Save rule** is disabled while the rule has no condition at all. Anything
+else is checked when you select it: the page shows a *Friendly warning* summary at the top and puts
+the specific message on the field that has to change. The checks are:
+
+| Refused when | Message on |
+|---|---|
+| The rule has no name | Rule name |
+| The rule has no condition at all | The If column |
+| **Query** is on but the words are blank | The words field |
+| A filter row has an attribute but no value, or the other way round | The filters |
+| **Pin** has no item, or a position below 1 | That card |
+| **Boost** has neither an item nor an expression, or a multiplier of 0 or less | That card |
+| **Hide**, **Bury**, **Filter results**, a rewrite or **Redirect** has an empty required field | That card |
+| **Return custom data** is not valid JSON, or is not a JSON **object** | That card |
+
+Nothing is written when a save is refused.
+
+**Rules converted from the previous release** open with a note: *“Converted from the previous format
+— one condition, one consequence. Nothing about its behaviour changed.”* It appears once; saving the
+rule clears it. You do not have to do anything about it.
+
+**The Rules listing** shows the same condition summary in its *Conditions* column, so you can read
+what every rule matches without opening it, next to *Contact group* (*Everyone* when the rule is not
+scoped), *Priority* and *Enabled*.
+
 ### Personalise rules by contact group
 
-Every rule so far applies to everyone. Leave **Contact group** empty and it still does — the Rules
-listing shows *Everyone* in that column. Point it at a contact group and the rule only fires for
+Every rule so far applies to everyone. Leave the side panel's **Context** switch off and it still
+does — the Rules listing shows *Everyone* in that column. Point it at a contact group and the rule only fires for
 visitors in that group; everyone else gets the plain ranking.
 
 The group is the one you already built in **Digital marketing → Contact groups**. Nothing about it
@@ -78,16 +145,14 @@ their search.
    activities this library logs are described in the analytics guide under
    [Search activities in contact groups](analytics.md#search-activities-in-contact-groups). Save and
    let it rebuild.
-2. **Scope a rule to it.** Open **Lucene Search → Products → Rules → New rule** and fill in:
-   - **Rule name** — `Promote grinders to grinder shoppers`.
-   - **Enabled** — leave selected.
-   - **Contact group** — select *Grinder shoppers*.
-   - **When the visitor's search** — *Contains the words below*.
-   - **Words to look for** — `coffee`.
-   - **Then** — *Boost a result*.
-   - **Result id** — the id of the grinder you want lifted.
-   - **Boost multiplier** — `2`.
-3. **Save.**
+2. **Scope a rule to it.** Open **Lucene Search → Products → Rules → New rule**:
+   - **Rule name** — `Promote grinders to grinder shoppers`. Leave **Enabled** selected.
+   - **Add condition** → turn **Query** on, *Contains*, `coffee`; turn **Context** on and select
+     *Grinder shoppers* as the **Contact group** → **Apply**. Both live on one card, whose summary
+     reads `Query contains "coffee" · Contact group Grinder shoppers · any language`.
+   - **Add consequence** → **Boost matching results**. Put the id of the grinder you want lifted
+     in **Item** and `2` in **Multiplier**.
+3. **Save rule.**
 
 The rule is now live for members of *Grinder shoppers* and invisible to everybody else. It obeys the
 same schedule, priority and conflict rules as any other rule — the contact group is one more
@@ -135,11 +200,6 @@ A rule is a list of **conditions** and a list of **consequences**. Every conditi
 the rule to fire; when it does, its consequences are applied in the order they are listed. A rule
 with no conditions at all never fires — an "if" that is always true would change every search on the
 site, so it is treated as unfinished rather than as a wildcard.
-
-> **The editing screens are one release behind this page.** The Rules form still asks for a single
-> condition and a single thing to do, and it is read as one condition and one consequence of the
-> model below (*Is anything at all* becomes "any query"). The multi-condition, multi-consequence form
-> arrives with the next unit; nothing you have configured changes meaning in the meantime.
 
 #### The conditions
 
@@ -206,16 +266,18 @@ it is merged into one object in rule order, so a later rule wins a key it shares
 ### When a rule runs
 
 - **Enabled** — clear it to switch a rule off without deleting it.
-- **Runs from** / **Runs until** — leave both empty and the rule runs forever. Fill them in for a
-  campaign and the rule switches itself on and off. Times are UTC.
-- **When the visitor's search**:
-  — *Contains the words below* — the words appear anywhere in what the visitor typed.
-  — *Is exactly the words below* — the visitor typed exactly that and nothing else.
-  — *Starts with the words below* — what they typed begins with your words.
-  — *Is anything at all* — the rule applies to every search. Use this with **Filter** or **Boost**,
-    not with pin.
+- **Runs from** / **Until** — leave both empty and the rule runs forever. Fill them in for a
+  campaign and the rule switches itself on and off. Dates are `yyyy-mm-dd`, UTC.
+- The **Query** condition's operator:
+  — *Contains* — the words appear anywhere in what the visitor typed.
+  — *Is exactly* — the visitor typed exactly that and nothing else.
+  — *Starts with* — what they typed begins with your words.
 
 Upper and lower case never matter.
+
+To make a rule apply to **every** search, do not add a Query condition at all — turn on **Filters**
+or **Context** instead, so the rule still says something about when it fires. Use that with **Filter
+results** or **Boost**, not with pin.
 
 ### When two rules disagree
 
@@ -372,8 +434,8 @@ that one instead.
 Below 1366 px the two columns become a **With tuning / Without tuning** toggle over one list, and the
 pipeline stages collapse.
 
-Reading it: if the two columns are identical, your rule did not match — check the **When the
-visitor's search** condition and the **Words to look for**, and check the schedule. If a result moved
+Reading it: if the two columns are identical, your rule did not match — open the rule, check what
+its condition rows actually say, and check the schedule. If a result moved
 but not far enough, raise the boost or use a pin instead.
 
 Two things worth knowing. The tester always runs a fresh search, so a rule you saved a second ago is
@@ -457,3 +519,62 @@ opening the index's configuration form first.
 
 - Pin and bury act on the page of results the visitor is looking at. Pinning to position 3 affects
   the page that contains position 3, not the others.
+- A rule is scoped to **one** contact group and **one** language. Two audiences means two rules, or
+  one group whose condition covers both.
+- The **attribute** box on a filter condition is free text — it does not offer the attributes your
+  index actually has. Copy the name from a search result or from the facet **Attribute** drop-down on
+  the index settings page. A wrong name simply never matches.
+- Consequences are reordered by removing and re-adding a card; there is no drag handle.
+
+### Appendix: how a rule is stored
+
+You do not need this to use the builder. It is here for whoever has to read the database, write a
+migration, or feed rules in from somewhere else.
+
+A rule lives in one row of `XpSearch_Rule`. Everything about its *if* and its *then* is in two JSON
+columns; the rest of the row is the name, the schedule, the priority and the index.
+
+**`RuleConditions`** — one object. `query` is absent when the rule matches any query.
+
+```json
+{
+  "query": { "operator": "contains", "pattern": "grinder", "matchAnalyzed": true },
+  "filters": [{ "attribute": "ProductFieldCategory", "value": "Grinders" }],
+  "contactGroup": "CoffeeGrinders",
+  "language": "en"
+}
+```
+
+`operator` is `is`, `contains` or `startsWith`. A rule that is scoped to nobody in particular reads
+`{"filters":[],"contactGroup":"","language":""}`.
+
+**`RuleConsequences`** — an array, in the order the rule applies them, each tagged with `type`:
+
+| `type` | The rest of the object |
+|---|---|
+| `pin` | `targetId`, `position` |
+| `hide` | `targetId` |
+| `boost` | `targetId`, `filterExpression`, `multiplier` |
+| `bury` | `targetId`, `filterExpression` |
+| `filterResults` | `filterExpression` |
+| `removeWord` | `word` |
+| `replaceWord` | `word`, `replacement` |
+| `replaceQuery` | `query` |
+| `redirect` | `url` |
+| `customData` | `json` — your text, exactly as you typed it |
+
+```json
+[{ "type": "pin", "targetId": "doc-1:en", "position": 1 },
+ { "type": "customData", "json": "{\"banner\":\"Grinder week\"}" }]
+```
+
+**Upgrading from the previous release.** Rules written before this release used nine separate columns
+for one condition and one consequence. They are converted the first time the application starts, in
+place, automatically, and nothing changes meaning — including the two odd corners of the old model:
+*Is anything at all* becomes "contains nothing in particular", which still fires on every search, and
+a rule whose pattern was blank under any other operator comes back **disabled**, because it never
+matched anything anyway. Converted rules show the note described above until you save them. The nine
+old columns are removed once every row has been converted.
+
+The full specification, including why the conversion needs no flag to be safe, is in
+[ADR-0022](../adr/0022-if-then-rule-engine.md#addendum--storage-and-migration-unit-cr-4b-2026-08-24).

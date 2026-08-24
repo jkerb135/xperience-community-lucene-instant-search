@@ -72,6 +72,14 @@ public class SynonymModel : IIndexScopedModel
     [CheckBoxComponent(Label = "Enabled", Order = 5)]
     public bool Enabled { get; set; } = true;
 
+    /// <summary>Parses a drop-down option back into the numeric enum value it stands for.</summary>
+    /// <param name="value">The selected option.</param>
+    /// <returns>The numeric value, or zero when nothing was selected.</returns>
+    public static int ParseOption(string? value) =>
+        int.TryParse(value, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out int parsed)
+            ? parsed
+            : 0;
+
     /// <summary>Copies the model onto a stored row.</summary>
     /// <param name="row">The row to fill.</param>
     /// <returns>The same row.</returns>
@@ -80,7 +88,7 @@ public class SynonymModel : IIndexScopedModel
         ArgumentNullException.ThrowIfNull(row);
 
         row.SynonymIndexName = IndexName;
-        row.SynonymType = RuleModel.ParseOption(Direction);
+        row.SynonymType = ParseOption(Direction);
         row.SynonymInput = Input;
         row.SynonymOutput = Output;
         row.SynonymEnabled = Enabled;

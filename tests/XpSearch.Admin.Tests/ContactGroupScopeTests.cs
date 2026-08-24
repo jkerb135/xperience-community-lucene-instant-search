@@ -11,9 +11,11 @@ using NSubstitute;
 
 using NUnit.Framework;
 
+using XpSearch.Admin.Persistence;
 using XpSearch.Admin.Tuning;
 using XpSearch.Admin.UIPages;
 using XpSearch.Admin.UIPages.QueryTester;
+using XpSearch.Admin.UIPages.RuleBuilder;
 using XpSearch.Core.Abstractions;
 using XpSearch.Core.Contract;
 using XpSearch.Core.Personalization;
@@ -32,13 +34,13 @@ internal sealed class ContactGroupScopeTests
 {
     private const string Group = "grinder-shoppers";
 
-    private static readonly TuningRule Scoped = TuningRuleCompat.FromFlat(
+    private static readonly TuningRule Scoped = RuleStorageMigration.FromFlat(
         1,
         "Promote grinders",
         enabled: true,
-        FlatCondition.Always,
+        LegacyCondition.Always,
         string.Empty,
-        FlatConsequence.Boost,
+        LegacyConsequence.Boost,
         "doc-1",
         0,
         2,
@@ -50,31 +52,19 @@ internal sealed class ContactGroupScopeTests
         Group);
 
     /// <summary>
-    /// The field has to be an object selector over contact groups that yields code names, because
-    /// that is what <c>XpSearchRuleInfo.RuleContactGroup</c> stores and what the pipeline compares.
+    /// The builder's Context toggle stores the contact group's code name, because that is what the
+    /// stored conditions JSON carries and what the pipeline compares (ADR-0021).
     /// </summary>
     [Test]
-    public void TheRuleFormOffersAContactGroupSelectorRightAfterEnabled()
+    public void TheBuilderRoundTripsTheContactGroupAsACodeName()
     {
-        var selector = typeof(RuleModel)
-            .GetProperty(nameof(RuleModel.ContactGroup))!
-            .GetCustomAttributes(typeof(ObjectSelectorComponentAttribute), inherit: false)
-            .Cast<ObjectSelectorComponentAttribute>()
-            .Single();
-
-        var enabled = typeof(RuleModel)
-            .GetProperty(nameof(RuleModel.Enabled))!
-            .GetCustomAttributes(typeof(CheckBoxComponentAttribute), inherit: false)
-            .Cast<CheckBoxComponentAttribute>()
-            .Single();
+        var edited = RuleConditionsDto.From(new RuleConditions(null, [], Group, string.Empty));
 
         Expect.Multiple(() =>
         {
-            Assert.That(selector.ObjectType, Is.EqualTo(ContactGroupInfo.OBJECT_TYPE));
-            Assert.That(selector.MaximumItems, Is.EqualTo(1), "a rule is scoped to at most one group");
-            Assert.That(selector.IdentifyObjectByGuid, Is.False, "the stored value is the code name");
-            Assert.That(selector.Order, Is.GreaterThan(enabled.Order));
-            Assert.That(selector.Tooltip, Is.EqualTo("Apply this rule only to visitors in this contact group. Empty applies it to everyone."));
+            Assert.That(edited.ContactGroup, Is.EqualTo(Group));
+            Assert.That(edited.ToModel().ContactGroup, Is.EqualTo(Group));
+            Assert.That(new RuleConditionsDto().ToModel().ContactGroup, Is.Empty, "no group means everyone");
         });
     }
 

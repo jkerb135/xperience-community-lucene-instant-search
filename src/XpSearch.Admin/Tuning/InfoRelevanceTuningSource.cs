@@ -89,25 +89,7 @@ public sealed class InfoRelevanceTuningSource : IRelevanceTuningSource
                 .GetEnumerableTypedResultAsync(cancellationToken: token)
                 .ConfigureAwait(false);
 
-            return (IReadOnlyList<TuningRule>)
-            [
-                .. rows.Select(row => TuningRuleCompat.FromFlat(
-                    row.RuleID,
-                    row.RuleName,
-                    row.RuleEnabled,
-                    (FlatCondition)row.RuleConditionType,
-                    row.RulePattern,
-                    (FlatConsequence)row.RuleConsequenceType,
-                    row.RuleTargetObjectID,
-                    row.RuleTargetPosition,
-                    (double)row.RuleBoostValue,
-                    row.RuleFilterExpression,
-                    row.RuleRedirectUrl,
-                    row.RuleValidFrom,
-                    row.RuleValidTo,
-                    row.RulePriority,
-                    row.RuleContactGroup))
-            ];
+            return (IReadOnlyList<TuningRule>)[.. rows.Select(Read)];
         });
 
     /// <inheritdoc />
@@ -158,6 +140,34 @@ public sealed class InfoRelevanceTuningSource : IRelevanceTuningSource
                 .. rows.Select(row => new FieldWeight(row.WeightFieldName, (double)row.WeightValue))
             ];
         });
+
+    /// <summary>Reads one stored row into the if/then model.</summary>
+    /// <param name="row">The stored row.</param>
+    /// <returns>The rule.</returns>
+    /// <remarks>
+    /// A row still in the pre-CR-4b flat shape is converted on the fly rather than skipped: the
+    /// startup migration will have dealt with it, but a rule inserted by a script while the
+    /// application runs must not silently stop firing.
+    /// </remarks>
+    public static TuningRule Read(XpSearchRuleInfo row)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+
+        if (RuleStorageMigration.NeedsConversion(row))
+        {
+            return RuleStorageMigration.FromFlatRow(row);
+        }
+
+        return new TuningRule(
+            row.RuleID,
+            row.RuleName,
+            row.RuleEnabled,
+            row.RulePriority,
+            row.RuleValidFrom,
+            row.RuleValidTo,
+            RuleJson.ReadConditions(row.RuleConditions),
+            RuleJson.ReadConsequences(row.RuleConsequences));
+    }
 
     /// <summary>Splits a stopword list as it is stored: one word per line, blanks ignored.</summary>
     /// <param name="value">The stored text.</param>

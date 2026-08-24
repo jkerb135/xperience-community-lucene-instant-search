@@ -251,14 +251,15 @@ Below 1366 px the tiles go two per row and the two table columns stack, zero-res
 
 #### From a zero-result query to a fix
 
-Every row of **Zero-result queries** has a **Create rule** button. It opens the rule form with:
+Every row of **Zero-result queries** has a **Create rule for …** button. It opens the rule builder
+for the index you were looking at, already carrying:
 
-- **Index** set to the index you were looking at,
-- **Words to look for** set to that query,
+- one condition, *Query contains* that query,
 - **Rule name** pre-filled as *Rule for '<query>'*.
 
-Choose what the rule should do — usually **Pin a result to a position**, pointing at the page that
-*should* have come back — fill in the result id, and save. You land back on the **Rules** listing.
+Choose what the rule should do — **Add consequence**, usually **Pin an item**, pointing at the page
+that *should* have come back — fill in the item, and **Save rule**. You land back on the **Rules**
+listing.
 Then check it in **Query tester**, next to Analytics in the same sidebar (see
 `docs/guides/relevance-tuning.md`).
 
