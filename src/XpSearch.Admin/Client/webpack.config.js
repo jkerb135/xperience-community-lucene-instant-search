@@ -29,7 +29,15 @@ module.exports = (opts, argv) => {
         // https://docs.kentico.com/documentation/developers-and-admins/configuration/rich-text-editor-configuration/rich-text-editor-customization
         {
           test: /\.css$/,
-          use: ["style-loader", "css-loader"],
+          // css-loader 7 defaults CSS modules to named exports; namedExport: false keeps the
+          // `import styles from "./x.module.css"` default-import shape the templates use.
+          use: [
+            "style-loader",
+            {
+              loader: "css-loader",
+              options: { modules: { auto: true, namedExport: false, exportLocalsConvention: "as-is" } },
+            },
+          ],
         },
       ],
     },
