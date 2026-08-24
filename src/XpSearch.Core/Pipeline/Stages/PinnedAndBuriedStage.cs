@@ -14,9 +14,12 @@ namespace XpSearch.Core.Pipeline.Stages;
 /// <remarks>
 /// The documented rules, in the order a support ticket will ask about them:
 /// <list type="bullet">
-/// <item>Rules are applied in precedence order (priority, then rule id) and the first rule to name a
-/// document wins; later rules naming the same document are ignored.</item>
-/// <item>Bury removes the document from the results and decrements the total.</item>
+/// <item>Consequences are applied in precedence order (priority, then rule id, then the order the
+/// rule lists them) and the first one to name a document wins; later ones naming the same document
+/// are ignored.</item>
+/// <item>Bury removes the document from the page that came back and decrements the total. Taking a
+/// document out of the result set altogether is <c>Hide</c>, which <see cref="BoostRulesStage"/>
+/// applies before the search runs.</item>
 /// <item>Pin moves the document to its one-based position. Only the page that contains that position
 /// is touched, so pinning to 3 does nothing on page 2.</item>
 /// <item>A pinned document that the query did not match is loaded by id and injected only if it also
@@ -43,12 +46,13 @@ public sealed class PinnedAndBuriedStage : ISearchStage
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        var rules = context.Tuning.Rules
-            .Where(rule => rule.Consequence is RuleConsequence.Pin or RuleConsequence.Bury)
-            .Where(rule => !string.IsNullOrWhiteSpace(rule.TargetId))
+        var placements = context.Tuning.Rules
+            .SelectMany(rule => rule.Consequences.Select(consequence => (Rule: rule, Consequence: consequence)))
+            .Where(placement => placement.Consequence is RuleConsequence.Pin or RuleConsequence.Bury)
+            .Where(placement => !string.IsNullOrWhiteSpace(TargetOf(placement.Consequence)))
             .ToList();
 
-        if (rules.Count == 0)
+        if (placements.Count == 0)
         {
             return Task.CompletedTask;
         }
@@ -57,15 +61,15 @@ public sealed class PinnedAndBuriedStage : ISearchStage
         var handled = new HashSet<string>(StringComparer.Ordinal);
         int offset = (context.Page - 1) * context.PageSize;
 
-        foreach (var rule in rules.Where(rule => handled.Add(rule.TargetId)))
+        foreach (var placement in placements.Where(placement => handled.Add(TargetOf(placement.Consequence))))
         {
-            if (rule.Consequence == RuleConsequence.Bury)
+            if (placement.Consequence is RuleConsequence.Bury bury)
             {
-                Bury(context, documents, rule.TargetId);
+                Bury(context, documents, bury.TargetId);
                 continue;
             }
 
-            Pin(context, documents, rule, offset);
+            Pin(context, documents, placement.Rule, (RuleConsequence.Pin)placement.Consequence, offset);
         }
 
         context.Documents = documents;
@@ -85,16 +89,25 @@ public sealed class PinnedAndBuriedStage : ISearchStage
         context.Total = Math.Max(0, context.Total - 1);
     }
 
-    private void Pin(SearchContext context, List<ScoredDocument> documents, TuningRule rule, int offset)
+    /// <summary>The document a pin or a bury names.</summary>
+    private static string TargetOf(RuleConsequence consequence) =>
+        consequence switch
+        {
+            RuleConsequence.Pin pin => pin.TargetId ?? string.Empty,
+            RuleConsequence.Bury bury => bury.TargetId ?? string.Empty,
+            _ => string.Empty
+        };
+
+    private void Pin(SearchContext context, List<ScoredDocument> documents, TuningRule rule, RuleConsequence.Pin pin, int offset)
     {
-        int slot = rule.TargetPosition - 1 - offset;
+        int slot = pin.Position - 1 - offset;
 
         if (slot < 0 || slot >= context.PageSize)
         {
             return;
         }
 
-        int index = IndexOf(documents, rule.TargetId);
+        int index = IndexOf(documents, pin.TargetId);
 
         if (index >= 0)
         {
@@ -104,7 +117,7 @@ public sealed class PinnedAndBuriedStage : ISearchStage
         }
         else
         {
-            if (Load(context, rule.TargetId) is not { } injected)
+            if (Load(context, pin.TargetId) is not { } injected)
             {
                 return;
             }
@@ -120,10 +133,10 @@ public sealed class PinnedAndBuriedStage : ISearchStage
 
         if (context.Request.Explain ?? false)
         {
-            if (!context.DocumentExplanations.TryGetValue(rule.TargetId, out var explanations))
+            if (!context.DocumentExplanations.TryGetValue(pin.TargetId, out var explanations))
             {
                 explanations = [];
-                context.DocumentExplanations[rule.TargetId] = explanations;
+                context.DocumentExplanations[pin.TargetId] = explanations;
             }
 
             explanations.Add(RuleSelection.Explain(rule));

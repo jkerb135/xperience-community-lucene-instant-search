@@ -32,13 +32,13 @@ internal sealed class ContactGroupScopeTests
 {
     private const string Group = "grinder-shoppers";
 
-    private static readonly TuningRule Scoped = new(
+    private static readonly TuningRule Scoped = TuningRuleCompat.FromFlat(
         1,
         "Promote grinders",
-        Enabled: true,
-        RuleCondition.Always,
+        enabled: true,
+        FlatCondition.Always,
         string.Empty,
-        RuleConsequence.Boost,
+        FlatConsequence.Boost,
         "doc-1",
         0,
         2,
@@ -150,7 +150,8 @@ internal sealed class ContactGroupScopeTests
         ISearchStage[] stages =
         [
             new ResolveContactGroupsStage(resolver),
-            new SynonymExpansionStage(source, TimeProvider.System),
+            new QueryRewriteStage(source, TimeProvider.System),
+            new SynonymExpansionStage(source),
             recorder
         ];
 

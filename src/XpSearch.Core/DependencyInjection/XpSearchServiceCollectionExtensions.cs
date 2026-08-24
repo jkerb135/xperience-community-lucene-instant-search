@@ -97,6 +97,7 @@ public static class XpSearchServiceCollectionExtensions
 
         services.AddXpSearchStage<NormalizeRequestStage>();
         services.AddXpSearchStage<ResolveContactGroupsStage>();
+        services.AddXpSearchStage<QueryRewriteStage>();
         services.AddXpSearchStage<SynonymExpansionStage>();
         services.AddXpSearchStage<StopwordRemovalStage>();
         services.AddXpSearchStage<BuildQueryStage>();

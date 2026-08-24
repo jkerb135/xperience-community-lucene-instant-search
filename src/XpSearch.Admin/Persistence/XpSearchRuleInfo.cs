@@ -109,7 +109,7 @@ public class XpSearchRuleInfo : AbstractInfo<XpSearchRuleInfo, IInfoProvider<XpS
         set => SetValue(nameof(RuleContactGroup), value);
     }
 
-    /// <summary>Gets or sets how the pattern is matched; see <see cref="XpSearch.Core.Tuning.RuleCondition"/>.</summary>
+    /// <summary>Gets or sets how the pattern is matched; see <see cref="XpSearch.Core.Tuning.FlatCondition"/>.</summary>
     [DatabaseField]
     public virtual int RuleConditionType
     {
@@ -125,7 +125,7 @@ public class XpSearchRuleInfo : AbstractInfo<XpSearchRuleInfo, IInfoProvider<XpS
         set => SetValue(nameof(RulePattern), value);
     }
 
-    /// <summary>Gets or sets what the rule does; see <see cref="XpSearch.Core.Tuning.RuleConsequence"/>.</summary>
+    /// <summary>Gets or sets what the rule does; see <see cref="XpSearch.Core.Tuning.FlatConsequence"/>.</summary>
     [DatabaseField]
     public virtual int RuleConsequenceType
     {

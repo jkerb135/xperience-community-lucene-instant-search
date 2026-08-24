@@ -80,7 +80,7 @@ public class RuleModel : IIndexScopedModel
         Tooltip = "Apply this rule only to visitors in this contact group. Empty applies it to everyone.")]
     public IEnumerable<ObjectRelatedItem> ContactGroup { get; set; } = [];
 
-    /// <summary>Gets or sets how the pattern is matched, as the numeric value of <see cref="RuleCondition"/>.</summary>
+    /// <summary>Gets or sets how the pattern is matched, as the numeric value of <see cref="FlatCondition"/>.</summary>
     [DropDownComponent(
         Label = "When the visitor's search",
         Order = 5,
@@ -91,7 +91,7 @@ public class RuleModel : IIndexScopedModel
     [TextInputComponent(Label = "Words to look for", Order = 6)]
     public string Pattern { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets what the rule does, as the numeric value of <see cref="RuleConsequence"/>.</summary>
+    /// <summary>Gets or sets what the rule does, as the numeric value of <see cref="FlatConsequence"/>.</summary>
     [DropDownComponent(
         Label = "Then",
         Order = 7,

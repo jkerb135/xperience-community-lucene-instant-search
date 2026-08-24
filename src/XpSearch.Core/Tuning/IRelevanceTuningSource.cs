@@ -1,38 +1,111 @@
 namespace XpSearch.Core.Tuning;
 
-/// <summary>How a rule's pattern is compared against the normalized query (spec §8.2).</summary>
-public enum RuleCondition
+/// <summary>How a rule's pattern is compared against the query (ADR-0022).</summary>
+public enum QueryOperator
 {
+    /// <summary>The query is exactly the pattern.</summary>
+    Is,
+
     /// <summary>The query contains the pattern.</summary>
     Contains,
 
-    /// <summary>The query equals the pattern.</summary>
-    Exact,
-
     /// <summary>The query starts with the pattern.</summary>
-    StartsWith,
-
-    /// <summary>The rule applies to every query, whatever the pattern.</summary>
-    Always
+    StartsWith
 }
 
-/// <summary>What a matching rule does (spec §8.2).</summary>
-public enum RuleConsequence
+/// <summary>
+/// The "the visitor's search …" half of a rule's <c>if</c> (ADR-0022).
+/// </summary>
+/// <param name="Operator">How <paramref name="Pattern"/> is compared against the query.</param>
+/// <param name="Pattern">
+/// The pattern, compared case-insensitively after trimming. An empty pattern is not a wildcard for
+/// <see cref="QueryOperator.Is"/> (it then matches an empty query only), but it is for the other two
+/// operators, which is how "any query at all" is expressed.
+/// </param>
+/// <param name="MatchAnalyzed">
+/// <see langword="true"/> to compare against the analyzed query - what the index's analyzer makes of
+/// it, so plurals and stems match - with the configured synonyms folded in.
+/// <see langword="false"/> compares the raw query text. Neither has any typo tolerance.
+/// </param>
+public sealed record QueryCondition(QueryOperator Operator, string Pattern, bool MatchAnalyzed);
+
+/// <summary>One <c>attribute is value</c> condition, checked against the request's facet filters.</summary>
+/// <param name="Attribute">Attribute name, as it appears in <c>filters.facets</c>.</param>
+/// <param name="Value">The value that must be selected on it.</param>
+public sealed record AttributeIs(string Attribute, string Value);
+
+/// <summary>
+/// The <c>if</c> of a rule: every condition given must hold (ADR-0022). A
+/// <see cref="RuleConditions"/> with nothing set at all never fires - a source must not emit one.
+/// </summary>
+/// <param name="Query">The query condition, or <see langword="null"/> for "any query".</param>
+/// <param name="Filters">Facet refinements that must all be selected on the request. Empty for "any".</param>
+/// <param name="ContactGroup">Code name of the contact group the rule is scoped to; empty for "anyone" (ADR-0021).</param>
+/// <param name="Language">Language the request must ask for; empty for "any language".</param>
+public sealed record RuleConditions(
+    QueryCondition? Query,
+    IReadOnlyList<AttributeIs> Filters,
+    string ContactGroup,
+    string Language)
 {
-    /// <summary>Move a document to a fixed position.</summary>
-    Pin,
+    /// <summary>Gets a value indicating whether the conditions say nothing, in which case the rule never fires.</summary>
+    public bool IsEmpty =>
+        Query is null
+        && Filters.Count == 0
+        && string.IsNullOrWhiteSpace(ContactGroup)
+        && string.IsNullOrWhiteSpace(Language);
+}
 
-    /// <summary>Push a document out of the results.</summary>
-    Bury,
+/// <summary>
+/// One <c>then</c> of a rule (ADR-0022). The nested records are the whole closed set; they are
+/// applied in the order the rule lists them.
+/// </summary>
+public abstract record RuleConsequence
+{
+    /// <summary>Moves a document to a fixed position.</summary>
+    /// <param name="TargetId">Result id of the document.</param>
+    /// <param name="Position">One-based position, counted across pages.</param>
+    public sealed record Pin(string TargetId, int Position) : RuleConsequence;
 
-    /// <summary>Raise the score of a document or of a group of documents.</summary>
-    Boost,
+    /// <summary>Removes a document from the results entirely; the total excludes it.</summary>
+    /// <param name="TargetId">Result id of the document.</param>
+    public sealed record Hide(string TargetId) : RuleConsequence;
 
-    /// <summary>Restrict the results to documents matching an expression.</summary>
-    Filter,
+    /// <summary>Raises (or lowers) the score of one document, or of everything an expression selects.</summary>
+    /// <param name="TargetId">Result id of the document, or empty to use <paramref name="FilterExpression"/>.</param>
+    /// <param name="FilterExpression">Comma-separated <c>attribute:value</c> pairs, used when there is no target id.</param>
+    /// <param name="Multiplier">The score multiplier; 1.0 changes nothing, 0 or less disables the rule.</param>
+    public sealed record Boost(string TargetId, string FilterExpression, double Multiplier) : RuleConsequence;
 
-    /// <summary>Send the visitor to a URL. Surfaced as <c>SearchResponse.redirect</c>; the results are returned alongside it.</summary>
-    Redirect
+    /// <summary>Pushes a document out of the page that was returned.</summary>
+    /// <param name="TargetId">Result id of the document.</param>
+    /// <param name="FilterExpression">Reserved for a future group bury; not applied today.</param>
+    public sealed record Bury(string TargetId, string FilterExpression) : RuleConsequence;
+
+    /// <summary>Restricts the results to the documents an expression selects.</summary>
+    /// <param name="FilterExpression">Comma-separated <c>attribute:value</c> pairs.</param>
+    public sealed record FilterResults(string FilterExpression) : RuleConsequence;
+
+    /// <summary>Drops a word from the query before it is parsed.</summary>
+    /// <param name="Word">The word to remove.</param>
+    public sealed record RemoveWord(string Word) : RuleConsequence;
+
+    /// <summary>Swaps a word in the query for another before it is parsed.</summary>
+    /// <param name="Word">The word to replace.</param>
+    /// <param name="Replacement">What to put in its place.</param>
+    public sealed record ReplaceWord(string Word, string Replacement) : RuleConsequence;
+
+    /// <summary>Replaces the whole query text before it is parsed.</summary>
+    /// <param name="Query">The query to search for instead.</param>
+    public sealed record ReplaceQuery(string Query) : RuleConsequence;
+
+    /// <summary>Sends the visitor to a URL. Surfaced as <c>SearchResponse.redirect</c>; the results are returned alongside it.</summary>
+    /// <param name="Url">The destination. A redirect with no URL does nothing.</param>
+    public sealed record Redirect(string Url) : RuleConsequence;
+
+    /// <summary>Attaches editor-authored data to the response, as <c>SearchResponse.ruleData</c>.</summary>
+    /// <param name="Json">A JSON object. Anything else is ignored.</param>
+    public sealed record CustomData(string Json) : RuleConsequence;
 }
 
 /// <summary>Whether a synonym expands in both directions or only from input to output (spec §8.2).</summary>
@@ -46,42 +119,26 @@ public enum SynonymDirection
 }
 
 /// <summary>
-/// One relevance rule, as stored by the Search tuning application (spec §8.2).
+/// One relevance rule: an <c>if</c> of conditions that must all hold and a <c>then</c> of
+/// consequences applied in order (ADR-0022).
 /// </summary>
 /// <param name="Id">Database identifier; the tie-breaker of the precedence order.</param>
 /// <param name="Name">Display name, echoed in the <c>ranking.boosts</c> explanation.</param>
 /// <param name="Enabled">Whether the rule is considered at all.</param>
-/// <param name="Condition">How <paramref name="Pattern"/> is matched.</param>
-/// <param name="Pattern">The query pattern, compared case-insensitively.</param>
-/// <param name="Consequence">What the rule does when it matches.</param>
-/// <param name="TargetId">Result id of the document to pin, bury or boost.</param>
-/// <param name="TargetPosition">One-based position for a pin.</param>
-/// <param name="BoostValue">Score multiplier for a boost.</param>
-/// <param name="FilterExpression">Comma-separated <c>field:value</c> pairs for a filter or an untargeted boost.</param>
-/// <param name="RedirectUrl">Destination of a redirect rule. A redirect rule with no URL does nothing.</param>
+/// <param name="Priority">Conflict resolution order; lower runs first.</param>
 /// <param name="ValidFrom">First moment the rule applies, in UTC. Null means "already".</param>
 /// <param name="ValidTo">Last moment the rule applies, in UTC. Null means "forever".</param>
-/// <param name="Priority">Conflict resolution order; lower runs first.</param>
-/// <param name="ContactGroup">
-/// Code name of the contact group the rule is scoped to. An empty string applies the rule to
-/// everyone (spec §8.2, ADR-0021).
-/// </param>
+/// <param name="Conditions">The conditions; all of them must hold.</param>
+/// <param name="Consequences">What the rule does, applied in the order listed.</param>
 public sealed record TuningRule(
     int Id,
     string Name,
     bool Enabled,
-    RuleCondition Condition,
-    string Pattern,
-    RuleConsequence Consequence,
-    string TargetId,
-    int TargetPosition,
-    double BoostValue,
-    string FilterExpression,
-    string RedirectUrl,
+    int Priority,
     DateTime? ValidFrom,
     DateTime? ValidTo,
-    int Priority,
-    string ContactGroup);
+    RuleConditions Conditions,
+    IReadOnlyList<RuleConsequence> Consequences);
 
 /// <summary>One synonym group (spec §8.2).</summary>
 /// <param name="Direction">Whether the group expands both ways.</param>

@@ -91,13 +91,13 @@ public sealed class InfoRelevanceTuningSource : IRelevanceTuningSource
 
             return (IReadOnlyList<TuningRule>)
             [
-                .. rows.Select(row => new TuningRule(
+                .. rows.Select(row => TuningRuleCompat.FromFlat(
                     row.RuleID,
                     row.RuleName,
                     row.RuleEnabled,
-                    (RuleCondition)row.RuleConditionType,
+                    (FlatCondition)row.RuleConditionType,
                     row.RulePattern,
-                    (RuleConsequence)row.RuleConsequenceType,
+                    (FlatConsequence)row.RuleConsequenceType,
                     row.RuleTargetObjectID,
                     row.RuleTargetPosition,
                     (double)row.RuleBoostValue,

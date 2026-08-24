@@ -27,13 +27,13 @@ namespace XpSearch.Admin.Tests;
 [TestFixture]
 internal sealed class QueryTesterSearchTests
 {
-    private static readonly TuningRule Rule = new(
+    private static readonly TuningRule Rule = TuningRuleCompat.FromFlat(
         1,
         "Espresso first",
-        Enabled: true,
-        RuleCondition.Always,
+        enabled: true,
+        FlatCondition.Always,
         "espresso",
-        RuleConsequence.Pin,
+        FlatConsequence.Pin,
         "doc-1",
         1,
         1,
@@ -119,7 +119,8 @@ internal sealed class QueryTesterSearchTests
 
         ISearchStage[] stages =
         [
-            new SynonymExpansionStage(source, TimeProvider.System),
+            new QueryRewriteStage(source, TimeProvider.System),
+            new SynonymExpansionStage(source),
             .. extraStages
         ];
 
