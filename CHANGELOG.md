@@ -8,17 +8,61 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Changed (relevance tuning) — BREAKING for the rule storage schema:** a rule's `if` and `then` are
+  now stored as two JSON columns on `XpSearch_Rule`, `RuleConditions` and `RuleConsequences`, and the
+  nine flat columns of [ADR-0014](docs/adr/0014-relevance-tuning.md) are **retired** —
+  `RuleConditionType`, `RulePattern`, `RuleConsequenceType`, `RuleTargetObjectID`,
+  `RuleTargetPosition`, `RuleBoostValue`, `RuleFilterExpression`, `RuleRedirectUrl` and
+  `RuleContactGroup` are gone from the class and from the table, and so are the matching properties
+  on `XpSearchRuleInfo`. **The migration is automatic and lossless**: every existing rule is converted
+  in place the first time the application starts, through the same mapper the CR-4a shim used, so no
+  rule changes meaning — including the two edges of the old model (*is anything at all* still fires on
+  every query; a blank pattern under any other operator comes back disabled, as dead as it already
+  was). It needs no flag to be safe: an empty `RuleConditions` column *is* the "not converted yet"
+  marker, which makes the pass idempotent and safe to interrupt, and the flat columns are only dropped
+  once nothing is left to convert. Anything reading the flat columns directly — a report, a custom
+  `IRelevanceTuningSource`, an import script — reads the JSON now; the shape is specified in the
+  [ADR-0022 addendum](docs/adr/0022-if-then-rule-engine.md#addendum--storage-and-migration-unit-cr-4b-2026-08-24)
+  and in the guide's [storage appendix](docs/guides/relevance-tuning.md#appendix-how-a-rule-is-stored).
+  `TuningRuleCompat`, `FlatCondition` and `FlatConsequence` are **removed from `XpSearch.Core`**; the
+  mapper lives on as `XpSearch.Admin.Persistence.RuleStorageMigration.FromFlat` with
+  `LegacyCondition`/`LegacyConsequence`.
+
+- **Added (admin):** the **rule builder** — one screen that finally reaches the whole if/then model
+  ([ADR-0022](docs/adr/0022-if-then-rule-engine.md)), replacing the single-condition,
+  single-consequence form at the same URLs. Conditions are read-only summary rows edited in a
+  right-hand **side panel** (Query / Filters / Context switches; *Apply* is local, `Esc` discards,
+  nothing persists until *Save rule*); consequences are cards added from a menu of all ten kinds,
+  including the five that had no editor before — **hide an item**, **remove a word**, **replace a
+  word**, **replace the query** and **return custom data** (a JSON object, validated on save). Save is
+  refused, with the message on the field that has to change, when a rule has no condition at all, when
+  the Query switch is on with no words, when a pin has no item or a position below 1, when custom data
+  is not a JSON object, and so on. The Rules listing swaps *Words to look for* for a **Conditions**
+  summary column and keeps **Contact group** (*Everyone* when unscoped). A converted rule shows a
+  one-time note saying so. See [Relevance tuning](docs/guides/relevance-tuning.md#the-rule-builder-region-by-region).
+
+- **Fixed (admin):** the **Create rule** link on an analytics zero-result row rendered the analytics
+  dashboard instead of the seeded rule form (HW-10 defect 3). A UI page renders inside the nearest
+  `RoutingContentPlaceholder` of *its parent's* client template, and the dashboard's custom React
+  template renders none, so the child page had nowhere to appear; the seeded page now hangs under the
+  Rules listing, whose LISTING template does provide one. It seeds the new builder with a
+  *query contains …* condition and no consequences.
+
+- **Fixed (admin, accessibility):** the **Create rule** buttons on the analytics zero-result table
+  announced only as "button" (HW-10 defect 5). The stock `ActionCell` renders icon-only buttons and
+  the components library falls back to that literal string when a button has no label, so the cell is
+  now a component cell whose button reads *Create rule for {query}*.
+
 - **Changed (relevance tuning) — BREAKING for custom `IRelevanceTuningSource` implementations:** a
   relevance rule is now **if this, then that** — a list of conditions that must all hold and a list of
   consequences applied in order ([ADR-0022](docs/adr/0022-if-then-rule-engine.md)). `TuningRule` is
   reshaped to `(Id, Name, Enabled, Priority, ValidFrom, ValidTo, Conditions, Consequences)`, with
   `RuleConditions(Query, Filters, ContactGroup, Language)` and one record per consequence (`Pin`,
   `Hide`, `Boost`, `Bury`, `FilterResults`, `RemoveWord`, `ReplaceWord`, `ReplaceQuery`, `Redirect`,
-  `CustomData`); the `RuleCondition` and `RuleConsequence` **enums are gone** (the flat ones live on as
-  `FlatCondition`/`FlatConsequence` for the storage shim), and `SynonymExpansionStage` no longer takes a
-  `TimeProvider`. A source that reads flat columns can keep them: `TuningRuleCompat.FromFlat` maps a flat
-  row onto the new model, and is exactly what the Search tuning application uses, so **no stored rule
-  changes meaning**. New in the model: conditions can require a selected facet value (`attribute is
+  `CustomData`); the `RuleCondition` and `RuleConsequence` **enums are gone**, and
+  `SynonymExpansionStage` no longer takes a `TimeProvider`. A source that reads flat columns can keep
+  them: `XpSearch.Admin.Persistence.RuleStorageMigration.FromFlat` maps a flat row onto the new model,
+  and is exactly what the storage migration below uses, so **no stored rule changes meaning**. New in the model: conditions can require a selected facet value (`attribute is
   value`) or a language, can be combined, and can be matched against the **analyzed** query so plurals,
   stems and synonyms count — with no typo tolerance in either mode. New consequences: **hide** a result
   (out of every page and out of the total, unlike bury, which only drops it from the page that came
@@ -26,8 +70,7 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
   with no conditions at all never fires. Query rewrites run in a new pipeline stage,
   `SearchStageOrder.QueryRewrite` (175), before synonym expansion, so the rewritten wording is what the
   search, the facet counts and the snippets follow — while the search activity and the query log keep
-  recording what the visitor typed. **The editing UI is unchanged in this release** (still one condition
-  and one consequence); the storage redesign, migration and form are the next unit. See
+  recording what the visitor typed. See
   [Relevance tuning](docs/guides/relevance-tuning.md#what-a-rule-is-if-this-then-that).
 
 - **Added (contract):** `SearchResponse.ruleData`, an optional open object carrying the data

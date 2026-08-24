@@ -4,7 +4,7 @@
 - **Date:** 2026-08-24
 - **Spec reference:** §8.2, §8.3 — amends the rule model of [ADR-0014](0014-relevance-tuning.md)
 - **Design canvas:** <https://claude.ai/code/artifact/e2b15580-1239-417c-afdb-118a100133df>
-- **Implemented by:** unit CR-4a (Core). The storage, migration and admin UI are unit CR-4b.
+- **Implemented by:** unit CR-4a (Core) and unit CR-4b (storage, migration, rule builder — see the addendum).
 
 ## Context
 
@@ -67,7 +67,8 @@ behaviour. `ProjectResponseStage` (1100) builds `ruleData`.
 rule that reacts to the rewritten wording would otherwise depend on each other's priorities. The
 activity journal and the query log keep recording the visitor's own words (ADR-0015, AN-4).
 
-**Compatibility.** `TuningRuleCompat.FromFlat` maps the flat columns the Admin package still stores
+**Compatibility.** `RuleStorageMigration.FromFlat` (`TuningRuleCompat.FromFlat` in CR-4a, before it
+moved into the Admin package with the migration) maps the flat columns the Admin package used to store
 onto the new model — one condition, one consequence — so this unit changes no stored data and no
 observable behaviour of an existing rule. Two edges are preserved deliberately: *Is anything at all*
 becomes `Contains ""` (which fires on every query, and keeps such a rule out of the
@@ -79,10 +80,14 @@ under the flat model it matched nothing.
 - `tests/XpSearch.Core.Tests/RuleEngineTests.cs` — the condition matrix (operators × analyzed,
   filters, group, language, combinations, the empty-conditions guard), rewrite ordering with synonyms
   after, hide excluding a document from the total, a hidden document surviving a pin, a
-  multi-consequence rule, custom-data merge order and the invalid-JSON skip, and the compat mapping
-  of every legacy condition and consequence.
+  multi-consequence rule, custom-data merge order and the invalid-JSON skip; and the type
+  discriminators every consequence must carry.
 - `tests/XpSearch.Core.Tests/TuningTests.cs` — the pre-existing pin, bury, boost, filter, redirect and
-  precedence tests, now running through the compat shim, unchanged.
+  precedence tests, unchanged.
+- `tests/XpSearch.Admin.Tests/RuleStorageTests.cs` — the stored shape, a round trip of every
+  consequence type, the legacy mapping and its two edges, the flat-to-JSON round trip over every
+  condition × consequence pair, the conversion marker, the column retirement, the validation matrix,
+  the summary formatter and the seeded create.
 
 ## Consequences
 
@@ -91,15 +96,100 @@ visitor is in *coffee-lovers*, then boost this, pin that, and hand the page a ba
 priority, one thing to switch off afterwards.
 
 **Expensive.** **Breaking for any custom `IRelevanceTuningSource`**: `TuningRule` is a different
-record. Consumers rebuild it, or call `TuningRuleCompat.FromFlat` if their storage is flat too. The
+record. Consumers rebuild it, or call `RuleStorageMigration.FromFlat` if their storage is flat too. The
 condition evaluation now costs one analyzer pass over the query when a rule asks for
 `matchAnalyzed`, and the rewrite stage costs one extra read of the synonym cache per search.
 
 **Foreclosed / deferred.**
 
-- **Storage is still flat** until CR-4b: the shim means at most one condition and one consequence
-  survive a round trip through the database, so the new kinds are unreachable from the admin UI in
-  this unit. CR-4b adds the JSON columns, the migration and the form.
 - **`Bury.FilterExpression`** is carried in the record but not applied — burying a group of documents
   is a post-execution filter over the page, and no one has asked for it yet.
 - **Typo tolerance** stays out. If it ever arrives it belongs in the analyzer, not in rule matching.
+
+## Addendum — storage and migration (unit CR-4b, 2026-08-24)
+
+CR-4a left the storage flat and the shim in place. CR-4b replaces both.
+
+### The stored shape
+
+`XpSearch_Rule` gains two `LongText` columns and drops the nine flat ones
+(`RuleConditionType`, `RulePattern`, `RuleConsequenceType`, `RuleTargetObjectID`,
+`RuleTargetPosition`, `RuleBoostValue`, `RuleFilterExpression`, `RuleRedirectUrl`,
+`RuleContactGroup`). Both are written with `System.Text.Json`, camelCase, enums as camelCase strings.
+`RuleJson` owns the settings, and only nulls are omitted — "the rule matches any query" is the
+*absence* of `query`, not a `null` spelled out, and everything else is written even when empty so
+what a support engineer reads is the whole shape.
+
+**`RuleConditions`** — one object:
+
+```json
+{
+  "query": { "operator": "contains", "pattern": "grinder", "matchAnalyzed": true },
+  "filters": [{ "attribute": "ProductFieldCategory", "value": "Grinders" }],
+  "contactGroup": "CoffeeGrinders",
+  "language": "en"
+}
+```
+
+`operator` is `is`, `contains` or `startsWith`. A rule that is scoped to nobody in particular stores
+`{"filters":[],"contactGroup":"","language":""}`. `IsEmpty` is derived and never stored.
+
+**`RuleConsequences`** — an array in the order the rule applies them, each tagged with a `type`
+discriminator declared on `RuleConsequence` itself:
+
+| `type` | Members |
+|---|---|
+| `pin` | `targetId`, `position` |
+| `hide` | `targetId` |
+| `boost` | `targetId`, `filterExpression`, `multiplier` |
+| `bury` | `targetId`, `filterExpression` |
+| `filterResults` | `filterExpression` |
+| `removeWord` | `word` |
+| `replaceWord` | `word`, `replacement` |
+| `replaceQuery` | `query` |
+| `redirect` | `url` |
+| `customData` | `json` (the author's text, verbatim, formatting and all) |
+
+```json
+[{ "type": "pin", "targetId": "doc-1:en", "position": 1 },
+ { "type": "customData", "json": "{\"banner\":\"Grinder week\"}" }]
+```
+
+The discriminators are the storage contract: renaming one reinterprets every saved rule, so they are
+spelled out on the model and asserted in `XpSearch.Core.Tests` rather than derived from type names.
+
+### Migration policy
+
+- **Automatic and lossless.** `RuleStorageMigration.Run` converts every flat row through the same
+  mapper the shim used, so no rule changes meaning — including the two preserved edges above.
+- **When.** From `XpSearchTuningModuleInstaller.Install`, on `ApplicationEvents.Initialized`, after
+  `CombineWithForm` has added the JSON columns (an upgraded class briefly has both shapes) and before
+  any page or query reads a rule.
+- **The marker is the row.** A row whose `RuleConditions` column is empty has not been converted;
+  a converted row is saved with it filled. No flag, no version table. That makes the pass idempotent
+  and crash-safe: killing the process halfway through the table leaves the converted rows converted
+  and the rest to be picked up next start. No rule the builder writes can look unconverted — even
+  "matches anything" stores an object.
+- **The flat columns are then dropped**, by removing them from the installed form definition.
+  `CombineWithForm` only ever adds, so the removal is an explicit `FormInfo.RemoveFormField`. They
+  cannot be left orphaned-but-unread: several are `NOT NULL` with no default, so every insert the new
+  builder makes would fail. The drop only runs once nothing is left to convert.
+- **Belt and braces.** `InfoRelevanceTuningSource.Read` still converts a flat-looking row on the fly,
+  so a rule inserted by a script after startup does not silently stop firing.
+- **Tolerance.** A column a hand edit left unparseable reads back as "no conditions" / "no
+  consequences" — the rule goes inert instead of taking the whole index's tuning down.
+
+### Validation
+
+Save is refused, with field-level messages, when: the rule has no name; the conditions say nothing
+(`RuleConditions.IsEmpty`); the Query toggle is on with a blank pattern; a filter row has only one
+half; a pin has no target or a position below 1; a boost has neither a target nor an expression, or a
+multiplier of 0 or less; a hide, bury, filter, rewrite or redirect has an empty required field; or
+custom data does not parse to a JSON **object**. See `XpSearch.Admin.Tuning.RuleValidation`.
+
+### Cost
+
+**Breaking for anything reading `XpSearchRuleInfo`'s flat properties** — they are gone from the class
+and from the table. A report or integration that selected `RulePattern` reads `RuleConditions` now.
+The migration is one pass over one small table at startup; the JSON parse per rule happens inside the
+30-minute tuning cache, not per search.

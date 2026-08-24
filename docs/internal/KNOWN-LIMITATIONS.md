@@ -605,16 +605,18 @@ and how to lift it.
   loader in `Client/webpack.config.js` plus one CSS module would retire `src/theme.ts`; it was not
   worth a build-chain dependency for three declarations. See ADR-0020.
 
-## Contact group scoping in `RuleSelection.InContactGroup` and `XpSearchRuleInfo.RuleContactGroup`
+## Contact group scoping in `RuleSelection.InContactGroup` and `RuleConditions.ContactGroup`
 
 - **Simplified:** a rule carries one contact group code name, not a set and not an expression. There
-  is no "any of these groups", no "not in this group", and no per-contact scoring.
+  is no "any of these groups", no "not in this group", and no per-contact scoring. The rule builder's
+  Context switch enforces it: only one condition card can own the contact group.
 - **Ceiling:** an audience that is a combination of groups needs one rule per group, and the rules
   duplicate everything but the scope. A marketer who wants "grinder shoppers who are not wholesale"
   has to express it in the contact group's own dynamic condition instead.
-- **Upgrade path:** widen the column to a comma-separated list and turn `InContactGroup` into a set
-  intersection; the selector becomes `MaximumItems = 0`. The pipeline side already works on an
-  `IReadOnlySet<string>`, so only the parse and the predicate change.
+- **Upgrade path:** make `RuleConditions.ContactGroup` a list (it is JSON now, so no column change)
+  and turn `InContactGroup` into a set intersection; the panel's Select becomes multi-select. The
+  pipeline side already works on an `IReadOnlySet<string>`, so only the parse and the predicate
+  change.
 
 ## Contact group resolution in `ContactGroupResolver.ResolveAsync`
 
@@ -705,3 +707,63 @@ and how to lift it.
   (the schema is on the context, and `RuleFilterExpression.Parse` already exists), or - better for
   counts - turn it into `MUST_NOT` clauses in `BoostRulesStage`, the way `Hide` works.
 
+
+## Condition cards are a presentation of one condition set, in `XpSearch.Admin/Client/src/rule-builder/model.ts`
+
+- **Simplified:** the model stores a single `RuleConditions` per rule (ADR-0022), but the design shows
+  a *list* of condition cards. `split` derives the cards from a stored rule (the query becomes one,
+  the filters and context another - exactly how canvas 5a reads), `merge` folds them back, and
+  `conflicts` refuses a second card that claims the query or the context rather than letting one
+  silently overwrite the other.
+- **Ceiling:** the cards are not independent conditions. A marketer who expects "condition 1 OR
+  condition 2", or two query patterns on one rule, is refused with a message instead of being given
+  what the screen's plural implies. Reordering cards changes nothing, and deleting the card that owns
+  the query removes the query from the rule.
+- **Upgrade path:** make the storage hold a list - `RuleConditions[]` with an all/any join - and the
+  cards become real. That is a Core model change and a second storage migration, so it waits until
+  someone asks for OR.
+
+## The condition summary is written twice, in `XpSearch.Admin/Tuning/RuleSummary.cs` and `Client/src/rule-builder/summary.ts`
+
+- **Simplified:** the same formatting rules exist in C# (for the Rules listing column) and in
+  TypeScript (for the builder's summary rows).
+- **Ceiling:** they can drift - a wording change has to be made in both, and only the C# side has
+  tests. The two already differ slightly on purpose: the listing leaves the contact group out because
+  it has a column of its own, and the panel's "any language" only appears when Context is on.
+- **Upgrade path:** either have the builder ask a `Describe` page command for each summary (a round
+  trip per Apply, for a string), or generate the TypeScript from the C# the way
+  `Client/scripts/contract.mjs` generates the contract types. Neither is worth it for one sentence.
+
+## Attribute names on a filter condition are free text, in `XpSearch.Admin/Client/src/rule-builder/ConditionPanel.tsx`
+
+- **Simplified:** the **Attribute** box of an `attribute is value` row is a plain input. The builder
+  knows the index from the URL but does not ask it for its schema.
+- **Ceiling:** a typo produces a condition that simply never fires, with nothing on screen to say so;
+  the marketer has to copy the name from a search result or from the facet configurator.
+- **Upgrade path:** the page already has the index identifier and `ISearchSchemaProvider` is
+  registered - hand the schema's facetable field names to the client template as a property and turn
+  the input into a `Select`, the way the facet attribute configurator already does.
+
+## Flat rule columns are dropped, not archived, in `XpSearch.Admin/Persistence/RuleStorageMigration.cs`
+
+- **Simplified:** `RetireLegacyColumns` removes the nine ADR-0014 columns from the class once every
+  row is converted, which drops them from the table. There is no backup copy and no way back.
+- **Ceiling:** if the mapper ever got a row wrong, the original values are gone after the first
+  successful start. They cannot simply be left in place - several are `NOT NULL` with no default, so
+  every insert the new builder makes would fail - but "orphaned and nullable" was a third option that
+  was not taken, because it leaves a permanently confusing table.
+- **Upgrade path:** before dropping, write the row's flat values into a `RuleLegacy` JSON column, or
+  export the table to the event log. Cheap to add if a customer's migration ever goes wrong; pointless
+  weight if it does not.
+
+## The migration and the retirement are not one transaction, in `XpSearch.Admin/Persistence/RuleStorageMigration.Run`
+
+- **Simplified:** rows are converted one `Set` at a time and the columns are dropped afterwards, with
+  no ambient transaction around either.
+- **Ceiling:** a crash mid-pass leaves a half-converted table. That is safe - the marker is per row,
+  so the next start finishes the job, and the drop only happens when nothing is left - but between the
+  two starts the tuning source is reading a mixture, which it handles by converting flat-looking rows
+  on the fly. A `Set` that fails for one row (a name that violates something) aborts the pass and the
+  columns stay, which is the right way round but is not reported anywhere.
+- **Upgrade path:** wrap the loop in `CMSTransactionScope` and log a warning per row that will not
+  convert. Worth doing the first time a real upgrade fails.
