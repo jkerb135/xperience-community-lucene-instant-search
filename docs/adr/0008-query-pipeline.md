@@ -43,6 +43,8 @@ the bracketed phases reserved but unimplemented:
 | Slot | Value | Status |
 |---|---|---|
 | `Normalize` | 100 | shipped |
+| `ResolveContactGroups` | 150 | shipped (ADR-0021) |
+| `QueryRewrite` | 175 | shipped (ADR-0022): selects the rules that fire and applies their query rewrites, before synonyms expand the rewritten text |
 | `SynonymExpansion` | 200 | reserved, Phase 5 |
 | `StopwordRemoval` | 300 | reserved, Phase 5 |
 | `BuildQuery` | 400 | shipped |

@@ -206,6 +206,32 @@ search.off('render', handler);
 `'contract'` is how a `X-XpSearch-Api-Version` mismatch surfaces: the client reports it once per
 version and keeps using the response rather than throwing.
 
+### Data attached by a rule
+
+A Search-tuning rule can attach a JSON object to the response — the *Return custom data* consequence
+([Relevance tuning](relevance-tuning.md#the-ten-things-a-rule-can-do)). It arrives as `ruleData` on
+the results, wherever results are handed to you:
+
+```js
+search.on('render', ({ results }) => {
+  banner.hidden = !results?.ruleData?.banner;
+  banner.textContent = String(results?.ruleData?.banner ?? '');
+});
+```
+
+```js
+// The same object inside a behaviour, next to `results.results`.
+const withBanner = createBehavior({
+  $$type: 'app.banner',
+  getRenderState: (base) => ({ banner: base.results?.ruleData?.banner ?? null }),
+});
+```
+
+`ruleData` is **absent** when no matching rule returned data, and it is one object even when several
+rules did: they are shallow-merged in rule order, so a later rule wins a key. The values are whatever
+the marketer typed, so treat them as untrusted input — `String(...)` them, and never set `innerHTML`
+from one.
+
 ### Several searches on one page
 
 Every instance owns its own state, transport and widgets; two of them never interfere. Give at most one

@@ -667,3 +667,41 @@ and how to lift it.
 - **Upgrade path:** if that turns out to be common, emit a scoped `<style>` once per page from the
   first preview on it (a request-scoped flag on the editor context) instead of relying on the
   stylesheet.
+
+## Query rewrites and the search reports, in `XpSearch.Core/Pipeline/Stages/QueryRewriteStage.cs`
+
+- **Simplified:** a rewrite (remove a word, replace a word, replace the query) changes
+  `SearchContext.QueryText` before the query is parsed, but the activity journal and the query log
+  keep recording the **normalized original** query the visitor typed (`ISearchRequestJournal`, AN-4).
+  Word matching in a rewrite is whole-word and space-separated: the query is split on spaces and each
+  token compared case-insensitively, so a multi-word "word to remove" never matches and punctuation
+  stuck to a word makes it a different word.
+- **Ceiling:** the reports cannot answer "what did the search actually run" for a rewritten query, and
+  a report reader who knows a rewrite exists has to hold both in their head. A marketer who writes
+  *sofa bed* into **Remove a word** sees nothing happen, with no error to explain it.
+- **Upgrade path:** for the reports, add a second column (`SearchedAs`) to the query log row and let
+  the journal take both texts. For phrases, match the token list against the query's token list as a
+  sliding window - the same comparison `RuleSelection.MatchesAnalyzed` already does.
+
+## No typo tolerance in rule matching, in `XpSearch.Core/Tuning/RuleSelection.cs`
+
+- **Simplified:** both comparisons a query condition can make are exact - a case-insensitive substring
+  or prefix comparison on the raw text, or a term-by-term comparison of the analyzed text (ADR-0022).
+  A misspelled query fires no rule.
+- **Ceiling:** *esspresso* misses every rule about *espresso*, and a marketer's only remedy is to add
+  the misspelling as a synonym or write a second rule for it. This is felt most on redirect rules,
+  where the visitor gets ordinary (usually poor) results instead of the page that answers them.
+- **Upgrade path:** the analyzed path already reduces the query to terms, so a fuzzy comparison could
+  be dropped into `MatchesAnalyzed` alone - a bounded Damerau-Levenshtein distance per position, as
+  Lucene's `FuzzyQuery` uses - behind a per-condition opt-in, so exact rules stay exact.
+
+## `Bury.FilterExpression` in `XpSearch.Core/Tuning/IRelevanceTuningSource.cs`
+
+- **Simplified:** the record carries a filter expression next to the target id so bury has the same
+  dual targeting as boost, but `PinnedAndBuriedStage` only ever reads the id.
+- **Ceiling:** "bury everything in the *Discontinued* category" cannot be expressed; a marketer needs
+  one bury rule per document, or a filter rule that inverts the intent.
+- **Upgrade path:** evaluate the expression against the projected page in `PinnedAndBuriedStage`
+  (the schema is on the context, and `RuleFilterExpression.Parse` already exists), or - better for
+  counts - turn it into `MUST_NOT` clauses in `BoostRulesStage`, the way `Hide` works.
+
