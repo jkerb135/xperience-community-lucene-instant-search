@@ -86,6 +86,27 @@ Fixture: `fixtures/mount.html`. Spec §7.1.
 hydration, or when a widget fails to construct) cannot disturb the page layout. The widget root
 the bootstrap renders inside it carries `xps` itself.
 
+## Page Builder editor preview
+
+Fixture: `fixtures/editor-preview.html`. Spec §7.5.
+
+Inside the Page Builder there is no mount: the widget renders a server-side static picture of
+itself instead, because the builder re-renders widget markup over AJAX on every add, move and
+configure, and no search should run from the editor.
+
+| Class | Element | Notes |
+|---|---|---|
+| `xps-editor-preview` | `<div class="xps">` | Root; also carries `data-xps-widget`, the same value the mount would. |
+| `xps-editor-preview__badge` | `<span>` | Names the widget and says the content is not live. The only part announced to assistive technology. |
+| `xps-editor-preview__body` | `<div aria-hidden="true">` | The mirrored widget markup: the widget's own classes, every control `disabled`, every link a `<span>`, unknown text as `xps-skeleton` bars. |
+| `xps-editor-preview__note` | `<p>` | Subtle line naming configuration the mirrored markup cannot show (attribute, template, fields, limits). |
+
+The root also carries a per-widget modifier, `xps-editor-preview--` plus the `data-xps-widget`
+value in kebab-case — `xps-editor-preview--search-box`, `xps-editor-preview--facet-list`,
+`xps-editor-preview--results`, `xps-editor-preview--range-filter` and so on; a third-party
+`myCompany.dropdownFacet` becomes `…--my-company-dropdown-facet`. Nothing styles them;
+they exist so a site can recognise one preview from another.
+
 ---
 
 ## searchBox

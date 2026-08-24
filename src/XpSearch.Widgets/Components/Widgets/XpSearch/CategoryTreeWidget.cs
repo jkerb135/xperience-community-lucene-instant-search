@@ -1,5 +1,10 @@
+using System.Globalization;
+
 using Kentico.PageBuilder.Web.Mvc;
 using Kentico.Xperience.Admin.Base.FormAnnotations;
+
+using Microsoft.AspNetCore.Html;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 using XpSearch.Core;
 using XpSearch.Widgets;
@@ -65,4 +70,41 @@ public sealed class CategoryTreeWidgetViewComponent : XpSearchMountWidgetViewCom
     /// <inheritdoc />
     protected override string? ConfigurationHint(CategoryTreeWidgetProperties properties) =>
         string.IsNullOrWhiteSpace(properties?.Attribute) ? WidgetResources.Hint_SelectAttribute : null;
+
+    /// <inheritdoc />
+    protected override IHtmlContent BuildEditorPreview(CategoryTreeWidgetProperties properties)
+    {
+        ArgumentNullException.ThrowIfNull(properties);
+
+        var children = EditorPreview.El("ul", "xps-category-tree__list xps-category-tree__list--lvl1")
+            .Add(Node(), Node());
+
+        var root = EditorPreview.El("ul", "xps-category-tree__list xps-category-tree__list--lvl0")
+            .Add(
+                EditorPreview.El("li", "xps-category-tree__item xps-category-tree__item--parent")
+                    .Add(Link(), children),
+                Node());
+
+        return new HtmlContentBuilder()
+            .AppendHtml(EditorPreview.El("nav", "xps-category-tree")
+                .Add(
+                    EditorPreview.El(
+                        "h3",
+                        "xps-category-tree__title",
+                        string.IsNullOrWhiteSpace(properties.Label) ? properties.Attribute.Trim() : properties.Label),
+                    root))
+            .AppendHtml(EditorPreview.Note(string.Format(
+                CultureInfo.CurrentUICulture,
+                WidgetResources.Preview_Note_Attribute,
+                properties.Attribute.Trim())));
+    }
+
+    private static TagBuilder Node() => EditorPreview.El("li", "xps-category-tree__item").Add(Link());
+
+    // A span, not an anchor: nothing in a preview is navigable.
+    private static TagBuilder Link() =>
+        EditorPreview.El("span", "xps-category-tree__link")
+            .Add(
+                EditorPreview.El("span", "xps-category-tree__value").Add(EditorPreview.Skeleton("text")),
+                EditorPreview.El("span", "xps-category-tree__count").Add(EditorPreview.Skeleton("text")));
 }

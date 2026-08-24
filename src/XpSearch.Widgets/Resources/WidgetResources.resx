@@ -82,4 +82,37 @@
   <data name="Hint_SortOptions" xml:space="preserve">
     <value>Enter at least one valid sort option, one per line, in the form key;Label.</value>
   </data>
+  <data name="Preview_Badge" xml:space="preserve">
+    <value>Search widget: {0} — preview, not live results</value>
+  </data>
+  <data name="Preview_Note_Generic" xml:space="preserve">
+    <value>Configured. The working widget renders on the live page and in preview.</value>
+  </data>
+  <data name="Preview_Note_Attribute" xml:space="preserve">
+    <value>Attribute: {0}</value>
+  </data>
+  <data name="Preview_Note_Results" xml:space="preserve">
+    <value>Results per page: {0} · template: {1} · fields: {2}</value>
+  </data>
+  <data name="Preview_Note_Suggestions" xml:space="preserve">
+    <value>Mode: {0} · up to {1} suggestions</value>
+  </data>
+  <data name="Preview_Unset" xml:space="preserve">
+    <value>index default</value>
+  </data>
+  <data name="Preview_SearchPlaceholder" xml:space="preserve">
+    <value>Search…</value>
+  </data>
+  <data name="Preview_ShowMore" xml:space="preserve">
+    <value>Show more</value>
+  </data>
+  <data name="Preview_LoadMore" xml:space="preserve">
+    <value>Load more results</value>
+  </data>
+  <data name="Preview_From" xml:space="preserve">
+    <value>From</value>
+  </data>
+  <data name="Preview_To" xml:space="preserve">
+    <value>To</value>
+  </data>
 </root>

@@ -1,10 +1,15 @@
+using System.Globalization;
+
 using Kentico.PageBuilder.Web.Mvc;
 using Kentico.Xperience.Admin.Base.FormAnnotations;
+
+using Microsoft.AspNetCore.Html;
 
 using XpSearch.Widgets;
 using XpSearch.Widgets.Components.Widgets.XpSearch;
 using XpSearch.Widgets.Mounting;
 using XpSearch.Widgets.Options;
+using XpSearch.Widgets.Resources;
 
 [assembly: RegisterWidget(
     identifier: XpSearchWidgetConstants.SuggestionsIdentifier,
@@ -67,5 +72,26 @@ public sealed class SuggestionsWidgetViewComponent : XpSearchMountWidgetViewComp
         config["mode"] = string.IsNullOrWhiteSpace(properties.Mode) ? SuggestionsWidgetProperties.ModeDocuments : properties.Mode;
         // "limit" is what POST /api/xpsearch/suggest calls it.
         config["limit"] = properties.MaxItems;
+    }
+
+    /// <inheritdoc />
+    protected override IHtmlContent BuildEditorPreview(SuggestionsWidgetProperties properties)
+    {
+        ArgumentNullException.ThrowIfNull(properties);
+
+        var field = EditorPreview.El("div", "xps-suggestions__field")
+            .Add(
+                EditorPreview.Input("xps-suggestions__input", "text")
+                    .Attr("placeholder", WidgetResources.Preview_SearchPlaceholder),
+                EditorPreview.Button("xps-button xps-suggestions__reset", "×", glyph: true));
+
+        return new HtmlContentBuilder()
+            .AppendHtml(EditorPreview.El("div", "xps-suggestions")
+                .Add(EditorPreview.El("form", "xps-suggestions__form").Add(field)))
+            .AppendHtml(EditorPreview.Note(string.Format(
+                CultureInfo.CurrentUICulture,
+                WidgetResources.Preview_Note_Suggestions,
+                string.IsNullOrWhiteSpace(properties.Mode) ? SuggestionsWidgetProperties.ModeDocuments : properties.Mode,
+                properties.MaxItems.ToString(CultureInfo.CurrentUICulture))));
     }
 }

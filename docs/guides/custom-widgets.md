@@ -490,6 +490,63 @@ in the module, a `const string` on the view component) rather than typing the st
 | `ConfigurationHint(properties)` | `null` (configured) | the widget needs more than an index before it can render |
 | `GetWidgetType(properties)` | `WidgetType` | a property decides *which* JavaScript widget to mount |
 | `CurrentIndex` | the editor's index, or the project's only index | you need the resolved index inside the three methods above |
+| `BuildEditorPreview(properties)` | one `xps-editor-preview__note` paragraph saying the widget is configured | you want editors to see a picture of *your* widget in the Page Builder |
+
+#### What editors see in the Page Builder
+
+Inside the Page Builder a configured widget renders no mount: `BuildModel` returns a static preview in
+`model.Preview` (edit and read-only mode), because the builder re-renders widget markup over AJAX on
+every add, move and configure and no search should run from the editor. The base class supplies the
+preview root, its `data-xps-widget` attribute and the badge; `BuildEditorPreview` supplies the body,
+and the nine first-party widgets override it exactly as your widget would:
+
+```csharp
+protected override IHtmlContent BuildEditorPreview(DropdownFacetWidgetProperties properties)
+{
+    var select = new TagBuilder("select");
+    select.AddCssClass("xps-select__control");
+    select.Attributes["disabled"] = "disabled";
+    select.InnerHtml.AppendHtml(Element("option", null, properties.AllLabel));
+
+    var box = new TagBuilder("div");
+    box.AddCssClass("xps-select");
+    box.InnerHtml.AppendHtml(Element("label", "xps-select__label", properties.Label));
+    box.InnerHtml.AppendHtml(select);
+
+    return new HtmlContentBuilder()
+        .AppendHtml(box)
+        .AppendHtml(Element("p", "xps-editor-preview__note", $"Attribute: {properties.Attribute}"));
+}
+
+private static TagBuilder Element(string tagName, string? cssClass, string text)
+{
+    var tag = new TagBuilder(tagName);
+
+    if (cssClass is not null)
+    {
+        tag.AddCssClass(cssClass);
+    }
+
+    tag.InnerHtml.Append(text);   // encodes: an editor's text can never become markup
+
+    return tag;
+}
+```
+
+The base class wraps that in
+`<div class="xps xps-editor-preview xps-editor-preview--my-company-dropdown-facet"
+data-xps-widget="myCompany.dropdownFacet">` with the badge, and marks the body `aria-hidden="true"`.
+
+(The worked example in `samples/CustomWidget.Dropdown` builds against the published package, so it
+picks this override up from the release that carries it.)
+
+Rules the first-party previews follow, and yours should: mirror the live markup with the widget's own
+classes, `disabled` on every control, a `<span>` instead of every `<a href>`, `xps-skeleton` bars where
+result data would be, and an `xps-editor-preview__note` paragraph for configuration the markup cannot
+show. Build the markup with `TagBuilder` (or any `IHtmlContent`) so property values are HTML-encoded —
+never string-concatenate an editor's text into markup.
+
+Preview mode and the live site are unaffected: there `model.Mount` carries the mount element as before.
 
 `BuildModel(properties)` is public, so a widget's markup can be asserted in a unit test without an
 Xperience application: substitute `IXpSearchEditorContext` and `IXpSearchIndexCatalog`, use the real

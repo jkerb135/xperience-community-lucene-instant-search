@@ -8,6 +8,19 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Changed (Page Builder):** a configured search widget now renders a **static server-side preview**
+  of itself in the Page Builder (edit and read-only mode) instead of the bare `.xps-mount` div, which
+  looked like an empty shell to editors. The preview mirrors the widget's live markup with disabled
+  controls, no links and `xps-skeleton` bars for result data, under a badge naming the widget and
+  saying the content is not live, and it reflects the widget's own properties (placeholder, label and
+  attribute, page size and template, pagination style, sort options, range bounds). Extends the
+  unconfigured-instruction-block precedent of spec §7.5 to the configured state. **Preview and the
+  live site are unchanged** — both still render the mount element and the working widget. Custom
+  widgets get a labelled default preview from `XpSearchMountWidgetViewComponent<T>` and can own it by
+  overriding the new `BuildEditorPreview(properties)`; `XpSearchMountViewModel` gains `Preview`, and
+  `shell.css` / `default.css` gain the `xps-editor-preview` block (`themes/MARKUP.md`). See
+  [What editors see in the Page Builder](docs/guides/page-builder-widgets.md#what-editors-see-in-the-page-builder).
+
 - **Added (contact groups):** three search conditions are installed on start and appear in the
   contact group condition picker under **Web activity** — *Contact has searched for text containing
   {text}*, *Contact has searched without results for text containing {text}* and *Contact has clicked

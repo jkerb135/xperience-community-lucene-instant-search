@@ -1,5 +1,9 @@
+using System.Globalization;
+
 using Kentico.PageBuilder.Web.Mvc;
 using Kentico.Xperience.Admin.Base.FormAnnotations;
+
+using Microsoft.AspNetCore.Html;
 
 using XpSearch.Core;
 using XpSearch.Widgets;
@@ -74,4 +78,40 @@ public sealed class FacetListWidgetViewComponent : XpSearchMountWidgetViewCompon
     /// <inheritdoc />
     protected override string? ConfigurationHint(FacetListWidgetProperties properties) =>
         string.IsNullOrWhiteSpace(properties?.Attribute) ? WidgetResources.Hint_SelectAttribute : null;
+
+    /// <inheritdoc />
+    protected override IHtmlContent BuildEditorPreview(FacetListWidgetProperties properties)
+    {
+        ArgumentNullException.ThrowIfNull(properties);
+
+        var list = EditorPreview.El("ul", "xps-facet-list__list");
+
+        for (int row = 0; row < Math.Min(3, Math.Max(1, properties.Limit)); row++)
+        {
+            list.Add(EditorPreview.El("li", "xps-facet-list__item")
+                .Add(EditorPreview.El("label", "xps-facet-list__label")
+                    .Add(
+                        EditorPreview.Input("xps-facet-list__checkbox", "checkbox"),
+                        EditorPreview.El("span", "xps-facet-list__value").Add(EditorPreview.Skeleton("text")),
+                        EditorPreview.El("span", "xps-facet-list__count").Add(EditorPreview.Skeleton("text")))));
+        }
+
+        var facet = EditorPreview.El("div", "xps-facet-list")
+            .Add(EditorPreview.El("h3", "xps-facet-list__title", Heading(properties)), list);
+
+        if (properties.ShowMore)
+        {
+            facet.Add(EditorPreview.Button("xps-button xps-facet-list__show-more", WidgetResources.Preview_ShowMore));
+        }
+
+        return new HtmlContentBuilder()
+            .AppendHtml(facet)
+            .AppendHtml(EditorPreview.Note(string.Format(
+                CultureInfo.CurrentUICulture,
+                WidgetResources.Preview_Note_Attribute,
+                properties.Attribute.Trim())));
+    }
+
+    private static string Heading(FacetListWidgetProperties properties) =>
+        string.IsNullOrWhiteSpace(properties.Label) ? properties.Attribute.Trim() : properties.Label;
 }

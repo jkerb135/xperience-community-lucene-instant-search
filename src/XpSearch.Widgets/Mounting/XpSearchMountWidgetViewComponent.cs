@@ -1,9 +1,11 @@
 using System.Collections.Concurrent;
+using System.Globalization;
 using System.Reflection;
 using System.Text.Json;
 
 using Kentico.PageBuilder.Web.Mvc;
 
+using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewComponents;
 
@@ -15,8 +17,9 @@ namespace XpSearch.Widgets.Mounting;
 /// <summary>
 /// Base class for a Page Builder widget that renders a single <c>.xps-mount</c> element (spec §5.7,
 /// §7.1). It serializes the properties into <c>data-xps-config</c>, emits the instance grouping and
-/// instance options, and renders the editor-only instruction block when the widget is not configured
-/// - so a widget author only declares the JavaScript widget type and, if needed, the property mapping.
+/// instance options, renders the editor-only instruction block when the widget is not configured and
+/// the static preview when the page is open in the Page Builder - so a widget author only declares
+/// the JavaScript widget type and, if needed, the property mapping.
 /// </summary>
 /// <typeparam name="TProperties">The widget's properties class.</typeparam>
 /// <remarks>
@@ -93,6 +96,11 @@ public abstract class XpSearchMountWidgetViewComponent<TProperties> : ViewCompon
             return Unconfigured(hint);
         }
 
+        if (editorContext.GetMode() is XpSearchEditorMode.Edit or XpSearchEditorMode.ReadOnly)
+        {
+            return new XpSearchMountViewModel { Preview = Preview(properties) };
+        }
+
         var mount = new XpSearchMount(GetWidgetType(properties), ResolveInstanceId(properties.InstanceId));
         BuildConfig(properties, mount.Config);
         mount.InstanceConfig["index"] = index;
@@ -129,6 +137,18 @@ public abstract class XpSearchMountWidgetViewComponent<TProperties> : ViewCompon
     protected virtual void BuildInstanceConfig(TProperties properties, IDictionary<string, object?> instanceConfig)
     {
     }
+
+    /// <summary>
+    /// Builds the body of the static preview an editor sees in the Page Builder instead of the mount
+    /// element. Mirror the widget's live markup with disabled controls and placeholder bars, and add
+    /// an <c>xps-editor-preview__note</c> paragraph for configuration the markup cannot show; the
+    /// base class supplies the preview root and its badge. The default is that note alone, so a
+    /// widget that does not override this still shows an editor something labelled.
+    /// </summary>
+    /// <param name="properties">The configured properties.</param>
+    /// <returns>The preview body.</returns>
+    protected virtual IHtmlContent BuildEditorPreview(TProperties properties) =>
+        EditorPreview.Note(WidgetResources.Preview_Note_Generic);
 
     /// <summary>
     /// Returns the instruction to show an editor when the widget still needs configuring beyond the
@@ -180,6 +200,22 @@ public abstract class XpSearchMountWidgetViewComponent<TProperties> : ViewCompon
         var names = indexCatalog.GetIndexNames();
 
         return names.Count == 1 ? names[0] : string.Empty;
+    }
+
+    private IHtmlContent Preview(TProperties properties)
+    {
+        string widgetType = GetWidgetType(properties);
+
+        return EditorPreview
+            .El("div", $"xps xps-editor-preview xps-editor-preview--{EditorPreview.Kebab(widgetType)}")
+            .Attr("data-xps-widget", widgetType)
+            .Add(
+                EditorPreview.El(
+                    "span",
+                    "xps-editor-preview__badge",
+                    string.Format(CultureInfo.CurrentUICulture, WidgetResources.Preview_Badge, widgetType)),
+                // The mirrored markup is a picture of the widget: only the badge is worth announcing.
+                EditorPreview.El("div", "xps-editor-preview__body").Decorative().Add(BuildEditorPreview(properties)));
     }
 
     private XpSearchMountViewModel Unconfigured(string hint)

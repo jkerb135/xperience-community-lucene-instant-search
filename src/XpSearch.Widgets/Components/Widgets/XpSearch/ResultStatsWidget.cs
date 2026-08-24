@@ -1,6 +1,8 @@
 using Kentico.PageBuilder.Web.Mvc;
 using Kentico.Xperience.Admin.Base.FormAnnotations;
 
+using Microsoft.AspNetCore.Html;
+
 using XpSearch.Widgets;
 using XpSearch.Widgets.Components.Widgets.XpSearch;
 using XpSearch.Widgets.Mounting;
@@ -52,4 +54,23 @@ public sealed class ResultStatsWidgetViewComponent : XpSearchMountWidgetViewComp
 
     /// <inheritdoc />
     protected override string WidgetType => "resultStats";
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The configured template is shown with its placeholders unsubstituted, which is exactly what
+    /// the editor typed and cannot be mistaken for a real count.
+    /// </remarks>
+    protected override IHtmlContent BuildEditorPreview(ResultStatsWidgetProperties properties)
+    {
+        ArgumentNullException.ThrowIfNull(properties);
+
+        bool empty = string.IsNullOrWhiteSpace(properties.TextTemplate);
+        string text = empty
+            ? (string.IsNullOrWhiteSpace(properties.EmptyText) ? "{total} · {tookMs}" : properties.EmptyText)
+            : properties.TextTemplate;
+
+        return EditorPreview
+            .El("div", empty ? "xps-result-stats xps-result-stats--empty" : "xps-result-stats")
+            .Add(EditorPreview.El("span", "xps-result-stats__text", text));
+    }
 }

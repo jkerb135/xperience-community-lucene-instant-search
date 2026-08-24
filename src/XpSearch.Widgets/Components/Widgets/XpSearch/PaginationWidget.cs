@@ -1,10 +1,15 @@
+using System.Globalization;
+
 using Kentico.PageBuilder.Web.Mvc;
 using Kentico.Xperience.Admin.Base.FormAnnotations;
+
+using Microsoft.AspNetCore.Html;
 
 using XpSearch.Widgets;
 using XpSearch.Widgets.Components.Widgets.XpSearch;
 using XpSearch.Widgets.Mounting;
 using XpSearch.Widgets.Options;
+using XpSearch.Widgets.Resources;
 
 [assembly: RegisterWidget(
     identifier: XpSearchWidgetConstants.PaginationIdentifier,
@@ -64,4 +69,33 @@ public sealed class PaginationWidgetViewComponent : XpSearchMountWidgetViewCompo
     protected override void BuildConfig(PaginationWidgetProperties properties, IDictionary<string, object?> config)
     {
     }
+
+    /// <inheritdoc />
+    protected override IHtmlContent BuildEditorPreview(PaginationWidgetProperties properties)
+    {
+        ArgumentNullException.ThrowIfNull(properties);
+
+        if (string.Equals(GetWidgetType(properties), "loadMore", StringComparison.Ordinal))
+        {
+            return EditorPreview.El("div", "xps-load-more")
+                .Add(EditorPreview.Button("xps-button xps-load-more__load-more", WidgetResources.Preview_LoadMore));
+        }
+
+        var list = EditorPreview.El("ul", "xps-pagination__list")
+            .Add(Item("xps-pagination__item--previous xps-pagination__item--disabled", "‹"));
+
+        for (int page = 1; page <= 3; page++)
+        {
+            list.Add(Item(
+                page == 1 ? "xps-pagination__item--page xps-pagination__item--current" : "xps-pagination__item--page",
+                page.ToString(CultureInfo.CurrentUICulture)));
+        }
+
+        return EditorPreview.El("nav", "xps-pagination").Add(list.Add(Item("xps-pagination__item--next", "›")));
+    }
+
+    // A span, not an anchor: nothing in a preview is navigable.
+    private static IHtmlContent Item(string modifiers, string text) =>
+        EditorPreview.El("li", $"xps-pagination__item {modifiers}")
+            .Add(EditorPreview.El("span", "xps-pagination__link", text).Attr("aria-disabled", "true"));
 }
