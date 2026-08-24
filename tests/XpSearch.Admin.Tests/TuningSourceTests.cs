@@ -53,19 +53,17 @@ internal sealed class TuningSourceTests
             Is.EqualTo(new[] { "the", "a", "an" }).AsCollection);
 
     /// <summary>
-    /// The drop-downs store the numeric value of the Core enums, so an option added to a form without
-    /// a matching enum member would silently become the first one.
+    /// The synonym drop-down stores the numeric value of the Core enum, so an option added to the
+    /// form without a matching enum member would silently become the first one.
     /// </summary>
     [Test]
     public void DropDownOptionsMatchTheCoreEnumValues()
     {
         Expect.Multiple(() =>
         {
-            Assert.That(RuleModel.ParseOption("3"), Is.EqualTo((int)FlatCondition.Always));
-            Assert.That(RuleModel.ParseOption("4"), Is.EqualTo((int)FlatConsequence.Redirect));
-            Assert.That(RuleModel.ParseOption("1"), Is.EqualTo((int)SynonymDirection.OneWay));
-            Assert.That(RuleModel.ParseOption("not a number"), Is.Zero);
+            Assert.That(SynonymModel.ParseOption("0"), Is.EqualTo((int)SynonymDirection.TwoWay));
+            Assert.That(SynonymModel.ParseOption("1"), Is.EqualTo((int)SynonymDirection.OneWay));
+            Assert.That(SynonymModel.ParseOption("not a number"), Is.Zero);
         });
     }
-
 }

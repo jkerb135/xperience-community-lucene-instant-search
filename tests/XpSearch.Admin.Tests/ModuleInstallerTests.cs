@@ -25,15 +25,9 @@ internal sealed class ModuleInstallerTests
                 nameof(XpSearchRuleInfo.RuleIndexName),
                 nameof(XpSearchRuleInfo.RuleName),
                 nameof(XpSearchRuleInfo.RuleEnabled),
-                nameof(XpSearchRuleInfo.RuleContactGroup),
-                nameof(XpSearchRuleInfo.RuleConditionType),
-                nameof(XpSearchRuleInfo.RulePattern),
-                nameof(XpSearchRuleInfo.RuleConsequenceType),
-                nameof(XpSearchRuleInfo.RuleTargetObjectID),
-                nameof(XpSearchRuleInfo.RuleTargetPosition),
-                nameof(XpSearchRuleInfo.RuleBoostValue),
-                nameof(XpSearchRuleInfo.RuleFilterExpression),
-                nameof(XpSearchRuleInfo.RuleRedirectUrl),
+                nameof(XpSearchRuleInfo.RuleConditions),
+                nameof(XpSearchRuleInfo.RuleConsequences),
+                nameof(XpSearchRuleInfo.RuleMigrated),
                 nameof(XpSearchRuleInfo.RuleValidFrom),
                 nameof(XpSearchRuleInfo.RuleValidTo),
                 nameof(XpSearchRuleInfo.RulePriority),
@@ -86,45 +80,13 @@ internal sealed class ModuleInstallerTests
             Assert.That(fields[nameof(XpSearchRuleInfo.RuleValidFrom)].AllowEmpty, Is.True);
             Assert.That(fields[nameof(XpSearchRuleInfo.RuleValidTo)].AllowEmpty, Is.True);
             Assert.That(fields[nameof(XpSearchRuleInfo.RuleIndexName)].AllowEmpty, Is.False);
-            Assert.That(fields[nameof(XpSearchRuleInfo.RuleBoostValue)].DataType, Is.EqualTo(FieldDataType.Decimal));
+
+            // A rule is written before the builder can have filled its if/then, and an empty "if" is
+            // the marker RuleStorageMigration keys on.
+            Assert.That(fields[nameof(XpSearchRuleInfo.RuleConditions)].AllowEmpty, Is.True);
+            Assert.That(fields[nameof(XpSearchRuleInfo.RuleConditions)].DataType, Is.EqualTo(FieldDataType.LongText));
+            Assert.That(fields[nameof(XpSearchRuleInfo.RuleConsequences)].DataType, Is.EqualTo(FieldDataType.LongText));
         });
-    }
-
-    /// <summary>
-    /// The contact group column was added after the first release (ADR-0021), so an existing
-    /// installation has to gain it without losing the columns already there and without gaining it
-    /// twice - which is what <c>InstallClass</c> asks <c>CombineWithForm</c> to do.
-    /// </summary>
-    [Test]
-    public void CombiningTheRuleFormWithAnOlderOneAddsTheContactGroupColumnExactlyOnce()
-    {
-        var installed = new FormInfo(WithoutContactGroup().GetXmlDefinition());
-
-        // Twice: the installer runs on every application start.
-        installed.CombineWithForm(XpSearchTuningModuleInstaller.RuleForm(), new CombineWithFormSettings());
-        installed.CombineWithForm(XpSearchTuningModuleInstaller.RuleForm(), new CombineWithFormSettings());
-
-        var names = installed.GetFields(true, true).Select(field => field.Name).ToList();
-
-        Expect.Multiple(() =>
-        {
-            Assert.That(names.Count(name => string.Equals(name, nameof(XpSearchRuleInfo.RuleContactGroup), StringComparison.Ordinal)), Is.EqualTo(1));
-            Assert.That(names, Is.EquivalentTo(XpSearchTuningModuleInstaller.RuleForm().GetFields(true, true).Select(field => field.Name)));
-            Assert.That(
-                installed.GetFields(true, true).First(field => field.Name == nameof(XpSearchRuleInfo.RuleContactGroup)).AllowEmpty,
-                Is.True,
-                "existing rows have no contact group, and an empty one means everyone");
-        });
-    }
-
-    /// <summary>The rule class as it shipped before the contact group column existed.</summary>
-    private static FormInfo WithoutContactGroup()
-    {
-        var form = XpSearchTuningModuleInstaller.RuleForm();
-
-        form.RemoveFormField(nameof(XpSearchRuleInfo.RuleContactGroup));
-
-        return form;
     }
 
     /// <summary>

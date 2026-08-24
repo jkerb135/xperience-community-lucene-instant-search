@@ -99,78 +99,38 @@ public class XpSearchRuleInfo : AbstractInfo<XpSearchRuleInfo, IInfoProvider<XpS
     }
 
     /// <summary>
-    /// Gets or sets the code name of the contact group the rule is scoped to. Empty applies the rule
-    /// to every visitor (ADR-0021).
+    /// Gets or sets the <c>if</c> of the rule, as the JSON object <see cref="RuleJson"/> describes.
+    /// An empty value means the row is still in the pre-CR-4b flat shape; see
+    /// <see cref="RuleStorageMigration"/>.
     /// </summary>
     [DatabaseField]
-    public virtual string RuleContactGroup
+    public virtual string RuleConditions
     {
-        get => ValidationHelper.GetString(GetValue(nameof(RuleContactGroup)), string.Empty, CultureInfo.InvariantCulture);
-        set => SetValue(nameof(RuleContactGroup), value);
+        get => ValidationHelper.GetString(GetValue(nameof(RuleConditions)), string.Empty, CultureInfo.InvariantCulture);
+        set => SetValue(nameof(RuleConditions), value);
     }
 
-    /// <summary>Gets or sets how the pattern is matched; see <see cref="XpSearch.Core.Tuning.FlatCondition"/>.</summary>
+    /// <summary>
+    /// Gets or sets the <c>then</c> of the rule, as the JSON array <see cref="RuleJson"/> describes,
+    /// in the order the consequences are applied.
+    /// </summary>
     [DatabaseField]
-    public virtual int RuleConditionType
+    public virtual string RuleConsequences
     {
-        get => ValidationHelper.GetInteger(GetValue(nameof(RuleConditionType)), 0, CultureInfo.InvariantCulture);
-        set => SetValue(nameof(RuleConditionType), value);
+        get => ValidationHelper.GetString(GetValue(nameof(RuleConsequences)), string.Empty, CultureInfo.InvariantCulture);
+        set => SetValue(nameof(RuleConsequences), value);
     }
 
-    /// <summary>Gets or sets the query pattern the rule matches.</summary>
+    /// <summary>
+    /// Gets or sets whether the rule was converted from the pre-CR-4b flat storage and has not been
+    /// saved from the rule builder since. It only drives the "converted from the previous format"
+    /// note the builder shows once; nothing about matching depends on it.
+    /// </summary>
     [DatabaseField]
-    public virtual string RulePattern
+    public virtual bool RuleMigrated
     {
-        get => ValidationHelper.GetString(GetValue(nameof(RulePattern)), string.Empty, CultureInfo.InvariantCulture);
-        set => SetValue(nameof(RulePattern), value);
-    }
-
-    /// <summary>Gets or sets what the rule does; see <see cref="XpSearch.Core.Tuning.FlatConsequence"/>.</summary>
-    [DatabaseField]
-    public virtual int RuleConsequenceType
-    {
-        get => ValidationHelper.GetInteger(GetValue(nameof(RuleConsequenceType)), 0, CultureInfo.InvariantCulture);
-        set => SetValue(nameof(RuleConsequenceType), value);
-    }
-
-    /// <summary>Gets or sets the result id of the document to pin, bury or boost.</summary>
-    [DatabaseField]
-    public virtual string RuleTargetObjectID
-    {
-        get => ValidationHelper.GetString(GetValue(nameof(RuleTargetObjectID)), string.Empty, CultureInfo.InvariantCulture);
-        set => SetValue(nameof(RuleTargetObjectID), value);
-    }
-
-    /// <summary>Gets or sets the one-based position a pinned document is moved to.</summary>
-    [DatabaseField]
-    public virtual int RuleTargetPosition
-    {
-        get => ValidationHelper.GetInteger(GetValue(nameof(RuleTargetPosition)), 0, CultureInfo.InvariantCulture);
-        set => SetValue(nameof(RuleTargetPosition), value);
-    }
-
-    /// <summary>Gets or sets the score multiplier of a boost rule.</summary>
-    [DatabaseField]
-    public virtual decimal RuleBoostValue
-    {
-        get => ValidationHelper.GetDecimal(GetValue(nameof(RuleBoostValue)), 1m, CultureInfo.InvariantCulture);
-        set => SetValue(nameof(RuleBoostValue), value);
-    }
-
-    /// <summary>Gets or sets the comma-separated <c>field:value</c> pairs of a filter rule.</summary>
-    [DatabaseField]
-    public virtual string RuleFilterExpression
-    {
-        get => ValidationHelper.GetString(GetValue(nameof(RuleFilterExpression)), string.Empty, CultureInfo.InvariantCulture);
-        set => SetValue(nameof(RuleFilterExpression), value);
-    }
-
-    /// <summary>Gets or sets the destination of a redirect rule, surfaced as <c>SearchResponse.redirect</c>.</summary>
-    [DatabaseField]
-    public virtual string RuleRedirectUrl
-    {
-        get => ValidationHelper.GetString(GetValue(nameof(RuleRedirectUrl)), string.Empty, CultureInfo.InvariantCulture);
-        set => SetValue(nameof(RuleRedirectUrl), value);
+        get => ValidationHelper.GetBoolean(GetValue(nameof(RuleMigrated)), false);
+        set => SetValue(nameof(RuleMigrated), value);
     }
 
     /// <summary>Gets or sets when the rule starts applying, in UTC. Null means "already".</summary>

@@ -16,6 +16,7 @@ using XpSearch.Core.Analytics;
 using XpSearch.Core.Contract;
 using XpSearch.Core.Pipeline;
 using XpSearch.Core.Pipeline.Stages;
+using XpSearch.Admin.Persistence;
 using XpSearch.Core.Tuning;
 
 namespace XpSearch.Admin.Tests;
@@ -27,13 +28,13 @@ namespace XpSearch.Admin.Tests;
 [TestFixture]
 internal sealed class QueryTesterSearchTests
 {
-    private static readonly TuningRule Rule = TuningRuleCompat.FromFlat(
+    private static readonly TuningRule Rule = RuleStorageMigration.FromFlat(
         1,
         "Espresso first",
         enabled: true,
-        FlatCondition.Always,
+        LegacyCondition.Always,
         "espresso",
-        FlatConsequence.Pin,
+        LegacyConsequence.Pin,
         "doc-1",
         1,
         1,
