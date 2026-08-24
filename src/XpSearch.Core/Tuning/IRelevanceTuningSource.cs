@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace XpSearch.Core.Tuning;
 
 /// <summary>How a rule's pattern is compared against the query (ADR-0022).</summary>
@@ -49,6 +51,8 @@ public sealed record RuleConditions(
     string Language)
 {
     /// <summary>Gets a value indicating whether the conditions say nothing, in which case the rule never fires.</summary>
+    /// <remarks>Derived, so it is never stored: see <c>XpSearch.Admin.Persistence.RuleJson</c>.</remarks>
+    [JsonIgnore]
     public bool IsEmpty =>
         Query is null
         && Filters.Count == 0
@@ -60,6 +64,22 @@ public sealed record RuleConditions(
 /// One <c>then</c> of a rule (ADR-0022). The nested records are the whole closed set; they are
 /// applied in the order the rule lists them.
 /// </summary>
+/// <remarks>
+/// The discriminators are the stored contract of the <c>RuleConsequences</c> column (ADR-0022
+/// addendum): renaming one silently reinterprets every stored rule, so they are spelled out here
+/// rather than derived from the type name.
+/// </remarks>
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
+[JsonDerivedType(typeof(Pin), "pin")]
+[JsonDerivedType(typeof(Hide), "hide")]
+[JsonDerivedType(typeof(Boost), "boost")]
+[JsonDerivedType(typeof(Bury), "bury")]
+[JsonDerivedType(typeof(FilterResults), "filterResults")]
+[JsonDerivedType(typeof(RemoveWord), "removeWord")]
+[JsonDerivedType(typeof(ReplaceWord), "replaceWord")]
+[JsonDerivedType(typeof(ReplaceQuery), "replaceQuery")]
+[JsonDerivedType(typeof(Redirect), "redirect")]
+[JsonDerivedType(typeof(CustomData), "customData")]
 public abstract record RuleConsequence
 {
     /// <summary>Moves a document to a fixed position.</summary>

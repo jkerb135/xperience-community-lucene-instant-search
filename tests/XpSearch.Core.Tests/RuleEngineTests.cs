@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 using NUnit.Framework;
 
@@ -9,6 +10,61 @@ using XpSearch.Core.Tests.Fixtures;
 using XpSearch.Core.Tuning;
 
 namespace XpSearch.Core.Tests;
+
+/// <summary>
+/// The type discriminators the consequence model carries (ADR-0022 addendum). They are the stored
+/// contract of the Admin package's <c>RuleConsequences</c> column, so a consequence added without one
+/// - or given a name that is already taken - would silently reinterpret rules that are already saved.
+/// </summary>
+[TestFixture]
+internal sealed class RuleConsequenceDiscriminatorTests
+{
+    private static readonly JsonDerivedTypeAttribute[] Declared =
+        [.. typeof(RuleConsequence).GetCustomAttributes(typeof(JsonDerivedTypeAttribute), inherit: false).Cast<JsonDerivedTypeAttribute>()];
+
+    [Test]
+    public void EveryConsequenceHasOneAndTheDiscriminatorsAreUnique()
+    {
+        var nested = typeof(RuleConsequence).GetNestedTypes();
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(Declared.Select(attribute => attribute.DerivedType), Is.EquivalentTo(nested));
+            Assert.That(
+                Declared.Select(attribute => attribute.TypeDiscriminator).Distinct(),
+                Has.Exactly(nested.Length).Items,
+                "two consequences sharing a discriminator would read back as the wrong one");
+        });
+    }
+
+    /// <summary>
+    /// The names are spelled out rather than derived, so this is the list a stored rule depends on.
+    /// Changing one is a storage migration, not a rename.
+    /// </summary>
+    [Test]
+    public void TheDiscriminatorsAreTheDocumentedNames() =>
+        Assert.That(
+            Declared.Select(attribute => attribute.TypeDiscriminator),
+            Is.EquivalentTo(new object[]
+            {
+                "pin", "hide", "boost", "bury", "filterResults", "removeWord", "replaceWord", "replaceQuery", "redirect", "customData"
+            }));
+
+    /// <summary>The derived member's own values have to survive alongside the discriminator.</summary>
+    [Test]
+    public void ARoundTripThroughTheDiscriminatorKeepsTheValues()
+    {
+        RuleConsequence pinned = new RuleConsequence.Pin("doc-1:en", 4);
+
+        string written = JsonSerializer.Serialize(pinned, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(written, Does.StartWith("{\"type\":\"pin\""));
+            Assert.That(JsonSerializer.Deserialize<RuleConsequence>(written, new JsonSerializerOptions(JsonSerializerDefaults.Web)), Is.EqualTo(pinned));
+        });
+    }
+}
 
 /// <summary>
 /// The if/then rule engine of ADR-0022: which conditions fire a rule, and what its consequences do
@@ -194,116 +250,6 @@ internal sealed class RuleConditionTests
     [Test]
     public void ConditionsThatSayNothing_NeverFire() =>
         Assert.That(Fires(Conditions(), Match("anything")), Is.False);
-}
-
-/// <summary>
-/// The flat-storage shim: every legacy condition and consequence has to reach the if/then model
-/// unchanged, because the Search tuning application still writes the flat columns until CR-4b.
-/// </summary>
-[TestFixture]
-internal sealed class TuningRuleCompatTests
-{
-    private static readonly DateTime Now = new(2026, 8, 24, 12, 0, 0, DateTimeKind.Utc);
-
-    private static TuningRule Flat(
-        FlatCondition condition = FlatCondition.Contains,
-        string pattern = "espresso",
-        FlatConsequence consequence = FlatConsequence.Boost,
-        string targetId = "doc-1",
-        int position = 3,
-        double boost = 2.5,
-        string filter = "Category:coffee",
-        string redirect = "/promo",
-        string group = "vips") =>
-        TuningRuleCompat.FromFlat(
-            7, "legacy", true, condition, pattern, consequence, targetId, position, boost, filter, redirect,
-            Now.AddDays(-1), Now.AddDays(1), 42, group);
-
-    [Test]
-    public void EveryConsequenceTypeIsMapped()
-    {
-        Expect.Multiple(() =>
-        {
-            Assert.That(
-                Flat(consequence: FlatConsequence.Pin).Consequences[0],
-                Is.EqualTo(new RuleConsequence.Pin("doc-1", 3)));
-            Assert.That(
-                Flat(consequence: FlatConsequence.Bury).Consequences[0],
-                Is.EqualTo(new RuleConsequence.Bury("doc-1", string.Empty)));
-            Assert.That(
-                Flat(consequence: FlatConsequence.Boost).Consequences[0],
-                Is.EqualTo(new RuleConsequence.Boost("doc-1", "Category:coffee", 2.5)));
-            Assert.That(
-                Flat(consequence: FlatConsequence.Filter).Consequences[0],
-                Is.EqualTo(new RuleConsequence.FilterResults("Category:coffee")));
-            Assert.That(
-                Flat(consequence: FlatConsequence.Redirect).Consequences[0],
-                Is.EqualTo(new RuleConsequence.Redirect("/promo")));
-        });
-    }
-
-    [Test]
-    public void EveryConditionTypeIsMapped()
-    {
-        Expect.Multiple(() =>
-        {
-            Assert.That(
-                Flat(condition: FlatCondition.Contains).Conditions.Query,
-                Is.EqualTo(new QueryCondition(QueryOperator.Contains, "espresso", false)));
-            Assert.That(
-                Flat(condition: FlatCondition.Exact).Conditions.Query,
-                Is.EqualTo(new QueryCondition(QueryOperator.Is, "espresso", false)));
-            Assert.That(
-                Flat(condition: FlatCondition.StartsWith).Conditions.Query,
-                Is.EqualTo(new QueryCondition(QueryOperator.StartsWith, "espresso", false)));
-            Assert.That(
-                Flat(condition: FlatCondition.Always, pattern: string.Empty).Conditions.Query,
-                Is.EqualTo(new QueryCondition(QueryOperator.Contains, string.Empty, false)),
-                "'is anything at all' becomes a pattern every query contains");
-        });
-    }
-
-    [Test]
-    public void TheRestOfTheRowSurvives()
-    {
-        var rule = Flat();
-
-        Expect.Multiple(() =>
-        {
-            Assert.That(rule.Id, Is.EqualTo(7));
-            Assert.That(rule.Name, Is.EqualTo("legacy"));
-            Assert.That(rule.Priority, Is.EqualTo(42));
-            Assert.That(rule.ValidFrom, Is.EqualTo(Now.AddDays(-1)));
-            Assert.That(rule.ValidTo, Is.EqualTo(Now.AddDays(1)));
-            Assert.That(rule.Conditions.ContactGroup, Is.EqualTo("vips"));
-            Assert.That(rule.Conditions.Filters, Is.Empty);
-            Assert.That(rule.Conditions.Language, Is.Empty);
-            Assert.That(rule.Consequences, Has.Count.EqualTo(1));
-        });
-    }
-
-    /// <summary>
-    /// The two ends of the flat behaviour: "is anything at all" still fires on every query, and a
-    /// blank pattern under any other operator still fires on none.
-    /// </summary>
-    [Test]
-    public void TheOldEdgeCasesKeepTheirBehaviour()
-    {
-        var anything = TuningRuleCompat.FromFlat(
-            1, "always", true, FlatCondition.Always, string.Empty, FlatConsequence.Boost, "doc-1", 0, 2,
-            string.Empty, string.Empty, null, null, 100, string.Empty);
-
-        var blank = TuningRuleCompat.FromFlat(
-            2, "blank", true, FlatCondition.Contains, "   ", FlatConsequence.Boost, "doc-1", 0, 2,
-            string.Empty, string.Empty, null, null, 100, string.Empty);
-
-        Expect.Multiple(() =>
-        {
-            Assert.That(RuleSelection.Active([anything], "anything at all", Now), Has.Count.EqualTo(1));
-            Assert.That(RuleSelection.Active([anything], string.Empty, Now), Has.Count.EqualTo(1));
-            Assert.That(RuleSelection.Active([blank], "anything at all", Now), Is.Empty);
-        });
-    }
 }
 
 /// <summary>

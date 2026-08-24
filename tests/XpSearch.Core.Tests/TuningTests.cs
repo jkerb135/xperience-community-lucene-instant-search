@@ -35,9 +35,8 @@ internal sealed class RuleSelectionTests
     private static readonly DateTime Now = new(2026, 8, 21, 12, 0, 0, DateTimeKind.Utc);
 
     /// <summary>
-    /// A rule in the flat shape the Search tuning application still stores, mapped onto the if/then
-    /// model by the compatibility shim - so every test written against the flat behaviour keeps
-    /// checking it, through the shim CR-4b will retire.
+    /// A rule with one query condition and one consequence - the shape most of these tests need.
+    /// See <see cref="LegacyRuleShapes"/>.
     /// </summary>
     internal static TuningRule Rule(
         int id = 1,
@@ -55,7 +54,7 @@ internal sealed class RuleSelectionTests
         DateTime? to = null,
         int priority = 100,
         string contactGroup = "") =>
-        TuningRuleCompat.FromFlat(
+        LegacyRuleShapes.Build(
             id, name, enabled, condition, pattern, consequence, targetId, targetPosition, boost, filter, redirectUrl, from, to, priority, contactGroup);
 
     /// <summary>Whether a rule fires for a query alone: no filters, no language, no contact group.</summary>
