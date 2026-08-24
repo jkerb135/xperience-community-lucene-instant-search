@@ -4,3 +4,4 @@
 export * from './query-tester/QueryTesterTemplate';
 export * from './analytics/AnalyticsDashboardTemplate';
 export * from './status/IndexStatusTemplate';
+export * from './rule-builder/RuleBuilderTemplate';
