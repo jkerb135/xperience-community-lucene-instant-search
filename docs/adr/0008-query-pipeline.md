@@ -54,7 +54,7 @@ the bracketed phases reserved but unimplemented:
 | `CollectFacets` | 950 | shipped |
 | `Highlight` | 1000 | shipped |
 | `Project` | 1100 | shipped |
-| `LogActivity` | 1200 | reserved, Phase 6 |
+| `LogActivity` | 1200 | retired, free (analytics moved to `ISearchRequestJournal`, ADR-0015 AN-4) |
 
 Consumers add stages with `services.AddXpSearchStage<T>()`, or `AddXpSearchStage<T>(order)` to place a
 stage at a slot other than its own. Resolving the index and its schema happens in `SearchPipeline` before

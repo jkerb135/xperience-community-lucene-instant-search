@@ -8,6 +8,21 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Fixed (analytics):** searches were invisible to the analytics as soon as the response cache
+  answered them, and every `xpsearch_click` activity carried an **empty value** instead of the query
+  the visitor had searched for. Activity logging, the query log row and the `queryId` → query mapping
+  used to be the last pipeline stage, which a cache hit never reaches, and which in any case wrote the
+  *inner* `queryId` — never the re-issued one the caller receives. They now live in
+  `ISearchRequestJournal`, called once per request by the caching decorator, so each search — hit or
+  miss — produces exactly one `xpsearch_query`/`xpsearch_noresults` activity and one query log row
+  under the `queryId` the caller got back, and a click after a cached search resolves its query text
+  again. **Breaking for a consumer who registered or replaced `LogActivityStage`:** the stage is
+  removed (slot `SearchStageOrder.LogActivity` stays declared and is now free); replace
+  `ISearchRequestJournal` instead. The processing time on a query log row is now the decorator's own
+  elapsed time — near zero for a cache hit, which is what a hit costs — and the journal records the normalized query text (the text the cache key is built from) rather than the
+  post-stopword one. Query tester runs are unaffected: they bypass the decorator and still write
+  nothing to the analytics.
+
 - **Changed (Page Builder):** a configured search widget now renders a **static server-side preview**
   of itself in the Page Builder (edit and read-only mode) instead of the bare `.xps-mount` div, which
   looked like an empty shell to editors. The preview mirrors the widget's live markup with disabled
