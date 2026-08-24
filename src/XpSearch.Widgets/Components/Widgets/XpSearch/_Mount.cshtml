@@ -2,12 +2,16 @@
 @model XpSearchMountViewModel
 @*
     The only view the Page Builder widgets render (spec 7.1 / 7.5). Either the configured mount
-    element, or - in Page Builder and preview only - an instruction block. On a live page an
-    unconfigured widget renders nothing at all.
+    element, or - inside the Page Builder - a static preview of it, or an instruction block when the
+    widget is unconfigured. On a live page an unconfigured widget renders nothing at all.
 *@
 @if (Model.Mount is not null)
 {
     @Model.Mount
+}
+else if (Model.Preview is not null)
+{
+    @Model.Preview
 }
 else if (Model.EditorMessage is not null)
 {

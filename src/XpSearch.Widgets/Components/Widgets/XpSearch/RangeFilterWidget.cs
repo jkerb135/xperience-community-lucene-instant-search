@@ -1,5 +1,10 @@
+using System.Globalization;
+
 using Kentico.PageBuilder.Web.Mvc;
 using Kentico.Xperience.Admin.Base.FormAnnotations;
+
+using Microsoft.AspNetCore.Html;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 using XpSearch.Core;
 using XpSearch.Widgets;
@@ -132,4 +137,55 @@ public sealed class RangeFilterWidgetViewComponent : XpSearchMountWidgetViewComp
             config["labels"] = labels;
         }
     }
+
+    /// <inheritdoc />
+    protected override IHtmlContent BuildEditorPreview(RangeFilterWidgetProperties properties)
+    {
+        ArgumentNullException.ThrowIfNull(properties);
+
+        // ConfigurationHint() has already rejected missing or crossed bounds.
+        decimal minimum = properties.Minimum!.Value;
+        decimal maximum = properties.Maximum!.Value;
+        decimal step = properties.Step is > 0 ? properties.Step.Value : 1m;
+
+        return new HtmlContentBuilder()
+            .AppendHtml(EditorPreview.El("div", "xps-range-filter")
+                .Add(
+                    EditorPreview.El(
+                        "h3",
+                        "xps-range-filter__title",
+                        string.IsNullOrWhiteSpace(properties.Label) ? properties.Attribute.Trim() : properties.Label),
+                    EditorPreview.El("div", "xps-range-filter__track")
+                        .Add(
+                            Bounded(EditorPreview.Input("xps-range-filter__range xps-range-filter__range--min", "range"), minimum, maximum, step, minimum),
+                            Bounded(EditorPreview.Input("xps-range-filter__range xps-range-filter__range--max", "range"), minimum, maximum, step, maximum)),
+                    EditorPreview.El("div", "xps-range-filter__inputs")
+                        .Add(
+                            EditorPreview.El("label", "xps-range-filter__input-label", Label(properties.FromLabel, WidgetResources.Preview_From)),
+                            Bounded(EditorPreview.Input("xps-range-filter__input", "number"), minimum, maximum, step, minimum),
+                            EditorPreview.El("span", "xps-range-filter__separator", "–").Decorative(),
+                            EditorPreview.El("label", "xps-range-filter__input-label", Label(properties.ToLabel, WidgetResources.Preview_To)),
+                            Bounded(EditorPreview.Input("xps-range-filter__input", "number"), minimum, maximum, step, maximum)),
+                    EditorPreview.El(
+                        "p",
+                        "xps-range-filter__values",
+                        $"{Display(minimum)} – {Display(maximum)} ({Display(step)})")))
+            .AppendHtml(EditorPreview.Note(string.Format(
+                CultureInfo.CurrentUICulture,
+                WidgetResources.Preview_Note_Attribute,
+                properties.Attribute.Trim())));
+    }
+
+    private static string Label(string configured, string fallback) =>
+        string.IsNullOrWhiteSpace(configured) ? fallback : configured;
+
+    private static string Display(decimal value) => value.ToString(CultureInfo.CurrentUICulture);
+
+    // HTML numeric attributes are culture-invariant; only the visible line is formatted for the editor.
+    private static TagBuilder Bounded(TagBuilder input, decimal minimum, decimal maximum, decimal step, decimal value) =>
+        input
+            .Attr("min", minimum.ToString(CultureInfo.InvariantCulture))
+            .Attr("max", maximum.ToString(CultureInfo.InvariantCulture))
+            .Attr("step", step.ToString(CultureInfo.InvariantCulture))
+            .Attr("value", value.ToString(CultureInfo.InvariantCulture));
 }

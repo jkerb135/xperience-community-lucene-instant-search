@@ -172,6 +172,35 @@ The wording adapts to whether the page is in Page Builder edit mode, Page Builde
 preview. On the live site the same widget renders **nothing at all** — no empty container, no broken
 control, no console noise.
 
+### What editors see in the Page Builder
+
+A configured widget does **not** mount inside the Page Builder. It renders a server-side static preview
+of itself instead — the widget's own markup with every control disabled, no links, and placeholder bars
+where the search results would be — under a badge that names the widget and says the content is not
+live:
+
+```html
+<div class="xps xps-editor-preview xps-editor-preview--facet-list" data-xps-widget="facetList">
+  <span class="xps-editor-preview__badge">Search widget: facetList — preview, not live results</span>
+  <div class="xps-editor-preview__body" aria-hidden="true">
+    <div class="xps-facet-list">…the facet, disabled…</div>
+    <p class="xps-editor-preview__note">Attribute: contentType</p>
+  </div>
+</div>
+```
+
+The preview reflects the widget's own properties — the search box's placeholder, the facet's label and
+attribute, the results widget's page size and template, the pagination style, the sort options — so
+configuring a widget visibly changes what the builder shows.
+
+Why not the real thing: the Page Builder re-renders widget markup over AJAX on every add, move and
+configure, so client-side hydration there is unreliable by construction, and no search should run from
+the editor. **Preview and the live site are unaffected** — both render the mount element and the working
+widget, so preview remains the way to see real results.
+
+`xps-editor-preview` is styled by `shell.css`, which `<xps-search-assets />` loads in the layout the
+Page Builder renders too. The classes are part of the markup contract (`themes/MARKUP.md`).
+
 ### Result templates
 
 A developer registers a result template with an assembly attribute; editors then pick it in the Results

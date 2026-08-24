@@ -92,6 +92,24 @@ internal sealed class MountViewRenderingTests
     }
 
     [Test]
+    public async Task A_configured_widget_renders_its_preview_inside_the_Page_Builder()
+    {
+        var component = new SearchBoxWidgetViewComponent(
+            new XpSearchMountRenderer(),
+            new FakeEditorContext(XpSearchEditorMode.Edit),
+            new FakeIndexCatalog("site-content"));
+
+        string html = await RenderAsync(component.BuildModel(new SearchBoxWidgetProperties { Placeholder = "Search" }));
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(html, Does.StartWith("<div class=\"xps xps-editor-preview xps-editor-preview--search-box\""));
+            Assert.That(html, Does.Contain("placeholder=\"Search\""));
+            Assert.That(html, Does.Not.Contain("xps-mount"));
+        });
+    }
+
+    [Test]
     public async Task An_unconfigured_widget_renders_the_instruction_block_for_an_editor()
     {
         var component = new SearchBoxWidgetViewComponent(

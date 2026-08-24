@@ -785,6 +785,112 @@
            data-xps-config='{"attribute":"contentType","limit":10,"showMore":true}'></div>
     </section>
 
+    <section class="fx fx--editor-preview">
+      <h2>editor-preview</h2>
+      <!-- editorPreview — what an editor sees in the Page Builder instead of a mount element (spec 7.5).      
+           Server-rendered by the widget's BuildEditorPreview(); the body mirrors the live markup with      
+           every control disabled and no links, and is aria-hidden because it is a picture, not a widget.      
+           Four of the ten widgets are shown here; the rest follow the same root, badge, body, note. -->      
+            
+      <div class="xps xps-editor-preview xps-editor-preview--search-box" data-xps-widget="searchBox">      
+        <span class="xps-editor-preview__badge">Search widget: searchBox — preview, not live results</span>      
+        <div class="xps-editor-preview__body" aria-hidden="true">      
+          <form class="xps-search-box">      
+            <div class="xps-search-box__field">      
+              <input class="xps-search-box__input" type="search" placeholder="Find coffee" disabled>      
+              <button class="xps-button xps-search-box__reset" type="button" disabled><span aria-hidden="true">&times;</span></button>      
+              <button class="xps-button xps-search-box__submit" type="button" disabled><span aria-hidden="true">&rarr;</span></button>      
+            </div>      
+          </form>      
+        </div>      
+      </div>      
+            
+      <div class="xps xps-editor-preview xps-editor-preview--facet-list" data-xps-widget="facetList">      
+        <span class="xps-editor-preview__badge">Search widget: facetList — preview, not live results</span>      
+        <div class="xps-editor-preview__body" aria-hidden="true">      
+          <div class="xps-facet-list">      
+            <h3 class="xps-facet-list__title">Content type</h3>      
+            <ul class="xps-facet-list__list">      
+              <li class="xps-facet-list__item">      
+                <label class="xps-facet-list__label">      
+                  <input class="xps-facet-list__checkbox" type="checkbox" disabled>      
+                  <span class="xps-facet-list__value"><span class="xps-skeleton xps-skeleton--text" aria-hidden="true"></span></span>      
+                  <span class="xps-facet-list__count"><span class="xps-skeleton xps-skeleton--text" aria-hidden="true"></span></span>      
+                </label>      
+              </li>      
+              <li class="xps-facet-list__item">      
+                <label class="xps-facet-list__label">      
+                  <input class="xps-facet-list__checkbox" type="checkbox" disabled>      
+                  <span class="xps-facet-list__value"><span class="xps-skeleton xps-skeleton--text" aria-hidden="true"></span></span>      
+                  <span class="xps-facet-list__count"><span class="xps-skeleton xps-skeleton--text" aria-hidden="true"></span></span>      
+                </label>      
+              </li>      
+              <li class="xps-facet-list__item">      
+                <label class="xps-facet-list__label">      
+                  <input class="xps-facet-list__checkbox" type="checkbox" disabled>      
+                  <span class="xps-facet-list__value"><span class="xps-skeleton xps-skeleton--text" aria-hidden="true"></span></span>      
+                  <span class="xps-facet-list__count"><span class="xps-skeleton xps-skeleton--text" aria-hidden="true"></span></span>      
+                </label>      
+              </li>      
+            </ul>      
+            <button class="xps-button xps-facet-list__show-more" type="button" disabled><span>Show more</span></button>      
+          </div>      
+          <p class="xps-editor-preview__note">Attribute: contentType</p>      
+        </div>      
+      </div>      
+            
+      <div class="xps xps-editor-preview xps-editor-preview--results" data-xps-widget="results">      
+        <span class="xps-editor-preview__badge">Search widget: results — preview, not live results</span>      
+        <div class="xps-editor-preview__body" aria-hidden="true">      
+          <div class="xps-results">      
+            <ol class="xps-results__list">      
+              <li class="xps-results__item">      
+                <article class="xps-result xps-result--skeleton">      
+                  <div class="xps-result__body">      
+                    <span class="xps-skeleton xps-skeleton--title" aria-hidden="true"></span>      
+                    <span class="xps-skeleton xps-skeleton--text" aria-hidden="true"></span>      
+                    <span class="xps-skeleton xps-skeleton--text" aria-hidden="true"></span>      
+                  </div>      
+                </article>      
+              </li>      
+              <li class="xps-results__item">      
+                <article class="xps-result xps-result--skeleton">      
+                  <div class="xps-result__body">      
+                    <span class="xps-skeleton xps-skeleton--title" aria-hidden="true"></span>      
+                    <span class="xps-skeleton xps-skeleton--text" aria-hidden="true"></span>      
+                    <span class="xps-skeleton xps-skeleton--text" aria-hidden="true"></span>      
+                  </div>      
+                </article>      
+              </li>      
+            </ol>      
+          </div>      
+          <p class="xps-editor-preview__note">Results per page: 20 &middot; template: MyCo.Card &middot; fields: title, url</p>      
+        </div>      
+      </div>      
+            
+      <div class="xps xps-editor-preview xps-editor-preview--range-filter" data-xps-widget="rangeFilter">      
+        <span class="xps-editor-preview__badge">Search widget: rangeFilter — preview, not live results</span>      
+        <div class="xps-editor-preview__body" aria-hidden="true">      
+          <div class="xps-range-filter">      
+            <h3 class="xps-range-filter__title">Price</h3>      
+            <div class="xps-range-filter__track">      
+              <input class="xps-range-filter__range xps-range-filter__range--min" type="range" min="0" max="500" step="5" value="0" disabled>      
+              <input class="xps-range-filter__range xps-range-filter__range--max" type="range" min="0" max="500" step="5" value="500" disabled>      
+            </div>      
+            <div class="xps-range-filter__inputs">      
+              <label class="xps-range-filter__input-label">From</label>      
+              <input class="xps-range-filter__input" type="number" min="0" max="500" step="5" value="0" disabled>      
+              <span class="xps-range-filter__separator" aria-hidden="true">&ndash;</span>      
+              <label class="xps-range-filter__input-label">To</label>      
+              <input class="xps-range-filter__input" type="number" min="0" max="500" step="5" value="500" disabled>      
+            </div>      
+            <p class="xps-range-filter__values">0 &ndash; 500 (5)</p>      
+          </div>      
+          <p class="xps-editor-preview__note">Attribute: price</p>      
+        </div>      
+      </div>
+    </section>
+
     <section class="host-sample">
       <h2>Host page sample — outside every .xps element</h2>
       <p>This block must look identical in all three sections. If a widget stylesheet leaks, it changes here first.</p>

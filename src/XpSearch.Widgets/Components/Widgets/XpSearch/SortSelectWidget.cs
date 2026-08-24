@@ -1,6 +1,7 @@
 using Kentico.PageBuilder.Web.Mvc;
 using Kentico.Xperience.Admin.Base.FormAnnotations;
 
+using Microsoft.AspNetCore.Html;
 using Microsoft.Extensions.Options;
 
 using XpSearch.Core.Options;
@@ -96,6 +97,30 @@ public sealed class SortSelectWidgetViewComponent : XpSearchMountWidgetViewCompo
         }
 
         config["hideLabel"] = properties.HideLabel;
+    }
+
+    /// <inheritdoc />
+    protected override IHtmlContent BuildEditorPreview(SortSelectWidgetProperties properties)
+    {
+        ArgumentNullException.ThrowIfNull(properties);
+
+        var select = EditorPreview.El("select", "xps-select__control").Disabled();
+        foreach (var option in SortOptionsValidation.ParseValid(properties.SortOptions, IndexOptions()))
+        {
+            select.Add(EditorPreview.El("option", text: option.Label).Attr("value", option.Value));
+        }
+
+        var box = EditorPreview.El("div", "xps-sort-select xps-select");
+
+        if (!string.IsNullOrWhiteSpace(properties.Label))
+        {
+            box.Add(EditorPreview.El(
+                "label",
+                properties.HideLabel ? "xps-select__label xps-sr-only" : "xps-select__label",
+                properties.Label));
+        }
+
+        return box.Add(select);
     }
 
     private XpSearchIndexOptions? IndexOptions() =>

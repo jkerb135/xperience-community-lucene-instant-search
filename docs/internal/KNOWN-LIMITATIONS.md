@@ -635,3 +635,33 @@ and how to lift it.
   of thousands.
 - **Upgrade path:** load the whole catalog once per page render into a dictionary, or add the join to
   the listing's `QueryModifiers`.
+
+## Page Builder previews in `XpSearchMountWidgetViewComponent<T>.BuildEditorPreview`
+
+- **Simplified:** the preview an editor sees in the Page Builder is markup assembled in C# from the
+  widget's properties alone. It never asks the search API anything, so counts, facet values, result
+  titles and page numbers are placeholder bars and fixed digits, and the shape is fixed (three facet
+  rows, a two-level tree, at most four result cards, three page numbers) regardless of the corpus.
+  The preview body is `aria-hidden="true"`: only the badge is announced, so a screen-reader user in
+  the builder is told which widget sits there but not what it looks like.
+- **Ceiling:** an editor cannot tell from the builder whether a facet attribute actually has values,
+  whether a result template renders as intended, or how tall the widget will really be — the page
+  still has to be previewed for that. A custom result template is not exercised at all: the preview
+  shows generic skeleton cards and names the template in the note.
+- **Upgrade path:** for real data, run one search server-side in edit mode (a `SearchClient` call in
+  `BuildEditorPreview`, cached per index+config) and feed the values into the same markup; for
+  templates, render the registered `SearchResultTemplate` server-side against that response.
+
+## Editor preview styling in `themes/src/shell.css` (`.xps-editor-preview`)
+
+- **Simplified:** the preview inherits the site's own widget styling, because it reuses the widget
+  classes and the same two stylesheets `<xps-search-assets />` loads. Only the frame — spacing, the
+  badge and the note — is new, and the per-widget modifier classes (`xps-editor-preview--facet-list`
+  and friends) are emitted but unstyled.
+- **Ceiling:** a host that omits `<xps-search-assets />` from the layout the Page Builder renders, or
+  that ships its own design system and loads neither stylesheet, gets an unframed preview: the badge
+  and note are plain text and the dashed border is missing. Nothing is broken, but the "this is not
+  live" signal is weaker.
+- **Upgrade path:** if that turns out to be common, emit a scoped `<style>` once per page from the
+  first preview on it (a request-scoped flag on the editor context) instead of relying on the
+  stylesheet.

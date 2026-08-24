@@ -1,10 +1,15 @@
+using System.Globalization;
+
 using Kentico.PageBuilder.Web.Mvc;
 using Kentico.Xperience.Admin.Base.FormAnnotations;
+
+using Microsoft.AspNetCore.Html;
 
 using XpSearch.Widgets;
 using XpSearch.Widgets.Components.Widgets.XpSearch;
 using XpSearch.Widgets.Mounting;
 using XpSearch.Widgets.Options;
+using XpSearch.Widgets.Resources;
 
 [assembly: RegisterWidget(
     identifier: XpSearchWidgetConstants.ResultsIdentifier,
@@ -98,6 +103,40 @@ public sealed class ResultsWidgetViewComponent : XpSearchMountWidgetViewComponen
         {
             instanceConfig["fields"] = fields;
         }
+    }
+
+    /// <inheritdoc />
+    protected override IHtmlContent BuildEditorPreview(ResultsWidgetProperties properties)
+    {
+        ArgumentNullException.ThrowIfNull(properties);
+
+        // Four cards is enough to read as a list; a page size of 50 must not fill the builder.
+        int cards = Math.Clamp(properties.ResultsPerPage <= 0 ? 3 : properties.ResultsPerPage, 1, 4);
+        var list = EditorPreview.El("ol", "xps-results__list");
+
+        for (int card = 0; card < cards; card++)
+        {
+            list.Add(EditorPreview.El("li", "xps-results__item")
+                .Add(EditorPreview.El("article", "xps-result xps-result--skeleton")
+                    .Add(EditorPreview.El("div", "xps-result__body")
+                        .Add(
+                            EditorPreview.Skeleton("title"),
+                            EditorPreview.Skeleton("text"),
+                            EditorPreview.Skeleton("text")))));
+        }
+
+        var fields = ParseLines(properties.Fields);
+
+        return new HtmlContentBuilder()
+            .AppendHtml(EditorPreview.El("div", "xps-results").Add(list))
+            .AppendHtml(EditorPreview.Note(string.Format(
+                CultureInfo.CurrentUICulture,
+                WidgetResources.Preview_Note_Results,
+                properties.ResultsPerPage > 0
+                    ? properties.ResultsPerPage.ToString(CultureInfo.CurrentUICulture)
+                    : WidgetResources.Preview_Unset,
+                string.IsNullOrWhiteSpace(properties.ResultTemplate) ? WidgetResources.Preview_Unset : properties.ResultTemplate.Trim(),
+                fields.Count > 0 ? string.Join(", ", fields) : WidgetResources.Preview_Unset)));
     }
 
     private static IReadOnlyList<string> ParseLines(string? text) =>

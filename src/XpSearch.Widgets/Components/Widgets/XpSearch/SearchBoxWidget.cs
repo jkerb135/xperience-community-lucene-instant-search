@@ -1,10 +1,13 @@
 using Kentico.PageBuilder.Web.Mvc;
 using Kentico.Xperience.Admin.Base.FormAnnotations;
 
+using Microsoft.AspNetCore.Html;
+
 using XpSearch.Widgets;
 using XpSearch.Widgets.Components.Widgets.XpSearch;
 using XpSearch.Widgets.Mounting;
 using XpSearch.Widgets.Options;
+using XpSearch.Widgets.Resources;
 
 [assembly: RegisterWidget(
     identifier: XpSearchWidgetConstants.SearchBoxIdentifier,
@@ -53,4 +56,27 @@ public sealed class SearchBoxWidgetViewComponent : XpSearchMountWidgetViewCompon
 
     /// <inheritdoc />
     protected override string WidgetType => "searchBox";
+
+    /// <inheritdoc />
+    protected override IHtmlContent BuildEditorPreview(SearchBoxWidgetProperties properties)
+    {
+        ArgumentNullException.ThrowIfNull(properties);
+
+        var field = EditorPreview.El("div", "xps-search-box__field")
+            .Add(EditorPreview.Input("xps-search-box__input", "search")
+                .Attr(
+                    "placeholder",
+                    string.IsNullOrWhiteSpace(properties.Placeholder)
+                        ? WidgetResources.Preview_SearchPlaceholder
+                        : properties.Placeholder));
+
+        if (properties.ShowReset)
+        {
+            field.Add(EditorPreview.Button("xps-button xps-search-box__reset", "×", glyph: true));
+        }
+
+        field.Add(EditorPreview.Button("xps-button xps-search-box__submit", "→", glyph: true));
+
+        return EditorPreview.El("form", "xps-search-box").Add(field);
+    }
 }
