@@ -61,8 +61,8 @@ internal sealed class TuningSourceTests
     {
         Expect.Multiple(() =>
         {
-            Assert.That(RuleModel.ParseOption("3"), Is.EqualTo((int)RuleCondition.Always));
-            Assert.That(RuleModel.ParseOption("4"), Is.EqualTo((int)RuleConsequence.Redirect));
+            Assert.That(RuleModel.ParseOption("3"), Is.EqualTo((int)FlatCondition.Always));
+            Assert.That(RuleModel.ParseOption("4"), Is.EqualTo((int)FlatConsequence.Redirect));
             Assert.That(RuleModel.ParseOption("1"), Is.EqualTo((int)SynonymDirection.OneWay));
             Assert.That(RuleModel.ParseOption("not a number"), Is.Zero);
         });

@@ -372,6 +372,15 @@ namespace XpSearch.Core.Contract
         public Result[] Results { get; set; }
 
         /// <summary>
+        /// Optional. Editor-authored data attached by matching Search-tuning rules (the
+        /// Return-custom-data consequence), shallow-merged in rule order. Absent when no matching
+        /// rule returns data.
+        /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonPropertyName("ruleData")]
+        public Dictionary<string, object>? RuleData { get; set; }
+
+        /// <summary>
         /// Server-side processing time in milliseconds, excluding network time.
         /// </summary>
         [JsonPropertyName("tookMs")]

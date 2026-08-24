@@ -1,6 +1,7 @@
 # ADR-0014: Relevance tuning — storage, seam, cache and precedence
 
-- **Status:** accepted
+- **Status:** accepted; the rule model is superseded by [ADR-0022](0022-if-then-rule-engine.md) (the
+  storage, seam, cache and precedence decisions below still stand)
 - **Date:** 2026-08-21
 - **Spec reference:** §8.1, §8.2, §8.3, §8.5, §10.8
 

@@ -280,6 +280,12 @@ export interface SearchResponse {
      */
     results: Result[];
     /**
+     * Optional. Editor-authored data attached by matching Search-tuning rules (the
+     * Return-custom-data consequence), shallow-merged in rule order. Absent when no matching
+     * rule returns data.
+     */
+    ruleData?: { [key: string]: unknown };
+    /**
      * Server-side processing time in milliseconds, excluding network time.
      */
     tookMs: number;

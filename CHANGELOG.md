@@ -8,6 +8,37 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Changed (relevance tuning) — BREAKING for custom `IRelevanceTuningSource` implementations:** a
+  relevance rule is now **if this, then that** — a list of conditions that must all hold and a list of
+  consequences applied in order ([ADR-0022](docs/adr/0022-if-then-rule-engine.md)). `TuningRule` is
+  reshaped to `(Id, Name, Enabled, Priority, ValidFrom, ValidTo, Conditions, Consequences)`, with
+  `RuleConditions(Query, Filters, ContactGroup, Language)` and one record per consequence (`Pin`,
+  `Hide`, `Boost`, `Bury`, `FilterResults`, `RemoveWord`, `ReplaceWord`, `ReplaceQuery`, `Redirect`,
+  `CustomData`); the `RuleCondition` and `RuleConsequence` **enums are gone** (the flat ones live on as
+  `FlatCondition`/`FlatConsequence` for the storage shim), and `SynonymExpansionStage` no longer takes a
+  `TimeProvider`. A source that reads flat columns can keep them: `TuningRuleCompat.FromFlat` maps a flat
+  row onto the new model, and is exactly what the Search tuning application uses, so **no stored rule
+  changes meaning**. New in the model: conditions can require a selected facet value (`attribute is
+  value`) or a language, can be combined, and can be matched against the **analyzed** query so plurals,
+  stems and synonyms count — with no typo tolerance in either mode. New consequences: **hide** a result
+  (out of every page and out of the total, unlike bury, which only drops it from the page that came
+  back), **remove/replace a word** and **search for something else**, and **return custom data**. A rule
+  with no conditions at all never fires. Query rewrites run in a new pipeline stage,
+  `SearchStageOrder.QueryRewrite` (175), before synonym expansion, so the rewritten wording is what the
+  search, the facet counts and the snippets follow — while the search activity and the query log keep
+  recording what the visitor typed. **The editing UI is unchanged in this release** (still one condition
+  and one consequence); the storage redesign, migration and form are the next unit. See
+  [Relevance tuning](docs/guides/relevance-tuning.md#what-a-rule-is-if-this-then-that).
+
+- **Added (contract):** `SearchResponse.ruleData`, an optional open object carrying the data
+  matching rules attached (the *Return custom data* consequence), shallow-merged in rule order so a
+  later rule wins a key, and **absent** when no rule returned any. Additive and optional — a minor
+  version, `X-XpSearch-Api-Version` stays at `1`. Algolia's `userData` maps onto it
+  (`contract/algolia-map.json`). The JavaScript client exposes it as `results.ruleData` wherever
+  results are handed to a widget; see
+  [JavaScript client](docs/guides/js-client.md#data-attached-by-a-rule) and the
+  [spec amendment](docs/spec/amendments/2026-08-24-rule-data.md).
+
 - **Fixed (analytics):** searches were invisible to the analytics as soon as the response cache
   answered them, and every `xpsearch_click` activity carried an **empty value** instead of the query
   the visitor had searched for. Activity logging, the query log row and the `queryId` → query mapping

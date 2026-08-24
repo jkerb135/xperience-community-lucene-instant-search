@@ -1,7 +1,7 @@
 namespace XpSearch.Core.Tuning;
 
 /// <summary>
-/// The little expression language a <see cref="RuleConsequence.Filter"/> rule is written in:
+/// The little expression language a <see cref="RuleConsequence.FilterResults"/> rule is written in:
 /// comma-separated <c>field:value</c> pairs, all of which must hold.
 /// </summary>
 /// <remarks>

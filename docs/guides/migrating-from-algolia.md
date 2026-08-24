@@ -101,6 +101,7 @@ Request and response fields, client options, and the analytics events.
 | `SearchResponse.redirect` | renderingContent.redirect.url, set by a Rule with the Redirect consequence | Always present and null when no rule matched, instead of a key that only appears sometimes. Neither service navigates for you; ours also returns the results, and the searchBox widget follows the URL only for a query the visitor submitted. |
 | `SearchResponse.redirect.url` | `renderingContent.redirect.url` | Same meaning. |
 | `SearchResponse.redirect.rule` | no equivalent (their redirect carries no rule identity) | Display name of the rule that matched, for logging and for the query tester. |
+| `SearchResponse.ruleData` | `userData` | Renamed, and one object instead of an array: the data of every matching rule is shallow-merged in rule order, later rules winning a key, so a client reads ruleData.banner rather than searching a list. Absent when no rule returned data. |
 | `SuggestRequest.query` | query against a query-suggestions index | Ours is one endpoint; whether it answers with documents or with popular queries is index configuration. |
 | `SuggestRequest.limit` | `hitsPerPage` | Renamed and capped server-side. |
 | `SuggestResponse.suggestions[].text` | the query attribute of a suggestion record | Same meaning. |

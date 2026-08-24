@@ -18,7 +18,10 @@ public static class SearchStageOrder
     /// <summary>Resolve the contact groups of the visitor, so rules can be scoped to one (ADR-0021).</summary>
     public const int ResolveContactGroups = 150;
 
-    /// <summary>Load the index's relevance tuning and expand the query with its synonyms.</summary>
+    /// <summary>Select the rules that fire and apply their query rewrites (ADR-0022).</summary>
+    public const int QueryRewrite = 175;
+
+    /// <summary>Load the index's synonyms, stopwords and field weights, and expand the query.</summary>
     public const int SynonymExpansion = 200;
 
     /// <summary>Drop the index's configured stopwords from the query.</summary>

@@ -46,9 +46,10 @@ public interface IQueryTesterSearch
 /// It does not call the registered <see cref="ISearchPipeline"/>, for two reasons. The registered one
 /// is the caching decorator, and a tester that answers from a cache cannot show the effect of a rule
 /// a marketer just saved. And the tuning a search uses is loaded into
-/// <see cref="SearchContext.Tuning"/> by <see cref="SynonymExpansionStage"/> from the DI-registered
-/// <see cref="IRelevanceTuningSource"/>, so "without rules" can only be expressed by swapping that
-/// one stage for one built over <see cref="EmptyRelevanceTuningSource"/>. Every other stage is the
+/// <see cref="SearchContext.Tuning"/> by <see cref="QueryRewriteStage"/> (the rules) and
+/// <see cref="SynonymExpansionStage"/> (everything else) from the DI-registered
+/// <see cref="IRelevanceTuningSource"/>, so "without rules" can only be expressed by swapping those
+/// two stages for ones built over <see cref="EmptyRelevanceTuningSource"/>. Every other stage is the
 /// instance the live pipeline runs.
 /// </para>
 /// <para>
@@ -101,7 +102,7 @@ public sealed class QueryTesterSearch : IQueryTesterSearch
         bool simulate = !string.IsNullOrWhiteSpace(contactGroup);
 
         var sideStages = new List<ISearchStage>(
-            stages.Where(stage => (applyTuning || stage is not SynonymExpansionStage)
+            stages.Where(stage => (applyTuning || stage is not (SynonymExpansionStage or QueryRewriteStage))
                 && !(simulate && stage is ResolveContactGroupsStage)))
         {
             capture
@@ -114,7 +115,10 @@ public sealed class QueryTesterSearch : IQueryTesterSearch
 
         if (!applyTuning)
         {
-            sideStages.Add(new SynonymExpansionStage(new EmptyRelevanceTuningSource(), time));
+            var none = new EmptyRelevanceTuningSource();
+
+            sideStages.Add(new QueryRewriteStage(none, time));
+            sideStages.Add(new SynonymExpansionStage(none));
         }
 
         var response = await new SearchPipeline(accessor, schemaProvider, sideStages)

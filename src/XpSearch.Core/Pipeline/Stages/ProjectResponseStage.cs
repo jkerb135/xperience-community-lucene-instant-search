@@ -6,18 +6,30 @@ using Kentico.Xperience.Lucene.Core;
 using Lucene.Net.Documents;
 using Lucene.Net.Index;
 
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+
 using XpSearch.Core.Abstractions;
 using XpSearch.Core.Contract;
 using XpSearch.Core.Indexing;
+using XpSearch.Core.Tuning;
 
 namespace XpSearch.Core.Pipeline.Stages;
 
 /// <summary>
 /// Projects the materialized page onto the response DTO: results with their retrieved fields,
-/// facet values, paging figures and, when asked for, the ranking explanation.
+/// facet values, paging figures, the data attached by matching rules and, when asked for, the
+/// ranking explanation.
 /// </summary>
 public sealed class ProjectResponseStage : ISearchStage
 {
+    private readonly ILogger<ProjectResponseStage> logger;
+
+    /// <summary>Initializes a new instance of the <see cref="ProjectResponseStage"/> class.</summary>
+    /// <param name="logger">Reports a rule whose custom data is not a JSON object.</param>
+    public ProjectResponseStage(ILogger<ProjectResponseStage>? logger = null) =>
+        this.logger = logger ?? NullLogger<ProjectResponseStage>.Instance;
+
     /// <inheritdoc />
     public int Order => SearchStageOrder.Project;
 
@@ -62,12 +74,59 @@ public sealed class ProjectResponseStage : ISearchStage
                 ? 0
                 : (long)Math.Ceiling(context.Total / (double)context.PageSize),
             Redirect = context.Redirect,
+            RuleData = RuleData(context),
             QueryId = string.IsNullOrWhiteSpace(context.Request.QueryId)
                 ? Guid.NewGuid().ToString()
                 : context.Request.QueryId
         };
 
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// The <c>ruleData</c> of the response: the JSON objects of every fired rule's custom-data
+    /// consequence, shallow-merged in application order so a later rule wins a key outright
+    /// (ADR-0022). <see langword="null"/> - the member is then absent - when no rule returned data.
+    /// </summary>
+    /// <remarks>
+    /// The storage validates the JSON on save, so a rule that carries something else has been edited
+    /// around the form or predates the validation. It is skipped rather than failing the search: a
+    /// marketer's typo must not take search down.
+    /// </remarks>
+    private Dictionary<string, object>? RuleData(SearchContext context)
+    {
+        Dictionary<string, object>? merged = null;
+
+        foreach (var (rule, data) in context.Tuning.Rules
+            .SelectMany(rule => rule.Consequences.OfType<RuleConsequence.CustomData>().Select(data => (rule, data))))
+        {
+            JsonElement parsed;
+
+            try
+            {
+                parsed = JsonDocument.Parse(data.Json ?? string.Empty).RootElement.Clone();
+            }
+            catch (JsonException exception)
+            {
+                logger.LogDebug(exception, "Rule {Rule} carries custom data that is not valid JSON; skipped.", rule.Name);
+                continue;
+            }
+
+            if (parsed.ValueKind != JsonValueKind.Object)
+            {
+                logger.LogDebug("Rule {Rule} carries custom data that is not a JSON object; skipped.", rule.Name);
+                continue;
+            }
+
+            merged ??= new Dictionary<string, object>(StringComparer.Ordinal);
+
+            foreach (var property in parsed.EnumerateObject())
+            {
+                merged[property.Name] = property.Value;
+            }
+        }
+
+        return merged;
     }
 
     /// <summary>

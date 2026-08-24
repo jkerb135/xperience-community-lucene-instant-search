@@ -129,23 +129,62 @@ tracking, do whatever puts you in the group, then search. If nothing changes, th
 - There is no per-person tuning. The unit is the group, deliberately: a group has a name and a member
   count you can point at, and everyone in it shares the same cached results.
 
-### The five things a rule can do
+### What a rule is: if this, then that
+
+A rule is a list of **conditions** and a list of **consequences**. Every condition has to hold for
+the rule to fire; when it does, its consequences are applied in the order they are listed. A rule
+with no conditions at all never fires — an "if" that is always true would change every search on the
+site, so it is treated as unfinished rather than as a wildcard.
+
+> **The editing screens are one release behind this page.** The Rules form still asks for a single
+> condition and a single thing to do, and it is read as one condition and one consequence of the
+> model below (*Is anything at all* becomes "any query"). The multi-condition, multi-consequence form
+> arrives with the next unit; nothing you have configured changes meaning in the meantime.
+
+#### The conditions
+
+| If… | Holds when | Notes |
+|---|---|---|
+| **The visitor's search is / contains / starts with** *words* | The query compares that way against your words | Upper and lower case never matter |
+| **Attribute is value** | The visitor has that facet value selected — `category is coffee` | Several pairs all have to be selected |
+| **The visitor is in contact group** *group* | The visitor is a known member of that group | Empty means everyone; see [Personalise rules by contact group](#personalise-rules-by-contact-group) |
+| **The language is** *language* | The search asked for that language | Empty means any language |
+
+The query condition can be compared two ways.
+
+- **Against what the visitor typed** (the default): a plain text comparison. *contains "shoe"* matches
+  *running shoes* — and also *shoehorn*, because it is looking at the letters.
+- **Against the analyzed search** (*match the analyzed query*): your words and the visitor's are both
+  put through the index's own language analysis first, then compared word by word. Plurals and word
+  endings line up (*shoe* matches *shoes*), your synonyms count (*sofa* matches a search for *couch*),
+  and *shoehorn* no longer matches *shoe*, because it is a different word.
+
+**Neither one tolerates typos.** *esspresso* matches no rule about *espresso*. If a misspelling
+matters, add it as a synonym or write a second rule for it.
+
+### The ten things a rule can do
 
 | Then… | What happens | What you fill in |
 |---|---|---|
 | **Pin a result to a position** | The result is moved to the position you name. If the search did not find it at all, it is added there — as long as it still matches the filters the visitor has selected. | **Result id**, **Pin to position** |
 | **Boost a result** | The result is pushed up, but the search still decides the final order. A very relevant result can still beat it. | **Result id** (or **Filter**), **Boost multiplier** |
-| **Bury a result** | The result is removed from this search entirely. | **Result id** |
+| **Bury a result** | The result is dropped from the page that comes back. | **Result id** |
+| **Hide a result** | The result is taken out of the search entirely — it is on no page, and the result count does not include it. | **Result id** |
 | **Filter the results** | Only results matching the filter are shown. | **Filter** |
+| **Remove a word** | The word is dropped from the search before it runs: *cheap espresso machine* searched as *espresso machine*. | **Word** |
+| **Replace a word** | One word is swapped for another before the search runs. | **Word**, **Replacement** |
+| **Search for something else** | The whole query is replaced before the search runs. | **Query** |
 | **Redirect the visitor** | The search returns a destination next to its results, and the search box sends the visitor there. | **Redirect URL** |
+| **Return custom data** | A snippet of JSON travels back with the results, for the page to do something with — a banner, a layout switch, a promo block. | **JSON** |
 
 **Pin or boost?** Pin when the answer is "this exact thing, first, no argument" — a campaign landing
 page, a flagship product. Boost when you mean "lean this way" — for example, make everything in the
 *Offers* category count a bit more during a sale. Boost keeps the search's own judgement; pin
 overrules it. If you are unsure, use boost first: it degrades gracefully when your content changes.
 
-**Bury** is for the page you cannot delete but do not want found: an old campaign, a superseded
-product, a legal page that keeps outranking the thing people actually wanted.
+**Bury or hide?** Bury is a demotion: the result leaves the page that came back, but the search still
+counted it. Hide is a removal: the search never sees it, the total goes down by one, and nothing —
+not even a pin in another rule — can bring it back for that query.
 
 **Filter** is written as `Field:value` pairs, separated by commas — for example
 `Category:coffee, Tags:brewing`. Both must match. The field names are the attribute names that appear
@@ -153,16 +192,27 @@ in your search results — the same ones the facet **Attribute** drop-down lists
 document has (`title`, `url`, `contentType`, `language`); ask your developer for the list once and keep
 it somewhere.
 
+**The three rewrites** — remove a word, replace a word, search for something else — change the query
+*before* it runs, so synonyms, the results, the facet counts and the highlighted snippets all follow
+the rewritten wording. Two things do not: the rule's own conditions, which were judged on what the
+visitor actually typed, and the search reports, which record what the visitor typed as well. That is
+deliberate — *what people search for* is a question about people, not about your rules.
+
+**Return custom data** is the escape hatch for everything the list above cannot express. The JSON
+object comes back as `ruleData` on the response, and a developer can read it in a widget
+([JavaScript client](js-client.md#data-attached-by-a-rule)). When several matching rules return data
+it is merged into one object in rule order, so a later rule wins a key it shares with an earlier one.
+
 ### When a rule runs
 
 - **Enabled** — clear it to switch a rule off without deleting it.
 - **Runs from** / **Runs until** — leave both empty and the rule runs forever. Fill them in for a
   campaign and the rule switches itself on and off. Times are UTC.
 - **When the visitor's search**:
-  - *Contains the words below* — the words appear anywhere in what the visitor typed.
-  - *Is exactly the words below* — the visitor typed exactly that and nothing else.
-  - *Starts with the words below* — what they typed begins with your words.
-  - *Is anything at all* — the rule applies to every search. Use this with **Filter** or **Boost**,
+  — *Contains the words below* — the words appear anywhere in what the visitor typed.
+  — *Is exactly the words below* — the visitor typed exactly that and nothing else.
+  — *Starts with the words below* — what they typed begins with your words.
+  — *Is anything at all* — the rule applies to every search. Use this with **Filter** or **Boost**,
     not with pin.
 
 Upper and lower case never matter.
@@ -177,8 +227,10 @@ This is the part worth reading twice.
 3. For pin and bury, the **first rule to name a result wins**. If rule A pins product X to position 1
    and rule B buries product X, and A has the lower priority number, X is pinned and B is ignored for
    that result.
-4. Boost and filter rules all apply, in that same order. Two boosts on the same result both count.
-5. For redirect, the **first matching rule wins**, and a redirect rule with an empty **Redirect URL**
+4. Boost, filter, hide and the three rewrites all apply, in that same order. Two boosts on the same
+   result both count, and two rewrites chain: remove a word, then replace another.
+5. Custom data is merged in that order too, so the last rule to set a key owns it.
+6. For redirect, the **first matching rule wins**, and a redirect rule with an empty **Redirect URL**
    is skipped, so a later one can still fire.
 
 If a rule seems not to be working, the usual cause is another rule with a lower priority number that

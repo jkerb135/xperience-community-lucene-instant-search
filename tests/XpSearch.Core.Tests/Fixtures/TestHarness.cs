@@ -45,7 +45,8 @@ internal sealed class TestHarness : IDisposable
             new StaticSchemaProvider(TestCorpus.Schema),
             [
                 new NormalizeRequestStage(wrapped),
-                new SynonymExpansionStage(tuning ?? new EmptyRelevanceTuningSource(), time ?? TimeProvider.System),
+                new QueryRewriteStage(tuning ?? new EmptyRelevanceTuningSource(), time ?? TimeProvider.System),
+                new SynonymExpansionStage(tuning ?? new EmptyRelevanceTuningSource()),
                 new StopwordRemovalStage(),
                 new BuildQueryStage(),
                 new FacetFilterStage(),
