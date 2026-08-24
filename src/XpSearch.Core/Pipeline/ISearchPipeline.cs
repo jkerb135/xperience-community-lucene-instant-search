@@ -51,7 +51,11 @@ public static class SearchStageOrder
     /// <summary>Project the result onto the response DTO.</summary>
     public const int Project = 1100;
 
-    /// <summary>Reserved for search activity logging (Phase 6). Not implemented.</summary>
+    /// <summary>
+    /// Retired. Search activity logging was a stage here until it moved to
+    /// <c>ISearchRequestJournal</c>, called by the caching decorator so a cached search is journaled
+    /// too. The slot stays free for a consumer's own terminal stage.
+    /// </summary>
     public const int LogActivity = 1200;
 }
 

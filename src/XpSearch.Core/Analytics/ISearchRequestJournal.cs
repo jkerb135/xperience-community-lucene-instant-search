@@ -2,39 +2,59 @@ using CMS.Websites.Routing;
 
 using Microsoft.Extensions.Logging;
 
-using XpSearch.Core.Pipeline;
-
 namespace XpSearch.Core.Analytics;
 
 /// <summary>
-/// The last stage of the pipeline (spec §4.4, slot 1200): writes the search activity for the current
-/// contact and queues the anonymous query log row.
+/// Records one answered search for analytics (spec §9.1, §9.2): the search activity, the
+/// <c>queryId</c> to query text mapping a later click is attributed through, and the anonymous query
+/// log row.
 /// </summary>
 /// <remarks>
-/// The two are deliberately independent. The activity is consent-gated and skipped for a visitor who
-/// has not consented; the query log row holds no personal data and is written either way (spec §9.1,
-/// §9.2). Nothing here can fail a search: every failure is swallowed and logged at Debug.
+/// It is called by the caching decorator rather than by a pipeline stage, because a search answered
+/// from the cache never enters the pipeline and would otherwise be invisible to analytics, and because
+/// only the decorator knows the <c>queryId</c> the caller actually receives.
 /// </remarks>
-public sealed class LogActivityStage : ISearchStage
+public interface ISearchRequestJournal
+{
+    /// <summary>Records one answered search. Never throws.</summary>
+    /// <param name="queryId">The correlation id returned to the caller.</param>
+    /// <param name="queryText">The normalized query text.</param>
+    /// <param name="indexName">Code name of the index that was searched.</param>
+    /// <param name="total">How many documents matched.</param>
+    /// <param name="elapsed">How long answering the request took.</param>
+    /// <param name="language">Language of the request, or empty.</param>
+    void Record(string queryId, string queryText, string indexName, int total, TimeSpan elapsed, string language);
+}
+
+/// <summary>
+/// The default <see cref="ISearchRequestJournal"/>.
+/// </summary>
+/// <remarks>
+/// The activity and the query log row are deliberately independent. The activity is consent-gated and
+/// skipped for a visitor who has not consented; the query log row holds no personal data and is
+/// written either way (spec §9.1, §9.2). Nothing here can fail a search: every failure is swallowed
+/// and logged at Debug.
+/// </remarks>
+public sealed class SearchRequestJournal : ISearchRequestJournal
 {
     private readonly ISearchActivityLogger activityLogger;
     private readonly IQueryContextMap queryContexts;
     private readonly IQueryLogQueue queue;
     private readonly IWebsiteChannelContext channelContext;
-    private readonly ILogger<LogActivityStage> logger;
+    private readonly ILogger<SearchRequestJournal> logger;
 
-    /// <summary>Initializes a new instance of the <see cref="LogActivityStage"/> class.</summary>
+    /// <summary>Initializes a new instance of the <see cref="SearchRequestJournal"/> class.</summary>
     /// <param name="activityLogger">Writes the Xperience activity.</param>
     /// <param name="queryContexts">Remembers what each <c>queryId</c> searched for.</param>
     /// <param name="queue">Queues the query log row.</param>
     /// <param name="channelContext">Supplies the website channel the search came from.</param>
     /// <param name="logger">Logger.</param>
-    public LogActivityStage(
+    public SearchRequestJournal(
         ISearchActivityLogger activityLogger,
         IQueryContextMap queryContexts,
         IQueryLogQueue queue,
         IWebsiteChannelContext channelContext,
-        ILogger<LogActivityStage> logger)
+        ILogger<SearchRequestJournal> logger)
     {
         ArgumentNullException.ThrowIfNull(activityLogger);
         ArgumentNullException.ThrowIfNull(queryContexts);
@@ -50,41 +70,31 @@ public sealed class LogActivityStage : ISearchStage
     }
 
     /// <inheritdoc />
-    public int Order => SearchStageOrder.LogActivity;
-
-    /// <inheritdoc />
-    public Task ExecuteAsync(SearchContext context, CancellationToken cancellationToken)
+    public void Record(string queryId, string queryText, string indexName, int total, TimeSpan elapsed, string language)
     {
-        ArgumentNullException.ThrowIfNull(context);
-
         try
         {
-            string queryId = context.Response?.QueryId ?? string.Empty;
-            string queryText = context.QueryText;
-
-            activityLogger.LogSearch(queryText, context.Total);
+            activityLogger.LogSearch(queryText, total);
 
             if (!string.IsNullOrEmpty(queryId))
             {
-                queryContexts.Set(queryId, new QueryContext(queryText, context.Request.Index));
+                queryContexts.Set(queryId, new QueryContext(queryText, indexName));
             }
 
             queue.Enqueue(QueryLogWorkItem.Append(new QueryLogEntry(
-                queryId,
-                context.Request.Index,
+                queryId ?? string.Empty,
+                indexName,
                 queryText,
-                context.Total,
+                total,
                 DateTime.UtcNow,
                 ChannelName(),
-                context.Request.Language ?? string.Empty,
-                (int)context.Elapsed.TotalMilliseconds)));
+                language ?? string.Empty,
+                (int)elapsed.TotalMilliseconds)));
         }
         catch (Exception exception)
         {
             logger.LogDebug(exception, "The search could not be logged.");
         }
-
-        return Task.CompletedTask;
     }
 
     /// <summary>

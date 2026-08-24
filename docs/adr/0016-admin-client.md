@@ -43,8 +43,8 @@ the two columns differ in exactly one input. Two further consequences, both deli
 
 - The registered `ISearchPipeline` (the caching decorator) is bypassed. A tester that answers from a
   cache cannot show the effect of a rule a marketer saved ten seconds ago.
-- `LogActivityStage` is dropped from both sides, so testing a query does not enter the aggregate
-  query log and skew the dashboard next to it.
+- Bypassing the decorator also keeps a tester run out of the aggregate query log and the search
+  activities: those are written by `ISearchRequestJournal` from the decorator, not by a stage.
 
 Core needed no new seam for any of this: `SearchPipeline`, `ISearchStage`, `ILuceneIndexAccessor`,
 `IIndexSchemaProvider` and `EmptyRelevanceTuningSource` are all public.

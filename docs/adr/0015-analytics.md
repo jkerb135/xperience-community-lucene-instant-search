@@ -23,7 +23,8 @@ Three platform constraints shaped the design.
 
 **Two independent paths.** `SearchActivityLogger` writes activities and is consent-gated;
 `XpSearchQueryLogQueueWorker` writes anonymous rows and is not. Both are driven from the same two
-places — `LogActivityStage` (pipeline slot 1200) and `ActivitySearchEventSink` (the `/events` sink) —
+places — `ISearchRequestJournal` (see the AN-4 addendum) and `ActivitySearchEventSink` (the `/events`
+sink) —
 and neither can fail a search: every exception in either is caught and logged at `Debug`.
 
 **The consent check is a cookie-level comparison.** `GetCurrentCookieLevel() >=
@@ -149,3 +150,13 @@ category is missing.
 
 **Where it lives:** `XpSearch.Core`, next to `XpSearchActivityTypeInstaller` — not `XpSearch.Admin`.
 The live site process recalculates contact groups too, so the macro methods must be loaded there.
+
+## Addendum, 2026-08-24 (AN-4): the journal is a decorator concern, not a stage
+
+`LogActivityStage` (slot 1200) is gone; its body is `ISearchRequestJournal`, called by
+`CachedSearchPipeline` once per request. A stage cannot do this job: a search answered from the
+response cache never runs the pipeline, so it was missing from the query log and the dashboard
+entirely, and — worse — the decorator re-issues `queryId` on every request, so the id a stage wrote
+into `IQueryContextMap` was never the id the caller got back. Every click activity therefore carried
+an empty value. The journal records the *normalized* query (the same text the cache key is computed
+from) and the decorator's own elapsed time, which on a hit is honestly near zero.

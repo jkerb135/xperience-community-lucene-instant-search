@@ -425,7 +425,9 @@ and how to lift it.
 ## `QueryContextMap` in `XpSearch.Core/Analytics/QueryContextMap.cs`
 
 - **Simplified:** the `queryId` → query text map that gives click and conversion activities their
-  query is in process memory: 10 000 entries, 30 minutes, oldest dropped when full.
+  query is in process memory: 10 000 entries, 30 minutes, oldest dropped when full. It gets one entry
+  per request from `ISearchRequestJournal` (cache hits included, each under its own re-issued
+  `queryId`), so a popular query held in the response cache still consumes an entry per caller.
 - **Ceiling:** behind a load balancer, or after an application restart, a click whose search was
   answered elsewhere logs its activity with an empty query part. The clicked position still reaches
   the query log, because that lookup is by `LogQueryID` in the database, so click-through reports are

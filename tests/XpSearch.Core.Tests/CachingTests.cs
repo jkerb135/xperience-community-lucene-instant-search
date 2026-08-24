@@ -12,6 +12,7 @@ using NSubstitute;
 using NUnit.Framework;
 
 using XpSearch.Core.Abstractions;
+using XpSearch.Core.Analytics;
 using XpSearch.Core.Caching;
 using XpSearch.Core.Contract;
 using XpSearch.Core.Options;
@@ -239,7 +240,12 @@ internal sealed class CachingTests
         var cache = new MemorySearchCache();
 
         return (
-            new CachedSearchPipeline(inner, cache, Microsoft.Extensions.Options.Options.Create(effective), new StubContactGroupResolver()),
+            new CachedSearchPipeline(
+                inner,
+                cache,
+                Microsoft.Extensions.Options.Options.Create(effective),
+                new StubContactGroupResolver(),
+                Substitute.For<ISearchRequestJournal>()),
             inner,
             cache);
     }
@@ -249,7 +255,8 @@ internal sealed class CachingTests
             new FixedPipeline(response),
             new MemorySearchCache(),
             Microsoft.Extensions.Options.Options.Create(new XpSearchOptions()),
-            new StubContactGroupResolver());
+            new StubContactGroupResolver(),
+            Substitute.For<ISearchRequestJournal>());
 
     private sealed class FixedPipeline(SearchResponse response) : ISearchPipeline
     {
@@ -273,39 +280,4 @@ internal sealed class CachingTests
         }
     }
 
-    private sealed class MemorySearchCache : ISearchCache
-    {
-        private readonly Dictionary<string, Dictionary<string, SearchResponse>> entries = new(StringComparer.OrdinalIgnoreCase);
-
-        internal int Evictions { get; private set; }
-
-        public async Task<SearchResponse> GetOrAddAsync(
-            string indexName,
-            string key,
-            Func<CancellationToken, Task<SearchResponse>> factory,
-            CancellationToken cancellationToken)
-        {
-            if (!entries.TryGetValue(indexName, out var forIndex))
-            {
-                forIndex = new Dictionary<string, SearchResponse>(StringComparer.Ordinal);
-                entries[indexName] = forIndex;
-            }
-
-            if (forIndex.TryGetValue(key, out var cached))
-            {
-                return cached;
-            }
-
-            var response = await factory(cancellationToken);
-            forIndex[key] = response;
-
-            return response;
-        }
-
-        public void Evict(string indexName)
-        {
-            Evictions++;
-            entries.Remove(indexName);
-        }
-    }
 }

@@ -9,7 +9,9 @@ using NSubstitute;
 using NUnit.Framework;
 
 using XpSearch.Core.Analytics;
+using XpSearch.Core.Caching;
 using XpSearch.Core.Contract;
+using XpSearch.Core.Options;
 using XpSearch.Core.Pipeline;
 using XpSearch.Core.Tests.Fixtures;
 
@@ -129,45 +131,140 @@ internal sealed class ActivityLoggingTests
     }
 
     [Test]
-    public async Task Pipeline_LogsTheActivityAndQueuesTheQueryLogRow()
+    public async Task CacheMiss_LogsTheActivityAndQueuesTheQueryLogRowUnderTheReturnedQueryId()
     {
-        var activityLogger = Substitute.For<ISearchActivityLogger>();
+        var journaled = BuildJournaled();
+
+        var response = await journaled.Pipeline.ExecuteAsync(TestHarness.Request("Lucene "), CancellationToken.None);
+
+        journaled.Activities.Received(1).LogSearch("lucene", StubPipeline.Total);
+
+        var entry = journaled.Queue.Items.Single().Entry!;
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(entry.QueryText, Is.EqualTo("lucene"), "the journal records the normalized query");
+            Assert.That(entry.QueryId, Is.EqualTo(response.QueryId));
+            Assert.That(entry.IndexName, Is.EqualTo(TestCorpus.IndexName));
+            Assert.That(entry.ResultCount, Is.EqualTo(StubPipeline.Total));
+            Assert.That(entry.ChannelName, Is.EqualTo("Store"));
+            Assert.That(
+                journaled.Contexts.Get(response.QueryId!)?.Query,
+                Is.EqualTo("lucene"),
+                "a click on this response has to resolve the query text");
+        });
+    }
+
+    /// <summary>
+    /// The defect this seam exists for: a search answered from the cache never enters the pipeline, so
+    /// while the logging lived in a stage it was invisible to the analytics and its clicks could not be
+    /// attributed.
+    /// </summary>
+    [Test]
+    public async Task CacheHit_IsJournaledToo_UnderItsOwnQueryId()
+    {
+        var journaled = BuildJournaled();
+
+        var miss = await journaled.Pipeline.ExecuteAsync(TestHarness.Request("lucene"), CancellationToken.None);
+        var hit = await journaled.Pipeline.ExecuteAsync(TestHarness.Request("lucene"), CancellationToken.None);
+
+        journaled.Activities.Received(2).LogSearch("lucene", StubPipeline.Total);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(journaled.Inner.Calls, Is.EqualTo(1), "the second search must have been a cache hit");
+            Assert.That(hit.QueryId, Is.Not.EqualTo(miss.QueryId));
+            Assert.That(
+                journaled.Queue.Items.Select(item => item.Entry!.QueryId),
+                Is.EqualTo(new[] { miss.QueryId, hit.QueryId }),
+                "exactly one query log row per request, hit or miss, under the id the caller was given");
+            Assert.That(journaled.Contexts.Get(hit.QueryId!)?.Query, Is.EqualTo("lucene"));
+        });
+    }
+
+    [Test]
+    public async Task ClickAfterACacheHit_ResolvesTheQueryTextOfTheActivity()
+    {
+        var journaled = BuildJournaled();
+
+        await journaled.Pipeline.ExecuteAsync(TestHarness.Request("lucene"), CancellationToken.None);
+        var hit = await journaled.Pipeline.ExecuteAsync(TestHarness.Request("lucene"), CancellationToken.None);
+
+        var clicks = Substitute.For<ISearchActivityLogger>();
+        var sink = new ActivitySearchEventSink(
+            clicks,
+            journaled.Contexts,
+            journaled.Queue,
+            NullLogger<ActivitySearchEventSink>.Instance);
+
+        await sink.HandleAsync(
+            new EventRequest { Type = EventType.Click, QueryId = hit.QueryId!, ResultId = "doc-1", Position = 2 },
+            CancellationToken.None);
+
+        clicks.Received(1).LogClick("lucene", "doc-1", 2);
+    }
+
+    [Test]
+    public async Task WithCachingDisabled_EachSearchIsJournaledExactlyOnce()
+    {
+        var journaled = BuildJournaled(new XpSearchOptions { CacheTtl = TimeSpan.Zero });
+
+        var one = await journaled.Pipeline.ExecuteAsync(TestHarness.Request("lucene"), CancellationToken.None);
+        var two = await journaled.Pipeline.ExecuteAsync(TestHarness.Request("lucene"), CancellationToken.None);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(journaled.Inner.Calls, Is.EqualTo(2));
+            Assert.That(
+                journaled.Queue.Items.Select(item => item.Entry!.QueryId),
+                Is.EqualTo(new[] { one.QueryId, two.QueryId }));
+        });
+    }
+
+    private static JournaledPipeline BuildJournaled(XpSearchOptions? options = null)
+    {
+        var activities = Substitute.For<ISearchActivityLogger>();
         var contexts = new QueryContextMap();
         var queue = new RecordingQueryLogQueue();
         var channel = Substitute.For<IWebsiteChannelContext>();
         channel.WebsiteChannelName.Returns("Store");
+        var inner = new StubPipeline();
 
-        using var harness = new TestHarness(
-            extraStages:
-            [
-                new DelayStage(),
-                new LogActivityStage(activityLogger, contexts, queue, channel, NullLogger<LogActivityStage>.Instance)
-            ]);
+        var pipeline = new CachedSearchPipeline(
+            inner,
+            new MemorySearchCache(),
+            Microsoft.Extensions.Options.Options.Create(options ?? new XpSearchOptions()),
+            new StubContactGroupResolver(),
+            new SearchRequestJournal(activities, contexts, queue, channel, NullLogger<SearchRequestJournal>.Instance));
 
-        var response = await harness.Search(TestHarness.Request("lucene"));
-
-        activityLogger.Received(1).LogSearch("lucene", (int)response.Total);
-
-        var entry = queue.Items.Single().Entry!;
-
-        Assert.That(entry.QueryText, Is.EqualTo("lucene"));
-        Assert.That(entry.QueryId, Is.EqualTo(response.QueryId));
-        Assert.That(entry.IndexName, Is.EqualTo(TestCorpus.IndexName));
-        Assert.That(entry.ResultCount, Is.EqualTo((int)response.Total));
-        Assert.That(entry.ChannelName, Is.EqualTo("Store"));
-        Assert.That(contexts.Get(response.QueryId!)!.Query, Is.EqualTo("lucene"));
-        Assert.That(entry.ProcessingTimeMs, Is.GreaterThanOrEqualTo(DelayStage.Delay.TotalMilliseconds));
+        return new JournaledPipeline(pipeline, inner, queue, contexts, activities);
     }
 
-    /// <summary>Burns a known amount of time so the logged processing time has something to measure.</summary>
-    private sealed class DelayStage : ISearchStage
+    private sealed record JournaledPipeline(
+        ISearchPipeline Pipeline,
+        StubPipeline Inner,
+        RecordingQueryLogQueue Queue,
+        QueryContextMap Contexts,
+        ISearchActivityLogger Activities);
+
+    /// <summary>Stands in for the real pipeline, and counts how often the cache let it run.</summary>
+    private sealed class StubPipeline : ISearchPipeline
     {
-        internal static TimeSpan Delay => TimeSpan.FromMilliseconds(20);
+        internal const int Total = 3;
 
-        public int Order => SearchStageOrder.LogActivity - 1;
+        internal int Calls { get; private set; }
 
-        public Task ExecuteAsync(SearchContext context, CancellationToken cancellationToken) =>
-            Task.Delay(Delay, cancellationToken);
+        public Task<SearchResponse> ExecuteAsync(SearchRequest request, CancellationToken cancellationToken)
+        {
+            Calls++;
+
+            return Task.FromResult(new SearchResponse
+            {
+                Results = [],
+                Total = Total,
+                QueryId = request.QueryId ?? Guid.NewGuid().ToString()
+            });
+        }
     }
 
     [Test]

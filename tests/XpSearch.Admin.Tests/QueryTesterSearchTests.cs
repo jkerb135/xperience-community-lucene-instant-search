@@ -76,27 +76,21 @@ internal sealed class QueryTesterSearchTests
             "the tuning stage's own explanation and everything a later stage added");
     }
 
+    /// <summary>
+    /// A tester run must not skew the analytics dashboard (spec §9.2). It cannot: the search activity
+    /// and the query log row are written by <see cref="ISearchRequestJournal"/> from the caching
+    /// decorator, and the tester assembles its own <see cref="SearchPipeline"/> instead of resolving
+    /// the registered <see cref="ISearchPipeline"/>. This pins that construction down; the companion
+    /// guard that no stage journals either lives in Core's stage ordering tests.
+    /// </summary>
     [Test]
-    public async Task ExecuteAsync_DoesNotLogTheTestSearchIntoTheQueryLog()
+    public void QueryTesterSearch_TakesNoPipelineAndNoAnalyticsDependency()
     {
-        var queue = Substitute.For<IQueryLogQueue>();
-        var logging = new LogActivityStage(
-            Substitute.For<ISearchActivityLogger>(),
-            Substitute.For<IQueryContextMap>(),
-            queue,
-            Substitute.For<IWebsiteChannelContext>(),
-            Substitute.For<ILogger<LogActivityStage>>());
+        var parameters = typeof(QueryTesterSearch).GetConstructors().SelectMany(c => c.GetParameters());
 
-        await Build(new RecordingStage(), logging).ExecuteAsync(Request(), applyTuning: true, string.Empty, CancellationToken.None);
-
-        Assert.That(queue.ReceivedCalls(), Is.Empty, "a tester run must not skew the analytics dashboard");
-
-        // Control: the same stage does log when it is actually run.
-        await logging.ExecuteAsync(
-            new SearchContext(Request(), Schema(), new StandardAnalyzer(LuceneVersion.LUCENE_48), null, CancellationToken.None),
-            CancellationToken.None);
-
-        Assert.That(queue.ReceivedCalls().Count(), Is.EqualTo(1));
+        Assert.That(
+            parameters.Select(parameter => parameter.ParameterType),
+            Has.None.AnyOf(typeof(ISearchPipeline), typeof(ISearchRequestJournal), typeof(IQueryLogQueue)));
     }
 
     private static IndexSchema Schema() =>

@@ -88,6 +88,7 @@ public static class XpSearchServiceCollectionExtensions
         services.TryAddSingleton<IQueryContextMap, QueryContextMap>();
         services.TryAddSingleton<IQueryLogStore, InfoQueryLogStore>();
         services.TryAddSingleton<IQueryLogQueue, ThreadQueueQueryLogQueue>();
+        services.TryAddSingleton<ISearchRequestJournal, SearchRequestJournal>();
         services.TryAddSingleton<IQuerySuggestionSource, QuerySuggestionService>();
         services.TryAddSingleton<ISearchAnalyticsService, SearchAnalyticsService>();
         services.TryAddSingleton<XpSearchAnalyticsModuleInstaller>();
@@ -107,14 +108,14 @@ public static class XpSearchServiceCollectionExtensions
         services.AddXpSearchStage<CollectFacetsStage>();
         services.AddXpSearchStage<HighlightStage>();
         services.AddXpSearchStage<ProjectResponseStage>();
-        services.AddXpSearchStage<LogActivityStage>();
 
         services.TryAddSingleton<SearchPipeline>();
         services.TryAddSingleton<ISearchPipeline>(provider => new CachedSearchPipeline(
             provider.GetRequiredService<SearchPipeline>(),
             provider.GetRequiredService<ISearchCache>(),
             provider.GetRequiredService<Options.IOptions<XpSearchOptions>>(),
-            provider.GetRequiredService<IContactGroupResolver>()));
+            provider.GetRequiredService<IContactGroupResolver>(),
+            provider.GetRequiredService<ISearchRequestJournal>()));
 
         services.DecorateLuceneClient<CacheEvictingLuceneClient>(
             (provider, inner) => new CacheEvictingLuceneClient(

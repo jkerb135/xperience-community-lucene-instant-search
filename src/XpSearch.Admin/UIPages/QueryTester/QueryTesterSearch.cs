@@ -52,8 +52,9 @@ public interface IQueryTesterSearch
 /// instance the live pipeline runs.
 /// </para>
 /// <para>
-/// <see cref="LogActivityStage"/> is dropped from both sides so testing a query does not enter the
-/// aggregate query log and skew the analytics dashboard (spec §9.2). When a contact group is being
+/// Building the pipeline by hand also keeps testing a query out of the analytics: the search activity
+/// and the aggregate query log row are written by <see cref="ISearchRequestJournal"/> from the caching
+/// decorator (spec §9.2), which the tester does not go through. When a contact group is being
 /// simulated, <see cref="ResolveContactGroupsStage"/> is swapped for one that seeds that one group;
 /// both sides get the same treatment, so the comparison stays honest.
 /// </para>
@@ -100,8 +101,7 @@ public sealed class QueryTesterSearch : IQueryTesterSearch
         bool simulate = !string.IsNullOrWhiteSpace(contactGroup);
 
         var sideStages = new List<ISearchStage>(
-            stages.Where(stage => stage is not LogActivityStage
-                && (applyTuning || stage is not SynonymExpansionStage)
+            stages.Where(stage => (applyTuning || stage is not SynonymExpansionStage)
                 && !(simulate && stage is ResolveContactGroupsStage)))
         {
             capture

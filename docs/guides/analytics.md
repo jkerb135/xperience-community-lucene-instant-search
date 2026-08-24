@@ -49,8 +49,9 @@ appear in **Contact management → Activity types** without anybody adding them 
 already exists only the *Description* is refreshed on start — the enabled flag and the name are left
 alone, so if a marketer disables or renames one, it stays that way.
 
-The query and no-results activities are written by `LogActivityStage`, the last stage of the query
-pipeline (slot `SearchStageOrder.LogActivity`, 1200). Click and conversion are written by
+The query and no-results activities are written by `ISearchRequestJournal`, called once per request by
+the caching decorator — outside the pipeline, so a search answered from the response cache is recorded
+too and its clicks can still be attributed. Click and conversion are written by
 `ActivitySearchEventSink`, the `ISearchEventSink` behind `/api/xpsearch/events`. Both run **inside the
 HTTP request**, because Xperience logs a custom activity for the *current contact* and a worker thread
 has no current contact.
@@ -64,7 +65,7 @@ POST /api/xpsearch/events
 ```
 
 `ActivitySearchEventSink` resolves the query text behind that `queryId` from `IQueryContextMap`, an
-in-memory map the query stage fills. It holds at most 10 000 entries for 30 minutes, per application
+in-memory map the journal fills. It holds at most 10 000 entries for 30 minutes, per application
 instance — an event whose id is unknown (expired, or answered by another instance behind a load
 balancer) is still recorded, only with an empty query.
 

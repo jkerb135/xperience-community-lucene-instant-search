@@ -13,6 +13,25 @@ namespace XpSearch.Core.Tests;
 [TestFixture]
 internal sealed class StageOrderingTests
 {
+    /// <summary>
+    /// Analytics must stay out of the pipeline: it is journaled by the caching decorator, so a cached
+    /// search is recorded too, and so a pipeline assembled by hand - the query tester - cannot enter
+    /// the aggregate query log (spec §9.2).
+    /// </summary>
+    [Test]
+    public void NoShippedStage_WritesAnalytics()
+    {
+        var journaling = typeof(SearchStageOrder).Assembly.GetTypes()
+            .Where(type => type.IsClass && !type.IsAbstract && typeof(ISearchStage).IsAssignableFrom(type))
+            .Where(type => type.GetConstructors()
+                .SelectMany(constructor => constructor.GetParameters())
+                .Any(parameter => parameter.ParameterType == typeof(Analytics.ISearchRequestJournal)
+                    || parameter.ParameterType == typeof(Analytics.IQueryLogQueue)
+                    || parameter.ParameterType == typeof(Analytics.ISearchActivityLogger)));
+
+        Assert.That(journaling, Is.Empty);
+    }
+
     [Test]
     public void ShippedStages_OccupyTheDocumentedSlotsInSpecOrder()
     {
