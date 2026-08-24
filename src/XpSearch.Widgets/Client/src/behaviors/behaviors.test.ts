@@ -31,6 +31,7 @@ const BODY: SearchResponse = {
   totalPages: 5,
   tookMs: 7,
   redirect: null,
+  ruleData: { banner: 'espresso-week', layout: 'grid' },
   queryId: 'q-42',
 };
 
@@ -96,6 +97,17 @@ describe('every behaviour', () => {
     expect(renders[0]?.actions).toBe(search.actions);
     expect(renders[0]?.search).toBe(search);
     expect(renders[0]?.state.query).toBe('');
+  });
+
+  it('hands the data a matching rule attached to the response', async () => {
+    const { renders, search } = await mount<RenderOptions<Record<string, never>>>((record) =>
+      withResultStats(record)({})
+    );
+    // `ruleData` is optional: absent on the render before the first response, and passed through
+    // untouched afterwards, so a behaviour can drive a banner from an editor-authored rule.
+    expect(renders[0]?.results).toBeNull();
+    expect(renders[1]?.results?.ruleData).toEqual({ banner: 'espresso-week', layout: 'grid' });
+    expect(search.results?.ruleData).toEqual({ banner: 'espresso-week', layout: 'grid' });
   });
 
   it('calls unmountFn on dispose', () => {

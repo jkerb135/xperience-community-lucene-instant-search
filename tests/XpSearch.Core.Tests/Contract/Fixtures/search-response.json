@@ -35,5 +35,6 @@
   "totalPages": 3,
   "tookMs": 14,
   "queryId": "generated-guid",
-  "redirect": null
+  "redirect": null,
+  "ruleData": { "banner": "espresso-week", "layout": "grid" }
 }
