@@ -286,7 +286,7 @@ export const AnalyticsDashboardTemplate = ({selectedIndexName, today}: Analytics
                     columnName: 'action',
                     component: () => (
                         <Button
-                            label={`Create rule for ${row.query}`}
+                            label={`Create rule`}
                             icon="xp-plus"
                             color={ButtonColor.Primary}
                             size={ButtonSize.S}
