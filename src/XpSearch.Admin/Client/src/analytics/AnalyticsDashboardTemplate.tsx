@@ -97,7 +97,7 @@ const Commands = {
 const presets = [7, 30, 90];
 const rowCounts = [10, 25, 50, 100];
 const defaultRange = 30;
-const defaultPageSize = 25;
+const defaultPageSize = 10;
 
 const dayFormat = new Intl.DateTimeFormat(undefined, {
     day: 'numeric',
