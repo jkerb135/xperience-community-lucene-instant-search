@@ -1,97 +1,98 @@
-import { useState } from 'react';
+import {useState} from 'react';
 import {
-  Button,
-  ButtonColor,
-  ButtonSize,
-  ButtonType,
-  Callout,
-  CalloutPlacementType,
-  CalloutType,
-  Card,
-  CellType,
-  Cols,
-  Column,
-  ColumnContentType,
-  DateTimeInput,
-  FormItemWrapper,
-  Headline,
-  HeadlineSize,
-  LayoutAlignment,
-  MenuItem,
-  NameToggleButtons,
-  Row,
-  Select,
-  Spacing,
-  Spinner,
-  Stack,
-  useMediaBreakpoints,
+    Box,
+    Button,
+    ButtonColor,
+    ButtonSize,
+    ButtonType,
+    Callout,
+    CalloutPlacementType,
+    CalloutType,
+    Card,
+    CellType,
+    Cols,
+    Column,
+    ColumnContentType,
+    DateTimeInput,
+    FormItemWrapper,
+    Headline,
+    HeadlineSize,
+    LayoutAlignment,
+    MenuItem,
+    NameToggleButtons,
+    Row,
+    Select,
+    Spacing,
+    Spinner,
+    Stack,
+    useMediaBreakpoints,
 } from '@kentico/xperience-admin-components';
-import type { TableRow } from '@kentico/xperience-admin-components';
-import { usePageCommand } from '@kentico/xperience-admin-base';
+import type {TableRow} from '@kentico/xperience-admin-components';
+import {usePageCommand} from '@kentico/xperience-admin-base';
 
-import { column, ReportTable, text } from './ReportTable';
-import { VolumeChart, VolumePoint } from './VolumeChart';
-import { figure, muted } from '../theme';
+import {column, ReportTable, text} from './ReportTable';
+import {VolumeChart, VolumePoint} from './VolumeChart';
+import {figure, muted} from '../theme';
 
 /*
  * Client template of the analytics dashboard (spec 9.3), built to the owner's design spec:
  * https://claude.ai/design/p/d9cffec1-046f-46e2-b611-d162418351f9 (artboards 1a-1d). Registered as
- * "@yourco/xperience-search-admin/AnalyticsDashboard"; the back end is
+ * "@xperience-community/xperience-search/AnalyticsDashboard"; the back end is
  * XpSearch.Admin.UIPages.Analytics.AnalyticsDashboardPage. See docs/adr/0020-admin-page-design.md.
  */
 
 interface AnalyticsDashboardProps {
-  /** The index the reports cover. It comes from the URL, so it is shown and never chosen. */
-  readonly selectedIndexName: string;
-  readonly today: string;
+    /** The index the reports cover. It comes from the URL, so it is shown and never chosen. */
+    readonly selectedIndexName: string;
+    readonly today: string;
 }
 
 interface QueryRow {
-  readonly query: string;
-  readonly volume: number;
-  readonly p95ProcessingTimeMs: number;
+    readonly query: string;
+    readonly volume: number;
+    readonly p95ProcessingTimeMs: number;
 }
 
 interface ZeroResultRow {
-  readonly query: string;
-  readonly volume: number;
-  readonly lastSeen: string;
+    readonly query: string;
+    readonly volume: number;
+    readonly lastSeen: string;
 }
 
 interface ClickThroughRow {
-  readonly query: string;
-  readonly volume: number;
-  readonly clicks: number;
-  readonly clickThroughRate: number;
-  readonly averageClickedPosition: number | null;
+    readonly query: string;
+    readonly volume: number;
+    readonly clicks: number;
+    readonly clickThroughRate: number;
+    readonly averageClickedPosition: number | null;
 }
 
 interface Report {
-  readonly topQueries: QueryRow[];
-  readonly zeroResultQueries: ZeroResultRow[];
-  readonly clickThrough: ClickThroughRow[];
-  readonly averageClickedPosition: number | null;
-  readonly volumeOverTime: VolumePoint[];
-  readonly slowestQueries: QueryRow[];
-  readonly totalSearches: number;
-  readonly zeroResultSearches: number;
-  readonly clicks: number;
-  readonly error: string;
+    readonly topQueries: QueryRow[];
+    readonly zeroResultQueries: ZeroResultRow[];
+    readonly clickThrough: ClickThroughRow[];
+    readonly averageClickedPosition: number | null;
+    readonly volumeOverTime: VolumePoint[];
+    readonly slowestQueries: QueryRow[];
+    readonly totalSearches: number;
+    readonly zeroResultSearches: number;
+    readonly clicks: number;
+    readonly error: string;
 }
 
 interface LoadData {
-  readonly from: string;
-  readonly to: string;
-  readonly limit: number;
+    readonly from: string;
+    readonly to: string;
+    readonly limit: number;
 }
 
 interface CreateRuleData {
-  readonly query: string;
+    readonly query: string;
 }
 
 const Commands = {
-  Load: 'Load',
-  CreateRule: 'CreateRule',
+    Load: 'Load',
+    CreateRule: 'CreateRule',
 };
 
 const presets = [7, 30, 90];
@@ -99,8 +100,13 @@ const rowCounts = [10, 25, 50, 100];
 const defaultRange = 30;
 const defaultRows = 25;
 
-const dayFormat = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
-const dayMonthFormat = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', timeZone: 'UTC' });
+const dayFormat = new Intl.DateTimeFormat(undefined, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC'
+});
+const dayMonthFormat = new Intl.DateTimeFormat(undefined, {day: 'numeric', month: 'short', timeZone: 'UTC'});
 
 /** Parses a yyyy-mm-dd day as UTC midnight, which is the instant the DateTimeInput edits. */
 const toDate = (day: string): Date => new Date(`${day}T00:00:00Z`);
@@ -108,14 +114,14 @@ const toDate = (day: string): Date => new Date(`${day}T00:00:00Z`);
 const toDay = (date: Date): string => date.toISOString().slice(0, 10);
 
 const shiftDays = (day: string, days: number): string => {
-  const date = toDate(day);
-  date.setUTCDate(date.getUTCDate() - days);
+    const date = toDate(day);
+    date.setUTCDate(date.getUTCDate() - days);
 
-  return toDay(date);
+    return toDay(date);
 };
 
 const daysBetween = (from: string, to: string): number =>
-  Math.round((toDate(to).getTime() - toDate(from).getTime()) / 86_400_000) + 1;
+    Math.round((toDate(to).getTime() - toDate(from).getTime()) / 86_400_000) + 1;
 
 const count = (value: number): string => value.toLocaleString();
 
@@ -124,347 +130,348 @@ const percent = (value: number): string => `${(value * 100).toFixed(1)}%`;
 const position = (value: number | null): string => (value === null ? '—' : value.toFixed(1));
 
 const stringRow = (identifier: string, cells: Array<[string, string]>): TableRow => ({
-  identifier,
-  disabled: false,
-  cells: cells.map(([name, value]) => text(name, value)),
+    identifier,
+    disabled: false,
+    cells: cells.map(([name, value]) => text(name, value)),
 });
 
-const Kpi = ({ label, value, hint }: { readonly label: string; readonly value: string; readonly hint: string }) => (
-  <Card fullHeight>
-    <p style={muted}>{label}</p>
-    <p style={figure}>{value}</p>
-    <p style={muted}>{hint}</p>
-  </Card>
+const Kpi = ({label, value, hint}: { readonly label: string; readonly value: string; readonly hint: string }) => (
+    <Card fullHeight>
+        <p style={muted}>{label}</p>
+        <p style={figure}>{value}</p>
+        <p style={muted}>{hint}</p>
+    </Card>
 );
 
-export const AnalyticsDashboardTemplate = ({ selectedIndexName, today }: AnalyticsDashboardProps) => {
-  const [from, setFrom] = useState(shiftDays(today, defaultRange - 1));
-  const [to, setTo] = useState(today);
-  const [limit, setLimit] = useState(defaultRows);
-  const [report, setReport] = useState<Report | undefined>(undefined);
-  const [loading, setLoading] = useState(true);
-  const { sm: narrow } = useMediaBreakpoints();
+export const AnalyticsDashboardTemplate = ({selectedIndexName, today}: AnalyticsDashboardProps) => {
+    const [from, setFrom] = useState(shiftDays(today, defaultRange - 1));
+    const [to, setTo] = useState(today);
+    const [limit, setLimit] = useState(defaultRows);
+    const [report, setReport] = useState<Report | undefined>(undefined);
+    const [loading, setLoading] = useState(true);
+    const {sm: narrow} = useMediaBreakpoints();
 
-  const { execute: load } = usePageCommand<Report, LoadData>(
-    Commands.Load,
-    {
-      data: { from, to, limit },
-      executeOnMount: true,
-      after: (response) => {
-        setLoading(false);
-        setReport(response);
-      },
-    },
-    [],
-  );
-
-  const { execute: createRule } = usePageCommand<void, CreateRuleData>(Commands.CreateRule);
-
-  const reload = (nextFrom: string, nextTo: string, nextLimit: number) => {
-    setFrom(nextFrom);
-    setTo(nextTo);
-    setLimit(nextLimit);
-    setLoading(true);
-    void load({ from: nextFrom, to: nextTo, limit: nextLimit });
-  };
-
-  const range = daysBetween(from, to);
-  const preset = presets.find((days) => days === range);
-  const failed = report !== undefined && report.error !== '';
-  const loaded = !loading && report !== undefined && report.error === '';
-  const empty = loaded && report.totalSearches === 0;
-  const rangeText = `${dayMonthFormat.format(toDate(from))} – ${dayFormat.format(toDate(to))}`;
-
-  const controls = (
-    <Card>
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          reload(from, to, limit);
-        }}
-      >
-        <Row spacing={Spacing.L} alignY={LayoutAlignment.End}>
-          <Column>
-            <FormItemWrapper label="Range">
-              <NameToggleButtons
-                selectedItemId={preset === undefined ? '' : String(preset)}
-                items={presets.map((days) => ({ id: String(days), label: `${days} days` }))}
-                onChange={(id) => reload(shiftDays(today, Number(id) - 1), today, limit)}
-              />
-            </FormItemWrapper>
-          </Column>
-          <Column>
-            <DateTimeInput
-              label="From"
-              timeZone="UTC"
-              value={toDate(from)}
-              maxDate={toDate(to)}
-              onChange={(date) => setFrom(date === null ? from : toDay(date))}
-            />
-          </Column>
-          <Column>
-            <DateTimeInput
-              label="To"
-              timeZone="UTC"
-              value={toDate(to)}
-              minDate={toDate(from)}
-              maxDate={toDate(today)}
-              onChange={(date) => setTo(date === null ? to : toDay(date))}
-            />
-          </Column>
-          <Column>
-            <Select label="Rows" value={String(limit)} onChange={(value) => setLimit(Number(value) || defaultRows)}>
-              {rowCounts.map((rows) => (
-                <MenuItem key={rows} primaryLabel={String(rows)} value={String(rows)} />
-              ))}
-            </Select>
-          </Column>
-          <Column>
-            <Button label="Load" type={ButtonType.Submit} color={ButtonColor.Primary} size={ButtonSize.M} inProgress={loading} />
-          </Column>
-        </Row>
-      </form>
-    </Card>
-  );
-
-  const kpis = loaded
-    ? [
+    const {execute: load} = usePageCommand<Report, LoadData>(
+        Commands.Load,
         {
-          label: 'Total searches',
-          value: count(report.totalSearches),
-          hint: `${range} days · ${rangeText}`,
+            data: {from, to, limit},
+            executeOnMount: true,
+            after: (response) => {
+                setLoading(false);
+                setReport(response);
+            },
         },
-        {
-          label: 'Zero-result rate',
-          value: report.totalSearches === 0 ? '—' : percent(report.zeroResultSearches / report.totalSearches),
-          hint:
-            report.totalSearches === 0
-              ? 'No searches to divide by'
-              : `${count(report.zeroResultSearches)} searches returned nothing`,
-        },
-        {
-          label: 'Click-through rate',
-          value: report.totalSearches === 0 ? '—' : percent(report.clicks / report.totalSearches),
-          hint:
-            report.totalSearches === 0
-              ? 'No searches to divide by'
-              : `${count(report.clicks)} clicks on ${count(report.totalSearches)} searches`,
-        },
-        {
-          label: 'Avg clicked position',
-          value: position(report.averageClickedPosition),
-          hint: report.averageClickedPosition === null ? 'No clicks recorded' : 'Across all clicked results',
-        },
-      ]
-    : [];
+        [],
+    );
 
-  /*
-   * A component cell rather than the stock ActionCell (HW-10 defect 5): ActionCell renders its
-   * actions as icon-only Buttons, and Button sets aria-label from its `label` prop, falling back to
-   * the literal string "button" - which is how the action announced. TableAction has no aria hook of
-   * its own, so the button is rendered here with the row's query in its label, which is both the
-   * visible text and the accessible name.
-   */
-  const zeroResultRows: TableRow[] = loaded
-    ? report.zeroResultQueries.map((row) => ({
-        identifier: row.query,
-        disabled: false,
-        isInvalid: true,
-        cells: [
-          text('query', row.query),
-          text('volume', count(row.volume)),
-          text('lastSeen', dayFormat.format(toDate(row.lastSeen))),
-          {
-            type: CellType.Component,
-            columnName: 'action',
-            component: () => (
-              <Button
-                label={`Create rule for ${row.query}`}
-                icon="xp-plus"
-                color={ButtonColor.Tertiary}
-                size={ButtonSize.XS}
-                onClick={() => {
-                  void createRule({ query: row.query });
+    const {execute: createRule} = usePageCommand<void, CreateRuleData>(Commands.CreateRule);
+
+    const reload = (nextFrom: string, nextTo: string, nextLimit: number) => {
+        setFrom(nextFrom);
+        setTo(nextTo);
+        setLimit(nextLimit);
+        setLoading(true);
+        void load({from: nextFrom, to: nextTo, limit: nextLimit});
+    };
+
+    const range = daysBetween(from, to);
+    const preset = presets.find((days) => days === range);
+    const failed = report !== undefined && report.error !== '';
+    const loaded = !loading && report !== undefined && report.error === '';
+    const empty = loaded && report.totalSearches === 0;
+    const rangeText = `${dayMonthFormat.format(toDate(from))} – ${dayFormat.format(toDate(to))}`;
+
+    const controls = (
+        <Card>
+            <form
+                onSubmit={(event) => {
+                    event.preventDefault();
+                    reload(from, to, limit);
                 }}
-              />
-            ),
-          },
-        ],
-      }))
-    : [];
+            >
+                <Row spacing={Spacing.L} alignY={LayoutAlignment.End}>
+                    <Column>
+                        <FormItemWrapper label="Range">
+                            <NameToggleButtons
+                                selectedItemId={preset === undefined ? '' : String(preset)}
+                                items={presets.map((days) => ({id: String(days), label: `${days} days`}))}
+                                onChange={(id) => reload(shiftDays(today, Number(id) - 1), today, limit)}
+                            />
+                        </FormItemWrapper>
+                    </Column>
+                    <Column>
+                        <DateTimeInput
+                            label="From"
+                            timeZone="UTC"
+                            value={toDate(from)}
+                            maxDate={toDate(to)}
+                            onChange={(date) => setFrom(date === null ? from : toDay(date))}
+                        />
+                    </Column>
+                    <Column>
+                        <DateTimeInput
+                            label="To"
+                            timeZone="UTC"
+                            value={toDate(to)}
+                            minDate={toDate(from)}
+                            maxDate={toDate(today)}
+                            onChange={(date) => setTo(date === null ? to : toDay(date))}
+                        />
+                    </Column>
+                    <Column>
+                        <Select label="Rows" value={String(limit)}
+                                onChange={(value) => setLimit(Number(value) || defaultRows)}>
+                            {rowCounts.map((rows) => (
+                                <MenuItem key={rows} primaryLabel={String(rows)} value={String(rows)}/>
+                            ))}
+                        </Select>
+                    </Column>
+                    <Column>
+                        <Button label="Load" type={ButtonType.Submit} color={ButtonColor.Primary} size={ButtonSize.M}
+                                inProgress={loading}/>
+                    </Column>
+                </Row>
+            </form>
+        </Card>
+    );
 
-  const zeroResultCard = (
-    <ReportTable
-      headline="Zero-result queries"
-      count={
-        loaded
-          ? `${count(report.zeroResultQueries.reduce((sum, row) => sum + row.volume, 0))} searches · ${report.zeroResultQueries.length} queries`
-          : undefined
-      }
-      note="Only actionable table on this page"
-      columns={[
-        column('query', 'Query', { minWidth: 200 }),
-        column('volume', 'Volume', { minWidth: 88, maxWidth: 88 }),
-        column('lastSeen', 'Last seen', { minWidth: 160, maxWidth: 180 }),
-        column('action', '', { minWidth: 220, maxWidth: 240, contentType: ColumnContentType.Component }),
-      ]}
-      rows={zeroResultRows}
-      emptyText="Every search in this range found something."
-      hint="Create rule opens the Rules form seeded with the query."
-    />
-  );
+    const kpis = loaded
+        ? [
+            {
+                label: 'Total searches',
+                value: count(report.totalSearches),
+                hint: `${range} days · ${rangeText}`,
+            },
+            {
+                label: 'Zero-result rate',
+                value: report.totalSearches === 0 ? '—' : percent(report.zeroResultSearches / report.totalSearches),
+                hint:
+                    report.totalSearches === 0
+                        ? 'No searches to divide by'
+                        : `${count(report.zeroResultSearches)} searches returned nothing`,
+            },
+            {
+                label: 'Click-through rate',
+                value: report.totalSearches === 0 ? '—' : percent(report.clicks / report.totalSearches),
+                hint:
+                    report.totalSearches === 0
+                        ? 'No searches to divide by'
+                        : `${count(report.clicks)} clicks on ${count(report.totalSearches)} searches`,
+            },
+            {
+                label: 'Avg clicked position',
+                value: position(report.averageClickedPosition),
+                hint: report.averageClickedPosition === null ? 'No clicks recorded' : 'Across all clicked results',
+            },
+        ]
+        : [];
 
-  const volumeColumns = [
-    column('query', 'Query', { minWidth: 200 }),
-    column('volume', 'Volume', { minWidth: 88, maxWidth: 88 }),
-    column('p95', 'p95 time', { minWidth: 100, maxWidth: 120 }),
-  ];
+    /*
+     * A component cell rather than the stock ActionCell (HW-10 defect 5): ActionCell renders its
+     * actions as icon-only Buttons, and Button sets aria-label from its `label` prop, falling back to
+     * the literal string "button" - which is how the action announced. TableAction has no aria hook of
+     * its own, so the button is rendered here with the row's query in its label, which is both the
+     * visible text and the accessible name.
+     */
+    const zeroResultRows: TableRow[] = loaded
+        ? report.zeroResultQueries.map((row) => ({
+            identifier: row.query,
+            disabled: false,
+            cells: [
+                text('query', row.query),
+                text('volume', count(row.volume)),
+                text('lastSeen', dayFormat.format(toDate(row.lastSeen))),
+                {
+                    type: CellType.Component,
+                    columnName: 'action',
+                    component: () => (
+                        <Button
+                            label={`Create rule for ${row.query}`}
+                            icon="xp-plus"
+                            color={ButtonColor.Primary}
+                            size={ButtonSize.S}
+                            onClick={() => {
+                                void createRule({query: row.query});
+                            }}
+                        />
+                    ),
+                },
+            ],
+        }))
+        : [];
 
-  const topQueriesCard = (
-    <ReportTable
-      headline="Top queries"
-      columns={volumeColumns}
-      rows={
-        loaded
-          ? report.topQueries.map((row) =>
-              stringRow(row.query, [
-                ['query', row.query],
-                ['volume', count(row.volume)],
-                ['p95', `${row.p95ProcessingTimeMs} ms`],
-              ]),
-            )
-          : []
-      }
-      emptyText="No searches in this range."
-    />
-  );
+    const zeroResultCard = (
+        <ReportTable
+            headline="Zero-result queries"
+            count={
+                loaded
+                    ? `${count(report.zeroResultQueries.reduce((sum, row) => sum + row.volume, 0))} searches · ${report.zeroResultQueries.length} queries`
+                    : undefined
+            }
+            note="Only actionable table on this page"
+            columns={[
+                column('query', 'Query', {maxWidth: 20}),
+                column('volume', 'Volume', {maxWidth: 20}),
+                column('lastSeen', 'Last seen', {maxWidth: 20}),
+                column('action', '', {maxWidth: 80, contentType: ColumnContentType.Component}),
+            ]}
+            rows={zeroResultRows}
+            emptyText="Every search in this range found something."
+            hint="Create rule opens the Rules form seeded with the query."
+        />
+    );
 
-  const clickThroughCard = (
-    <ReportTable
-      headline="Click-through"
-      columns={[
-        column('query', 'Query', { minWidth: 160 }),
-        column('volume', 'Vol.', { minWidth: 72, maxWidth: 72 }),
-        column('clicks', 'Clicks', { minWidth: 72, maxWidth: 72 }),
-        column('ctr', 'CTR', { minWidth: 64, maxWidth: 72 }),
-        column('pos', 'Avg pos.', { minWidth: 88, maxWidth: 96 }),
-      ]}
-      rows={
-        loaded
-          ? report.clickThrough.map((row) =>
-              stringRow(row.query, [
-                ['query', row.query],
-                ['volume', count(row.volume)],
-                ['clicks', count(row.clicks)],
-                ['ctr', percent(row.clickThroughRate)],
-                ['pos', row.averageClickedPosition === null ? 'No data' : position(row.averageClickedPosition)],
-              ]),
-            )
-          : []
-      }
-      emptyText="Nothing was clicked in this range."
-      footer={
-        <Row spacing={Spacing.S}>
-          <Column cols={Cols.Col9}>
-            <p style={muted}>Average clicked position, all queries</p>
-          </Column>
-          <Column cols={Cols.Col3}>
-            <strong>{loaded ? position(report.averageClickedPosition) : '—'}</strong>
-          </Column>
-        </Row>
-      }
-    />
-  );
+    const volumeColumns = [
+        column('query', 'Query', {minWidth: 20}),
+        column('volume', 'Volume', {minWidth: 20, maxWidth: 20}),
+        column('p95', 'p95 time', {minWidth: 20, maxWidth: 20}),
+    ];
 
-  const slowestCard = (
-    <ReportTable
-      headline="Slowest queries"
-      columns={volumeColumns}
-      rows={
-        loaded
-          ? report.slowestQueries.map((row) =>
-              stringRow(row.query, [
-                ['query', row.query],
-                ['volume', count(row.volume)],
-                ['p95', `${row.p95ProcessingTimeMs} ms`],
-              ]),
-            )
-          : []
-      }
-      emptyText="No searches in this range."
-    />
-  );
+    const topQueriesCard = (
+        <ReportTable
+            headline="Top queries"
+            columns={volumeColumns}
+            rows={
+                loaded
+                    ? report.topQueries.map((row) =>
+                        stringRow(row.query, [
+                            ['query', row.query],
+                            ['volume', count(row.volume)],
+                            ['p95', `${row.p95ProcessingTimeMs} ms`],
+                        ]),
+                    )
+                    : []
+            }
+            emptyText="No searches in this range."
+        />
+    );
 
-  return (
-    <Stack spacing={Spacing.XL}>
-      <div>
-        <Headline size={HeadlineSize.L}>Analytics</Headline>
-        <p style={muted}>
-          Index <strong>{selectedIndexName}</strong> · Lucene
-          {loaded ? ` · ${rangeText} · ${report.totalSearches === 0 ? 'no searches' : `${count(report.totalSearches)} searches`}` : ''}
-        </p>
-      </div>
+    const clickThroughCard = (
+        <ReportTable
+            headline="Click-through"
+            columns={[
+                column('query', 'Query', {minWidth: 20}),
+                column('volume', 'Vol.', {minWidth: 20, maxWidth: 20}),
+                column('clicks', 'Clicks', {minWidth: 20, maxWidth: 20}),
+                column('ctr', 'CTR', {minWidth: 20, maxWidth: 20}),
+                column('pos', 'Avg pos.', {minWidth: 20, maxWidth: 20}),
+            ]}
+            rows={
+                loaded
+                    ? report.clickThrough.map((row) =>
+                        stringRow(row.query, [
+                            ['query', row.query],
+                            ['volume', count(row.volume)],
+                            ['clicks', count(row.clicks)],
+                            ['ctr', percent(row.clickThroughRate)],
+                            ['pos', row.averageClickedPosition === null ? 'No data' : position(row.averageClickedPosition)],
+                        ]),
+                    )
+                    : []
+            }
+            emptyText="Nothing was clicked in this range."
+            footer={
+                <Row spacing={Spacing.S}>
+                    <Column cols={Cols.Col9}>
+                        <p style={muted}>Average clicked position, all queries</p>
+                    </Column>
+                    <Column cols={Cols.Col3}>
+                        <strong>{loaded ? position(report.averageClickedPosition) : '—'}</strong>
+                    </Column>
+                </Row>
+            }
+        />
+    );
 
-      {failed ? (
-        <Callout
-          type={CalloutType.FriendlyWarning}
-          placement={CalloutPlacementType.OnDesk}
-          subheadline="Friendly warning"
-          headline="Analytics could not be loaded"
-          actionButton={<Button label="Load again" color={ButtonColor.Secondary} onClick={() => reload(from, to, limit)} />}
-        >
-          <p role="alert">{report.error}</p>
-        </Callout>
-      ) : null}
+    const slowestCard = (
+        <ReportTable
+            headline="Slowest queries"
+            columns={volumeColumns}
+            rows={
+                loaded
+                    ? report.slowestQueries.map((row) =>
+                        stringRow(row.query, [
+                            ['query', row.query],
+                            ['volume', count(row.volume)],
+                            ['p95', `${row.p95ProcessingTimeMs} ms`],
+                        ]),
+                    )
+                    : []
+            }
+            emptyText="No searches in this range."
+        />
+    );
 
-      {controls}
+    return (
+        <Box spacing={Spacing.M}>
+        <Stack spacing={Spacing.M}>
+            <div>
+                <Headline size={HeadlineSize.L}>Analytics</Headline>
+                <p style={muted}>
+                    Index <strong>{selectedIndexName}</strong> · Lucene
+                    {loaded ? ` · ${rangeText} · ${report.totalSearches === 0 ? 'no searches' : `${count(report.totalSearches)} searches`}` : ''}
+                </p>
+            </div>
 
-      {loading ? <Spinner /> : null}
+            {failed ? (
+                <Callout
+                    type={CalloutType.FriendlyWarning}
+                    placement={CalloutPlacementType.OnDesk}
+                    subheadline="Friendly warning"
+                    headline="Analytics could not be loaded"
+                    actionButton={<Button label="Load again" color={ButtonColor.Secondary}
+                                          onClick={() => reload(from, to, limit)}/>}
+                >
+                    <p role="alert">{report.error}</p>
+                </Callout>
+            ) : null}
 
-      <div aria-live="polite">
-        <Stack spacing={Spacing.XL}>
-          {loaded ? (
-            <Row spacing={Spacing.L}>
-              {kpis.map((kpi) => (
-                <Column key={kpi.label} cols={narrow ? Cols.Col6 : Cols.Col3}>
-                  <Kpi {...kpi} />
-                </Column>
-              ))}
-            </Row>
-          ) : null}
+            {controls}
 
-          {empty ? (
-            <Card>
-              <Headline size={HeadlineSize.S}>No searches in this range</Headline>
-              <p style={muted}>
-                Nothing was searched on {selectedIndexName} between {rangeText}. Widen the range or check that search
-                logging is enabled for the index.
-              </p>
-              <Button
-                label={`Load last ${defaultRange} days`}
-                color={ButtonColor.Tertiary}
-                onClick={() => reload(shiftDays(today, defaultRange - 1), today, limit)}
-              />
-            </Card>
-          ) : null}
+            {loading ? <Spinner/> : null}
 
-          {loaded && !empty ? (
-            <>
-              <VolumeChart points={report.volumeOverTime} formatDay={(day) => dayMonthFormat.format(toDate(day))} />
-              {zeroResultCard}
-              <Row spacing={Spacing.L}>
-                <Column cols={narrow ? Cols.Col12 : Cols.Col6}>{topQueriesCard}</Column>
-                <Column cols={narrow ? Cols.Col12 : Cols.Col6}>
-                  <Stack spacing={Spacing.L}>
-                    {clickThroughCard}
-                    {slowestCard}
-                  </Stack>
-                </Column>
-              </Row>
-            </>
-          ) : null}
+            <div aria-live="polite">
+                <Stack spacing={Spacing.M}>
+                    {loaded ? (
+                        <Row spacing={Spacing.L}>
+                            {kpis.map((kpi) => (
+                                <Column key={kpi.label} cols={narrow ? Cols.Col6 : Cols.Col3}>
+                                    <Kpi {...kpi} />
+                                </Column>
+                            ))}
+                        </Row>
+                    ) : null}
+
+                    {empty ? (
+                        <Card>
+                            <Headline size={HeadlineSize.S}>No searches in this range</Headline>
+                            <p style={muted}>
+                                Nothing was searched on {selectedIndexName} between {rangeText}. Widen the range or
+                                check that search
+                                logging is enabled for the index.
+                            </p>
+                            <Button
+                                label={`Load last ${defaultRange} days`}
+                                color={ButtonColor.Tertiary}
+                                onClick={() => reload(shiftDays(today, defaultRange - 1), today, limit)}
+                            />
+                        </Card>
+                    ) : null}
+
+                    {loaded && !empty ? (
+                        <>
+                            <VolumeChart points={report.volumeOverTime}
+                                         formatDay={(day) => dayMonthFormat.format(toDate(day))}/>
+                            {zeroResultCard}
+                            {topQueriesCard}
+                            {clickThroughCard}
+                            {slowestCard}
+                        </>
+                    ) : null}
+                </Stack>
+            </div>
+           
         </Stack>
-      </div>
-    </Stack>
-  );
+</Box>
+    );
 };

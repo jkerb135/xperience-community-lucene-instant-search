@@ -3,11 +3,11 @@
   <PropertyGroup>
     <RootNamespace>XpSearch.Admin</RootNamespace>
     <AssemblyName>XpSearch.Admin</AssemblyName>
-    <PackageId>YourCo.Xperience.Search.Admin</PackageId>
+    <PackageId>XperienceCommunity.Search.Admin</PackageId>
     <IsPackable>true</IsPackable>
     <!-- Organization name of the admin client module; the project name is on AdminClientPath below.
          Both must match Client/webpack.config.js and RegisterClientModule in XpSearchAdminClientModule.cs. -->
-    <AdminOrgName>yourco</AdminOrgName>
+    <AdminOrgName>xperience-community</AdminOrgName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -33,7 +33,7 @@
 
   <ItemGroup>
     <AdminClientPath Include="Client\dist\**">
-      <ProjectName>xperience-search-admin</ProjectName>
+      <ProjectName>xperience-search</ProjectName>
     </AdminClientPath>
   </ItemGroup>
 

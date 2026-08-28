@@ -1,5 +1,5 @@
 {
-  "name": "yourco-xperience-search-admin",
+  "name": "xperience-community-xperience-search",
   "version": "0.1.0",
   "description": "Custom admin UI templates of the Xperience Search tuning application: the query tester (spec 8.4) and the analytics dashboard (spec 9.3).",
   "private": true,

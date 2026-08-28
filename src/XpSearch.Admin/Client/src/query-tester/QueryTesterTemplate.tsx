@@ -35,7 +35,7 @@ import { mono, muted } from '../theme';
 /*
  * Client template of the query tester (spec 8.4), built to the owner's design spec:
  * https://claude.ai/design/p/d9cffec1-046f-46e2-b611-d162418351f9 (artboards 2a-2d). Registered as
- * "@yourco/xperience-search-admin/QueryTester"; the back end is
+ * "@xperience-community/xperience-search/QueryTester"; the back end is
  * XpSearch.Admin.UIPages.QueryTester.QueryTesterPage. See docs/adr/0020-admin-page-design.md.
  */
 

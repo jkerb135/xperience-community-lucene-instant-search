@@ -15,7 +15,7 @@
 
   <PropertyGroup>
     <Version>0.1.0</Version>
-    <Authors>YourCo</Authors>
+    <Authors>xperience-community</Authors>
     <Product>Xperience Search</Product>
     <RepositoryUrl>https://github.com/jkerb135/xperience-community-lucene-instant-search</RepositoryUrl>
     <!-- NU5104: Lucene.Net 4.8.0-beta00017 is the only version Kentico.Xperience.Lucene 15.0.5 accepts; a stable package must be allowed to depend on it. -->

@@ -7,10 +7,10 @@ const baseWebpackConfig = require("@kentico/xperience-webpack-config");
 module.exports = (opts, argv) => {
   const baseConfig = (webpackConfigEnv, argv) => {
     return baseWebpackConfig({
-      // Must match RegisterClientModule("yourco", "xperience-search-admin") in
+      // Must match RegisterClientModule("xperience-community", "xperience-search") in
       // XpSearchAdminClientModule.cs and AdminOrgName/ProjectName in XpSearch.Admin.csproj.
-      orgName: "yourco",
-      projectName: "xperience-search-admin",
+      orgName: "xperience-community",
+      projectName: "xperience-search",
       webpackConfigEnv: webpackConfigEnv,
       argv: argv,
     });
@@ -45,7 +45,7 @@ module.exports = (opts, argv) => {
       clean: true,
     },
     devServer: {
-      port: 3009,
+      port: 3010,
     },
   };
 

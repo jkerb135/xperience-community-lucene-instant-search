@@ -15,7 +15,7 @@ namespace XpSearch.Admin;
 /// <remarks>
 /// The organization and project names must match <c>orgName</c>/<c>projectName</c> in
 /// <c>Client/webpack.config.js</c>, <c>AdminOrgName</c>/<c>ProjectName</c> in
-/// <c>XpSearch.Admin.csproj</c> and the <c>@yourco/xperience-search-admin/...</c> template names in
+/// <c>XpSearch.Admin.csproj</c> and the <c>@xperience-community/xperience-search/...</c> template names in
 /// the <c>UIPage</c> registrations
 /// (https://docs.kentico.com/documentation/developers-and-admins/customization/extend-the-administration-interface/prepare-your-environment-for-admin-development).
 /// </remarks>
@@ -32,6 +32,6 @@ internal class XpSearchAdminClientModule : AdminModule
     {
         base.OnInit();
 
-        RegisterClientModule("yourco", "xperience-search-admin");
+        RegisterClientModule("xperience-community", "xperience-search");
     }
 }

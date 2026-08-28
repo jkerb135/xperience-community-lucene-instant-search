@@ -12,9 +12,9 @@ using IFormItemCollectionProvider = Kentico.Xperience.Admin.Base.Forms.Internal.
 
 [assembly: UIPage(
     parentType: typeof(IndexListingPage),
-    slug: "tuning",
+    slug: "edit",
     uiPageType: typeof(IndexTuningRoot),
-    name: "Tuning",
+    name: "Edit index",
     templateName: TemplateNames.SECTION_LAYOUT,
     order: 200)]
 
@@ -22,7 +22,7 @@ using IFormItemCollectionProvider = Kentico.Xperience.Admin.Base.Forms.Internal.
     parentType: typeof(IndexTuningRoot),
     slug: PageParameterConstants.PARAMETERIZED_SLUG,
     uiPageType: typeof(IndexTuningSection),
-    name: "Tuning",
+    name: "Edit index (xps)",
     templateName: TemplateNames.SECTION_LAYOUT,
     order: 100,
     ParameterDefaultValue = "1")]

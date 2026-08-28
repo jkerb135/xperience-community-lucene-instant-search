@@ -3,7 +3,7 @@
   <PropertyGroup>
     <RootNamespace>XpSearch.Ingestion</RootNamespace>
     <AssemblyName>XpSearch.Ingestion</AssemblyName>
-    <PackageId>YourCo.Xperience.Search.Ingestion</PackageId>
+    <PackageId>xperience-community.Xperience.Search.Ingestion</PackageId>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
 

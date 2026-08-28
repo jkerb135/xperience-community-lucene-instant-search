@@ -15,7 +15,7 @@ using XpSearch.Ingestion.Contract;
     slug: "status",
     uiPageType: typeof(IndexStatusPage),
     name: "Status",
-    templateName: "@yourco/xperience-search-admin/IndexStatus",
+    templateName: "@xperience-community/xperience-search/IndexStatus",
     order: 800)]
 
 namespace XpSearch.Admin.UIPages;

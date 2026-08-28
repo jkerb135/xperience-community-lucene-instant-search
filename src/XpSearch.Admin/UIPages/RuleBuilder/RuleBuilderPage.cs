@@ -26,7 +26,7 @@ namespace XpSearch.Admin.UIPages.RuleBuilder;
 public abstract class RuleBuilderPage : Page<RuleBuilderClientProperties>
 {
     /// <summary>Name the registrations use for the client template.</summary>
-    public const string TemplateName = "@yourco/xperience-search-admin/RuleBuilder";
+    public const string TemplateName = "@xperience-community/xperience-search/RuleBuilder";
 
     private readonly ILuceneConfigurationStorageService storageService;
     private readonly IInfoProvider<XpSearchRuleInfo> provider;

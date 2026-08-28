@@ -30,7 +30,7 @@ export const column = (
   name,
   caption,
   visible: true,
-  minWidth: options?.minWidth ?? 120,
+  minWidth: options?.minWidth ?? 10,
   maxWidth: options?.maxWidth ?? 0,
   contentType: options?.contentType ?? ColumnContentType.Text,
   sortable: false,

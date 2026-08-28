@@ -16,7 +16,7 @@ using XpSearch.Core.Analytics;
     slug: "analytics",
     uiPageType: typeof(AnalyticsDashboardPage),
     name: "Analytics",
-    templateName: "@yourco/xperience-search-admin/AnalyticsDashboard",
+    templateName: "@xperience-community/xperience-search/AnalyticsDashboard",
     order: 700)]
 
 namespace XpSearch.Admin.UIPages.Analytics;

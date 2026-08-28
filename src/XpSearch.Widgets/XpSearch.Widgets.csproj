@@ -3,16 +3,16 @@
   <PropertyGroup>
     <RootNamespace>XpSearch.Widgets</RootNamespace>
     <AssemblyName>XpSearch.Widgets</AssemblyName>
-    <PackageId>YourCo.Xperience.Search.Widgets</PackageId>
+    <PackageId>xperience-community.Xperience.Search.Widgets</PackageId>
     <IsPackable>true</IsPackable>
     <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
     <!-- Explicit so the served path is identical whether the library is consumed as a project
          reference or as the NuGet package (the SDK default is _content/$(PackageId)). -->
-    <StaticWebAssetBasePath>_content/YourCo.Xperience.Search.Widgets</StaticWebAssetBasePath>
+    <StaticWebAssetBasePath>_content/xperience-community.Xperience.Search.Widgets</StaticWebAssetBasePath>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Client\ is the npm package (@yourco/xperience-search) that builds the bundle below; none of
+    <!-- Client\ is the npm package (@xperience-community/xperience-search) that builds the bundle below; none of
          it is MSBuild input. Without these the SDK's default globs take 114 files as None and — the
          one that would change the package — package.json, package-lock.json, tsconfig*.json and
          size-limit.json as Content, which a Razor class library packs. Same shape as

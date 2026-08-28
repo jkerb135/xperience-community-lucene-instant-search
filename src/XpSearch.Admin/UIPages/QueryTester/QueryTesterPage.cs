@@ -16,7 +16,7 @@ using XpSearch.Core.Contract;
     slug: "query-tester",
     uiPageType: typeof(QueryTesterPage),
     name: "Query tester",
-    templateName: "@yourco/xperience-search-admin/QueryTester",
+    templateName: "@xperience-community/xperience-search/QueryTester",
     order: 600)]
 
 namespace XpSearch.Admin.UIPages.QueryTester;

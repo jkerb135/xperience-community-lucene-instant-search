@@ -3,7 +3,7 @@
   <PropertyGroup>
     <RootNamespace>XpSearch.Core</RootNamespace>
     <AssemblyName>XpSearch.Core</AssemblyName>
-    <PackageId>YourCo.Xperience.Search.Core</PackageId>
+    <PackageId>xperience-community.Xperience.Search.Core</PackageId>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
 

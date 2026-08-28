@@ -41,7 +41,7 @@ import styles from './RuleBuilderTemplate.module.css';
  * Client template of the if/then rule builder (ADR-0022), built to the owner's approved design
  * canvas: 5a the editor, 5b the add-consequence menu, 5c the five new editors, 5d validation,
  * 5e narrow at 1024, 5f the condition side panel. Registered as
- * "@yourco/xperience-search-admin/RuleBuilder"; the back end is
+ * "@xperience-community/xperience-search/RuleBuilder"; the back end is
  * XpSearch.Admin.UIPages.RuleBuilder.RuleBuilderPage.
  */
 
@@ -264,7 +264,6 @@ export const RuleBuilderTemplate = ({ indexName, rule, contactGroups, languages,
         <div className={styles.flow}>
           <div className={styles.flowLabel}>
             <div className={styles.sectionRow}>
-              <Headline size={HeadlineSize.S}>Condition(s)</Headline>
               <Tag label="If" readOnly background={{ color: Colors.BackgroundTagXperienceViolet }} />
             </div>
             <p style={muted}>All conditions must hold. A rule needs at least one.</p>
@@ -327,7 +326,6 @@ export const RuleBuilderTemplate = ({ indexName, rule, contactGroups, languages,
         <div className={styles.flow}>
           <div className={styles.flowLabel}>
             <div className={styles.sectionRow}>
-              <Headline size={HeadlineSize.S}>Consequence(s)</Headline>
               <Tag label="Then" readOnly background={{ color: Colors.BackgroundTagSkyBlue }} />
             </div>
             <p style={muted}>

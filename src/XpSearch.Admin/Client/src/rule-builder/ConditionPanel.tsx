@@ -58,7 +58,7 @@ export const ConditionPanel = ({ editing, index, contactGroups, languages, onApp
   return (
     <SidePanel
       isVisible={draft !== undefined}
-      size={SidePanelSize.Wrapped}
+      size={SidePanelSize.Full}
       headline={`Condition ${index + 1}`}
       tooltips={{ close: 'Discard' }}
       // Esc, the close button and a click outside all arrive here, and all of them discard.
