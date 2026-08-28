@@ -221,8 +221,17 @@ The controls sit in one card under the headline:
 1. **Range** — a **7 days / 30 days / 90 days** toggle. Picking one reloads immediately.
 2. **From** and **To** — date pickers, both in UTC, both included. Editing either one leaves the
    range toggle unselected until the span matches a preset again.
-3. **Rows** — how many rows each table holds: 10, 25 (the default), 50 or 100.
+3. **Rows per page** — how many rows one page of each table holds: 10, 25 (the default), 50 or 100.
+   It takes effect straight away, without a reload, and sends every table back to page one.
 4. **Load** — reruns the report. It shows a spinner and disables itself while the load is in flight.
+
+Each report is paged. Every table that holds more rows than one page shows a pager under it —
+*Page 2 of 4 · 87 rows*, with **Previous page** and **Next page**; a table that fits on one page shows
+no pager at all. The paging is done in the browser over the rows the report already returned, so
+turning a page is instant and does not touch the query log. Each report carries at most **200 rows**
+(`AnalyticsReportDto.MaxReportRows`): a range with more distinct queries than that is cut to the top
+200 of each report, which is why the reports are ranked in the first place. Narrow the range if you
+need to see past it.
 
 What you get, in the order the page shows it:
 

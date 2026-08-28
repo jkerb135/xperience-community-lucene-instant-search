@@ -68,10 +68,10 @@ internal sealed class AnalyticsDashboardPageTests
     }
 
     [Test]
-    public async Task Load_PassesTheWholeLastDayOfTheRangeAndClampsTheLimit()
+    public async Task Load_PassesTheWholeLastDayOfTheRangeAndTheRowCap()
     {
         await page.Load(
-            new AnalyticsRequest { From = "2026-08-01", To = "2026-08-21", Limit = 5000 },
+            new AnalyticsRequest { From = "2026-08-01", To = "2026-08-21" },
             CancellationToken.None);
 
         var query = (SearchAnalyticsQuery)analytics.ReceivedCalls().Single().GetArguments()[0]!;
@@ -82,7 +82,10 @@ internal sealed class AnalyticsDashboardPageTests
             Assert.That(query.FromUtc, Is.EqualTo(new DateTime(2026, 8, 1, 0, 0, 0, DateTimeKind.Unspecified)));
             Assert.That(query.ToUtc.Date, Is.EqualTo(new DateTime(2026, 8, 21, 0, 0, 0, DateTimeKind.Unspecified)));
             Assert.That(query.ToUtc.Hour, Is.EqualTo(23));
-            Assert.That(query.Limit, Is.EqualTo(AnalyticsDashboardPage.MaxLimit));
+            Assert.That(
+                query.Limit,
+                Is.EqualTo(AnalyticsReportDto.MaxReportRows),
+                "the client pages the rows, so the server always fills each report to the cap");
         });
     }
 
@@ -176,7 +179,7 @@ internal sealed class AnalyticsDashboardPageTests
             .Single();
 
     private static AnalyticsRequest Request() =>
-        new() { From = "2026-08-01", To = "2026-08-21", Limit = 20 };
+        new() { From = "2026-08-01", To = "2026-08-21" };
 
     private static SearchAnalyticsReport Report() =>
         new(

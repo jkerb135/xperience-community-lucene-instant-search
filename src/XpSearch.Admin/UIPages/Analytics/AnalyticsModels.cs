@@ -13,9 +13,6 @@ public sealed class AnalyticsRequest
 
     /// <summary>Gets or sets the last day of the range, inclusive, as <c>yyyy-MM-dd</c> in UTC.</summary>
     public string To { get; set; } = string.Empty;
-
-    /// <summary>Gets or sets how many rows each top-N list holds. Clamped server-side to 1..100.</summary>
-    public int Limit { get; set; } = 20;
 }
 
 /// <summary>Which zero-result query a "Create rule" action was invoked for.</summary>
@@ -76,6 +73,13 @@ public sealed record AnalyticsReportDto(
 {
     /// <summary>The date format the dashboard exchanges days in.</summary>
     public const string DateFormat = "yyyy-MM-dd";
+
+    /// <summary>
+    /// Most rows one report carries. The dashboard pages these client-side, so the cap is what a
+    /// visitor can page through - a range with more distinct queries than this is truncated to the
+    /// top of each report (see KNOWN-LIMITATIONS).
+    /// </summary>
+    public const int MaxReportRows = 200;
 
     /// <summary>Gets an empty report carrying a message.</summary>
     /// <param name="message">What to tell the user.</param>
