@@ -7,7 +7,7 @@ import {
   MenuItem,
   Select,
   SidePanel,
-  SidePanelSize,
+  SidePanelSize, Spacing, Stack,
   Switch,
   SwitchSize,
 } from '@kentico/xperience-admin-components';
@@ -71,7 +71,7 @@ export const ConditionPanel = ({ editing, index, contactGroups, languages, onApp
       }
     >
       {draft === undefined ? null : (
-        <>
+        <Stack spacing={Spacing.XL}>
           <div className={styles.toggleGroup}>
             <Switch
               size={SwitchSize.M}
@@ -183,7 +183,7 @@ export const ConditionPanel = ({ editing, index, contactGroups, languages, onApp
               </div>
             ) : null}
           </div>
-        </>
+        </Stack>
       )}
     </SidePanel>
   );
