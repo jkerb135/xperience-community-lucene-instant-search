@@ -30,7 +30,7 @@ app.UseXpSearch();                       // maps /api/xpsearch/*
 That is the whole developer-side setup. The widgets register themselves through assembly attributes, so
 they appear in the Page Builder widget list as soon as the package is referenced.
 
-Reference `YourCo.Xperience.Search.Admin` as well. It carries the form component configurator behind the
+Reference `XperienceCommunity.Search.Admin` as well. It carries the form component configurator behind the
 facet list's and the range filter's attribute drop-downs; without it those fields stay hidden. Nothing else needs it, and no
 live-site code takes a dependency on `Kentico.Xperience.Admin` either way.
 
@@ -222,12 +222,12 @@ described in [Custom widgets](custom-widgets.md).
 ### Static assets
 
 The client bundle and the two stylesheets ship as Razor Class Library static web assets of the
-`YourCo.Xperience.Search.Widgets` package:
+`xperience-community.Xperience.Search.Widgets` package:
 
 ```text
-/_content/YourCo.Xperience.Search.Widgets/xpsearch/shell.css        structure only
-/_content/YourCo.Xperience.Search.Widgets/xpsearch/default.css      the opt-in visual theme
-/_content/YourCo.Xperience.Search.Widgets/xpsearch/xpsearch.umd.js  the UMD bundle, global `xpsearch`
+/_content/xperience-community.Xperience.Search.Widgets/xpsearch/shell.css        structure only
+/_content/xperience-community.Xperience.Search.Widgets/xpsearch/default.css      the opt-in visual theme
+/_content/xperience-community.Xperience.Search.Widgets/xpsearch/xpsearch.umd.js  the UMD bundle, global `xpsearch`
 ```
 
 `<xps-search-assets />` emits all three. If your site has its own design system, load only the structural

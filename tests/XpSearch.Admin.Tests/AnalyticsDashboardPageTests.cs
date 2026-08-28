@@ -31,7 +31,7 @@ internal sealed class AnalyticsDashboardPageTests
         analytics.GetReportAsync(Arg.Any<SearchAnalyticsQuery>(), Arg.Any<CancellationToken>()).Returns(Task.FromResult(Report()));
 
         links = Substitute.For<IPageLinkGenerator>();
-        links.GetPath<ZeroResultRuleCreatePage>(Arg.Any<PageParameterValues>()).Returns("/admin/lucene/indexes/tuning/7/analytics/SEED");
+        links.GetPath<ZeroResultRuleCreatePage>(Arg.Any<PageParameterValues>()).Returns("/admin/lucene/indexes/edit/7/analytics/SEED");
 
         page = new AnalyticsDashboardPage(
             Storage.Holding(IndexIdentifier, "articles"),

@@ -18,7 +18,7 @@ import {
     Table,
     TableColumn,
     TableRow,
-    Tag, Spacing, Box, Row, Column, Cols,
+    Tag, Spacing, Box, Row, Column,
 } from '@kentico/xperience-admin-components';
 import {usePageCommand} from '@kentico/xperience-admin-base';
 
@@ -26,7 +26,7 @@ import styles from './IndexStatusTemplate.module.css';
 
 /*
  * Client template of the index status page (spec 10.8). Registered as
- * "@yourco/xperience-search-admin/IndexStatus"; the back end is
+ * "@xperience-community/xperience-search/IndexStatus"; the back end is
  * XpSearch.Admin.UIPages.IndexStatusPage.
  * https://docs.kentico.com/documentation/developers-and-admins/customization/extend-the-administration-interface/ui-pages
  */

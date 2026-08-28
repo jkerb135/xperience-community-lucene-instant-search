@@ -3,7 +3,7 @@
   <PropertyGroup>
     <RootNamespace>XpSearch.Ingestion.Tests</RootNamespace>
     <AssemblyName>XpSearch.Ingestion.Tests</AssemblyName>
-    <PackageId>YourCo.Xperience.Search.Ingestion.Tests</PackageId>
+    <PackageId>xperience-community.Xperience.Search.Ingestion.Tests</PackageId>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>

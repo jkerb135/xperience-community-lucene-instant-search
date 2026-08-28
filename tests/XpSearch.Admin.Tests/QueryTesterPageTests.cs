@@ -40,7 +40,7 @@ internal sealed class QueryTesterPageTests
             .Returns(Task.FromResult<IReadOnlyList<ContactGroupOption>>([new ContactGroupOption("grinder-shoppers", "Grinder shoppers")]));
 
         links = Substitute.For<IPageLinkGenerator>();
-        links.GetPath<IndexStatusPage>(Arg.Any<PageParameterValues>()).Returns("/admin/lucene/indexes/tuning/7/status");
+        links.GetPath<IndexStatusPage>(Arg.Any<PageParameterValues>()).Returns("/admin/lucene/indexes/edit/7/status");
 
         page = new QueryTesterPage(Storage.Holding(IndexIdentifier, "articles", "en", "es"), search, links, contactGroups)
         {

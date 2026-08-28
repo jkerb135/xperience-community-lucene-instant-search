@@ -52,9 +52,9 @@ internal sealed class AssetsTests
         Expect.Multiple(() =>
         {
             Assert.That(html, Does.Not.Contain("xps-search-assets"), "the placeholder tag must not survive");
-            Assert.That(html, Does.Contain("href=\"/_content/YourCo.Xperience.Search.Widgets/xpsearch/shell.css\""));
-            Assert.That(html, Does.Contain("href=\"/_content/YourCo.Xperience.Search.Widgets/xpsearch/default.css\""));
-            Assert.That(html, Does.Contain("src=\"/_content/YourCo.Xperience.Search.Widgets/xpsearch/xpsearch.umd.js\""));
+            Assert.That(html, Does.Contain($"href=\"{XpSearchAssets.ShellStylesheetPath}\""));
+            Assert.That(html, Does.Contain($"href=\"{XpSearchAssets.DefaultThemeStylesheetPath}\""));
+            Assert.That(html, Does.Contain($"src=\"{XpSearchAssets.ScriptPath}\""));
             Assert.That(html, Does.Contain("defer"));
         });
     }
@@ -76,7 +76,7 @@ internal sealed class AssetsTests
     {
         string html = RunTagHelper("/site", defaultTheme: true);
 
-        Assert.That(html, Does.Contain("src=\"/site/_content/YourCo.Xperience.Search.Widgets/xpsearch/xpsearch.umd.js\""));
+        Assert.That(html, Does.Contain($"src=\"/site{XpSearchAssets.ScriptPath}\""));
     }
 
     [Test]

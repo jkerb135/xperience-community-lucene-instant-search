@@ -26,7 +26,7 @@ documented class names — see [using shell on its own](#using-shell-on-its-own)
 
 | Consumer | Path |
 |---|---|
-| Xperience site | `<xps-search-assets />` emits both `<link>` tags; the `YourCo.Xperience.Search.Widgets` package serves them as static web assets from `/_content/YourCo.Xperience.Search.Widgets/xpsearch/`. |
+| Xperience site | `<xps-search-assets />` emits both `<link>` tags; the `xperience-community.Xperience.Search.Widgets` package serves them as static web assets from `/_content/xperience-community.Xperience.Search.Widgets/xpsearch/`. |
 | npm | `@yourco/xperience-search/themes/shell.css` and `.../themes/default.css` are package exports: `import '@yourco/xperience-search/themes/shell.css'` from a bundler, or copy the two files into the folder your site serves CSS from. |
 | In this repository | `themes/src/shell.css` and `themes/src/default.css` — the source location. Both packages ship those exact two files. |
 

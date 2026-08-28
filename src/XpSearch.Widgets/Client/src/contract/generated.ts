@@ -6,8 +6,8 @@
 /**
  * Wire contract for the Xperience Search HTTP API (spec 4.2, 4.3, 9.1, as amended by
  * ADR-0010). This schema is the single source of truth: the C# DTOs
- * (XpSearch.Core.Contract) and the TypeScript types (@yourco/xperience-search) are
- * generated from it and must never be hand-edited. Names and shapes are owned by this
+ * (XpSearch.Core.Contract) and the TypeScript types (@xperience-community/xperience-search)
+ * are generated from it and must never be hand-edited. Names and shapes are owned by this
  * product and chosen for Xperience's content model - taxonomy tags have code names and
  * titles, fields are typed - not for compatibility with any other vendor's API; a team
  * arriving from a hosted search service is served by docs/guides/migrating-from-algolia.md,

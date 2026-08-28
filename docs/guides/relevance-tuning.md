@@ -11,13 +11,13 @@ administration.
 
 Tuning belongs to one search index, so it lives inside the index:
 
-**Lucene Search → indexes → click the index → the *Tuning* sidebar**
+**Lucene Search → indexes → click the index → the *Edit index* sidebar**
 
 The sidebar has one entry per kind of tuning:
 
 | Sidebar entry | URL | What it is |
 |---|---|---|
-| **Settings** | `/admin/lucene/indexes/tuning/{id}/settings` | The index's own configuration (strategy, analyzer, channels) — the Lucene integration's form. |
+| **Settings** | `/admin/lucene/indexes/edit/{id}/settings` | The index's own configuration (strategy, analyzer, channels) — the Lucene integration's form. |
 | **Rules** | `…/{id}/rules` | If/then rules: pin, hide, boost, bury, filter, rewrite, redirect, custom data. |
 | **Synonyms** | `…/{id}/synonyms` | Words that mean the same thing. |
 | **Stopwords** | `…/{id}/stopwords` | Words ignored when someone searches. |
@@ -321,7 +321,7 @@ The **Query tester** shows the rule as `rule:<name>` in the explanation, the sam
 
 A synonym tells search that different words mean the same thing.
 
-1. **Synonyms → New synonym** in the index's Tuning sidebar.
+1. **Synonyms → New synonym** in the index's Edit index sidebar.
 2. **Direction**:
    - *Two-way* — every word finds every other. `sofa, couch, settee` means someone searching for
      *settee* finds the sofas, and someone searching for *sofa* finds the settees.
@@ -343,7 +343,7 @@ something red.
 Stopwords are words that are ignored when someone searches — *the*, *a*, *of*, or your own noise
 words like *buy* on a shop.
 
-1. **Stopwords → New stopword list** in the index's Tuning sidebar (one list per index; edit the
+1. **Stopwords → New stopword list** in the index's Edit index sidebar (one list per index; edit the
    existing one if there already is one).
 2. **Words to ignore** — one word per line.
 3. **Save**.
@@ -357,7 +357,7 @@ is left alone rather than turned into "show me everything".
 A field weight decides how much a match in one place counts compared to another. A match in a title
 usually deserves more than a match halfway down a body of text.
 
-1. **Field weights → New field weight** in the index's Tuning sidebar.
+1. **Field weights → New field weight** in the index's Edit index sidebar.
 2. **Field** — the field name as it appears in your search results, for example `Title`.
 3. **Weight** — `1` is normal. `3` makes a match in that field count roughly three times as much.
    `0.5` halves it.
@@ -375,7 +375,7 @@ the list; they are stable and do not change when you edit the page.
 
 ### Checking your work: the Query tester
 
-**Query tester** in the index's Tuning sidebar answers the only question that matters after you save
+**Query tester** in the index's Edit index sidebar answers the only question that matters after you save
 a rule: did it do what you meant?
 
 Before you run anything the page shows a quick tip explaining what the comparison is, and two empty

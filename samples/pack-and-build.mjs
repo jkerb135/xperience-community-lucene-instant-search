@@ -65,12 +65,12 @@ run('npm', ['test'], sample);
 
 const dotnetDir = join(sample, 'dotnet');
 // Into a throwaway global-packages folder: the version never changes during development, so the
-// machine-wide cache would serve yesterday's YourCo.Xperience.Search.* instead of what we packed.
+// machine-wide cache would serve yesterday's xperience-community.Xperience.Search.* instead of what we packed.
 run('dotnet', ['restore', '--packages', join(feed, '.packages')], dotnetDir);
 run('dotnet', ['build', '--no-restore', '-c', 'Release'], dotnetDir);
 run('dotnet', ['test', '--no-build', '-c', 'Release'], dotnetDir);
 
 console.log(`\npack-and-build: the sample built and tested against ${feed} only.`);
-if (!existsSync(join(feed, 'YourCo.Xperience.Search.Widgets.0.1.0.nupkg'))) {
+if (!existsSync(join(feed, 'xperience-community.Xperience.Search.Widgets.0.1.0.nupkg'))) {
   console.warn('note: the widgets package version is no longer 0.1.0 — update the sample.');
 }

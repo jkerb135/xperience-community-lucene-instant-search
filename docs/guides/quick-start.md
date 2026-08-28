@@ -51,12 +51,12 @@ public sealed class MySearchIndexingStrategy : XpSearchIndexingStrategy
 ### 1. Install the packages
 
 ```bash
-dotnet add package YourCo.Xperience.Search.Core
+dotnet add package xperience-community.Xperience.Search.Core
 dotnet add package Kentico.Xperience.Lucene.Core
 dotnet add package Kentico.Xperience.Lucene.Admin
 ```
 
-`YourCo.Xperience.Search.Core` targets .NET 8 and builds on `Kentico.Xperience.Lucene` 15.0.5, which in
+`xperience-community.Xperience.Search.Core` targets .NET 8 and builds on `Kentico.Xperience.Lucene` 15.0.5, which in
 turn needs `Kentico.Xperience.Core` 31.0.0 or later. The admin package is what puts the **Search**
 application in the administration interface, where indexes are defined.
 
@@ -65,7 +65,7 @@ application in the administration interface, where indexes are defined.
 Building from source, or consuming the packages from an internal Azure Artifacts / GitHub Packages
 feed? Add a `nuget.config` next to your solution. Adding the `<packageSource>` alone is **not enough**
 on any machine that enables [package source mapping](https://learn.microsoft.com/en-us/nuget/consume-packages/package-source-mapping)
-globally — restore fails with `NU1101: Unable to find package YourCo.Xperience.Search.Core …
+globally — restore fails with `NU1101: Unable to find package xperience-community.Xperience.Search.Core …
 PackageSourceMapping is enabled, the following source(s) were not considered: xps-local`, because a
 mapped configuration only searches the sources a pattern names:
 
@@ -80,7 +80,8 @@ mapped configuration only searches the sources a pattern names:
   <packageSourceMapping>
     <clear />
     <packageSource key="xps-local">
-      <package pattern="YourCo.Xperience.Search.*" />
+      <package pattern="xperience-community.Xperience.Search.*" />
+      <package pattern="XperienceCommunity.Search.*" />
     </packageSource>
     <packageSource key="nuget.org">
       <package pattern="*" />
@@ -224,9 +225,9 @@ analytics store and is not available yet.
 
 Everything that shapes results for an index lives inside the index:
 
-**Lucene Search → indexes → click the index → the *Tuning* sidebar** — Settings, Rules, Synonyms,
+**Lucene Search → indexes → click the index → the *Edit index* sidebar** — Settings, Rules, Synonyms,
 Stopwords, Field weights, Query tester, Analytics and Status
-(`/admin/lucene/indexes/tuning/{id}/rules` and friends). Clicking an index row in the listing opens
+(`/admin/lucene/indexes/edit/{id}/rules` and friends). Clicking an index row in the listing opens
 the sidebar directly.
 
 These pages are governed by the **Lucene Search** application in *Role management*: *View* to read
