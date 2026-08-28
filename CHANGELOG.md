@@ -8,6 +8,23 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Changed (branding) — BREAKING for package ids and admin URLs:** the placeholder `YourCo` branding
+  is gone. `YourCo.Xperience.Search.Core` → `xperience-community.Xperience.Search.Core`,
+  `YourCo.Xperience.Search.Ingestion` → `xperience-community.Xperience.Search.Ingestion`,
+  `YourCo.Xperience.Search.Widgets` → `xperience-community.Xperience.Search.Widgets` and
+  `YourCo.Xperience.Search.Admin` → `XperienceCommunity.Search.Admin`. The widgets' static web assets
+  move with the package id, to
+  `/_content/xperience-community.Xperience.Search.Widgets/xpsearch/{shell.css,default.css,xpsearch.umd.js}` —
+  use the `XpSearchAssets` constants or `<xps-search-assets />` and the path is never typed by hand.
+  The admin client module is now organization `xperience-community`, project `xperience-search`, so
+  the client templates are `@xperience-community/xperience-search/<Name>`, and a `Proxy`-mode host
+  keys `CMSAdminClientModuleSettings` on `xperience-community-xperience-search` (port 3010). The
+  per-index section's slug changed from `tuning` to `edit` and its name from *Tuning* to *Edit index*:
+  every page moves from `/admin/lucene/indexes/tuning/{id}/…` to `/admin/lucene/indexes/edit/{id}/…`.
+  **Update your bookmarks**, and any link into the administration interface from your own tooling.
+  The npm package (`@yourco/xperience-search`), the assembly and namespace prefix (`XpSearch.*`), the
+  widget identifiers (`XpSearch.SearchBox` and friends) and the ingestion application's slug
+  (`xpsearch-tuning`) are unchanged.
 - **Changed (relevance tuning) — BREAKING for the rule storage schema:** a rule's `if` and `then` are
   now stored as two JSON columns on `XpSearch_Rule`, `RuleConditions` and `RuleConsequences`, and the
   nine flat columns of [ADR-0014](docs/adr/0014-relevance-tuning.md) are **retired** —

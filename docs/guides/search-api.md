@@ -41,7 +41,7 @@ The same constants exist in C# as `XpSearch.Core.Contract.ContractConstants`:
 
 All three take and return `application/json`. Every response carries `X-XpSearch-Api-Version: 1`. The
 version is the semver major of both packages; routes never carry a `/v1/` segment, so a breaking contract
-change is a new major of `YourCo.Xperience.Search.Core` and of `@yourco/xperience-search` together.
+change is a new major of `xperience-community.Xperience.Search.Core` and of `@yourco/xperience-search` together.
 
 ### `POST /api/xpsearch/query`
 

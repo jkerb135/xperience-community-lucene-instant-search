@@ -22,14 +22,14 @@ output is gitignored, so this is the first thing to run on a fresh clone — the
 `src/XpSearch.Widgets/Client` for `XpSearch.Widgets`.
 
 Other scripts: `npm run typecheck` (`tsc --noEmit`, strict) and `npm run start` (webpack dev server on
-port 3009, see *Serving* below).
+port 3010, see *Serving* below).
 
 ### Layout
 
 | Path | What it is |
 |---|---|
 | `Client/package.json` | The Kentico admin boilerplate's dependency set, versions pinned exactly. |
-| `Client/webpack.config.js` | The boilerplate config with `orgName: "yourco"`, `projectName: "xperience-search-admin"`. |
+| `Client/webpack.config.js` | The boilerplate config with `orgName: "xperience-community"`, `projectName: "xperience-search"`. |
 | `Client/babel.config.json`, `Client/tsconfig.json` | Boilerplate, unchanged apart from `noUnusedLocals`. |
 | `Client/src/entry.tsx` | Exports every component the admin application may load. |
 | `Client/src/query-tester/QueryTesterTemplate.tsx` | Client template of the query tester. |
@@ -50,10 +50,10 @@ appends `Template` to the component name. Change any one of these and all four m
 
 | Where | Value |
 |---|---|
-| `Client/webpack.config.js` | `orgName: "yourco"`, `projectName: "xperience-search-admin"` |
-| `XpSearch.Admin.csproj` | `<AdminOrgName>yourco</AdminOrgName>`, `<AdminClientPath>`'s `<ProjectName>xperience-search-admin</ProjectName>` |
-| `XpSearchAdminClientModule.cs` | `RegisterClientModule("yourco", "xperience-search-admin")` |
-| `UIPage` registrations | `"@yourco/xperience-search-admin/QueryTester"`, `"@yourco/xperience-search-admin/AnalyticsDashboard"` |
+| `Client/webpack.config.js` | `orgName: "xperience-community"`, `projectName: "xperience-search"` |
+| `XpSearch.Admin.csproj` | `<AdminOrgName>xperience-community</AdminOrgName>`, `<AdminClientPath>`'s `<ProjectName>xperience-search</ProjectName>` |
+| `XpSearchAdminClientModule.cs` | `RegisterClientModule("xperience-community", "xperience-search")` |
+| `UIPage` registrations | `"@xperience-community/xperience-search/QueryTester"`, `"@xperience-community/xperience-search/AnalyticsDashboard"` |
 
 So `QueryTesterTemplate` (exported from `entry.tsx`) backs `.../QueryTester`.
 
@@ -70,7 +70,7 @@ targets add the `EmbeddedResource` items *during* the build, so inspecting the p
 
 ```powershell
 [Reflection.Assembly]::LoadFrom("src/XpSearch.Admin/bin/Debug/net8.0/XpSearch.Admin.dll").GetManifestResourceNames()
-# XpSearch.Admin.AdminResources.yourco.xperience.search.admin.entry.kxh.<hash>.js
+# XpSearch.Admin.AdminResources.xperience_community.xperience.search.entry.kxh.<hash>.js
 ```
 
 The hash has to match the file `npm run build` wrote to `Client/dist`.
@@ -80,9 +80,9 @@ server instead of the assembly. In the host application:
 
 ```json
 "CMSAdminClientModuleSettings": {
-  "yourco-xperience-search-admin": {
+  "xperience-community-xperience-search": {
     "Mode": "Proxy",
-    "Port": 3009
+    "Port": 3010
   }
 }
 ```
@@ -93,7 +93,7 @@ Then run `npm run start` in `src/XpSearch.Admin/Client`. Remove the setting befo
 
 1. Write the template in `Client/src/<area>/<Name>Template.tsx` and export it from `entry.tsx`.
 2. Write the back end as `Page<TClientProperties>` with a `TemplateClientProperties` subclass, and
-   register it with `[assembly: UIPage(..., "@yourco/xperience-search-admin/<Name>", order)]`.
+   register it with `[assembly: UIPage(..., "@xperience-community/xperience-search/<Name>", order)]`.
 3. Fetch data with `[PageCommand]` handlers and `usePageCommand` on the client. Give every command a
    `Permission` from the set the *owning application* declares — for a page inside
    `IndexTuningSection` that is the Lucene integration's application (`View`, `Create`, `Update`,
@@ -103,7 +103,7 @@ Then run `npm run start` in `src/XpSearch.Admin/Client`. Remove the setting befo
 #### Pages inside an index
 
 Both shipped templates hang under `IndexTuningSection`, at
-`/admin/lucene/indexes/tuning/{id}/<your-slug>`, so the index is not something the visitor picks:
+`/admin/lucene/indexes/edit/{id}/<your-slug>`, so the index is not something the visitor picks:
 `IndexTuningSection` contributes the `{id}` segment. The pattern is:
 
 ```csharp

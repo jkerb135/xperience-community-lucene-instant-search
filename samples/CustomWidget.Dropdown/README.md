@@ -9,7 +9,7 @@ value clears the previously picked one, so the control filters on at most one va
 against the packed packages, so the example cannot rot.
 
 Built entirely on the published packages — `@yourco/xperience-search` (`withFacetList`) and
-`YourCo.Xperience.Search.Widgets` (`XpSearchMountWidgetViewComponent<T>`). No forking, no internal
+`xperience-community.Xperience.Search.Widgets` (`XpSearchMountWidgetViewComponent<T>`). No forking, no internal
 imports, no `any`, TypeScript strict.
 
 ```
@@ -94,7 +94,7 @@ the control gets the real `disabled` attribute *and* the `xps-select--disabled` 
 ## C#
 
 ```xml
-<PackageReference Include="YourCo.Xperience.Search.Widgets" Version="0.1.0" />
+<PackageReference Include="xperience-community.Xperience.Search.Widgets" Version="0.1.0" />
 ```
 
 Copy `dotnet/CustomWidget.Dropdown.Widget/DropdownFacetWidget.cs` into your web project (or
@@ -102,7 +102,7 @@ reference the project). It registers itself through `[assembly: RegisterWidget]`
 **Search - Dropdown filter** appears in the Page Builder widget list as soon as the assembly is
 loaded. The host application needs the standard Xperience Search setup —
 `services.AddXpSearch()`, `services.AddXpSearchWidgets()`, `app.UseXpSearch()`,
-`<xps-search-assets />` — plus a reference to `YourCo.Xperience.Search.Admin` in the administration
+`<xps-search-assets />` — plus a reference to `XperienceCommunity.Search.Admin` in the administration
 project, without which the **Attribute** drop-down stays hidden.
 
 Editor properties: **Search index** and **Instance ID** (from the base class), then **Attribute**

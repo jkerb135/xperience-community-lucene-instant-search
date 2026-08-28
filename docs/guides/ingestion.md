@@ -184,7 +184,7 @@ documents get theirs from the request, from the API key's integration or from
   `source=xperience` is a `400`.
 - **Counts are per source.** `GET …/status` reports `documents.bySource`, so "did the PIM sync land"
   is one request. The same numbers, with a per-source bar and the last ten log entries, are on the
-  **Status** page of the index (**Lucene Search → indexes → *index* → Tuning → Status**); see
+  **Status** page of the index (**Lucene Search → indexes → *index* → Edit index → Status**); see
   [Reading the Status page](relevance-tuning.md#reading-the-status-page). Both `documents.total` and every `bySource` entry count *live* documents in the
   current index generation - deleted and replaced copies that Lucene has not merged away yet are not
   counted - so the entries always add up to the total.
@@ -250,7 +250,7 @@ Nothing is ever silently truncated.
 
 - Admin UI for schemas; schemas are declared in code on the indexing strategy. Keys and the
   ingestion log are in the **Search ingestion** application; index status is per index, at
-  **Lucene Search → indexes → *index* → Tuning → Status**.
+  **Lucene Search → indexes → *index* → Edit index → Status**.
 - The C# and Node convenience clients; today it is one `fetch` or one `HttpClient` call per request.
 - Facet **counts** for pushed documents: they are filterable on `string[]` attributes, but the taxonomy
   sidecar the counts come from is only written for Xperience content.
