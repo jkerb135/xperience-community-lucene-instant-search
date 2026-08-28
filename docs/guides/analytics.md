@@ -260,7 +260,7 @@ Below 1366 px the tiles go two per row and the two table columns stack, zero-res
 
 #### From a zero-result query to a fix
 
-Every row of **Zero-result queries** has a **Create rule for …** button. It opens the rule builder
+Every row of **Zero-result queries** has a **Create rule** button. It opens the rule builder
 for the index you were looking at, already carrying:
 
 - one condition, *Query contains* that query,
