@@ -219,8 +219,8 @@ total number of searches — *Index **ProductIndex** · Lucene · 1 Jul – 30 J
 The controls sit in one card under the headline:
 
 1. **Range** — a **7 days / 30 days / 90 days** toggle. Picking one reloads immediately.
-2. **From** and **To** — date pickers, both in UTC, both included. Editing either one leaves the
-   range toggle unselected until the span matches a preset again.
+2. **Date range** — one range picker, UTC days, both ends included. Picking a custom span leaves
+   the range toggle unselected until it matches a preset again.
 3. **Rows per page** — how many rows one page of each table holds: 10, 25 (the default), 50 or 100.
    It takes effect straight away, without a reload, and sends every table back to page one.
 4. **Load** — reruns the report. It shows a spinner and disables itself while the load is in flight.

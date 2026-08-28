@@ -8,14 +8,16 @@ import {
   CalloutType,
   Card,
   Checkbox,
-  Colors,
+  DateTimeRangeInput,
+  Colors, Column,
   DropDownActionMenu,
   DropDownPlacement,
+  FormItemWrapper,
   Headline,
   HeadlineSize,
-  Input,
-  MenuItem,
-  SidePanelManager,
+  Input, LayoutAlignment,
+  MenuItem, Row,
+  SidePanelManager, Spacing,
   Tag,
 } from '@kentico/xperience-admin-components';
 import { usePageCommand } from '@kentico/xperience-admin-base';
@@ -214,51 +216,56 @@ export const RuleBuilderTemplate = ({ indexName, rule, contactGroups, languages,
         ))}
 
         <Card>
-          <div className={styles.settings}>
-            <div className={styles.settingsName}>
+          <Row alignY={LayoutAlignment.Center} spacing={Spacing.M}>
+            <Column>
               <Input
-                label="Rule name"
-                markAsRequired
-                value={name}
-                invalid={nameErrors.length > 0}
-                validationMessage={nameErrors[0]}
-                explanationText="Shown in the ranking explanation, so name it after what it does."
-                onChange={(event) => setName(event.target.value)}
+                  label="Rule name"
+                  markAsRequired
+                  value={name}
+                  invalid={nameErrors.length > 0}
+                  validationMessage={nameErrors[0]}
+                  explanationText="Shown in the ranking explanation, so name it after what it does."
+                  onChange={(event) => setName(event.target.value)}
               />
-            </div>
-            <div className={styles.settingsCheck}>
+            </Column>
+            <Column>
               <Checkbox label="Enabled" checked={enabled} onChange={(event) => setEnabled(event.target.checked)} />
-            </div>
-            <div className={styles.settingsSmall}>
+            </Column>
+            <Column>
               <Input
-                label="Priority"
-                type="number"
-                value={String(priority)}
-                explanationText="Lower wins."
-                onChange={(event) => setPriority(Number(event.target.value) || 0)}
+                  label="Priority"
+                  type="number"
+                  value={String(priority)}
+                  explanationText="Lower wins."
+                  onChange={(event) => setPriority(Number(event.target.value) || 0)}
               />
-            </div>
-            <div className={styles.settingsDate}>
-              <Input
-                label="Runs from"
-                type="text"
-                placeholder="Always"
-                value={validFrom}
-                explanationText="yyyy-mm-dd, UTC"
-                onChange={(event) => setValidFrom(event.target.value)}
-              />
-            </div>
-            <div className={styles.settingsDate}>
-              <Input
-                label="Until"
-                type="text"
-                placeholder="Always"
-                value={validTo}
-                explanationText="yyyy-mm-dd, UTC"
-                onChange={(event) => setValidTo(event.target.value)}
-              />
-            </div>
-          </div>
+            </Column>
+            <Column>
+              <FormItemWrapper
+                  label="Runs"
+                  explanationText={validFrom === '' && validTo === '' ? 'Empty = always.'
+                      : validFrom === '' || validTo === '' ? `Open-ended window (${validFrom || '…'} – ${validTo || '…'}); picking a range replaces it.`
+                      : undefined}>
+                <DateTimeRangeInput
+                    timeZone="UTC"
+                    showTime={false}
+                    allowClear
+                    value={validFrom !== '' && validTo !== ''
+                        ? {from: new Date(`${validFrom}T00:00:00Z`), to: new Date(`${validTo}T00:00:00Z`)}
+                        : null}
+                    onChange={(range) => {
+                      if (range === null) {
+                        setValidFrom('');
+                        setValidTo('');
+                        return;
+                      }
+                      setValidFrom(range.from.toISOString().slice(0, 10));
+                      setValidTo(range.to.toISOString().slice(0, 10));
+                    }}
+                />
+              </FormItemWrapper>
+            </Column>
+          </Row>
         </Card>
 
         <div className={styles.flow}>

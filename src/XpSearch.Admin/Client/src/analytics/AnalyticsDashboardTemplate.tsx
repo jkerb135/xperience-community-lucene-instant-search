@@ -13,7 +13,7 @@ import {
     Cols,
     Column,
     ColumnContentType,
-    DateTimeInput,
+    DateTimeRangeInput,
     FormItemWrapper,
     Headline,
     HeadlineSize,
@@ -201,23 +201,22 @@ export const AnalyticsDashboardTemplate = ({selectedIndexName, today}: Analytics
                         </FormItemWrapper>
                     </Column>
                     <Column>
-                        <DateTimeInput
-                            label="From"
-                            timeZone="UTC"
-                            value={toDate(from)}
-                            maxDate={toDate(to)}
-                            onChange={(date) => setFrom(date === null ? from : toDay(date))}
-                        />
-                    </Column>
-                    <Column>
-                        <DateTimeInput
-                            label="To"
-                            timeZone="UTC"
-                            value={toDate(to)}
-                            minDate={toDate(from)}
-                            maxDate={toDate(today)}
-                            onChange={(date) => setTo(date === null ? to : toDay(date))}
-                        />
+                        <FormItemWrapper label="Date range">
+                            <DateTimeRangeInput
+                                timeZone="UTC"
+                                showTime={false}
+                                allowClear={false}
+                                value={{from: toDate(from), to: toDate(to)}}
+                                maxDate={toDate(today)}
+                                onChange={(range) => {
+                                    if (range === null) {
+                                        return;
+                                    }
+                                    setFrom(toDay(range.from));
+                                    setTo(toDay(range.to));
+                                }}
+                            />
+                        </FormItemWrapper>
                     </Column>
                     <Column>
                         <Select label="Rows per page" value={String(pageSize)}

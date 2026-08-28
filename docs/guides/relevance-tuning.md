@@ -62,8 +62,9 @@ usually immediately.
 The builder is one screen. Nothing is saved until you select **Save rule**, including anything you
 did in the side panel.
 
-**The settings strip.** Rule name, Enabled, Priority, and the two schedule fields **Runs from** and
-**Until** (`yyyy-mm-dd`, UTC; leave both empty and the rule runs forever). These describe the rule,
+**The settings strip.** Rule name, Enabled, Priority, and **Runs** - one date-range picker for the
+validity window (UTC days; clear it and the rule runs forever; a migrated rule with an open-ended
+window shows a note and keeps its single bound until you pick a range). These describe the rule,
 not what it matches.
 
 **The If column.** One card per condition, each showing a read-only summary of what it matches —
@@ -266,7 +267,7 @@ it is merged into one object in rule order, so a later rule wins a key it shares
 ### When a rule runs
 
 - **Enabled** — clear it to switch a rule off without deleting it.
-- **Runs from** / **Until** — leave both empty and the rule runs forever. Fill them in for a
+- **Runs** - one date-range picker for the validity window (UTC days); clearing it means the rule always runs. A migrated rule with an open-ended window shows a note and keeps its single bound until you pick a range. Fill them in for a
   campaign and the rule switches itself on and off. Dates are `yyyy-mm-dd`, UTC.
 - The **Query** condition's operator:
   — *Contains* — the words appear anywhere in what the visitor typed.
