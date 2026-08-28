@@ -1,8 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import {
-  Button,
-  ButtonColor,
-  ButtonSize,
+  Pagination,
   Card,
   CellType,
   Column as LayoutColumn,
@@ -51,9 +49,9 @@ export const text = (columnName: string, value: string) => ({
 });
 
 /*
- * The stock Pagination component is not used here: its previous and next controls are icon-only
- * Buttons rendered without a `label`, which is the exact defect HW-10 #5 recorded - Button falls back
- * to the literal accessible name "button". These two carry their name as their label instead.
+ * Paging is the stock Pagination component (owner decision 2026-08-25). Its previous/next controls
+ * are icon-only Buttons without a `label`, so they announce as "button" (the HW-10 #5 pattern in
+ * the platform's own component); the aria-live count line next to it carries the page context.
  */
 const TablePager = ({
   page,
@@ -71,24 +69,7 @@ const TablePager = ({
       <p style={muted} aria-live="polite">{`Page ${page} of ${totalPages} · ${total} rows`}</p>
     </LayoutColumn>
     <LayoutColumn>
-      <Button
-        label="Previous page"
-        icon="xp-chevron-left"
-        color={ButtonColor.Secondary}
-        size={ButtonSize.S}
-        disabled={page <= 1}
-        onClick={() => onChange(page - 1)}
-      />
-    </LayoutColumn>
-    <LayoutColumn>
-      <Button
-        label="Next page"
-        icon="xp-chevron-right"
-        color={ButtonColor.Secondary}
-        size={ButtonSize.S}
-        disabled={page >= totalPages}
-        onClick={() => onChange(page + 1)}
-      />
+      <Pagination selectedPage={page} totalPages={totalPages} onPageChange={onChange} />
     </LayoutColumn>
   </LayoutRow>
 );
