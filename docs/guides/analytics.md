@@ -226,7 +226,7 @@ The controls sit in one card under the headline:
 4. **Load** — reruns the report. It shows a spinner and disables itself while the load is in flight.
 
 Each report is paged. Every table that holds more rows than one page shows a pager under it —
-*Page 2 of 4 · 87 rows*, with **Previous page** and **Next page**; a table that fits on one page shows
+*Page 2 of 4 · 87 rows*, with the numbered page controls; a table that fits on one page shows
 no pager at all. The paging is done in the browser over the rows the report already returned, so
 turning a page is instant and does not touch the query log. Each report carries at most **200 rows**
 (`AnalyticsReportDto.MaxReportRows`): a range with more distinct queries than that is cut to the top
