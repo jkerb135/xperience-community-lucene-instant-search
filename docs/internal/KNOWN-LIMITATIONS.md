@@ -402,6 +402,21 @@ and how to lift it.
   from `ISearchAnalyticsService` (see `docs/guides/analytics.md`).
 - **Upgrade path:** the React admin unit renders `SearchAnalyticsReport`; no data work is left.
 
+## `ReportTable` in `XpSearch.Admin/Client/src/analytics/ReportTable.tsx`
+
+- **Simplified:** the four report tables page **in the browser** over the rows one `Load` already
+  returned, and the server fills each report to a fixed `AnalyticsReportDto.MaxReportRows` (200) cap
+  rather than to the page size. The **Rows per page** control therefore only slices what is already
+  there, and turning a page issues no request.
+- **Ceiling:** nothing past the 200th row of a report can be reached at all — a range with more
+  distinct queries is cut to the top 200 of each ranking, silently, with no "there is more" signal
+  beyond the pager's row count. Every load also carries 200 rows per report whether or not the
+  visitor pages that far.
+- **Upgrade path:** if a report needs to go deeper, give `AnalyticsRequest` a page and page size
+  again, page in `SearchAnalyticsService` (its `Take(limit)` becomes `Skip(...).Take(...)`, with the
+  total returned alongside), and have `ReportTable` reload on page change instead of slicing. The KPI
+  figures already come from full-range aggregates, so they are unaffected.
+
 ## `SearchAnalyticsService.GetReportAsync` in `XpSearch.Core/Analytics/SearchAnalyticsService.cs`
 
 - **Simplified:** one `IQueryLogStore.ReadAsync` for the requested range, then every report is a LINQ

@@ -134,6 +134,28 @@ internal sealed class SearchAnalyticsTests
         Assert.That(fresh, Is.EqualTo(new[] { "kettle", "kite" }).AsCollection);
     }
 
+    [Test]
+    public async Task Report_TruncatesEveryListToTheLimitTheDashboardPagesThrough()
+    {
+        for (int index = 0; index < 12; index++)
+        {
+            Add($"query-{index:00}", Day, results: index % 2, ms: index);
+        }
+
+        var report = await new SearchAnalyticsService(store).GetReportAsync(
+            new SearchAnalyticsQuery(TestCorpus.IndexName, Day.Date, Day.Date.AddDays(3), Limit: 5),
+            CancellationToken.None);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(report.TopQueries, Has.Count.EqualTo(5));
+            Assert.That(report.ZeroResultQueries, Has.Count.EqualTo(5));
+            Assert.That(report.ClickThrough, Has.Count.EqualTo(5));
+            Assert.That(report.SlowestQueries, Has.Count.EqualTo(5));
+            Assert.That(report.TotalSearches, Is.EqualTo(21), "the totals count every row, not just the listed ones");
+        });
+    }
+
     private Task<SearchAnalyticsReport> Report() =>
         new SearchAnalyticsService(store).GetReportAsync(
             new SearchAnalyticsQuery(TestCorpus.IndexName, Day.Date, Day.Date.AddDays(3), Limit: 10),

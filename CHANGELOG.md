@@ -8,6 +8,17 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Added (admin):** the four tables of the **analytics dashboard** are **paged**. The **Rows**
+  control is now **Rows per page** — 10, 25 (the default), 50 or 100 — it applies immediately without
+  a reload, and a table with more rows than one page grows a pager underneath it (*Page 2 of 4 · 87
+  rows*, **Previous page** / **Next page**, both real keyboard buttons with real accessible names, the
+  count announced politely). Paging happens in the browser over the rows the report returned, so
+  turning a page issues no request; a fresh **Load** or a new page size sends every table back to page
+  one. The server no longer sizes a report to the row count the client asked for: each report is
+  filled to `AnalyticsReportDto.MaxReportRows` (200) instead, which is what a visitor can page
+  through. `AnalyticsRequest.Limit` and `AnalyticsDashboardPage.MaxLimit` are **removed** — the row
+  count is a client-side concern now.
+
 - **Changed (branding) — BREAKING for package ids and admin URLs:** the placeholder `YourCo` branding
   is gone. `YourCo.Xperience.Search.Core` → `xperience-community.Xperience.Search.Core`,
   `YourCo.Xperience.Search.Ingestion` → `xperience-community.Xperience.Search.Ingestion`,

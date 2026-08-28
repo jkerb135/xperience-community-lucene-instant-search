@@ -43,9 +43,6 @@ public class AnalyticsDashboardClientProperties : TemplateClientProperties
 [UIEvaluatePermission(SystemPermissions.VIEW)]
 public class AnalyticsDashboardPage : Page<AnalyticsDashboardClientProperties>
 {
-    /// <summary>Most rows a report will return.</summary>
-    public const int MaxLimit = 100;
-
     private readonly ILuceneConfigurationStorageService storageService;
     private readonly ISearchAnalyticsService analytics;
     private readonly IPageLinkGenerator pageLinkGenerator;
@@ -115,7 +112,7 @@ public class AnalyticsDashboardPage : Page<AnalyticsDashboardClientProperties>
                 IndexName,
                 from.ToDateTime(TimeOnly.MinValue),
                 to.ToDateTime(TimeOnly.MaxValue),
-                Math.Clamp(request.Limit, 1, MaxLimit)),
+                AnalyticsReportDto.MaxReportRows),
             cancellationToken)
             .ConfigureAwait(false);
 

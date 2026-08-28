@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {Fragment, useState} from 'react';
 import {
     Box,
     Button,
@@ -83,7 +83,6 @@ interface Report {
 interface LoadData {
     readonly from: string;
     readonly to: string;
-    readonly limit: number;
 }
 
 interface CreateRuleData {
@@ -98,7 +97,7 @@ const Commands = {
 const presets = [7, 30, 90];
 const rowCounts = [10, 25, 50, 100];
 const defaultRange = 30;
-const defaultRows = 25;
+const defaultPageSize = 25;
 
 const dayFormat = new Intl.DateTimeFormat(undefined, {
     day: 'numeric',
@@ -146,19 +145,22 @@ const Kpi = ({label, value, hint}: { readonly label: string; readonly value: str
 export const AnalyticsDashboardTemplate = ({selectedIndexName, today}: AnalyticsDashboardProps) => {
     const [from, setFrom] = useState(shiftDays(today, defaultRange - 1));
     const [to, setTo] = useState(today);
-    const [limit, setLimit] = useState(defaultRows);
+    const [pageSize, setPageSize] = useState(defaultPageSize);
     const [report, setReport] = useState<Report | undefined>(undefined);
     const [loading, setLoading] = useState(true);
+    // Keys the report cards, so a fresh load or a new page size sends every table back to page one.
+    const [tableGeneration, setTableGeneration] = useState(0);
     const {sm: narrow} = useMediaBreakpoints();
 
     const {execute: load} = usePageCommand<Report, LoadData>(
         Commands.Load,
         {
-            data: {from, to, limit},
+            data: {from, to},
             executeOnMount: true,
             after: (response) => {
                 setLoading(false);
                 setReport(response);
+                setTableGeneration((generation) => generation + 1);
             },
         },
         [],
@@ -166,12 +168,11 @@ export const AnalyticsDashboardTemplate = ({selectedIndexName, today}: Analytics
 
     const {execute: createRule} = usePageCommand<void, CreateRuleData>(Commands.CreateRule);
 
-    const reload = (nextFrom: string, nextTo: string, nextLimit: number) => {
+    const reload = (nextFrom: string, nextTo: string) => {
         setFrom(nextFrom);
         setTo(nextTo);
-        setLimit(nextLimit);
         setLoading(true);
-        void load({from: nextFrom, to: nextTo, limit: nextLimit});
+        void load({from: nextFrom, to: nextTo});
     };
 
     const range = daysBetween(from, to);
@@ -186,7 +187,7 @@ export const AnalyticsDashboardTemplate = ({selectedIndexName, today}: Analytics
             <form
                 onSubmit={(event) => {
                     event.preventDefault();
-                    reload(from, to, limit);
+                    reload(from, to);
                 }}
             >
                 <Row spacing={Spacing.L} alignY={LayoutAlignment.End}>
@@ -195,7 +196,7 @@ export const AnalyticsDashboardTemplate = ({selectedIndexName, today}: Analytics
                             <NameToggleButtons
                                 selectedItemId={preset === undefined ? '' : String(preset)}
                                 items={presets.map((days) => ({id: String(days), label: `${days} days`}))}
-                                onChange={(id) => reload(shiftDays(today, Number(id) - 1), today, limit)}
+                                onChange={(id) => reload(shiftDays(today, Number(id) - 1), today)}
                             />
                         </FormItemWrapper>
                     </Column>
@@ -219,8 +220,11 @@ export const AnalyticsDashboardTemplate = ({selectedIndexName, today}: Analytics
                         />
                     </Column>
                     <Column>
-                        <Select label="Rows" value={String(limit)}
-                                onChange={(value) => setLimit(Number(value) || defaultRows)}>
+                        <Select label="Rows per page" value={String(pageSize)}
+                                onChange={(value) => {
+                                    setPageSize(Number(value) || defaultPageSize);
+                                    setTableGeneration((generation) => generation + 1);
+                                }}>
                             {rowCounts.map((rows) => (
                                 <MenuItem key={rows} primaryLabel={String(rows)} value={String(rows)}/>
                             ))}
@@ -316,6 +320,7 @@ export const AnalyticsDashboardTemplate = ({selectedIndexName, today}: Analytics
                 column('action', '', {maxWidth: 80, contentType: ColumnContentType.Component}),
             ]}
             rows={zeroResultRows}
+            pageSize={pageSize}
             emptyText="Every search in this range found something."
             hint="Create rule opens the Rules form seeded with the query."
         />
@@ -330,6 +335,7 @@ export const AnalyticsDashboardTemplate = ({selectedIndexName, today}: Analytics
     const topQueriesCard = (
         <ReportTable
             headline="Top queries"
+            pageSize={pageSize}
             columns={volumeColumns}
             rows={
                 loaded
@@ -349,6 +355,7 @@ export const AnalyticsDashboardTemplate = ({selectedIndexName, today}: Analytics
     const clickThroughCard = (
         <ReportTable
             headline="Click-through"
+            pageSize={pageSize}
             columns={[
                 column('query', 'Query', {minWidth: 20}),
                 column('volume', 'Vol.', {minWidth: 20, maxWidth: 20}),
@@ -386,6 +393,7 @@ export const AnalyticsDashboardTemplate = ({selectedIndexName, today}: Analytics
     const slowestCard = (
         <ReportTable
             headline="Slowest queries"
+            pageSize={pageSize}
             columns={volumeColumns}
             rows={
                 loaded
@@ -420,7 +428,7 @@ export const AnalyticsDashboardTemplate = ({selectedIndexName, today}: Analytics
                     subheadline="Friendly warning"
                     headline="Analytics could not be loaded"
                     actionButton={<Button label="Load again" color={ButtonColor.Secondary}
-                                          onClick={() => reload(from, to, limit)}/>}
+                                          onClick={() => reload(from, to)}/>}
                 >
                     <p role="alert">{report.error}</p>
                 </Callout>
@@ -453,20 +461,20 @@ export const AnalyticsDashboardTemplate = ({selectedIndexName, today}: Analytics
                             <Button
                                 label={`Load last ${defaultRange} days`}
                                 color={ButtonColor.Tertiary}
-                                onClick={() => reload(shiftDays(today, defaultRange - 1), today, limit)}
+                                onClick={() => reload(shiftDays(today, defaultRange - 1), today)}
                             />
                         </Card>
                     ) : null}
 
                     {loaded && !empty ? (
-                        <>
+                        <Fragment key={tableGeneration}>
                             <VolumeChart points={report.volumeOverTime}
                                          formatDay={(day) => dayMonthFormat.format(toDate(day))}/>
                             {zeroResultCard}
                             {topQueriesCard}
                             {clickThroughCard}
                             {slowestCard}
-                        </>
+                        </Fragment>
                     ) : null}
                 </Stack>
             </div>
