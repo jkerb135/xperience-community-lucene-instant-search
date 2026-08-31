@@ -10,7 +10,7 @@ import {
 import { muted } from '../theme';
 import { consequenceLabels } from './model';
 import type { Consequence } from './model';
-import styles from './RuleBuilderTemplate.module.css';
+import styles from './RuleBuilderTemplate.module.scss';
 
 /*
  * One card of the Then column (design canvas 5a for pin and boost, 5c for the five new editors).

@@ -13,7 +13,7 @@ import {
 } from '@kentico/xperience-admin-components';
 
 import type { ContactGroup, Fragment, QueryOperator } from './model';
-import styles from './RuleBuilderTemplate.module.css';
+import styles from './RuleBuilderTemplate.module.scss';
 
 /*
  * The condition side panel of design canvas 5f: Query / Filters / Context toggles, Apply writing

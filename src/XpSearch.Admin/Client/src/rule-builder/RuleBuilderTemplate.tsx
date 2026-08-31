@@ -37,7 +37,7 @@ import {
 } from './model';
 import type { Consequence, ConsequenceType, ContactGroup, Fragment, Rule, RuleError, SaveResult } from './model';
 import { describe } from './summary';
-import styles from './RuleBuilderTemplate.module.css';
+import styles from './RuleBuilderTemplate.module.scss';
 
 /*
  * Client template of the if/then rule builder (ADR-0022), built to the owner's approved design

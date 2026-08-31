@@ -27,6 +27,18 @@ module.exports = (opts, argv) => {
         // css-loader turns *.module.css into CSS modules on its own, so page styles stay scoped.
         // Extending the boilerplate config with CSS loaders is Kentico's documented route:
         // https://docs.kentico.com/documentation/developers-and-admins/configuration/rich-text-editor-configuration/rich-text-editor-customization
+        // sass-loader compiles *.scss / *.module.scss before the same css-loader pipeline.
+        {
+          test: /\.s[ac]ss$/i,
+          use: [
+            "style-loader",
+            {
+              loader: "css-loader",
+              options: { modules: { auto: true, namedExport: false, exportLocalsConvention: "as-is" } },
+            },
+            "sass-loader",
+          ],
+        },
         {
           test: /\.css$/,
           // css-loader 7 defaults CSS modules to named exports; namedExport: false keeps the
