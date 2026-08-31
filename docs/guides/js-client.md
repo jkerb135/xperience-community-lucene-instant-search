@@ -1,6 +1,6 @@
 ## JavaScript client
 
-`@yourco/xperience-search` is the browser half of Xperience Search: a transport (`SearchClient`), an
+`@xperience-community/xperience-search` is the browser half of Xperience Search: a transport (`SearchClient`), an
 observable state (`SearchState`), and independent widgets that subscribe to it. Widgets can live
 anywhere in the DOM — search box in the header, facets in a left rail, results in `<main>` — with no
 shared parent and no order requirement.
@@ -57,7 +57,7 @@ const myResults = xpsearch.withResults(({ items, sendEvent, params }) => {
 The same thing through a bundler:
 
 ```js
-import createSearch, { searchBox, results } from '@yourco/xperience-search';
+import createSearch, { searchBox, results } from '@xperience-community/xperience-search';
 
 const search = createSearch({ index: 'site-content', routing: true });
 search.addWidgets([
@@ -260,10 +260,10 @@ what `categoryTree` needs.
 It ships in the npm package as `mock/server.mjs`, with a `xpsearch-mock` bin entry:
 
 ```bash
-npm install @yourco/xperience-search
+npm install @xperience-community/xperience-search
 npx xpsearch-mock                                            # http://127.0.0.1:3131/api/xpsearch/query
 PORT=4000 npx xpsearch-mock                                  # another port
-node node_modules/@yourco/xperience-search/mock/server.mjs   # the same thing, no npx
+node node_modules/@xperience-community/xperience-search/mock/server.mjs   # the same thing, no npx
 ```
 
 Working in this repository instead? `cd src/XpSearch.Widgets/Client && npm ci`, then `npm run repo:mock` for

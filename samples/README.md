@@ -27,10 +27,10 @@ the moment a type, an export, a static web asset or a `files` entry stops shippi
 It also makes the samples honest about the consumer experience:
 
 - `CustomWidget.Dropdown/nuget.config` adds `..\.feed` as a source **and** maps
-  `xperience-community.Xperience.Search.*` and `XperienceCommunity.Search.*` to it. On a machine with package source mapping enabled globally the
-  source alone is not enough — restore fails with `NU1101` and lists the source as "not considered".
-  See [Quick start → Installing from a private feed](../docs/guides/quick-start.md).
-- `CustomWidget.Dropdown/package.json` depends on `file:../.feed/yourco-xperience-search-0.1.0.tgz`,
+  `XperienceCommunity.Search.*` to it. On a machine with package source mapping enabled globally
+  the source alone is not enough — restore fails with `NU1101` and lists the source as "not
+  considered". See [Quick start → Installing from a private feed](../docs/guides/quick-start.md).
+- `CustomWidget.Dropdown/package.json` depends on `file:../.feed/xperience-community-xperience-search-0.1.0.tgz`,
   so the sample resolves the same `dist/`, `themes/` and `mock/` a customer gets. The script deletes
   the sample's `node_modules` and `package-lock.json` first, because npm otherwise reuses the
   previous resolution of a tarball at that path.

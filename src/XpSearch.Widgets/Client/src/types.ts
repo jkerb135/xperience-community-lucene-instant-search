@@ -1,5 +1,5 @@
 /**
- * The public type surface of @yourco/xperience-search (spec 5.7, "Widget SDK contract").
+ * The public type surface of @xperience-community/xperience-search (spec 5.7, "Widget SDK contract").
  * Breaking anything in this file is a semver-major event.
  */
 import type {

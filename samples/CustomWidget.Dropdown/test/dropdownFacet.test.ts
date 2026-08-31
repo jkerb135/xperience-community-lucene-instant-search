@@ -5,8 +5,8 @@ import createSearch, {
   API_VERSION_HEADER,
   getWidgetType,
   mountAll,
-} from '@yourco/xperience-search';
-import type { SearchResponse } from '@yourco/xperience-search';
+} from '@xperience-community/xperience-search';
+import type { SearchResponse } from '@xperience-community/xperience-search';
 
 import { dropdownFacet, registerDropdownFacet, WIDGET_TYPE } from '../src/dropdownFacet';
 

@@ -127,7 +127,7 @@ export function registerWidgetType(id: string, factory: MountWidgetFactory): voi
   }
   if (!id.includes('.') && !FIRST_PARTY_WIDGET_TYPES.includes(id)) {
     throw new Error(
-      `registerWidgetType("${id}"): custom widget type identifiers must contain a dot, e.g. "myCompany.${id}". Bare names are reserved for the widgets shipped with @yourco/xperience-search.`
+      `registerWidgetType("${id}"): custom widget type identifiers must contain a dot, e.g. "myCompany.${id}". Bare names are reserved for the widgets shipped with @xperience-community/xperience-search.`
     );
   }
   if (typeof factory !== 'function') {

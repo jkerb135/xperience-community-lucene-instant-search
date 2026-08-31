@@ -51,12 +51,12 @@ public sealed class MySearchIndexingStrategy : XpSearchIndexingStrategy
 ### 1. Install the packages
 
 ```bash
-dotnet add package xperience-community.Xperience.Search.Core
+dotnet add package XperienceCommunity.Search.Core
 dotnet add package Kentico.Xperience.Lucene.Core
 dotnet add package Kentico.Xperience.Lucene.Admin
 ```
 
-`xperience-community.Xperience.Search.Core` targets .NET 8 and builds on `Kentico.Xperience.Lucene` 15.0.5, which in
+`XperienceCommunity.Search.Core` targets .NET 8 and builds on `Kentico.Xperience.Lucene` 15.0.5, which in
 turn needs `Kentico.Xperience.Core` 31.0.0 or later. The admin package is what puts the **Search**
 application in the administration interface, where indexes are defined.
 
@@ -65,7 +65,7 @@ application in the administration interface, where indexes are defined.
 Building from source, or consuming the packages from an internal Azure Artifacts / GitHub Packages
 feed? Add a `nuget.config` next to your solution. Adding the `<packageSource>` alone is **not enough**
 on any machine that enables [package source mapping](https://learn.microsoft.com/en-us/nuget/consume-packages/package-source-mapping)
-globally — restore fails with `NU1101: Unable to find package xperience-community.Xperience.Search.Core …
+globally — restore fails with `NU1101: Unable to find package XperienceCommunity.Search.Core …
 PackageSourceMapping is enabled, the following source(s) were not considered: xps-local`, because a
 mapped configuration only searches the sources a pattern names:
 
@@ -80,7 +80,6 @@ mapped configuration only searches the sources a pattern names:
   <packageSourceMapping>
     <clear />
     <packageSource key="xps-local">
-      <package pattern="xperience-community.Xperience.Search.*" />
       <package pattern="XperienceCommunity.Search.*" />
     </packageSource>
     <packageSource key="nuget.org">
@@ -100,7 +99,7 @@ is set up exactly this way; `samples/pack-and-build.mjs` runs it.
 
 The npm client is not on a public registry yet (see
 [KNOWN-LIMITATIONS](../internal/KNOWN-LIMITATIONS.md)). Install the tarball by path:
-`npm install ./yourco-xperience-search-0.1.0.tgz`. Every documented entry point — the root, the
+`npm install ./xperience-community-xperience-search-0.1.0.tgz`. Every documented entry point — the root, the
 `/behaviors` subpath, `/themes/*.css` and `/mock/server.mjs` — resolves the same way it will from a
 registry.
 

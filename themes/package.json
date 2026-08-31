@@ -1,8 +1,8 @@
 {
-  "name": "@yourco/xperience-search-themes",
+  "name": "@xperience-community/xperience-search-themes",
   "private": true,
   "version": "0.0.0",
-  "description": "shell.css and default.css for @yourco/xperience-search, plus the markup fixtures they are built against.",
+  "description": "shell.css and default.css for @xperience-community/xperience-search, plus the markup fixtures they are built against.",
   "type": "module",
   "scripts": {
     "check": "node scripts/check.mjs && node scripts/build-test-page.mjs --check",

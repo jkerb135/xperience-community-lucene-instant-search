@@ -222,12 +222,12 @@ described in [Custom widgets](custom-widgets.md).
 ### Static assets
 
 The client bundle and the two stylesheets ship as Razor Class Library static web assets of the
-`xperience-community.Xperience.Search.Widgets` package:
+`XperienceCommunity.Search.Widgets` package:
 
 ```text
-/_content/xperience-community.Xperience.Search.Widgets/xpsearch/shell.css        structure only
-/_content/xperience-community.Xperience.Search.Widgets/xpsearch/default.css      the opt-in visual theme
-/_content/xperience-community.Xperience.Search.Widgets/xpsearch/xpsearch.umd.js  the UMD bundle, global `xpsearch`
+/_content/XperienceCommunity.Search.Widgets/xpsearch/shell.css        structure only
+/_content/XperienceCommunity.Search.Widgets/xpsearch/default.css      the opt-in visual theme
+/_content/XperienceCommunity.Search.Widgets/xpsearch/xpsearch.umd.js  the UMD bundle, global `xpsearch`
 ```
 
 `<xps-search-assets />` emits all three. If your site has its own design system, load only the structural

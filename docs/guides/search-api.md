@@ -6,13 +6,13 @@ model, not copied from anyone. Arriving from a hosted search service? Read
 [Migrating from Algolia](migrating-from-algolia.md), which maps their concepts onto these ones.
 
 > **Status:** the contract types, the constants and the query pipeline that serves them all ship today
-> (`XpSearch.Core`, and `@yourco/xperience-search`). Every payload on this page is a fixture in the
+> (`XpSearch.Core`, and `@xperience-community/xperience-search`). Every payload on this page is a fixture in the
 > round-trip tests, so it is the exact shape the types accept.
 
 ### Calling the search endpoint
 
 ```js
-import { QUERY_ROUTE, API_VERSION_HEADER } from '@yourco/xperience-search';
+import { QUERY_ROUTE, API_VERSION_HEADER } from '@xperience-community/xperience-search';
 
 const response = await fetch(QUERY_ROUTE, {                 // '/api/xpsearch/query'
   method: 'POST',
@@ -41,7 +41,7 @@ The same constants exist in C# as `XpSearch.Core.Contract.ContractConstants`:
 
 All three take and return `application/json`. Every response carries `X-XpSearch-Api-Version: 1`. The
 version is the semver major of both packages; routes never carry a `/v1/` segment, so a breaking contract
-change is a new major of `xperience-community.Xperience.Search.Core` and of `@yourco/xperience-search` together.
+change is a new major of `XperienceCommunity.Search.Core` and of `@xperience-community/xperience-search` together.
 
 ### `POST /api/xpsearch/query`
 
@@ -392,7 +392,7 @@ back escaped.
 
 ### One schema, two type sets
 
-Both the C# DTOs (`XpSearch.Core.Contract`) and the TypeScript types (`@yourco/xperience-search`) are
+Both the C# DTOs (`XpSearch.Core.Contract`) and the TypeScript types (`@xperience-community/xperience-search`) are
 generated from `contract/xpsearch-api.schema.json`. That file is the single source of truth: changing a
 field there regenerates both sides, and `npm run contract:check` fails the build if a committed type set
 has drifted from it. A field change is therefore a coordinated, semver-major event — which is exactly why

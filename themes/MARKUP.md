@@ -33,7 +33,7 @@ class named here appears in a fixture.
    second one's `{widget}` segment gets `-2` appended (`id="xps-search-1-sort-select-2-select"`), the
    third `-3`, and so on; every part of one widget shares the one prefix, and a re-render never
    renumbers it. `widgetId(container, widget, part)` is exported from
-   `@yourco/xperience-search` and is the single implementation of this rule — the shipped
+   `@xperience-community/xperience-search` and is the single implementation of this rule — the shipped
    renderers and custom widgets call the same function, so nobody has to re-derive it.
 5. **Disabled controls use the real attribute** (`disabled` on form controls, `aria-disabled="true"`
    on links and on elements that stay focusable), *plus* the `--disabled` modifier for styling.

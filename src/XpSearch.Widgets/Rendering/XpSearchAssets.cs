@@ -8,7 +8,7 @@ namespace XpSearch.Widgets.Rendering;
 /// The <c>&lt;link&gt;</c> and <c>&lt;script&gt;</c> tags that load the Xperience Search client.
 /// </summary>
 /// <remarks>
-/// The files are Razor Class Library static web assets of <c>xperience-community.Xperience.Search.Widgets</c>, so
+/// The files are Razor Class Library static web assets of <c>XperienceCommunity.Search.Widgets</c>, so
 /// a host only needs <c>app.UseStaticFiles()</c>. A project that prefers Kentico's Page Builder
 /// bundling can copy them into <c>~/wwwroot/PageBuilder/Public/Widgets/XpSearch/</c> instead and emit
 /// its own tags; see
@@ -17,13 +17,13 @@ namespace XpSearch.Widgets.Rendering;
 public static class XpSearchAssets
 {
     /// <summary>Path of the structural stylesheet, relative to the application root.</summary>
-    public const string ShellStylesheetPath = "/_content/xperience-community.Xperience.Search.Widgets/xpsearch/shell.css";
+    public const string ShellStylesheetPath = "/_content/XperienceCommunity.Search.Widgets/xpsearch/shell.css";
 
     /// <summary>Path of the opt-in visual theme, relative to the application root.</summary>
-    public const string DefaultThemeStylesheetPath = "/_content/xperience-community.Xperience.Search.Widgets/xpsearch/default.css";
+    public const string DefaultThemeStylesheetPath = "/_content/XperienceCommunity.Search.Widgets/xpsearch/default.css";
 
     /// <summary>Path of the UMD bundle, relative to the application root.</summary>
-    public const string ScriptPath = "/_content/xperience-community.Xperience.Search.Widgets/xpsearch/xpsearch.umd.js";
+    public const string ScriptPath = "/_content/XperienceCommunity.Search.Widgets/xpsearch/xpsearch.umd.js";
 
     /// <summary>Builds the asset tags.</summary>
     /// <param name="pathBase">The application's path base, so the tags work under a virtual directory.</param>

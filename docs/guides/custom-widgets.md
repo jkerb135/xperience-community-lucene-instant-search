@@ -18,9 +18,9 @@ import from an internal path.
  * `withFacetList` behaviour. This file is the worked example in
  * `docs/guides/custom-widgets.md`; the two are the same text and CI builds this one.
  */
-import { escapeHtml, readMountConfig, registerWidgetType, widgetId } from '@yourco/xperience-search';
-import type { MountConfig, Widget } from '@yourco/xperience-search';
-import { withFacetList } from '@yourco/xperience-search/behaviors';
+import { escapeHtml, readMountConfig, registerWidgetType, widgetId } from '@xperience-community/xperience-search';
+import type { MountConfig, Widget } from '@xperience-community/xperience-search';
+import { withFacetList } from '@xperience-community/xperience-search/behaviors';
 
 /** The one identifier the JavaScript side uses, so the two registrations cannot drift. */
 export const WIDGET_TYPE = 'myCompany.dropdownFacet';
@@ -160,7 +160,7 @@ Nothing escapes for you when you assign `innerHTML`. Facet labels come from the 
 `label`/`allLabel` come from whatever an editor typed into a widget dialog, so both are untrusted:
 
 ```ts
-import { escapeHtml, html } from '@yourco/xperience-search';
+import { escapeHtml, html } from '@xperience-community/xperience-search';
 
 element.innerHTML = `<option value="${escapeHtml(item.value)}">${escapeHtml(item.label)}</option>`;
 element.innerHTML = String(html`<option value="${item.value}">${item.label}</option>`);
@@ -261,7 +261,7 @@ which is the only constraint a behaviour puts on it.
 Results are generic over the document shape:
 
 ```ts
-import { withResults } from '@yourco/xperience-search/behaviors';
+import { withResults } from '@xperience-community/xperience-search/behaviors';
 
 interface Product extends Record<string, unknown> {
   title: string;
@@ -324,8 +324,8 @@ search.on('error', ({ error, phase, widget }) => {
 Register the factory under a namespaced identifier and the `.xps-mount` bootstrap will resolve it:
 
 ```ts
-import { readMountConfig, registerWidgetType } from '@yourco/xperience-search';
-import type { MountConfig, Widget } from '@yourco/xperience-search';
+import { readMountConfig, registerWidgetType } from '@xperience-community/xperience-search';
+import type { MountConfig, Widget } from '@xperience-community/xperience-search';
 
 registerWidgetType('myCompany.dropdownFacet', (config: MountConfig): Widget =>
   dropdownFacet({

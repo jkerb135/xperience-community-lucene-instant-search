@@ -1,6 +1,6 @@
 ﻿/**
- * `@yourco/xperience-search` — the core entry point (spec 5.2).
- * The behaviours live at `@yourco/xperience-search/behaviors`.
+ * `@xperience-community/xperience-search` — the core entry point (spec 5.2).
+ * The behaviours live at `@xperience-community/xperience-search/behaviors`.
  */
 import { createSearch } from './instance';
 
