@@ -3,9 +3,9 @@
  * `withFacetList` behaviour. This file is the worked example in
  * `docs/guides/custom-widgets.md`; the two are the same text and CI builds this one.
  */
-import { escapeHtml, readMountConfig, registerWidgetType, widgetId } from '@yourco/xperience-search';
-import type { MountConfig, Widget } from '@yourco/xperience-search';
-import { withFacetList } from '@yourco/xperience-search/behaviors';
+import { escapeHtml, readMountConfig, registerWidgetType, widgetId } from '@xperience-community/xperience-search';
+import type { MountConfig, Widget } from '@xperience-community/xperience-search';
+import { withFacetList } from '@xperience-community/xperience-search/behaviors';
 
 /** The one identifier the JavaScript side uses, so the two registrations cannot drift. */
 export const WIDGET_TYPE = 'myCompany.dropdownFacet';

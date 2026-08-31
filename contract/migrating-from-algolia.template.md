@@ -32,7 +32,7 @@ search.start();
 
 ```js
 // After — Xperience Search
-import createSearch, { results, facetList, pagination } from '@yourco/xperience-search';
+import createSearch, { results, facetList, pagination } from '@xperience-community/xperience-search';
 
 const search = createSearch({ index: 'site-content' });        // same-origin endpoint by default
 search.addWidgets([

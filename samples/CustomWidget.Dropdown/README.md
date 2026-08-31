@@ -8,8 +8,8 @@ value clears the previously picked one, so the control filters on at most one va
 [Custom widgets](../../docs/guides/custom-widgets.md) — the guide shows this file, and CI builds it
 against the packed packages, so the example cannot rot.
 
-Built entirely on the published packages — `@yourco/xperience-search` (`withFacetList`) and
-`xperience-community.Xperience.Search.Widgets` (`XpSearchMountWidgetViewComponent<T>`). No forking, no internal
+Built entirely on the published packages — `@xperience-community/xperience-search` (`withFacetList`) and
+`XperienceCommunity.Search.Widgets` (`XpSearchMountWidgetViewComponent<T>`). No forking, no internal
 imports, no `any`, TypeScript strict.
 
 ```
@@ -26,13 +26,13 @@ Build and test it with `node samples/pack-and-build.mjs` from the repository roo
 ## JavaScript
 
 ```bash
-npm install @yourco/xperience-search
+npm install @xperience-community/xperience-search
 ```
 
 Copy `src/dropdownFacet.ts` into your front-end project and add the widget to a search instance:
 
 ```ts
-import createSearch from '@yourco/xperience-search';
+import createSearch from '@xperience-community/xperience-search';
 import { dropdownFacet } from './dropdownFacet';
 
 const search = createSearch({ index: 'site-content', routing: true });
@@ -61,7 +61,7 @@ Register the factory once, before `mountAll()` runs, so that
 `data-xps-widget="myCompany.dropdownFacet"` resolves:
 
 ```ts
-import { mountAll } from '@yourco/xperience-search';
+import { mountAll } from '@xperience-community/xperience-search';
 import { registerDropdownFacet } from './dropdownFacet';
 
 registerDropdownFacet();
@@ -94,7 +94,7 @@ the control gets the real `disabled` attribute *and* the `xps-select--disabled` 
 ## C#
 
 ```xml
-<PackageReference Include="xperience-community.Xperience.Search.Widgets" Version="0.1.0" />
+<PackageReference Include="XperienceCommunity.Search.Widgets" Version="0.1.0" />
 ```
 
 Copy `dotnet/CustomWidget.Dropdown.Widget/DropdownFacetWidget.cs` into your web project (or

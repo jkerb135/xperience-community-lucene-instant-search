@@ -1,5 +1,5 @@
 ﻿/**
- * `@yourco/xperience-search/behaviors` — behaviour without rendering (spec 5.7).
+ * `@xperience-community/xperience-search/behaviors` — behaviour without rendering (spec 5.7).
  *
  * A behaviour is what other libraries call a connector: it computes the render state and the
  * verbs (`apply`, `urlFor`, `isActive`, `canApply`, `isStalled`) and leaves the markup to you.

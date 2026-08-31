@@ -12,7 +12,7 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "@yourco/xperience-search": "file:../.feed/yourco-xperience-search-0.1.0.tgz"
+    "@xperience-community/xperience-search": "file:../.feed/xperience-community-xperience-search-0.1.0.tgz"
   },
   "devDependencies": {
     "jsdom": "^30.0.1",

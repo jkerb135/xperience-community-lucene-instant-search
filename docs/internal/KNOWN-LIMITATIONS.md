@@ -377,8 +377,8 @@ and how to lift it.
   manifest still carries `"private": true`, so `npm publish` refuses it. Publishing is Phase 8's job
   (registry, scope, provenance, the release workflow); nothing about the tarball's contents is
   waiting on it.
-- **Ceiling:** a JavaScript-only consumer cannot `npm install @yourco/xperience-search` from a
-  registry. They install the tarball by path (`npm install ./yourco-xperience-search-0.1.0.tgz`),
+- **Ceiling:** a JavaScript-only consumer cannot `npm install @xperience-community/xperience-search` from a
+  registry. They install the tarball by path (`npm install ./xperience-community-xperience-search-0.1.0.tgz`),
   which is what `samples/pack-and-build.mjs` does, and every documented entry point then resolves.
 - **Upgrade path:** delete the `private` field and set `publishConfig.access`, in the release unit.
 

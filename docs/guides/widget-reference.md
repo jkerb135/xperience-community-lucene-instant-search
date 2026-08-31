@@ -1,6 +1,6 @@
 ## Widget reference
 
-The thirteen widgets that ship with `@yourco/xperience-search`, the templating helpers they hand to your
+The thirteen widgets that ship with `@xperience-community/xperience-search`, the templating helpers they hand to your
 templates, and the markup each one emits. Every widget is a behaviour plus a default renderer — the
 same public API a [custom widget](custom-widgets.md) uses — so anything a built-in can do, yours can
 too.
@@ -40,7 +40,7 @@ too.
 Through a bundler the widgets are named exports of the package root:
 
 ```js
-import createSearch, { searchBox, results, facetList, pagination, resultStats, sortSelect } from '@yourco/xperience-search';
+import createSearch, { searchBox, results, facetList, pagination, resultStats, sortSelect } from '@xperience-community/xperience-search';
 ```
 
 Every widget takes `container`, which accepts **a CSS selector string or an `HTMLElement`**. The
