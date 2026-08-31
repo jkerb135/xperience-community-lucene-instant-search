@@ -140,3 +140,10 @@ runtime — never bundle your own copy.
   <https://docs.kentico.com/documentation/developers-and-admins/customization/extend-the-administration-interface/ui-pages/ui-page-commands>
 - UI page permission checks:
   <https://docs.kentico.com/documentation/developers-and-admins/customization/extend-the-administration-interface/ui-pages/ui-page-permission-checks>
+
+## Stylesheets
+
+`*.module.css` and `*.module.scss` are CSS modules: import the default export for the scoped
+class-name map. Plain `*.css` / `*.scss` imports are global. Sass (`sass` + `sass-loader`) runs
+before the same css-loader pipeline, so nesting, variables and partials all work; the rule-builder
+styles (`src/rule-builder/RuleBuilderTemplate.module.scss`) are the in-tree example.

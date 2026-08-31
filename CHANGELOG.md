@@ -8,6 +8,8 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Added:** the admin client module compiles Sass - `*.module.scss` (scoped) and `*.scss` (global) alongside the existing CSS support.
+
 - **Added (admin):** the four tables of the **analytics dashboard** are **paged**. The **Rows**
   control is now **Rows per page** — 10, 25 (the default), 50 or 100 — it applies immediately without
   a reload, and a table with more rows than one page grows a pager underneath it (*Page 2 of 4 · 87
