@@ -3,12 +3,12 @@
   <PropertyGroup>
     <RootNamespace>XpSearch.Widgets</RootNamespace>
     <AssemblyName>XpSearch.Widgets</AssemblyName>
-    <PackageId>xperience-community.Xperience.Search.Widgets</PackageId>
+    <PackageId>XperienceCommunity.Search.Widgets</PackageId>
     <IsPackable>true</IsPackable>
     <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
     <!-- Explicit so the served path is identical whether the library is consumed as a project
          reference or as the NuGet package (the SDK default is _content/$(PackageId)). -->
-    <StaticWebAssetBasePath>_content/xperience-community.Xperience.Search.Widgets</StaticWebAssetBasePath>
+    <StaticWebAssetBasePath>_content/XperienceCommunity.Search.Widgets</StaticWebAssetBasePath>
   </PropertyGroup>
 
   <ItemGroup>
