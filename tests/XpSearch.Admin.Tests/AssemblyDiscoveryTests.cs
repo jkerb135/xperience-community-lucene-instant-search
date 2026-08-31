@@ -48,6 +48,9 @@ internal sealed class AssemblyDiscoveryTests
             Assert.That(
                 configurators.GetValueOrDefault(XpSearchConstants.NumericAttributeConfiguratorIdentifier),
                 Is.EqualTo(typeof(NumericAttributeConfigurator)));
+            Assert.That(
+                configurators.GetValueOrDefault(XpSearchConstants.WeightFieldConfiguratorIdentifier),
+                Is.EqualTo(typeof(WeightFieldConfigurator)));
         });
     }
 

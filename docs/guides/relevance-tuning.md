@@ -359,7 +359,9 @@ A field weight decides how much a match in one place counts compared to another.
 usually deserves more than a match halfway down a body of text.
 
 1. **Field weights → New field weight** in the index's Edit index sidebar.
-2. **Field** — the field name as it appears in your search results, for example `Title`.
+2. **Field** — pick one from the list. It offers the index's searchable fields, the only ones a
+   weight can affect; a weight you saved earlier for a field the index no longer has stays selected
+   until you change it.
 3. **Weight** — `1` is normal. `3` makes a match in that field count roughly three times as much.
    `0.5` halves it.
 4. **Save**.
