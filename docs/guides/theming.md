@@ -28,7 +28,7 @@ documented class names — see [using shell on its own](#using-shell-on-its-own)
 |---|---|
 | Xperience site | `<xps-search-assets />` emits both `<link>` tags; the `XperienceCommunity.Search.Widgets` package serves them as static web assets from `/_content/XperienceCommunity.Search.Widgets/xpsearch/`. |
 | npm | `@xperience-community/xperience-search/themes/shell.css` and `.../themes/default.css` are package exports: `import '@xperience-community/xperience-search/themes/shell.css'` from a bundler, or copy the two files into the folder your site serves CSS from. |
-| In this repository | `themes/src/shell.css` and `themes/src/default.css` — the source location. Both packages ship those exact two files. |
+| In this repository | `themes/src/shell.css` and `themes/src/default.css` — the shipped files. Both packages ship those exact two files; they are compiled from `themes/src/scss/` and committed, see [Working on the stylesheets](#working-on-the-stylesheets). |
 
 `node_modules` is not usually web-served, so the `<link>` snippet above points at wherever your build
 put them rather than at the package folder.
@@ -178,6 +178,30 @@ does not exist. `themes/scripts/check.mjs` enforces a three-way agreement betwee
 CSS and the fixtures, and your class names are not in it: use the utilities above, or your own block
 that you style yourself.
 
+### Working on the stylesheets
+
+*Only relevant if you are changing the shipped stylesheets in this repository. Theming your own
+site needs no build step and no Sass — you write plain CSS against the class names above, and the
+markup contract is exactly the same either way.*
+
+The two stylesheets are authored in Sass and compiled into the CSS the packages ship:
+
+| File | Role |
+|---|---|
+| `themes/src/scss/shell.scss`, `themes/src/scss/default.scss` | Authoring source. Edit these. |
+| `themes/src/shell.css`, `themes/src/default.css` | Generated **and committed** — the files the RCL and the npm tarball copy. Do not edit by hand. |
+
+```
+cd themes
+npm install        # the theme scripts now need dart-sass
+npm run build      # src/scss/*.scss -> src/{shell,default}.css
+```
+
+`npm run check` recompiles to a temporary folder and fails if the committed CSS has drifted from the
+Sass, so a forgotten `npm run build` cannot ship. The Sass is a convenience for us — nesting for
+state rules, `$half`/`$quarter` for the `--xps-space` fractions — and deliberately nothing more: the
+compiled output is still plain, readable CSS whose custom properties are the theming API.
+
 ### The verification page
 
 `themes/test/index.html` opens straight from disk — no server, no build step. It renders every
@@ -187,15 +211,16 @@ rules, `* { box-sizing: content-box }`). Each section repeats a host-page sample
 every `.xps` element: if a widget stylesheet ever leaks, that block changes first. The page also
 carries the keyboard walk-through to run against each section.
 
-From `themes/`:
+From `themes/` (run `npm install` first — the scripts need dart-sass):
 
 ```
-npm run check      # stylesheet rules + the fixture/CSS/MARKUP.md contract
+npm run build      # compile src/scss/*.scss into the committed src/*.css
+npm run check      # CSS/Sass drift + stylesheet rules + the fixture/CSS/MARKUP.md contract
 npm run build:test # regenerate test/section-*.html after editing a fixture
 npm run size       # raw and gzipped bytes
 ```
 
-`npm run check` fails if `shell.css` grows a colour or a font, if `default.css` hard-codes a colour
+`npm run check` fails if the committed CSS no longer matches `src/scss/`, if `shell.css` grows a colour or a font, if `default.css` hard-codes a colour
 outside its variable block, if either file grows a selector that is not scoped to `xps-`, if an
 outline is removed without a replacement, or if the fixtures, the CSS and the markup contract stop
 agreeing about a class name.

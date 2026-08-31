@@ -1,7 +1,8 @@
 # Markup contract
 
 This file, together with `themes/fixtures/*.html`, is the contract between the stylesheets
-(`themes/src/shell.css`, `themes/src/default.css`) and the default widget renderers in
+(`themes/src/shell.css`, `themes/src/default.css` — generated from `themes/src/scss/`, run
+`npm run build` in `themes/` after editing) and the default widget renderers in
 `XpSearch.Widgets/Client`. The fixtures are the normative form: they are the exact DOM a widget must
 produce with no custom templates. This file explains what each class and attribute means.
 

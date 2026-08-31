@@ -5,8 +5,12 @@
   "description": "shell.css and default.css for @xperience-community/xperience-search, plus the markup fixtures they are built against.",
   "type": "module",
   "scripts": {
-    "check": "node scripts/check.mjs && node scripts/build-test-page.mjs --check",
+    "build": "node scripts/build-css.mjs",
+    "check": "node scripts/build-css.mjs --check && node scripts/check.mjs && node scripts/build-test-page.mjs --check",
     "build:test": "node scripts/build-test-page.mjs",
     "size": "node -e \"const z=require('zlib'),f=require('fs');for(const n of ['shell','default']){const s=f.readFileSync('src/'+n+'.css');console.log(n+'.css: '+s.length+' B raw, '+z.gzipSync(s,{level:9}).length+' B gzipped')}\""
+  },
+  "devDependencies": {
+    "sass": "^1.103.1"
   }
 }

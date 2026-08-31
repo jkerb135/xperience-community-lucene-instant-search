@@ -8,6 +8,7 @@
  *
  * Colour literals appear only in the variable blocks. `themes/scripts/check.mjs` enforces that.
  */
+
 .xps {
   --xps-color-accent: #0b5fff;
   --xps-color-text: #111;
@@ -17,6 +18,7 @@
   --xps-radius: 6px;
   --xps-space: 0.75rem;
   --xps-font: inherit;
+
   font-family: var(--xps-font);
   color: var(--xps-color-text);
 }
@@ -26,7 +28,7 @@
    control — following the OS unasked would put light text on a site that stayed light.
    Only variable values change here: no new rules, no new selectors. */
 @media (prefers-color-scheme: dark) {
-  .xps[data-xps-theme=auto] {
+  .xps[data-xps-theme="auto"] {
     --xps-color-accent: #6f9dff;
     --xps-color-text: #f2f2f2;
     --xps-color-muted: #a9a9a9;
@@ -34,9 +36,11 @@
     --xps-color-border: #33363d;
   }
 }
+
 /* --------------------------------------------------------------------------
  * Shared primitives
  * ------------------------------------------------------------------------ */
+
 .xps a {
   color: var(--xps-color-accent);
 }
@@ -61,20 +65,22 @@
   color: var(--xps-color-text);
   border: 1px solid var(--xps-color-border);
   border-radius: var(--xps-radius);
-}
-.xps-button:hover:not(:disabled) {
-  background-color: color-mix(in srgb, var(--xps-color-accent) 8%, var(--xps-color-surface));
-  border-color: color-mix(in srgb, var(--xps-color-accent) 40%, var(--xps-color-border));
+
+  &:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--xps-color-accent) 8%, var(--xps-color-surface));
+    border-color: color-mix(in srgb, var(--xps-color-accent) 40%, var(--xps-color-border));
+  }
 }
 
 .xps-button--primary {
   background-color: var(--xps-color-accent);
   border-color: var(--xps-color-accent);
   color: var(--xps-color-surface);
-}
-.xps-button--primary:hover:not(:disabled) {
-  background-color: color-mix(in srgb, var(--xps-color-text) 15%, var(--xps-color-accent));
-  border-color: color-mix(in srgb, var(--xps-color-text) 15%, var(--xps-color-accent));
+
+  &:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--xps-color-text) 15%, var(--xps-color-accent));
+    border-color: color-mix(in srgb, var(--xps-color-text) 15%, var(--xps-color-accent));
+  }
 }
 
 .xps-chip {
@@ -92,15 +98,17 @@
   border: 0;
   border-radius: var(--xps-radius);
   color: var(--xps-color-muted);
-}
-.xps-chip__remove:hover {
-  color: var(--xps-color-text);
-  background-color: color-mix(in srgb, var(--xps-color-accent) 15%, transparent);
+
+  &:hover {
+    color: var(--xps-color-text);
+    background-color: color-mix(in srgb, var(--xps-color-accent) 15%, transparent);
+  }
 }
 
 /* --------------------------------------------------------------------------
  * Form controls
  * ------------------------------------------------------------------------ */
+
 .xps-search-box__input,
 .xps-suggestions__input,
 .xps-facet-list__search-input,
@@ -139,12 +147,14 @@
 /* --------------------------------------------------------------------------
  * results
  * ------------------------------------------------------------------------ */
+
 .xps-result__link {
   color: var(--xps-color-accent);
   text-decoration: none;
-}
-.xps-result__link:hover {
-  text-decoration: underline;
+
+  &:hover {
+    text-decoration: underline;
+  }
 }
 
 .xps-result__snippet {
@@ -164,6 +174,7 @@
 /* --------------------------------------------------------------------------
  * facetList / toggleFilter / categoryTree
  * ------------------------------------------------------------------------ */
+
 .xps-facet-list__title,
 .xps-category-tree__title,
 .xps-range-filter__title {
@@ -194,9 +205,10 @@
 .xps-category-tree__link {
   color: var(--xps-color-text);
   text-decoration: none;
-}
-.xps-category-tree__link:hover {
-  color: var(--xps-color-accent);
+
+  &:hover {
+    color: var(--xps-color-accent);
+  }
 }
 
 .xps-category-tree__item--selected > .xps-category-tree__link {
@@ -211,14 +223,16 @@
 /* --------------------------------------------------------------------------
  * pagination / stats
  * ------------------------------------------------------------------------ */
+
 .xps-pagination__link {
   color: var(--xps-color-text);
   text-decoration: none;
   border: 1px solid var(--xps-color-border);
   border-radius: var(--xps-radius);
-}
-.xps-pagination__link:hover[href] {
-  border-color: color-mix(in srgb, var(--xps-color-accent) 50%, var(--xps-color-border));
+
+  &:hover[href] {
+    border-color: color-mix(in srgb, var(--xps-color-accent) 50%, var(--xps-color-border));
+  }
 }
 
 .xps-pagination__item--current .xps-pagination__link {
@@ -240,6 +254,7 @@
 /* --------------------------------------------------------------------------
  * suggestions
  * ------------------------------------------------------------------------ */
+
 .xps-suggestions__panel {
   background-color: var(--xps-color-surface);
   border: 1px solid var(--xps-color-border);
@@ -277,6 +292,7 @@
 /* --------------------------------------------------------------------------
  * Page Builder editor preview
  * ------------------------------------------------------------------------ */
+
 .xps-editor-preview {
   border: 1px dashed var(--xps-color-border);
   border-radius: var(--xps-radius);

@@ -10,6 +10,18 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 - **Added:** the admin client module compiles Sass - `*.module.scss` (scoped) and `*.scss` (global) alongside the existing CSS support.
 
+- **Changed (themes, no visual change):** `shell.css` and `default.css` are now **authored in Sass**
+  — `themes/src/scss/shell.scss` and `themes/src/scss/default.scss`. The shipped files stay exactly
+  where they were, `themes/src/shell.css` and `themes/src/default.css`, compiled (`npm run build` in
+  `themes/`, dart-sass, expanded, no source maps) and committed, so the RCL's static web assets, the
+  npm tarball's `themes/*.css` exports, the class contract and every `--xps-*` variable are
+  unchanged. `npm run check` gained a drift check: it recompiles the Sass to a temporary folder and
+  fails if the committed CSS no longer matches. Every rule of the hand-written files carried over
+  identically (proven by a normalised rule-by-rule diff); only formatting moved. Theming your own
+  site still needs no build step and no Sass — the Sass is our authoring convenience, `themes/` now
+  needs `npm install` before its scripts run. See
+  [Theming → Working on the stylesheets](docs/guides/theming.md#working-on-the-stylesheets).
+
 - **Added (admin):** the four tables of the **analytics dashboard** are **paged**. The **Rows**
   control is now **Rows per page** — 10, 25 (the default), 50 or 100 — it applies immediately without
   a reload, and a table with more rows than one page grows a pager underneath it (*Page 2 of 4 · 87
