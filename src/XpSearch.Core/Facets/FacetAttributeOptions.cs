@@ -28,6 +28,19 @@ public static class FacetAttributeOptions
     }
 
     /// <summary>
+    /// Matches the fields a field weight can affect. <c>BuildQueryStage.Boosts</c> only visits
+    /// searchable fields, so a weight on any other field is silently ignored at query time.
+    /// </summary>
+    /// <param name="field">The schema field.</param>
+    /// <returns><see langword="true"/> when free-text queries match against the field.</returns>
+    public static bool IsWeightable(SchemaField field)
+    {
+        ArgumentNullException.ThrowIfNull(field);
+
+        return field.Searchable;
+    }
+
+    /// <summary>
     /// Builds the <c>value;label</c> option lines of the fields of an index an attribute drop-down
     /// may offer.
     /// </summary>

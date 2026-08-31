@@ -83,6 +83,26 @@ internal sealed class FacetAttributeOptionsTests
         });
     }
 
+    /// <summary>
+    /// A field weight multiplies the per-field boost <c>BuildQueryStage.Boosts</c> builds, and that
+    /// loop only visits searchable fields - so a weight on anything else would never be applied.
+    /// </summary>
+    [Test]
+    public async Task The_weight_predicate_narrows_the_options_to_the_searchable_fields()
+    {
+        var provider = SchemaProvider(
+            "site-content",
+            new SchemaField("title", SearchFieldKind.Text, true, false, false, true),
+            new SchemaField("tags", SearchFieldKind.Taxonomy, false, true, false, true),
+            new SchemaField("price", SearchFieldKind.Number, false, true, true, true),
+            new SchemaField("summary", SearchFieldKind.Text, true, false, false, true));
+
+        string? weightable = await FacetAttributeOptions.BuildOptionsAsync(
+            provider, "site-content", CancellationToken.None, FacetAttributeOptions.IsWeightable);
+
+        Assert.That(weightable, Is.EqualTo("title;title\r\nsummary;summary"));
+    }
+
     [Test]
     public async Task An_index_with_no_numeric_or_date_field_offers_nothing_so_the_field_is_hidden()
     {

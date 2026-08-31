@@ -8,6 +8,13 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Changed (admin):** the **Field** input of a field weight is a drop-down of the scoped index's
+  searchable fields instead of a text box. A stored weight naming a field the index no longer has
+  keeps that value as an option, so opening the row and saving it cannot silently retarget the weight.
+
+- **Changed (admin):** the *Show the numbers* collapse under the analytics **Searches over time**
+  chart renders the per-day figures in the platform's stock table.
+
 - **Added:** the admin client module compiles Sass - `*.module.scss` (scoped) and `*.scss` (global) alongside the existing CSS support.
 
 - **Changed (themes, no visual change):** `shell.css` and `default.css` are now **authored in Sass**

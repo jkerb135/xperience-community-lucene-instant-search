@@ -8,8 +8,10 @@ using Kentico.Xperience.Admin.Base.Forms.Internal;
 using Kentico.Xperience.Lucene.Admin;
 using Kentico.Xperience.Lucene.Core.Indexing;
 
+using XpSearch.Admin.Forms;
 using XpSearch.Admin.Persistence;
 using XpSearch.Admin.UIPages;
+using XpSearch.Core;
 
 [assembly: UIPage(
     parentType: typeof(IndexTuningSection),
@@ -54,7 +56,12 @@ public class FieldWeightModel : IIndexScopedModel
 
     /// <summary>Gets or sets the schema field the weight applies to.</summary>
     [RequiredValidationRule]
-    [TextInputComponent(Label = "Field", Order = 2, Tooltip = "The attribute name as it appears in search results, for example Title.")]
+    [DropDownComponent(
+        Label = "Field",
+        Order = 2,
+        Placeholder = "Select a field",
+        Tooltip = "The attribute name as it appears in search results, for example Title.")]
+    [FormComponentConfiguration(XpSearchConstants.WeightFieldConfiguratorIdentifier, nameof(IndexName))]
     public string FieldName { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the multiplier.</summary>
@@ -161,6 +168,20 @@ public class FieldWeightEdit : IndexScopedEditPage<FieldWeightModel>
     /// <inheritdoc />
     protected override FieldWeightModel CreateModel() =>
         provider.Get(ObjectId) is { } row ? FieldWeightModel.From(row) : new FieldWeightModel();
+
+    /// <inheritdoc />
+    protected override async Task<ICollection<IFormItem>> GetFormItems()
+    {
+        var items = await base.GetFormItems();
+
+        foreach (var dropDown in items.OfType<DropDownComponent>()
+            .Where(component => string.Equals(component.Name, nameof(FieldWeightModel.FieldName), StringComparison.OrdinalIgnoreCase)))
+        {
+            dropDown.Properties.Options = WeightFieldConfigurator.WithStoredValue(dropDown.Properties.Options, Model.FieldName);
+        }
+
+        return items;
+    }
 
     /// <inheritdoc />
     protected override Task<string> PersistAsync(FieldWeightModel submitted, CancellationToken cancellationToken)

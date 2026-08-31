@@ -238,7 +238,8 @@ What you get, in the order the page shows it:
 - Four **KPI tiles**: *Total searches*, *Zero-result rate*, *Click-through rate* and *Avg clicked
   position*. A tile with nothing to divide by reads `—` rather than `0%`.
 - **Searches over time** — two lines, total searches and zero-result searches, one point per day.
-  *Show the numbers* opens the same data as a table.
+  *Show the numbers* opens the same data as an ordinary table, one row per day, for anyone who cannot
+  read the chart.
 - **Zero-result queries** — what visitors asked for and did not find, most searched first, with the
   date it was last asked, and a **Create rule** action on every row. This is the report to read
   first, and the only table on the page that changes anything.

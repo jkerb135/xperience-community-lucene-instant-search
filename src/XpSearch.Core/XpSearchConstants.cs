@@ -25,6 +25,12 @@ public static class XpSearchConstants
     public const string NumericAttributeConfiguratorIdentifier = "xpsearch.numericAttribute";
 
     /// <summary>
+    /// Identifier of the form component configurator that fills the field weight form's Field
+    /// drop-down with the searchable fields of the index the admin page is scoped to (spec §8.2).
+    /// </summary>
+    public const string WeightFieldConfiguratorIdentifier = "xpsearch.weightField";
+
+    /// <summary>
     /// Name of the property the facet attribute configurator reads the selected index from. Every
     /// widget inherits it from <c>XpSearchMountWidgetProperties</c>, so a widget author never has to
     /// think about it - but a properties class that does not derive from that base must name its
