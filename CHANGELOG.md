@@ -19,22 +19,33 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
   through. `AnalyticsRequest.Limit` and `AnalyticsDashboardPage.MaxLimit` are **removed** — the row
   count is a client-side concern now.
 
-- **Changed (branding) — BREAKING for package ids and admin URLs:** the placeholder `YourCo` branding
-  is gone. `YourCo.Xperience.Search.Core` → `xperience-community.Xperience.Search.Core`,
-  `YourCo.Xperience.Search.Ingestion` → `xperience-community.Xperience.Search.Ingestion`,
-  `YourCo.Xperience.Search.Widgets` → `xperience-community.Xperience.Search.Widgets` and
-  `YourCo.Xperience.Search.Admin` → `XperienceCommunity.Search.Admin`. The widgets' static web assets
-  move with the package id, to
-  `/_content/xperience-community.Xperience.Search.Widgets/xpsearch/{shell.css,default.css,xpsearch.umd.js}` —
+- **Changed (branding) — BREAKING for package ids, package names and admin URLs:** the placeholder
+  `YourCo` branding is gone, and the .NET packages have settled on **one** scheme
+  ([ADR-0023](docs/adr/0023-branding.md), [spec amendment](docs/spec/amendments/2026-08-25-branding.md)).
+  The NuGet ids are now `XperienceCommunity.Search.Core`, `XperienceCommunity.Search.Ingestion`,
+  `XperienceCommunity.Search.Widgets` and `XperienceCommunity.Search.Admin`. Note this is the
+  **second** rename in this unreleased entry: `Core`, `Ingestion` and `Widgets` went
+  `YourCo.Xperience.Search.*` → `xperience-community.Xperience.Search.*` → `XperienceCommunity.Search.*`,
+  while `Admin` went straight to `XperienceCommunity.Search.Admin` and never moved again. Nothing was
+  published under either earlier name, so no one has an upgrade to perform — but the interim id is in
+  the repository's history and may be in your working tree.
+  The npm packages are renamed too: `@yourco/xperience-search` → **`@xperience-community/xperience-search`**
+  and the private themes package `@yourco/xperience-search-themes` →
+  `@xperience-community/xperience-search-themes`. Every entry point is unchanged, so only the
+  specifier in your `package.json` and your imports move. `npm pack` now produces
+  `xperience-community-xperience-search-0.1.0.tgz`.
+  The widgets' static web assets move with the package id, to
+  `/_content/XperienceCommunity.Search.Widgets/xpsearch/{shell.css,default.css,xpsearch.umd.js}` —
   use the `XpSearchAssets` constants or `<xps-search-assets />` and the path is never typed by hand.
+  A `packageSourceMapping` for a local feed is one glob again, `XperienceCommunity.Search.*`.
   The admin client module is now organization `xperience-community`, project `xperience-search`, so
   the client templates are `@xperience-community/xperience-search/<Name>`, and a `Proxy`-mode host
   keys `CMSAdminClientModuleSettings` on `xperience-community-xperience-search` (port 3010). The
   per-index section's slug changed from `tuning` to `edit` and its name from *Tuning* to *Edit index*:
   every page moves from `/admin/lucene/indexes/tuning/{id}/…` to `/admin/lucene/indexes/edit/{id}/…`.
   **Update your bookmarks**, and any link into the administration interface from your own tooling.
-  The npm package (`@yourco/xperience-search`), the assembly and namespace prefix (`XpSearch.*`), the
-  widget identifiers (`XpSearch.SearchBox` and friends) and the ingestion application's slug
+  The UMD global (`xpsearch`), the assembly and namespace prefix (`XpSearch.*`), the widget
+  identifiers (`XpSearch.SearchBox` and friends) and the ingestion application's slug
   (`xpsearch-tuning`) are unchanged.
 - **Changed (relevance tuning) — BREAKING for the rule storage schema:** a rule's `if` and `then` are
   now stored as two JSON columns on `XpSearch_Rule`, `RuleConditions` and `RuleConsequences`, and the
