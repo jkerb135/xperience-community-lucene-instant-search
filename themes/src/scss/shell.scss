@@ -6,9 +6,18 @@
  * in the stylesheet can reach the host page.
  * Markup contract: themes/MARKUP.md
  */
+
+// Fractions of the one structural variable. These compile to the literal calc() they name —
+// the shipped CSS still reads calc(var(--xps-space) / 2), so overriding --xps-space at runtime
+// keeps working.
+$half: calc(var(--xps-space) / 2);
+$quarter: calc(var(--xps-space) / 4);
+$double: calc(var(--xps-space) * 2);
+
 /* --------------------------------------------------------------------------
  * Scoped reset
  * ------------------------------------------------------------------------ */
+
 .xps {
   /* The one structural variable. default.css re-declares it with the same value;
      a site using shell alone still gets a spacing rhythm. */
@@ -53,7 +62,7 @@
 }
 
 .xps :disabled,
-.xps [aria-disabled=true] {
+.xps [aria-disabled="true"] {
   cursor: default;
   opacity: 0.55;
 }
@@ -67,6 +76,7 @@
  * Focus. Never removed, only replaced — the ring is drawn in the inherited
  * text colour so it is visible on any host background.
  * ------------------------------------------------------------------------ */
+
 .xps:focus-visible,
 .xps :focus-visible {
   outline: 2px solid currentColor;
@@ -76,6 +86,7 @@
 /* --------------------------------------------------------------------------
  * Utilities (documented for custom widgets, spec 5.7)
  * ------------------------------------------------------------------------ */
+
 .xps-sr-only {
   position: absolute;
   width: 1px;
@@ -108,21 +119,21 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: calc(var(--xps-space) / 2);
+  gap: $half;
   min-height: 2.25rem;
-  padding: calc(var(--xps-space) / 2) var(--xps-space);
+  padding: $half var(--xps-space);
 }
 
 .xps-chip {
   display: inline-flex;
   align-items: center;
-  gap: calc(var(--xps-space) / 2);
-  padding: calc(var(--xps-space) / 4) calc(var(--xps-space) / 2);
+  gap: $half;
+  padding: $quarter $half;
 }
 
 .xps-chip__label {
   display: inline-flex;
-  gap: calc(var(--xps-space) / 4);
+  gap: $quarter;
 }
 
 .xps-chip__remove {
@@ -162,31 +173,34 @@
     opacity: 0.05;
   }
 }
+
 @media (prefers-reduced-motion: reduce) {
   .xps-skeleton {
     animation: none;
   }
 }
+
 /* --------------------------------------------------------------------------
  * searchBox
  * ------------------------------------------------------------------------ */
+
 .xps-search-box {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--xps-space) / 2);
+  gap: $half;
 }
 
 .xps-search-box__field {
   display: flex;
   align-items: center;
-  gap: calc(var(--xps-space) / 2);
+  gap: $half;
 }
 
 .xps-search-box__input {
   flex: 1 1 auto;
   min-width: 0;
   min-height: 2.25rem;
-  padding: calc(var(--xps-space) / 2);
+  padding: $half;
 }
 
 .xps-search-box__loading {
@@ -208,6 +222,7 @@
 /* --------------------------------------------------------------------------
  * results / loadMore
  * ------------------------------------------------------------------------ */
+
 .xps-results,
 .xps-load-more {
   display: flex;
@@ -219,13 +234,13 @@
 .xps-load-more__list {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--xps-space) * 2);
+  gap: $double;
 }
 
 .xps-results__empty {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--xps-space) / 2);
+  gap: $half;
 }
 
 .xps-result {
@@ -246,7 +261,7 @@
 .xps-result__body {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--xps-space) / 2);
+  gap: $half;
   min-width: 0;
   flex: 1 1 auto;
 }
@@ -258,7 +273,7 @@
 }
 
 .xps-result--skeleton .xps-result__body {
-  gap: calc(var(--xps-space) / 2);
+  gap: $half;
   width: 100%;
 }
 
@@ -273,29 +288,30 @@
 /* --------------------------------------------------------------------------
  * facetList / toggleFilter
  * ------------------------------------------------------------------------ */
+
 .xps-facet-list {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--xps-space) / 2);
+  gap: $half;
 }
 
 .xps-facet-list__search-input {
   width: 100%;
   min-height: 2.25rem;
-  padding: calc(var(--xps-space) / 2);
+  padding: $half;
 }
 
 .xps-facet-list__list {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--xps-space) / 2);
+  gap: $half;
 }
 
 .xps-facet-list__label,
 .xps-toggle-filter__label {
   display: flex;
   align-items: center;
-  gap: calc(var(--xps-space) / 2);
+  gap: $half;
   cursor: pointer;
 }
 
@@ -327,11 +343,12 @@
 /* --------------------------------------------------------------------------
  * pagination
  * ------------------------------------------------------------------------ */
+
 .xps-pagination__list {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: calc(var(--xps-space) / 2);
+  gap: $half;
 }
 
 .xps-pagination__link {
@@ -340,7 +357,7 @@
   justify-content: center;
   min-width: 2.25rem;
   min-height: 2.25rem;
-  padding: 0 calc(var(--xps-space) / 2);
+  padding: 0 $half;
 }
 
 .xps-pagination__ellipsis {
@@ -352,10 +369,11 @@
 /* --------------------------------------------------------------------------
  * stats / sortBy / clearRefinements / currentRefinements
  * ------------------------------------------------------------------------ */
+
 .xps-result-stats {
   display: flex;
   align-items: baseline;
-  gap: calc(var(--xps-space) / 2);
+  gap: $half;
 }
 
 /* The shared labelled-select block. Available to custom widgets; sortSelect uses it too, so
@@ -364,12 +382,12 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: calc(var(--xps-space) / 2);
+  gap: $half;
 }
 
 .xps-select__control {
   min-height: 2.25rem;
-  padding: calc(var(--xps-space) / 4) calc(var(--xps-space) / 2);
+  padding: $quarter $half;
 }
 
 .xps-select--disabled {
@@ -380,13 +398,14 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: calc(var(--xps-space) / 2);
+  gap: $half;
 }
 
 /* --------------------------------------------------------------------------
  * suggestions — combobox with a listbox popup
  * https://www.w3.org/WAI/ARIA/apg/patterns/combobox/
  * ------------------------------------------------------------------------ */
+
 .xps-suggestions {
   position: relative;
   display: block;
@@ -395,14 +414,14 @@
 .xps-suggestions__field {
   display: flex;
   align-items: center;
-  gap: calc(var(--xps-space) / 2);
+  gap: $half;
 }
 
 .xps-suggestions__input {
   flex: 1 1 auto;
   min-width: 0;
   min-height: 2.25rem;
-  padding: calc(var(--xps-space) / 2);
+  padding: $half;
 }
 
 .xps-suggestions__panel {
@@ -416,35 +435,36 @@
 }
 
 .xps-suggestions__group-title {
-  padding: calc(var(--xps-space) / 2) var(--xps-space);
+  padding: $half var(--xps-space);
 }
 
 .xps-suggestions__option {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--xps-space) / 4);
-  padding: calc(var(--xps-space) / 2) var(--xps-space);
+  gap: $quarter;
+  padding: $half var(--xps-space);
   cursor: pointer;
 }
 
 .xps-suggestions__empty,
 .xps-suggestions__footer {
-  padding: calc(var(--xps-space) / 2) var(--xps-space);
+  padding: $half var(--xps-space);
 }
 
 /* --------------------------------------------------------------------------
  * rangeSlider
  * ------------------------------------------------------------------------ */
+
 .xps-range-filter {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--xps-space) / 2);
+  gap: $half;
 }
 
 .xps-range-filter__track {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--xps-space) / 4);
+  gap: $quarter;
 }
 
 .xps-range-filter__range {
@@ -456,40 +476,41 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: calc(var(--xps-space) / 2);
+  gap: $half;
 }
 
 .xps-range-filter__input {
   width: 6rem;
   min-height: 2.25rem;
-  padding: calc(var(--xps-space) / 4) calc(var(--xps-space) / 2);
+  padding: $quarter $half;
 }
 
 /* --------------------------------------------------------------------------
  * categoryTree
  * ------------------------------------------------------------------------ */
+
 .xps-category-tree {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--xps-space) / 2);
+  gap: $half;
 }
 
 .xps-category-tree__list {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--xps-space) / 4);
+  gap: $quarter;
 }
 
 .xps-category-tree__item > .xps-category-tree__list {
-  margin-top: calc(var(--xps-space) / 4);
+  margin-top: $quarter;
   padding-inline-start: var(--xps-space);
 }
 
 .xps-category-tree__link {
   display: flex;
   align-items: center;
-  gap: calc(var(--xps-space) / 2);
-  padding: calc(var(--xps-space) / 4) 0;
+  gap: $half;
+  padding: $quarter 0;
 }
 
 .xps-category-tree__count {
@@ -503,10 +524,11 @@
  * where hydrating a mount would be unreliable. Structure only, like everything else
  * here: the mirrored widget markup inside it is styled by the widget's own classes.
  * ------------------------------------------------------------------------ */
+
 .xps-editor-preview {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--xps-space) / 2);
+  gap: $half;
   padding: var(--xps-space);
 }
 
@@ -518,7 +540,7 @@
 .xps-editor-preview__body {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--xps-space) / 2);
+  gap: $half;
 }
 
 .xps-editor-preview__note {

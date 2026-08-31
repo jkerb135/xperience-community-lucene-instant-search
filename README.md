@@ -19,7 +19,7 @@ activity tracking, and an ingestion API for external data.
 | `src/XpSearch.Ingestion` | Push API, schema, API keys (NuGet) |
 | `src/XpSearch.Widgets/Client` | JS library — behaviours, widgets, routing (npm) |
 | `clients/` | Thin .NET and Node ingestion clients |
-| `themes/` | shell.css (structural) + default.css (opt-in theme) |
+| `themes/` | shell.css (structural) + default.css (opt-in theme), authored in Sass under `themes/src/scss/` |
 | `samples/` | Dancing Goat reference build, custom widget example |
 | `tests/` | Unit, integration, a11y, performance |
 | `build/` | Packaging, licensing key tooling |
