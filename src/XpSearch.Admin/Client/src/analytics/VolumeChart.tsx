@@ -1,4 +1,15 @@
-import { Card, Colors, Headline, HeadlineSize, Inline, Spacing } from '@kentico/xperience-admin-components';
+import {
+  Card,
+  CellType,
+  Colors,
+  ColumnContentType,
+  Headline,
+  HeadlineSize,
+  Inline,
+  Spacing,
+  Table,
+} from '@kentico/xperience-admin-components';
+import type { StringCell, TableColumn, TableRow } from '@kentico/xperience-admin-components';
 
 import { muted } from '../theme';
 
@@ -36,6 +47,38 @@ const path = (values: number[], peak: number): string =>
     })
     .join(' ')
     .concat(values.length === 1 ? ` L${width} ${(height - (values[0] / peak) * height).toFixed(1)}` : '');
+
+const numberColumn = (name: string, caption: string): TableColumn => ({
+  name,
+  caption,
+  visible: true,
+  minWidth: 10,
+  maxWidth: 0,
+  contentType: ColumnContentType.Text,
+  sortable: false,
+  searchable: false,
+});
+
+const numberColumns: TableColumn[] = [
+  numberColumn('day', 'Date'),
+  numberColumn('volume', 'Searches'),
+  numberColumn('zeroResultVolume', 'Zero-result searches'),
+];
+
+const numberCell = (columnName: string, value: string): StringCell => ({ type: CellType.String, columnName, value });
+
+// Every point is a row: the range the dashboard offers tops out at 90 days, so there is no paging.
+const numberRow =
+  (formatDay: (day: string) => string) =>
+  (point: VolumePoint): TableRow => ({
+    identifier: point.day,
+    disabled: false,
+    cells: [
+      numberCell('day', formatDay(point.day)),
+      numberCell('volume', String(point.volume)),
+      numberCell('zeroResultVolume', String(point.zeroResultVolume)),
+    ],
+  });
 
 const Legend = ({ color, label }: { readonly color: string; readonly label: string }) => (
   <span style={{ ...muted, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
@@ -81,25 +124,7 @@ export const VolumeChart = ({ points, formatDay }: VolumeChartProps) => {
       </div>
       <details>
         <summary>Show the numbers</summary>
-        <table>
-          <caption style={muted}>Searches per day</caption>
-          <thead>
-            <tr>
-              <th scope="col">Day</th>
-              <th scope="col">Searches</th>
-              <th scope="col">Zero-result</th>
-            </tr>
-          </thead>
-          <tbody>
-            {points.map((point) => (
-              <tr key={point.day}>
-                <td>{formatDay(point.day)}</td>
-                <td>{point.volume}</td>
-                <td>{point.zeroResultVolume}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <Table columns={numberColumns} rows={points.map(numberRow(formatDay))} isHeaderVisible />
       </details>
     </Card>
   );
