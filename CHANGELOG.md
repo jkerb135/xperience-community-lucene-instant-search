@@ -8,6 +8,17 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Added (widgets) — behaviour change:** the **Search - Search box** widget has a **Sync search state
+  to the URL** property, on by default, which emits `"routing":true` into `data-xps-instance-config`.
+  The query, filters, sort and page then live in the address bar: result pages are shareable and the
+  back button walks the search back. **This changes existing pages**: a search box saved before this
+  release deserializes the missing property to its default, so searches composed in the Page Builder
+  start syncing to the URL without being re-saved — which is the point, the JavaScript client has
+  supported routing all along and no widget ever asked for it. Untick the property to keep a search's
+  state in memory. The value is emitted either way (`"routing":false` when unticked). At most one
+  search instance per page may sync: the parameters are not namespaced per instance ID, so two syncing
+  searches overwrite each other.
+
 - **Fixed (admin):** **Delete** now works on all five listings — field weights, synonyms, stopwords,
   rules and API keys. Each listing offered the action but none registered a `Delete` page command
   behind it, so every click failed with *command not found*. Deleting a tuning row needs *Delete* on

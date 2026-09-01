@@ -74,7 +74,7 @@ Then, per widget:
 
 | Widget | Properties |
 |---|---|
-| Search box | Placeholder · Show reset button · Focus on page load |
+| Search box | Placeholder · Show reset button · Focus on page load · Sync search state to the URL — see [Shareable result URLs](#shareable-result-urls) |
 | Results | Results per page · Result template · Fields to show (one attribute name per line — `title`, `url`, `contentType`, `language` or any field of your content types) |
 | Facet list | Attribute · Label · Operator (any / all of the selected values) · Values shown · Show a "show more" button |
 | Category tree | Attribute · Label · Nodes per level. Pick a **taxonomy** attribute: the tree comes from the tag hierarchy, and a flat attribute renders as one level. Selection is one value at a time, because a parent's count already includes its children |
@@ -125,6 +125,31 @@ when the editor did not set them, so the JavaScript widget's own `From` / `To` a
 A date attribute is indexed as Unix epoch seconds, so its bounds are entered as epoch seconds too —
 `1704067200` is 2024-01-01. Give such a filter a **Label** and "From" / "To" labels that say so.
 
+#### Shareable result URLs
+
+The search box's **Sync search state to the URL** property, on by default, keeps the query, the
+selected filters, the sort key and the page number in the address bar. A visitor can then bookmark or
+send a result page, and the browser's back button walks the search back instead of leaving the page.
+Typing replaces the current history entry rather than pushing one per keystroke; a filter or a page
+change pushes.
+
+The search box owns the option because exactly one of them exists per search, but it applies to the
+whole instance — it is written to `data-xps-instance-config`, which the bootstrap merges into the
+`routing` option of `createSearch()`:
+
+```html
+<div class="xps-mount" data-xps-config="{&quot;showReset&quot;:true,&quot;autofocus&quot;:false}" data-xps-instance="default" data-xps-instance-config="{&quot;index&quot;:&quot;site-content&quot;,&quot;routing&quot;:true}" data-xps-widget="searchBox"></div>
+```
+
+A synced search reads those parameters on load, so `?q=coffee&contentType=Article&page=2` renders that
+result page directly.
+
+**At most one search instance per page may sync.** The parameter names (`q`, `page`, `sort`, and each
+facet's attribute name) are not namespaced by instance ID, so two syncing searches on one page write
+over each other's parameters and both restore from the same `q`. Untick the property on the secondary
+search — a product finder embedded in an article, say — and it keeps its state in memory only. The
+property is emitted either way, so `"routing":false` in the markup is the sign of a deliberate choice.
+
 #### Sort options are validated
 
 A sort option's key must be one the search API will accept: `relevance`, a key configured for the index
@@ -142,7 +167,8 @@ shows the unconfigured instruction block instead of rendering a selector with no
 ### Instance IDs and two searches on one page
 
 Widgets are grouped by `data-xps-instance`; each group becomes one `createSearch()` instance with its
-own state, its own requests and its own URL parameters. Leaving **Instance ID** at `default` is right for
+own state and its own requests — but *not* its own URL parameters, which is why only one instance per
+page should sync to the URL (see [Shareable result URLs](#shareable-result-urls)). Leaving **Instance ID** at `default` is right for
 the common case — a search page with one search on it.
 
 To put two independent searches on one page, give each set of widgets its own instance ID:

@@ -37,6 +37,14 @@ public sealed class SearchBoxWidgetProperties : XpSearchMountWidgetProperties
         ExplanationText = "Use on a dedicated search page only; stealing focus is disorienting elsewhere.",
         Order = OrderFirstWidgetProperty + 20)]
     public bool Autofocus { get; set; }
+
+    /// <summary>Gets or sets whether the search keeps its state in the page URL (spec §5.5).</summary>
+    [CheckBoxComponent(
+        Label = "Sync search state to the URL",
+        ExplanationText = "Keeps the query, filters and page in the address bar, so a result page can be shared and the back button works. "
+            + "Turn it off for a secondary search embedded on a content page: at most one search instance per page may sync, because all of them would write the same parameters.",
+        Order = OrderFirstWidgetProperty + 30)]
+    public bool SyncStateToUrl { get; set; } = true;
 }
 
 /// <summary>Renders the <c>searchBox</c> mount.</summary>
@@ -56,6 +64,29 @@ public sealed class SearchBoxWidgetViewComponent : XpSearchMountWidgetViewCompon
 
     /// <inheritdoc />
     protected override string WidgetType => "searchBox";
+
+    /// <inheritdoc />
+    protected override void BuildConfig(SearchBoxWidgetProperties properties, IDictionary<string, object?> config)
+    {
+        ArgumentNullException.ThrowIfNull(config);
+
+        ReflectConfig(properties, config);
+        // URL syncing is a property of the search, not an option of the input; it goes to the instance.
+        config.Remove("syncStateToUrl");
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// Emitted whether on or off: an explicit <c>false</c> in the markup is how a page with a second,
+    /// deliberately non-syncing search reads as configured rather than forgotten.
+    /// </remarks>
+    protected override void BuildInstanceConfig(SearchBoxWidgetProperties properties, IDictionary<string, object?> instanceConfig)
+    {
+        ArgumentNullException.ThrowIfNull(properties);
+        ArgumentNullException.ThrowIfNull(instanceConfig);
+
+        instanceConfig["routing"] = properties.SyncStateToUrl;
+    }
 
     /// <inheritdoc />
     protected override IHtmlContent BuildEditorPreview(SearchBoxWidgetProperties properties)
