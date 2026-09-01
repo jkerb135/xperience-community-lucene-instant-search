@@ -83,6 +83,15 @@ internal sealed class ServerRenderedResultsTests
             Assert.That(markup, Does.Contain("<div data-xps-server-rendered"));
             Assert.That(markup, Does.Contain("<article class=\"xps-result\">"));
             Assert.That(markup, Does.Contain("href=\"/blog/espresso\""));
+            // The partial's own §3 additions: path line, type label, and the file-type glyph the
+            // media slot falls back to. Byte-identical to the client's card (card-parity.test.ts).
+            Assert.That(markup, Does.Contain("<p class=\"xps-result__path\">Home / Blog / Coffee</p>"));
+            Assert.That(markup, Does.Contain("<li class=\"xps-result__meta-item xps-result__type\">Article</li>"));
+            Assert.That(markup, Does.Contain(
+                "<svg class=\"xps-result__icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\""
+                + " stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\""
+                + " focusable=\"false\"><path d=\"M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z\"></path>"
+                + "<path d=\"M14 2v5h5\"></path></svg>"));
             // The card came from this library's Razor partial, not from the C# fallback Core emits
             // for a host without it: the partial's markup is laid out over several lines.
             Assert.That(markup, Does.Not.Contain("<article class=\"xps-result\"><div"));
@@ -163,7 +172,15 @@ internal sealed class ServerRenderedResultsTests
             {
                 Id = "doc-1",
                 Attributes = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
-                    """{ "title": "Choosing an espresso machine", "url": "/blog/espresso" }""")!
+                    """
+                    {
+                        "title": "Choosing an espresso machine",
+                        "url": "/blog/espresso",
+                        "path": "Home / Blog / Coffee",
+                        "contentType": "Article",
+                        "fileType": "pdf"
+                    }
+                    """)!
             }
         ]
     };

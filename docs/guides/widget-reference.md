@@ -184,19 +184,50 @@ results({
 | Option | Default | What it does |
 |---|---|---|
 | `container` | — | Selector or element. Required. |
-| `templates.item` | title link + highlighted snippet + content-type meta, and an image when the result has one | `(result, helpers) => Renderable` |
-| `templates.empty` | "No results for …" | `({ query }, helpers) => Renderable` |
+| `templates.item` | title link, path line, highlighted snippet and content-type label, plus an image (or a file-type glyph) when the result has one | `(result, helpers) => Renderable` |
+| `templates.empty` | "No results for …", plus a **Clear filters** button when filters are applied | `({ query, hasRefinements, clearRefinements }, helpers) => Renderable` |
 | `templates.loading` | `loadingRows` skeleton rows | `(helpers) => Renderable` |
 | `transformItems` | — | `(results) => results`, applied before rendering. |
 | `loadingRows` | `3` | Skeleton rows in the default loading template. |
 | `titleAttribute` | `title` | Attribute the default template reads the heading from. Highlights win over the raw value. |
 | `urlAttribute` | `url` | Attribute the default template reads the link `href` from. |
 | `snippetAttributes` | `['summary', 'content', 'excerpt']` | Tried in order; the first one with a value (highlighted where there is a highlight) becomes the snippet. |
+| `pathAttribute` | `path` | Attribute the default template reads the breadcrumb line under the title from. Plain text, never highlighted. |
 
 The defaults are the names the server projects every document's base fields under — `title`, `url`,
 `contentType` — so the default template renders an Xperience result without configuration. Point them
 at your own fields (`titleAttribute: 'ProductFieldName'`) when the content type carries a better one,
 and ask for those fields in `fields` so they come back.
+
+Three parts of the default card are drawn only when the result carries the attribute, so nothing
+appears until you ask for the field in `fields`:
+
+- `path` → a muted `xps-result__path` line between the title and the snippet.
+- `contentType` → the first meta item, which also carries `xps-result__type` so the theme can set
+  it in accent uppercase.
+- `fileType`, on a result with **no** `image` → an inline document glyph in the media slot
+  (`xps-result__icon`), so a list of documents does not read as a column of holes.
+
+The empty state knows whether filters are narrowing the search. With filters applied it says so and
+renders a primary **Clear filters** button; your own `templates.empty` gets the same two members:
+
+```js
+results({
+  container: '#search-results',
+  templates: {
+    empty: ({ query, hasRefinements }, { html }) =>
+      hasRefinements
+        ? html`<p>Nothing matched “${query}” with these filters.</p>
+               <button type="button" class="xps-button xps-button--primary xps-results__clear">Start over</button>`
+        : html`<p>Nothing matched “${query}”.</p>`
+  }
+});
+```
+
+The widget delegates clicks on `xps-results__clear` to `clearRefinements`, so a template that only
+returns markup needs no handler of its own. `clearRefinements` is handed to the template as well,
+for one that builds its own DOM; it is the action `activeFilters`' Clear all uses — every facet and
+numeric filter goes, and the search re-runs.
 
 **Expect `title` to be the content item's name**, which in Xperience is often a slug with a generated
 suffix (`CoffeePlunger-p2e57tss`), not a display title. Set `titleAttribute` to the field that holds
@@ -491,7 +522,7 @@ loadMore({ container: '#search-results', autoLoad: true });
 | `templates.item` | the built-in result template | `(result, { html, highlight, formatNumber }) => …`, the same signature `results` uses. |
 | `transformItems` | — | Massages each page before it is appended. |
 | `autoLoad` | `true` | Loads the next page when the sentinel scrolls into view. |
-| `titleAttribute` / `urlAttribute` / `snippetAttributes` | `title` / `url` / `summary, content, excerpt` | What the default item template reads. |
+| `titleAttribute` / `urlAttribute` / `snippetAttributes` / `pathAttribute` | `title` / `url` / `summary, content, excerpt` / `path` | What the default item template reads. |
 | `labels` | `{ more: 'Load more results', exhausted: 'No more results' }` | Button text. |
 
 `loadMore` **replaces** `results` and `pagination`: it renders the same `xps-result` items, and it

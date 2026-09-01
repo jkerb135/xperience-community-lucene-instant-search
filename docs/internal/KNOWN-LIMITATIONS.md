@@ -10,12 +10,36 @@ and how to lift it.
   ship a single `_Result.cshtml` costs every consumer the Razor SDK; PK-2 was explicitly not allowed
   to add package references either.
 - **Ceiling:** the default card's markup now exists three times — this method, the widgets'
-  `_Result.cshtml`, and the client's `templates.item` — and the three have to be changed together, with
-  only tests (`ServerRenderedResultsTests` in the Core and Widgets suites, `widgets.test.ts`) and
-  `themes/MARKUP.md` holding them in step.
+  `_Result.cshtml`, and the client's `defaultResultItem`. TH-1 added
+  `Client/src/widgets/card-parity.test.ts`, which reads the two server sources as text and compares
+  their element/class pairs and their body order with what the client actually renders, so a
+  one-sided edit now fails; the three still have to be *written* three times.
 - **Upgrade path:** if the markup starts drifting, generate all three from `themes/MARKUP.md`, or make
   Core's Razor class library a fourth package (`XperienceCommunity.Search.Views`) that both Widgets
   and plain hosts reference.
+
+## The empty state's "…and show 7 results" preview (`defaultEmpty` in `Client/src/widgets/results.ts`)
+
+- **Simplified:** the refined empty state offers "Clear filters" without saying how many results
+  clearing would bring back. The approved mockup shows the count.
+- **Ceiling:** the number is the total of the *same query with no filters*, which no response in
+  hand carries — it needs a second, unfiltered search. Nothing in the pipeline client issues one
+  today (`withResults` renders the one response the instance holds), so the button is honest but
+  vague, and a visitor may clear filters to find nothing behind them either.
+- **Upgrade path:** ask the pipeline for it rather than the client — either a response field
+  (`totalUnfiltered`, computed server-side from the same Lucene query without the filter clauses,
+  which costs one extra count per empty search) or an opt-in `probeUnfiltered` request flag. Then
+  `hasRefinements` grows a sibling `unfilteredTotal?: number` and the template appends the count.
+
+## "Did you mean" and "Popular searches" in the results empty state
+
+- **Simplified:** neither is rendered. The approved mockup shows both as future slots.
+- **Ceiling:** the empty state offers only "clear the filters" or "try fewer words"; a misspelled
+  query gets no recovery path at all.
+- **Upgrade path:** "Did you mean" needs a Lucene suggester in Core plus a `didYouMean` field on
+  `SearchResponse` (contract addition, own unit). "Popular searches" needs a public read endpoint
+  over the analytics store, which today is admin-only; until then a host can render its own list
+  next to the widget.
 
 ## Per-widget stylesheets in `themes/src/scss/widgets/*` and `Client/styles/widgets/*.css`
 

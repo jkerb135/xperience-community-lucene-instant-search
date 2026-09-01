@@ -8,6 +8,8 @@
 .xps-range-filter__title {
   font-size: 1rem;
   font-weight: 600;
+  padding-bottom: calc(var(--xps-space) / 3);
+  border-bottom: 2px solid var(--xps-color-text);
 }
 
 .xps-facet-list__item--selected .xps-facet-list__value {
@@ -22,6 +24,13 @@
 .xps-range-filter__input-label {
   color: var(--xps-color-muted);
   font-size: 0.875em;
+}
+
+/* Plain muted text, no pill: counts change on every refinement, so they line up instead. */
+.xps-facet-list__count,
+.xps-toggle-filter__count,
+.xps-category-tree__count {
+  font-variant-numeric: tabular-nums;
 }
 
 .xps-facet-list__show-more {

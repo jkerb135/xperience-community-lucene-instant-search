@@ -49,3 +49,31 @@
 .xps-suggestions__footer {
   padding: v.$half var(--xps-space);
 }
+
+.xps-suggestions__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: v.$half;
+}
+
+.xps-suggestions__hints {
+  display: inline-flex;
+  align-items: center;
+  gap: v.$quarter;
+}
+
+.xps-suggestions__key {
+  display: inline-block;
+  min-width: 1.25em;
+  padding: 0 v.$quarter;
+  text-align: center;
+}
+
+/* Keyboard hints are noise on a touch keyboard. */
+@media (pointer: coarse) {
+  .xps-suggestions__hints {
+    display: none;
+  }
+}

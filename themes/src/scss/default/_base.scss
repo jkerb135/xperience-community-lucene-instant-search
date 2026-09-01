@@ -51,10 +51,15 @@
   outline-color: var(--xps-color-accent);
 }
 
+/* A highlighter band under unchanged text, not a tinted box: the text colour is never the signal
+   (the <mark> element and the band both are), and the underline survives a dense snippet. */
 .xps-highlight {
-  background-color: color-mix(in srgb, var(--xps-color-accent) 18%, transparent);
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--xps-color-accent) 18%, transparent) 42%,
+    transparent 42%
+  );
   color: inherit;
-  border-radius: calc(var(--xps-radius) / 3);
 }
 
 .xps-skeleton {

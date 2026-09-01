@@ -92,9 +92,48 @@ internal sealed class ServerRenderedResultsTests
                 "<div class=\"xps-result__media\"><img class=\"xps-result__image\" src=\"/img/1.png\" alt=\"\" width=\"96\" height=\"96\"></div>"));
             // The highlighted form wins and keeps the shell's class, exactly like the JS template.
             Assert.That(html, Does.Contain("Choosing an <mark class=\"xps-highlight\">espresso</mark> machine"));
-            Assert.That(html, Does.Contain("<ul class=\"xps-result__meta\"><li class=\"xps-result__meta-item\">Article</li></ul>"));
+            Assert.That(html, Does.Contain("<ul class=\"xps-result__meta\"><li class=\"xps-result__meta-item xps-result__type\">Article</li></ul>"));
+            Assert.That(html, Does.Contain("<p class=\"xps-result__path\">Home / Blog / Coffee</p>"));
             Assert.That(html, Does.Contain("<p class=\"xps-result__snippet\">A dual-boiler machine holds temperature.</p>"));
             Assert.That(html, Does.EndWith("</ol></div>"));
+        });
+    }
+
+    /// <summary>
+    /// The media slot's fallback: a result with a file type but no image gets the document glyph,
+    /// byte-identical to the client's and the widgets' copy (the widgets client's card-parity test).
+    /// </summary>
+    [Test]
+    public async Task A_result_with_a_file_type_and_no_image_gets_the_document_glyph()
+    {
+        var response = new SearchResponse
+        {
+            Results =
+            [
+                new Result
+                {
+                    Id = "doc-1",
+                    Attributes = Attributes("""{ "title": "Warranty terms", "url": "/legal/warranty.pdf", "fileType": "pdf" }""")
+                },
+                new Result
+                {
+                    Id = "doc-2",
+                    Attributes = Attributes("""{ "title": "No media", "url": "/none" }""")
+                }
+            ]
+        };
+
+        string html = (await RenderAsync(new FakePipeline(response)))!;
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(html, Does.Contain(
+                "<div class=\"xps-result__media\"><svg class=\"xps-result__icon\" viewBox=\"0 0 24 24\" fill=\"none\""
+                + " stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\""
+                + " aria-hidden=\"true\" focusable=\"false\"><path d=\"M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0"
+                + " 0 0 2-2V7z\"></path><path d=\"M14 2v5h5\"></path></svg></div>"));
+            // Only one card has a media slot: no file type and no image means no slot at all.
+            Assert.That(html.Split("xps-result__media"), Has.Length.EqualTo(2));
         });
     }
 
@@ -306,6 +345,7 @@ internal sealed class ServerRenderedResultsTests
                         "heading": "Heading one",
                         "url": "/blog/espresso",
                         "permalink": "/permalink/1",
+                        "path": "Home / Blog / Coffee",
                         "summary": "A dual-boiler machine holds temperature.",
                         "teaser": "A teaser.",
                         "contentType": "Article",

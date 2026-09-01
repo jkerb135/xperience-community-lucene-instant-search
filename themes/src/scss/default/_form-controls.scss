@@ -12,6 +12,7 @@
   color: var(--xps-color-text);
   border: 1px solid var(--xps-color-border);
   border-radius: var(--xps-radius);
+  box-shadow: inset 0 1px 3px color-mix(in srgb, var(--xps-color-text) 6%, transparent);
 }
 
 .xps-search-box__input::placeholder,
