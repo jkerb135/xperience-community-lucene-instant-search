@@ -40,7 +40,7 @@ cd src/XpSearch.Admin/Client && npm ci && npm run build
 cd src/XpSearch.Widgets/Client && npm run contract:gen && npm run contract:check
 ```
 
-Suite sizes (2026-09-01, after TH-2): Core 286, Admin 187, Ingestion 47, Widgets 75, JS 218 — if
+Suite sizes (2026-09-01, after TH-3): Core 286, Admin 187, Ingestion 47, Widgets 76, JS 224 — if
 your run shows fewer, you ran the wrong project. There is no solution file in the repo root; run each
 test project by path. The Admin C# suite needs `src/XpSearch.Admin/Client` built first, like the
 Widgets one.
@@ -64,6 +64,10 @@ Widgets one.
   `ServerRenderedResults.DefaultCard`). Change all three together;
   `Client/src/widgets/card-parity.test.ts` compares them and `ServerRenderedResultsTests` in both
   the Core and Widgets suites pin the strings.
+- Autocomplete popup: `Client/src/widgets/suggestionsPanel.ts` renders it for BOTH the standalone
+  `suggestions` widget and `searchBox`'s `suggestions` param group; a change there has to keep
+  `themes/fixtures/{suggestions,search-box}.html` true, and `widgets.test.ts` compares the two
+  consumers' panels directly.
 - Pipeline stage: implement + register like `ResolveContactGroupsStage` (order constants matter;
   anything affecting results must join the response cache key).
 - Admin page: custom templates need `RoutingContentPlaceholder` in parent templates; ActionCell

@@ -1,8 +1,10 @@
-<!-- searchBox — states: default (filled, reset + submit shown), empty (reset hidden), no-submit, stalled -->
+<!-- searchBox — states: default (filled, reset + submit shown), empty (reset hidden), no-submit,
+     stalled, and the integrated-suggestions combobox (params.suggestions). -->
 
 <form class="xps xps-search-box" role="search" action="/search" method="get" novalidate>
   <label class="xps-search-box__label xps-sr-only" for="xps-search-1-search-box-input">Search this site</label>
   <div class="xps-search-box__field">
+    <svg class="xps-search-box__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.6-3.6"></path></svg>
     <input class="xps-search-box__input"
            id="xps-search-1-search-box-input"
            type="search"
@@ -27,6 +29,7 @@
 <form class="xps xps-search-box" role="search" action="/search" method="get" novalidate>
   <label class="xps-search-box__label" for="xps-search-2-search-box-input">Search this site</label>
   <div class="xps-search-box__field">
+    <svg class="xps-search-box__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.6-3.6"></path></svg>
     <input class="xps-search-box__input"
            id="xps-search-2-search-box-input"
            type="search"
@@ -41,10 +44,65 @@
   </div>
 </form>
 
+<!-- integrated suggestions: the search box's own input is the combobox and the standalone
+     widget's panel hangs under the field. Searching happens in place, so there is no "see all". -->
+<form class="xps xps-search-box xps-suggestions--open" role="search" action="/search" method="get" novalidate>
+  <label class="xps-search-box__label xps-sr-only" for="xps-search-4-search-box-input">Search this site</label>
+  <div class="xps-search-box__field">
+    <svg class="xps-search-box__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.6-3.6"></path></svg>
+    <input class="xps-search-box__input"
+           id="xps-search-4-search-box-input"
+           type="search"
+           name="q"
+           value="esp"
+           placeholder="Search…"
+           role="combobox"
+           aria-expanded="true"
+           aria-controls="xps-search-4-search-box-listbox"
+           aria-activedescendant="xps-search-4-search-box-option-0"
+           aria-autocomplete="list"
+           autocomplete="off">
+    <span class="xps-search-box__loading xps-skeleton" aria-hidden="true"></span>
+    <button class="xps-button xps-search-box__reset" type="reset" aria-label="Clear the search query">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="xps-suggestions__panel">
+    <ul class="xps-suggestions__list"
+        id="xps-search-4-search-box-listbox"
+        role="listbox"
+        aria-label="Search suggestions">
+      <li class="xps-suggestions__group" role="group" aria-labelledby="xps-search-4-search-box-group-suggestions">
+        <div class="xps-suggestions__group-title" id="xps-search-4-search-box-group-suggestions">Suggestions</div>
+        <div class="xps-suggestions__option xps-suggestions__option--active"
+             role="option"
+             id="xps-search-4-search-box-option-0"
+             aria-selected="true">
+          <span class="xps-suggestions__option-title"><mark class="xps-highlight">esp</mark>resso machine</span>
+        </div>
+      </li>
+      <li class="xps-suggestions__group" role="group" aria-labelledby="xps-search-4-search-box-group-pages">
+        <div class="xps-suggestions__group-title" id="xps-search-4-search-box-group-pages">Pages</div>
+        <div class="xps-suggestions__option"
+             role="option"
+             id="xps-search-4-search-box-option-1"
+             aria-selected="false">
+          <span class="xps-suggestions__option-title">Choosing an <mark class="xps-highlight">esp</mark>resso machine</span>
+          <span class="xps-suggestions__option-meta">Article</span>
+        </div>
+      </li>
+    </ul>
+    <div class="xps-suggestions__footer">
+      <span class="xps-suggestions__hints" aria-hidden="true"><kbd class="xps-suggestions__key">↑</kbd><kbd class="xps-suggestions__key">↓</kbd> navigate <kbd class="xps-suggestions__key">↵</kbd> select <kbd class="xps-suggestions__key">esc</kbd> close</span>
+    </div>
+  </div>
+</form>
+
 <!-- stalled: a search has been in flight longer than the stall threshold -->
 <form class="xps xps-search-box xps-search-box--stalled" role="search" action="/search" method="get" novalidate>
   <label class="xps-search-box__label xps-sr-only" for="xps-search-3-search-box-input">Search this site</label>
   <div class="xps-search-box__field">
+    <svg class="xps-search-box__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.6-3.6"></path></svg>
     <input class="xps-search-box__input"
            id="xps-search-3-search-box-input"
            type="search"

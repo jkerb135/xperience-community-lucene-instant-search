@@ -2,6 +2,7 @@ using Kentico.PageBuilder.Web.Mvc;
 using Kentico.Xperience.Admin.Base.FormAnnotations;
 
 using Microsoft.AspNetCore.Html;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 using XpSearch.Widgets;
 using XpSearch.Widgets.Components.Widgets.XpSearch;
@@ -38,6 +39,19 @@ public sealed class SearchBoxWidgetProperties : XpSearchMountWidgetProperties
         Order = OrderFirstWidgetProperty + 20)]
     public bool Autofocus { get; set; }
 
+    /// <summary>Gets or sets whether the input offers type-ahead suggestions as a combobox.</summary>
+    [CheckBoxComponent(
+        Label = "Suggest as the visitor types",
+        ExplanationText = "Turns this input into an autocomplete combobox. Picking a suggestion searches on this page. "
+            + "Do not add the separate Suggestions widget as well: that one renders a second search field.",
+        Order = OrderFirstWidgetProperty + 25)]
+    public bool EnableSuggestions { get; set; }
+
+    /// <summary>Gets or sets how many suggestions are offered. Only used when suggestions are on.</summary>
+    [NumberInputComponent(Label = "Maximum suggestions", Order = OrderFirstWidgetProperty + 27)]
+    [VisibleIfTrue(nameof(EnableSuggestions))]
+    public int SuggestionLimit { get; set; } = 5;
+
     /// <summary>Gets or sets whether the search keeps its state in the page URL (spec §5.5).</summary>
     [CheckBoxComponent(
         Label = "Sync search state to the URL",
@@ -68,11 +82,23 @@ public sealed class SearchBoxWidgetViewComponent : XpSearchMountWidgetViewCompon
     /// <inheritdoc />
     protected override void BuildConfig(SearchBoxWidgetProperties properties, IDictionary<string, object?> config)
     {
+        ArgumentNullException.ThrowIfNull(properties);
         ArgumentNullException.ThrowIfNull(config);
 
         ReflectConfig(properties, config);
         // URL syncing is a property of the search, not an option of the input; it goes to the instance.
         config.Remove("syncStateToUrl");
+
+        // The JavaScript reads one nested group: present means on, absent means off.
+        config.Remove("enableSuggestions");
+        config.Remove("suggestionLimit");
+
+        if (properties.EnableSuggestions)
+        {
+            config["suggestions"] = properties.SuggestionLimit > 0
+                ? new Dictionary<string, object?> { ["limit"] = properties.SuggestionLimit }
+                : new Dictionary<string, object?>();
+        }
     }
 
     /// <inheritdoc />
@@ -94,6 +120,7 @@ public sealed class SearchBoxWidgetViewComponent : XpSearchMountWidgetViewCompon
         ArgumentNullException.ThrowIfNull(properties);
 
         var field = EditorPreview.El("div", "xps-search-box__field")
+            .Add(Magnifier())
             .Add(EditorPreview.Input("xps-search-box__input", "search")
                 .Attr(
                     "placeholder",
@@ -110,4 +137,16 @@ public sealed class SearchBoxWidgetViewComponent : XpSearchMountWidgetViewCompon
 
         return EditorPreview.El("form", "xps-search-box").Add(field);
     }
+
+    /// <summary>Builds the decorative magnifier the live widget renders inside the field.</summary>
+    private static TagBuilder Magnifier() =>
+        EditorPreview.El("svg", "xps-search-box__icon")
+            .Attr("viewBox", "0 0 24 24")
+            .Attr("fill", "none")
+            .Attr("stroke", "currentColor")
+            .Attr("stroke-width", "1.5")
+            .Decorative()
+            .Add(
+                EditorPreview.El("circle").Attr("cx", "11").Attr("cy", "11").Attr("r", "7"),
+                EditorPreview.El("path").Attr("d", "m20 20-3.6-3.6"));
 }

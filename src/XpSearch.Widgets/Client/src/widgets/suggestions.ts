@@ -1,23 +1,14 @@
 /**
  * `suggestions` — `withSuggestions` plus the default renderer (spec 5.3).
- * Markup: `themes/fixtures/suggestions.html`. A11y (spec 5.6): the WAI-ARIA APG
- * combobox-with-listbox pattern — DOM focus never leaves the input, the active option is named
- * by `aria-activedescendant`, and the listbox element always exists so `aria-controls` cannot
- * dangle. Keyboard: Down/Up move, Home/End jump to the ends, Enter activates, Escape closes and
- * then clears, Tab closes and moves on.
+ * Markup: `themes/fixtures/suggestions.html`. The panel and the combobox keyboard model live in
+ * `suggestionsPanel.ts`, shared with `searchBox`'s integrated suggestions; this file renders the
+ * widget's own field around them.
  */
 import { withSuggestions, type SuggestionsRenderState } from '../behaviors/suggestions';
-import { escapeHtml, html, render, toHtml, type Renderable } from '../templates/html';
-import type { Suggestion, Widget } from '../types';
-import { createRoot, resolveContainer, setAttr, widgetId } from './dom';
-import { markMatch } from './facetList';
-
-/**
- * Decoration only, and hidden from assistive tech: the combobox pattern already conveys the
- * keyboard model through the roles and `aria-activedescendant`, so repeating it here would be
- * announced twice. Hidden on a touch keyboard by `shell.css`.
- */
-const KEYBOARD_HINTS = html`<span class="xps-suggestions__hints" aria-hidden="true"><kbd class="xps-suggestions__key">&uarr;</kbd><kbd class="xps-suggestions__key">&darr;</kbd> navigate <kbd class="xps-suggestions__key">&crarr;</kbd> select <kbd class="xps-suggestions__key">esc</kbd> close</span>`;
+import { html, render } from '../templates/html';
+import type { Widget } from '../types';
+import { createRoot, resolveContainer, widgetId } from './dom';
+import { bindCombobox, renderPanel } from './suggestionsPanel';
 
 export type SuggestionsWidgetParams = {
   container: string | HTMLElement;
@@ -49,12 +40,6 @@ export type SuggestionsWidgetParams = {
   /** Group headings, used only when a response mixes query suggestions with documents. */
   groupLabels?: { suggestions?: string; documents?: string };
 };
-
-/** One suggestion plus the index the behaviour knows it by, which grouping reorders away from. */
-interface Option {
-  suggestion: Suggestion;
-  at: number;
-}
 
 export function suggestions(params: SuggestionsWidgetParams): Widget {
   const container = resolveContainer(params.container, 'suggestions');
@@ -96,43 +81,8 @@ export function suggestions(params: SuggestionsWidgetParams): Widget {
         panel = root.querySelector<HTMLElement>('.xps-suggestions__panel') ?? undefined;
         reset = root.querySelector<HTMLElement>('.xps-suggestions__reset') ?? undefined;
 
+        if (input && panel) bindCombobox({ input, panel, id }, () => api);
         input?.addEventListener('input', () => api?.setQuery(input?.value ?? ''));
-        input?.addEventListener('keydown', (event) => {
-          if (!api) return;
-          switch (event.key) {
-            case 'ArrowDown':
-            case 'ArrowUp':
-              event.preventDefault();
-              api.move(event.key === 'ArrowDown' ? 1 : -1);
-              break;
-            case 'Home':
-            case 'End':
-              // Only while the popup is open: otherwise Home/End belong to the caret.
-              if (!api.isOpen) break;
-              event.preventDefault();
-              api.move(event.key === 'Home' ? 'first' : 'last');
-              break;
-            case 'Enter':
-              // Implicit form submission is not enough: the active option has to win over it,
-              // and a form with a single field submits on Enter in some browsers only.
-              event.preventDefault();
-              if (api.activeIndex >= 0) api.select(api.activeIndex);
-              else api.submit();
-              break;
-            case 'Escape':
-              // First press closes the popup, a second one clears the input (APG).
-              if (api.isOpen) api.close();
-              else if ((input?.value ?? '') !== '') {
-                if (input) input.value = '';
-                api.clear();
-              }
-              break;
-            case 'Tab':
-              api.close();
-              break;
-            default:
-          }
-        });
         root.addEventListener('submit', (event) => {
           event.preventDefault();
           if (!api) return;
@@ -146,78 +96,17 @@ export function suggestions(params: SuggestionsWidgetParams): Widget {
           api?.clear();
           input?.focus();
         });
-        // Picking an option with the mouse must not blur the input first: the blur would close
-        // the popup out from under the click.
-        panel?.addEventListener('mousedown', (event) => event.preventDefault());
-        panel?.addEventListener('click', (event) => {
-          const target = event.target;
-          if (!(target instanceof Element)) return;
-          const at = target.closest<HTMLElement>('[data-xps-suggestion]')?.dataset['xpsSuggestion'];
-          if (at !== undefined) api?.select(Number(at));
-        });
-        input?.addEventListener('blur', () => api?.close());
       }
       if (!root || !input || !panel || !reset) return;
 
-      const { query, activeIndex, isOpen } = options;
+      const { query, isOpen } = options;
       root.classList.toggle('xps-suggestions--open', isOpen);
       // Only assign when it differs: assigning moves the caret to the end.
       if (input.value !== query) input.value = query;
-      input.setAttribute('aria-expanded', String(isOpen));
       reset.hidden = query === '';
-      panel.hidden = !isOpen;
 
-      // Grouped only when a response actually mixes the two sources: with one source the wrapper
-      // would be a group of one, which is noise to a screen reader (MARKUP.md, "suggestions").
-      const all: Option[] = options.suggestions.map((suggestion, at) => ({ suggestion, at }));
-      const queries = all.filter((option) => option.suggestion.result === undefined);
-      const documents = all.filter((option) => option.suggestion.result !== undefined);
-      const grouped = queries.length > 0 && documents.length > 0;
-      const ordered = grouped ? [...queries, ...documents] : all;
-
-      /** Ids are the *visual* position; `data-xps-suggestion` is the behaviour's own index. */
-      const optionHtml = (option: Option, visual: number, tag: 'li' | 'div'): Renderable => {
-        const active = option.at === activeIndex;
-        const meta = option.suggestion.result?.attributes['contentType'];
-        const inner = html`<span class="xps-suggestions__option-title">${markMatch(option.suggestion.text, query)}</span>${
-          typeof meta === 'string' && meta !== ''
-            ? html`<span class="xps-suggestions__option-meta">${meta}</span>`
-            : ''
-        }`;
-        return html.raw(
-          `<${tag} class="xps-suggestions__option${active ? ' xps-suggestions__option--active' : ''}"` +
-            ` role="option" id="${escapeHtml(id(`option-${visual}`))}" aria-selected="${active}"` +
-            ` data-xps-suggestion="${option.at}">${toHtml(inner)}</${tag}>`
-        );
-      };
-
-      let visual = 0;
-      const group = (key: string, label: string, options_: Option[]): Renderable =>
-        html`<li class="xps-suggestions__group" role="group" aria-labelledby="${id(`group-${key}`)}">
-      <div class="xps-suggestions__group-title" id="${id(`group-${key}`)}">${label}</div>
-      ${options_.map((option) => optionHtml(option, visual++, 'div'))}
-    </li>`;
-
-      const body = grouped
-        ? [
-            group('suggestions', groupLabels?.suggestions ?? 'Suggestions', queries),
-            group('pages', groupLabels?.documents ?? 'Pages', documents),
-          ]
-        : ordered.map((option) => optionHtml(option, visual++, 'li'));
-
-      render(
-        html`<ul class="xps-suggestions__list" id="${id('listbox')}" role="listbox" aria-label="Search suggestions">${body}</ul>
-    ${isOpen && ordered.length === 0
-      ? html`<p class="xps-suggestions__empty" role="status">No suggestions for &ldquo;${query}&rdquo;.</p>`
-      : ''}
-    ${options.seeAllUrl !== null && ordered.length > 0
-      ? html`<div class="xps-suggestions__footer">${KEYBOARD_HINTS}<a class="xps-suggestions__see-all" href="${options.seeAllUrl}">See all results for &ldquo;${query}&rdquo;</a></div>`
-      : ''}`,
-        panel
-      );
-
-      const active = ordered.findIndex((option) => option.at === activeIndex);
-      setAttr(input, 'aria-activedescendant', active >= 0, active >= 0 ? id(`option-${active}`) : '');
+      // No `hints`: this widget shows the footer only when it has a "see all" link to put in it.
+      renderPanel({ input, panel, id }, options, { ...(groupLabels === undefined ? {} : { groupLabels }) });
     },
     () => {
       // Drops a debounced call that has not fired yet and makes an in-flight answer stale.

@@ -3,6 +3,20 @@
 Intentional simplifications, one entry each: where it lives, what was simplified, the ceiling it hits,
 and how to lift it.
 
+## Integrated suggestions search twice per keystroke (`searchBox` in `Client/src/widgets/searchBox.ts`)
+
+- **Simplified:** with `params.suggestions` set, the input handler calls both
+  `withSuggestions.setQuery` (which searches in place itself) and `withSearchBox.apply` (which runs
+  `queryHook` and remembers whether the query was submitted). Two behaviours, one field, and neither
+  can be told "do not search".
+- **Ceiling:** two `actions.search()` calls per keystroke. They collapse into one HTTP request —
+  `SearchClient.search` supersedes anything still inside its debounce window — but each one builds a
+  request and arms the stall timer, and the second `setQuery` is a no-op state write whenever
+  `queryHook` is the identity.
+- **Upgrade path:** give `SuggestionsBehaviorParams` an explicit `searchInPlace?: boolean` (today it
+  is inferred from `resultsUrl === undefined`) so a caller that owns the query can take the popup
+  without the search.
+
 ## `ServerRenderedResults.DefaultCard` in `XpSearch.Core/Rendering/ServerRenderedResults.cs`
 
 - **Simplified:** the fallback card a host without a result partial gets is emitted as string literals

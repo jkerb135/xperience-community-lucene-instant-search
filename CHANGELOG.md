@@ -12,6 +12,21 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Added (widgets):** the search box matches the mockup's single field — a decorative magnifier
+  (`xps-search-box__icon`, always rendered) sits inside the input at the start, and the loading
+  indicator and the reset button sit inside it at the end, so the clear control reads as part of
+  the field rather than next to it. New `searchBox({ suggestions: { … } })` param group
+  (`debounceMs`, `minQueryLength`, `limit`, `language`, `groupLabels`) turns the widget's own input
+  into the autocomplete combobox: `withSuggestions` drives it, the panel is rendered by the module
+  the standalone `suggestions` widget now also uses — keyboard-hints footer included, without the
+  "See all results" link an in-place search has nowhere to point at — and picking a suggestion
+  searches in place
+  while `Enter` with no active option still goes through the search box's submit, redirect rules
+  included. In the Page Builder: **Suggest as the visitor types** and **Maximum suggestions**,
+  emitted as a nested `suggestions` group in `data-xps-config` only when enabled. One page, one
+  search field: the standalone `suggestions` widget — unchanged — stays the right choice for a
+  landing page or a header that navigates to a results page.
+
 - **Added (widgets):** `filterSort`, the mobile Filter & Sort bottom sheet, and the
   `XpSearch.FilterSort` Page Builder widget that mounts it. A toolbar button with a badge counting
   the active refinements opens a `role="dialog"` sheet holding one section per configured facet

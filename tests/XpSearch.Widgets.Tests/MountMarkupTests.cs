@@ -84,6 +84,30 @@ internal sealed class MountMarkupTests
     }
 
     [Test]
+    public void SearchBox_emits_the_suggestions_group_only_when_the_editor_enabled_it()
+    {
+        string off = Render(SearchBox(), new SearchBoxWidgetProperties { Index = Index });
+        string on = Render(
+            SearchBox(),
+            new SearchBoxWidgetProperties { Index = Index, EnableSuggestions = true, SuggestionLimit = 8 });
+
+        Expect.Multiple(() =>
+        {
+            var without = Rendered.Json(off, "data-xps-config");
+            Assert.That(without.TryGetProperty("suggestions", out _), Is.False);
+            // The two checkbox/number properties are the editor's vocabulary, not the JavaScript's.
+            Assert.That(without.TryGetProperty("enableSuggestions", out _), Is.False);
+            Assert.That(without.TryGetProperty("suggestionLimit", out _), Is.False);
+
+            var with = Rendered.Json(on, "data-xps-config");
+            Assert.That(with.GetProperty("suggestions").GetProperty("limit").GetInt32(), Is.EqualTo(8));
+            Assert.That(with.TryGetProperty("enableSuggestions", out _), Is.False);
+        });
+
+        TestContext.Out.WriteLine(on);
+    }
+
+    [Test]
     public void Empty_editor_fields_are_left_out_so_the_JavaScript_default_wins()
     {
         string markup = Render(SearchBox(), new SearchBoxWidgetProperties { Index = Index });
