@@ -35,14 +35,18 @@ Repo: `F:/Personal/CommunityProjects/libraries/xperience-search`. Wiki: `git@git
 - Every image in `docs/guides/images/` has a manifest row, and vice versa.
 - Samples in touched pages were run (doc-specialist reports prove it; spot-check one yourself).
 
-## 5. Sync to wiki (needs owner confirmation before push)
+## 5. Sync to GitHub Pages (needs owner confirmation before push)
 
-- Clone/pull the wiki repo into the scratchpad (NOT into the main repo).
-- Copy `docs/guides/*.md` → wiki root. Rename: `Home.md` stays `Home.md`; every other page keeps its filename (GitHub wiki page name = filename; relative `[text](page.md)` links and `images/` paths work as-is).
-- Copy `docs/guides/images/` → wiki `images/`.
-- Show the owner a summary of pages added/changed/removed, then commit (`docs ship <date>`) and push ONLY after they confirm.
-- Tag the main repo: `git tag docs-ship/<YYYY-MM-DD>` (suffix `-2` etc. if same-day) and push the tag with the next push.
-- Spot-check 3 pages live at `https://github.com/jkerb135/xperience-community-lucene-instant-search/wiki`, images included.
+Publish target (owner decision 2026-09-01, supersedes the wiki): the `gh-pages` branch, rendered
+by GitHub Pages' built-in Jekyll at
+`https://jkerb135.github.io/xperience-community-lucene-instant-search/`.
+
+- Clone the repo's `gh-pages` branch into the scratchpad (`git clone -b gh-pages --single-branch <origin> pages`; on the first ship create it orphan).
+- Sync `docs/guides/*.md` + `docs/guides/images/` → branch root, deleting pages that no longer exist in `docs/guides/`. Keep `_config.yml` (title, `theme: jekyll-theme-primer`, `relative_links: {enabled: true, collections: true}` so `[x](page.md)` links resolve to the rendered pages) and `index.md` (the landing page — replaced by the real Home/D3 page when it lands; until then a generated per-audience index).
+- NEVER copy anything from `docs/internal/`, `docs/api/`, or the spec/ADRs.
+- Show the owner a summary of pages added/changed/removed, then commit (`docs ship <date>`) and push ONLY after they confirm (a standing "ship it" from the owner in the session counts).
+- Tag the main repo: `git tag docs-ship/<YYYY-MM-DD>` (suffix `-2` etc. if same-day) and push the tag.
+- Spot-check 3 pages live (Pages build takes ~1 min; check the repo's Actions tab for the pages-build-deployment run), images and cross-links included. If Pages isn't enabled yet: `gh api repos/jkerb135/xperience-community-lucene-instant-search/pages -X POST -f "source[branch]=gh-pages" -f "source[path]=/"`.
 
 ## 6. Record
 
