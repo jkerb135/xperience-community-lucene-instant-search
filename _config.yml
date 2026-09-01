@@ -1,0 +1,6 @@
+title: Xperience Community Search
+description: Owned instant search for Xperience by Kentico on Lucene — guides and configuration reference
+theme: jekyll-theme-primer
+relative_links:
+  enabled: true
+  collections: true
