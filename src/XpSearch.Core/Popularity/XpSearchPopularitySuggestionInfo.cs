@@ -11,16 +11,16 @@ using XpSearch.Core.Popularity;
 
 namespace XpSearch.Core.Popularity;
 
-/// <summary>What a human did with a suggested boost rule (RK-1).</summary>
+/// <summary>What a human did with a mined suggestion - a boost rule (RK-1) or a synonym pair (SY-1).</summary>
 public enum PopularitySuggestionState
 {
     /// <summary>Nobody has answered it yet; it shows in the Suggestions listing.</summary>
     Pending = 0,
 
-    /// <summary>Turned into an ordinary rule. It never resurfaces for that query and document.</summary>
+    /// <summary>Turned into ordinary tuning - a rule or a synonym group. It never resurfaces.</summary>
     Approved = 1,
 
-    /// <summary>Turned down. It never resurfaces for that query and document.</summary>
+    /// <summary>Turned down. It never resurfaces.</summary>
     Dismissed = 2
 }
 

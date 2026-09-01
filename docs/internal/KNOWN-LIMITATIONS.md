@@ -995,3 +995,40 @@ and how to lift it.
 - **Upgrade path:** a custom `Rescorer` (Lucene 4.8 has `QueryRescorer`) over the top-N hits would
   multiply the score instead of adding to it and would cost one clause instead of a hundred; it
   needs `ExecuteSearchStage` to expose the collector.
+
+## A reformulation is two adjacent rows, not one visitor, in `SynonymMiner.Mine`
+
+- **Simplified:** the query log carries no visitor or session identifier and may not gain one (no new
+  cookie, no consent surface - ADR-0026), so "the same visitor searched again" is a row with no click
+  followed by the nearest clicked row within 60 seconds, inside one index. Any two visitors active in
+  the same minute can produce that shape.
+- **Ceiling:** the noise floor is traffic-dependent and unmeasured - the busier the index, the more
+  invented pairs the window contains, and the occurrence threshold (3) is the only defence besides a
+  human reading the pair. Conversely a visitor who rephrases after two minutes, or on a second visit,
+  contributes nothing. There is no significance test and no attempt at one.
+- **Upgrade path:** if an owner-approved per-visitor correlator ever exists (a consented session id on
+  the log row, or the AN-4 journal keyed by contact for consenting visitors), group by it instead of
+  by time inside `Mine`; nothing outside that method assumes adjacency.
+
+## Mining is O(rows x window) per index, in `SynonymMiner.Mine`
+
+- **Simplified:** the window's rows are sorted once, then each clickless row scans forward with
+  `Skip`/`TakeWhile` until the window closes - re-enumerating the tail per failed row rather than
+  keeping a cursor. It runs on the rows `XpSearchPopularityTask` has already read, so it costs no
+  extra query.
+- **Ceiling:** the forward scan is bounded by the time window, not by row count, so it degrades on an
+  index that logs hundreds of searches per minute - the scan for each failed row walks that minute
+  again.
+- **Upgrade path:** a single forward pass with an index cursor (both loops are already in timestamp
+  order), or `GROUP BY` the pairs in SQL once the log is aggregated there.
+
+## An approved pair becomes a two-way group, in `SynonymSuggestionGroup.For`
+
+- **Simplified:** approval always writes a bidirectional `XpSearchSynonymInfo` with both phrases as
+  terms; the amendment's "rewrite" alternative is left to the editor, who switches the created group
+  to one-way. Commas in a mined query are replaced with spaces, because a comma is the term separator
+  of the stored value.
+- **Ceiling:** a genuinely asymmetric pair (a misspelling, a discontinued product name) widens both
+  searches until someone edits the group, and a query whose commas mattered loses that structure.
+- **Upgrade path:** offer direction on the approve action (two commands, or a small edit page before
+  the write) once host use shows editors actually want it.

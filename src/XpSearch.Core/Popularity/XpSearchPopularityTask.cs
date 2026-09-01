@@ -13,7 +13,8 @@ namespace XpSearch.Core.Popularity;
 
 /// <summary>
 /// Aggregates the query log's clicks into the per-document popularity signal and its suggested rules
-/// (RK-1), over the last <c>XpSearchOptions.Analytics.PopularityLookbackDays</c> days.
+/// (RK-1) and mines its reformulations for suggested synonyms (SY-1), over the last
+/// <c>XpSearchOptions.Analytics.PopularityLookbackDays</c> days.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -25,8 +26,8 @@ namespace XpSearch.Core.Popularity;
 /// </para>
 /// <para>
 /// The window's rows are read once and grouped by index; each group is handed to
-/// <see cref="PopularityAggregator"/>. A second aggregation over the same groups - SY-1's mined
-/// synonyms - joins the loop next to it.
+/// <see cref="PopularityAggregator"/> and, next to it, to <see cref="SynonymMiner"/> for SY-1's
+/// mined synonym candidates.
 /// </para>
 /// </remarks>
 public sealed class XpSearchPopularityTask : IScheduledTask
@@ -36,27 +37,32 @@ public sealed class XpSearchPopularityTask : IScheduledTask
 
     private readonly IQueryLogStore log;
     private readonly IPopularitySignalStore store;
+    private readonly ISynonymSuggestionStore synonyms;
     private readonly XpSearchOptions options;
     private readonly ILogger<XpSearchPopularityTask> logger;
 
     /// <summary>Initializes a new instance of the <see cref="XpSearchPopularityTask"/> class.</summary>
     /// <param name="log">Where the query log lives.</param>
     /// <param name="store">Where the signal is stored.</param>
+    /// <param name="synonyms">Where the mined synonym candidates are stored (SY-1).</param>
     /// <param name="options">The configured search options.</param>
     /// <param name="logger">Logger.</param>
     public XpSearchPopularityTask(
         IQueryLogStore log,
         IPopularitySignalStore store,
+        ISynonymSuggestionStore synonyms,
         IOptions<XpSearchOptions> options,
         ILogger<XpSearchPopularityTask> logger)
     {
         ArgumentNullException.ThrowIfNull(log);
         ArgumentNullException.ThrowIfNull(store);
+        ArgumentNullException.ThrowIfNull(synonyms);
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(logger);
 
         this.log = log;
         this.store = store;
+        this.synonyms = synonyms;
         this.options = options.Value;
         this.logger = logger;
     }
@@ -73,6 +79,7 @@ public sealed class XpSearchPopularityTask : IScheduledTask
         int indexes = 0;
         int documents = 0;
         int suggested = 0;
+        int mined = 0;
 
         foreach (var group in rows.GroupBy(row => row.IndexName, StringComparer.OrdinalIgnoreCase))
         {
@@ -88,19 +95,28 @@ public sealed class XpSearchPopularityTask : IScheduledTask
 
             await store.ReplaceAsync(group.Key, aggregate, now, cancellationToken).ConfigureAwait(false);
 
+            var pairs = SynonymMiner.Mine(
+                group,
+                analytics.SynonymMinimumOccurrences,
+                analytics.SynonymWindowSeconds);
+
+            await synonyms.ReplaceAsync(group.Key, pairs, now, cancellationToken).ConfigureAwait(false);
+
             indexes++;
             documents += aggregate.Scores.Count;
             suggested += aggregate.Suggestions.Count;
+            mined += pairs.Count;
         }
 
         logger.LogInformation(
-            "Computed popularity for {Documents} documents across {Indexes} indexes since {From:u}, with {Suggested} suggested rules.",
+            "Computed popularity for {Documents} documents across {Indexes} indexes since {From:u}, with {Suggested} suggested rules and {Mined} suggested synonyms.",
             documents,
             indexes,
             from,
-            suggested);
+            suggested,
+            mined);
 
         return new ScheduledTaskExecutionResult(
-            $"Popularity computed for {documents} documents across {indexes} indexes since {from:u}; {suggested} suggested rules.");
+            $"Popularity computed for {documents} documents across {indexes} indexes since {from:u}; {suggested} suggested rules, {mined} suggested synonyms.");
     }
 }

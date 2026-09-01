@@ -27,15 +27,26 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
   any other; **Dismiss** turns it down. Either answer is remembered, so a recomputation never brings
   the same query and document back. No rule is ever created without a person approving it.
 
+- **Added (core, admin):** **mined synonyms** (ADR-0026). The same task run also reads the window in
+  timestamp order and looks for reformulations — a search that got no click, followed within 60
+  seconds by a different search that did — and lists the repeated ones on a **Synonym suggestions**
+  page next to *Synonyms*, which links to it when any are waiting. **Approve** creates an ordinary
+  two-way synonym group you can edit or delete like any other; **Dismiss** turns it down, and either
+  answer is remembered for good. Pairs where one text contains the other (`coff` → `coffee`,
+  `sofa` → `red sofa`) are never suggested, and a pair has to occur 3 times before it surfaces. The
+  query log still holds no visitor or session identifier: the pairing is by timing, which is why the
+  occurrence threshold and the human approval both exist. Configurable through
+  `Analytics.SynonymWindowSeconds` and `Analytics.SynonymMinimumOccurrences`.
+
 - **Added (core) — storage:** the query log gains `LogClickedResultID`, the result id of the clicked
   document, written by the click event that already recorded the position. It is nullable, so an
-  upgraded installation needs no backfill, and it is as anonymous as the rest of the row. Three module
-  classes join the analytics module: `XpSearch.PopularityIndex`, `XpSearch.PopularityScore` and
-  `XpSearch.PopularitySuggestion`.
+  upgraded installation needs no backfill, and it is as anonymous as the rest of the row. Four module
+  classes join the analytics module: `XpSearch.PopularityIndex`, `XpSearch.PopularityScore`,
+  `XpSearch.PopularitySuggestion` and `XpSearch.SynonymSuggestion`.
 
 - **Changed (core) — source-breaking for custom implementations:** `IQueryLogStore.SetClickedPositionAsync`
-  is now `SetClickAsync(queryId, position, resultId, cancellationToken)`, and `CachedSearchPipeline`
-  takes an `IPopularitySignalStore`. Hosts that only call `AddXpSearch()` are unaffected; the JSON
+  is now `SetClickAsync(queryId, position, resultId, cancellationToken)`, `CachedSearchPipeline`
+  takes an `IPopularitySignalStore`, and `XpSearchPopularityTask` takes an `ISynonymSuggestionStore`. Hosts that only call `AddXpSearch()` are unaffected; the JSON
   contract is unchanged.
 
 - **Fixed (widgets, js) — behaviour change:** URL routing no longer treats every query parameter as a

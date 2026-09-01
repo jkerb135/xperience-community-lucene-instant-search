@@ -104,6 +104,23 @@ public sealed class XpSearchAnalyticsModuleInstaller
         return form;
     }
 
+    /// <summary>The form definition of <see cref="Popularity.XpSearchSynonymSuggestionInfo"/> (SY-1).</summary>
+    /// <returns>The fields, on top of the primary key the basic definition creates.</returns>
+    public static FormInfo SynonymSuggestionForm()
+    {
+        var form = FormHelper.GetBasicFormDefinition(nameof(Popularity.XpSearchSynonymSuggestionInfo.SynonymSuggestionID));
+
+        Add(form, nameof(Popularity.XpSearchSynonymSuggestionInfo.SynonymSuggestionGuid), FieldDataType.Guid);
+        Add(form, nameof(Popularity.XpSearchSynonymSuggestionInfo.SynonymSuggestionIndexName), FieldDataType.Text, size: 100);
+        Add(form, nameof(Popularity.XpSearchSynonymSuggestionInfo.SynonymSuggestionFailed), FieldDataType.Text, size: 450);
+        Add(form, nameof(Popularity.XpSearchSynonymSuggestionInfo.SynonymSuggestionSucceeded), FieldDataType.Text, size: 450);
+        Add(form, nameof(Popularity.XpSearchSynonymSuggestionInfo.SynonymSuggestionOccurrences), FieldDataType.Integer);
+        Add(form, nameof(Popularity.XpSearchSynonymSuggestionInfo.SynonymSuggestionLastSeen), FieldDataType.DateTime);
+        Add(form, nameof(Popularity.XpSearchSynonymSuggestionInfo.SynonymSuggestionState), FieldDataType.Integer);
+
+        return form;
+    }
+
     /// <summary>Creates the module and its class if they are not there yet, and adds missing fields if they are.</summary>
     public void Install()
     {
@@ -125,6 +142,7 @@ public sealed class XpSearchAnalyticsModuleInstaller
         InstallClass(resource, Popularity.XpSearchPopularityIndexInfo.TYPEINFO, "XpSearch popularity index", PopularityIndexForm());
         InstallClass(resource, Popularity.XpSearchPopularityScoreInfo.TYPEINFO, "XpSearch popularity score", PopularityScoreForm());
         InstallClass(resource, Popularity.XpSearchPopularitySuggestionInfo.TYPEINFO, "XpSearch popularity suggestion", PopularitySuggestionForm());
+        InstallClass(resource, Popularity.XpSearchSynonymSuggestionInfo.TYPEINFO, "XpSearch synonym suggestion", SynonymSuggestionForm());
     }
 
     private static void Add(FormInfo form, string name, string dataType, int size = 0, bool allowEmpty = false)

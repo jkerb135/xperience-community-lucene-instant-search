@@ -108,6 +108,9 @@ public static class XpSearchServiceCollectionExtensions
         // XpSearch.Admin, because the boost stage and the response cache need them without it.
         services.TryAddSingleton<IPopularitySignalStore, InfoPopularitySignalStore>();
 
+        // Mined synonym candidates (SY-1): the same task's second aggregation, stored the same way.
+        services.TryAddSingleton<ISynonymSuggestionStore, InfoSynonymSuggestionStore>();
+
         services.AddXpSearchStage<NormalizeRequestStage>();
         services.AddXpSearchStage<ResolveContactGroupsStage>();
         services.AddXpSearchStage<ResolveExperimentStage>();

@@ -13,6 +13,7 @@ using XpSearch.Admin.Persistence;
 using XpSearch.Admin.Tuning;
 using XpSearch.Admin.UIPages;
 using XpSearch.Admin.UIPages.Experiments;
+using XpSearch.Core.Popularity;
 using XpSearch.Core.Tuning;
 
 [assembly: UIPage(
@@ -235,15 +236,18 @@ public abstract class SynonymListingBase : ListingPage
 /// <summary>Lists the live synonym groups of one index (spec §8.1).</summary>
 public class SynonymListing : SynonymListingBase
 {
+    private readonly IInfoProvider<XpSearchSynonymSuggestionInfo> suggestions;
+
     /// <summary>Initializes a new instance of the <see cref="SynonymListing"/> class.</summary>
     /// <param name="storageService">Reads the stored index configuration, to resolve the index in the URL.</param>
     /// <param name="provider">Provider of synonym objects, to check what a delete would remove.</param>
+    /// <param name="suggestions">Provider of mined synonym candidates, counted for the banner that points at them (SY-1).</param>
     public SynonymListing(
         ILuceneConfigurationStorageService storageService,
-        IInfoProvider<XpSearchSynonymInfo> provider)
-        : base(storageService, provider)
-    {
-    }
+        IInfoProvider<XpSearchSynonymInfo> provider,
+        IInfoProvider<XpSearchSynonymSuggestionInfo> suggestions)
+        : base(storageService, provider) =>
+        this.suggestions = suggestions;
 
     /// <summary>Deletes one live synonym group.</summary>
     /// <param name="id">The identifier of the row to delete.</param>
@@ -254,10 +258,33 @@ public class SynonymListing : SynonymListingBase
     /// <inheritdoc />
     protected override void ConfigureActions()
     {
+        int pending = PendingSuggestions();
+
+        if (pending > 0)
+        {
+            PageConfiguration.Callouts =
+            [
+                new CalloutConfiguration
+                {
+                    Headline = pending == 1 ? "1 suggested synonym is waiting" : $"{pending} suggested synonyms are waiting",
+                    Content = "The popularity task found searches that got no click, followed by a different search that did. "
+                        + "Open Synonym suggestions in the menu to approve or dismiss them; nothing is applied until you do.",
+                    ContentAsHtml = false,
+                }
+            ];
+        }
+
         PageConfiguration.HeaderActions.AddLink<SynonymCreate>("New synonym", parameters: IndexScope.Route(IndexIdentifier));
+        PageConfiguration.HeaderActions.AddLink<SynonymSuggestionListing>("Suggestions", parameters: IndexScope.Route(IndexIdentifier));
         PageConfiguration.AddEditRowAction<SynonymEdit>(parameters: IndexScope.Route(IndexIdentifier));
         PageConfiguration.TableActions.AddDeleteAction(nameof(Delete), "Delete");
     }
+
+    private int PendingSuggestions() =>
+        suggestions.Get()
+            .WhereEquals(nameof(XpSearchSynonymSuggestionInfo.SynonymSuggestionIndexName), IndexName)
+            .WhereEquals(nameof(XpSearchSynonymSuggestionInfo.SynonymSuggestionState), (int)PopularitySuggestionState.Pending)
+            .Count;
 }
 
 /// <summary>Lists the synonym groups of an experiment's variant B (XP-1).</summary>
