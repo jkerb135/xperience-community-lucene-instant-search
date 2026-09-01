@@ -3,7 +3,11 @@
  * (spec 5.6) and client-side click tracking (spec 9.1).
  * Markup: `themes/fixtures/results.html`.
  */
-import { withResults } from '../behaviors/results';
+import {
+  withResults,
+  type ResultsBehaviorParams,
+  type ResultsRenderState,
+} from '../behaviors/results';
 import {
   helpers,
   html,
@@ -12,7 +16,7 @@ import {
   type Renderable,
   type TemplateHelpers,
 } from '../templates/html';
-import type { Result, Widget } from '../types';
+import type { RenderOptions, Result, Widget } from '../types';
 import { createRoot, resolveContainer, setAttr } from './dom';
 
 /** What `templates.empty` receives: the query, and whether filters are narrowing it. */
@@ -22,6 +26,14 @@ export interface EmptyTemplateData {
   hasRefinements: boolean;
   /** Clears every filter and searches. The same action `activeFilters`' Clear all uses. */
   clearRefinements(): void;
+  /**
+   * How many results the same query returns with no filters at all, from a debounced probe
+   * (`SearchInstance.probe`). Only ever set while `hasRefinements`, and only once the probe has
+   * answered with a number above zero: `undefined` covers "still in flight", "the probe failed"
+   * and "there is nothing behind the filters either", all of which the countless copy is the
+   * honest answer to.
+   */
+  unfilteredCount?: number;
 }
 
 export interface ResultsTemplates<TAttributes extends Record<string, unknown>> {
@@ -115,16 +127,37 @@ export function defaultResultItem<TAttributes extends Record<string, unknown>>(
 /** The button the empty state's Clear filters is delegated through (see the root click handler). */
 const CLEAR_CLASS = 'xps-results__clear';
 
-const defaultEmpty = ({ query, hasRefinements }: EmptyTemplateData): Renderable => {
+/** How long a filtered empty state waits before probing for the unfiltered count. */
+const PROBE_DEBOUNCE_MS = 250;
+
+/**
+ * The magnifier-with-minus above the empty-state copy: nothing found, on the 24px grid, in
+ * `currentColor` so a re-skin needs no new asset.
+ */
+const EMPTY_ICON =
+  '<svg class="xps-results__empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"></circle><path d="M8 11h6"></path><path d="m20 20-4.35-4.35"></path></svg>';
+
+/** "1 result" / "7 results" — the count and its noun, as both the copy and the button read it. */
+const resultCount = (total: number): string =>
+  `${helpers.formatNumber(total)} result${total === 1 ? '' : 's'}`;
+
+const defaultEmpty = ({ query, hasRefinements, unfilteredCount }: EmptyTemplateData): Renderable => {
+  const icon = html.raw(EMPTY_ICON);
   if (hasRefinements) {
-    const clear = html`<button class="xps-button xps-button--primary ${CLEAR_CLASS}" type="button">Clear filters</button>`;
+    const counted = unfilteredCount !== undefined && unfilteredCount > 0;
+    const clear = html`<button class="xps-button xps-button--primary ${CLEAR_CLASS}" type="button">${
+      counted ? `Clear filters and show ${resultCount(unfilteredCount)}` : 'Clear filters'
+    }</button>`;
+    const without = counted
+      ? html`<p>There are <strong>${resultCount(unfilteredCount)}</strong> without them.</p>`
+      : '';
     return query === ''
-      ? html`<p>No results with these filters.</p>${clear}`
-      : html`<p>No results for <strong>${query}</strong> with these filters.</p>${clear}`;
+      ? html`${icon}<p>No results with these filters.</p>${without}${clear}`
+      : html`${icon}<p>No results for <strong>${query}</strong> with these filters.</p>${without}${clear}`;
   }
   return query === ''
-    ? html`<p>No results.</p><p>Try a different search term, or clear some filters.</p>`
-    : html`<p>No results for <strong>${query}</strong>.</p><p>Try fewer words, or clear some filters.</p>`;
+    ? html`${icon}<p>No results.</p><p>Try a different search term, or clear some filters.</p>`
+    : html`${icon}<p>No results for <strong>${query}</strong>.</p><p>Try fewer words, or clear some filters.</p>`;
 };
 
 const skeleton = (): Renderable =>
@@ -151,89 +184,132 @@ export function results<TAttributes extends Record<string, unknown> = Record<str
   let send: (result: Result<TAttributes>) => void = () => {};
   let clearRefinements: () => void = () => {};
 
-  const widget = withResults<TAttributes, ResultsWidgetParams<TAttributes>>(
-    (options, isFirstRender) => {
-      const templates = options.params.templates ?? {};
-      const rows = options.params.loadingRows ?? 3;
-      shown = options.items;
-      send = (result) => options.sendEvent('click', result);
-      clearRefinements = () => {
-        options.actions.clearFilters().search();
-      };
+  // The unfiltered count of the filtered empty state. `probedQuery` is the query the count belongs
+  // to, which is also the staleness test: the unfiltered total depends on the query and on nothing
+  // else, so a probe whose query is no longer the current one is thrown away, and a query already
+  // probed is never probed again.
+  let probedQuery: string | undefined;
+  let probedCount: number | undefined;
+  let probeTimer: ReturnType<typeof setTimeout> | undefined;
 
-      if (isFirstRender) {
-        root = createRoot(container, 'div', 'xps xps-results');
-        // The live region is created once and only ever has its text updated, so a re-render
-        // that does not change the count is not announced again (spec 5.6).
-        status = container.ownerDocument.createElement('p');
-        status.className = 'xps-results__status xps-sr-only';
-        status.setAttribute('role', 'status');
-        root.appendChild(status);
-        root.addEventListener('click', (event) => {
-          const target = event.target;
-          if (!(target instanceof Element)) return;
-          if (target.closest(`.${CLEAR_CLASS}`)) {
-            clearRefinements();
-            return;
+  type PaintOptions = ResultsRenderState<TAttributes> &
+    RenderOptions<ResultsWidgetParams<TAttributes> & ResultsBehaviorParams<TAttributes>>;
+
+  /**
+   * Debounced unfiltered probe for the filtered empty state. It renders nothing itself: the count
+   * lands in `probedCount` and the empty state is painted again with it.
+   */
+  const probeUnfiltered = (options: PaintOptions): void => {
+    const query = options.state.query;
+    if (probedQuery === query) return; // answered, in flight, or already failed for this query
+    probedQuery = query;
+    probedCount = undefined;
+    if (probeTimer !== undefined) clearTimeout(probeTimer);
+    probeTimer = setTimeout(() => {
+      options.search.probe({ filters: undefined }).then(
+        ({ total }) => {
+          if (probedQuery !== query) return; // stale: the query moved on while the probe ran
+          // Zero is not worth saying — "clearing shows 0 results" is not a recovery. The countless
+          // copy stands, and so it does when the probe fails.
+          if (total > 0) {
+            probedCount = total;
+            paint(options, false);
           }
-          const item = target.closest('a')?.closest('.xps-results__item');
-          const parent = item?.parentElement;
-          if (!item || !parent) return;
-          const result = shown[Array.prototype.indexOf.call(parent.children, item)];
-          if (result) send(result);
-        });
-      }
-      if (!root || !status) return;
+        },
+        () => {}
+      );
+    }, PROBE_DEBOUNCE_MS);
+  };
 
-      const query = options.state.query;
-      const busy = options.search.status === 'loading' || options.search.status === 'stalled';
-      const first = busy && options.results === null;
-      const empty = options.results !== null && options.items.length === 0;
+  const paint = (options: PaintOptions, isFirstRender: boolean): void => {
+    const templates = options.params.templates ?? {};
+    const rows = options.params.loadingRows ?? 3;
+    shown = options.items;
+    send = (result) => options.sendEvent('click', result);
+    clearRefinements = () => {
+      options.actions.clearFilters().search();
+    };
 
-      let body: Renderable;
-      let announcement: string;
-      if (first) {
-        body = templates.loading
-          ? templates.loading(helpers)
-          : list(Array.from({ length: rows }, skeleton));
-        announcement = 'Searching…';
-      } else if (empty) {
-        const filters = options.state.filters;
-        const data: EmptyTemplateData = {
-          query,
-          hasRefinements:
-            filters.numeric.length > 0 || filters.facets.some((facet) => facet.values.length > 0),
-          clearRefinements,
-        };
-        body = html`<div class="xps-results__empty">${
-          templates.empty ? templates.empty(data, helpers) : defaultEmpty(data)
-        }</div>`;
-        announcement = query === '' ? 'No results.' : `No results for “${query}”`;
-      } else if (options.items.length > 0) {
-        body = list(
-          options.items.map((result) =>
-            templates.item ? templates.item(result, helpers) : defaultResultItem(result, options.params)
-          )
-        );
-        const count = helpers.formatNumber(options.results?.total ?? options.items.length);
-        announcement = query === '' ? `${count} results` : `${count} results for “${query}”`;
-      } else {
-        body = '';
-        announcement = '';
-      }
-
-      root.classList.toggle('xps-results--empty', empty);
-      root.classList.toggle('xps-results--loading', busy);
-      setAttr(root, 'aria-busy', busy);
-      // Replace everything after the status element, so the live region survives the render.
-      while (root.lastChild && root.lastChild !== status) root.removeChild(root.lastChild);
-      root.insertAdjacentHTML('beforeend', toHtml(body));
-      if (status.textContent !== announcement) status.textContent = announcement;
-    },
-    () => {
-      container.textContent = '';
+    if (isFirstRender) {
+      root = createRoot(container, 'div', 'xps xps-results');
+      // The live region is created once and only ever has its text updated, so a re-render
+      // that does not change the count is not announced again (spec 5.6).
+      status = container.ownerDocument.createElement('p');
+      status.className = 'xps-results__status xps-sr-only';
+      status.setAttribute('role', 'status');
+      root.appendChild(status);
+      root.addEventListener('click', (event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) return;
+        if (target.closest(`.${CLEAR_CLASS}`)) {
+          clearRefinements();
+          return;
+        }
+        const item = target.closest('a')?.closest('.xps-results__item');
+        const parent = item?.parentElement;
+        if (!item || !parent) return;
+        const result = shown[Array.prototype.indexOf.call(parent.children, item)];
+        if (result) send(result);
+      });
     }
-  )(params);
+    if (!root || !status) return;
+
+    const query = options.state.query;
+    const busy = options.search.status === 'loading' || options.search.status === 'stalled';
+    const first = busy && options.results === null;
+    const empty = options.results !== null && options.items.length === 0;
+
+    let body: Renderable;
+    let announcement: string;
+    if (first) {
+      body = templates.loading
+        ? templates.loading(helpers)
+        : list(Array.from({ length: rows }, skeleton));
+      announcement = 'Searching…';
+    } else if (empty) {
+      const filters = options.state.filters;
+      const hasRefinements =
+        filters.numeric.length > 0 || filters.facets.some((facet) => facet.values.length > 0);
+      if (hasRefinements) probeUnfiltered(options);
+      const data: EmptyTemplateData = {
+        query,
+        hasRefinements,
+        clearRefinements,
+        ...(hasRefinements && probedQuery === query && probedCount !== undefined
+          ? { unfilteredCount: probedCount }
+          : {}),
+      };
+      body = html`<div class="xps-results__empty">${
+        templates.empty ? templates.empty(data, helpers) : defaultEmpty(data)
+      }</div>`;
+      announcement = query === '' ? 'No results.' : `No results for “${query}”`;
+    } else if (options.items.length > 0) {
+      body = list(
+        options.items.map((result) =>
+          templates.item ? templates.item(result, helpers) : defaultResultItem(result, options.params)
+        )
+      );
+      const count = helpers.formatNumber(options.results?.total ?? options.items.length);
+      announcement = query === '' ? `${count} results` : `${count} results for “${query}”`;
+    } else {
+      body = '';
+      announcement = '';
+    }
+
+    root.classList.toggle('xps-results--empty', empty);
+    root.classList.toggle('xps-results--loading', busy);
+    setAttr(root, 'aria-busy', busy);
+    // Replace everything after the status element, so the live region survives the render.
+    while (root.lastChild && root.lastChild !== status) root.removeChild(root.lastChild);
+    root.insertAdjacentHTML('beforeend', toHtml(body));
+    if (status.textContent !== announcement) status.textContent = announcement;
+  };
+
+  const widget = withResults<TAttributes, ResultsWidgetParams<TAttributes>>(paint, () => {
+    if (probeTimer !== undefined) clearTimeout(probeTimer);
+    probedQuery = undefined;
+    container.textContent = '';
+  })(params);
 
   widget.$$type = 'results';
   return widget;

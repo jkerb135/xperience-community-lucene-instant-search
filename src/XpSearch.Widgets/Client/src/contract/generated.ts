@@ -129,6 +129,15 @@ export interface SearchRequest {
      */
     pageSize?: number;
     /**
+     * When true, this is a count probe rather than a search a visitor made: it is answered
+     * exactly like any other request - same pipeline, same rules, same response cache - but it
+     * is never journaled, so it produces no search activity, no query-log row and no analytics
+     * of any kind. Defaults to false. Used by the client for previews such as "Show 12 results"
+     * on the mobile filter sheet and "Clear filters and show 12 results" in the filtered empty
+     * state, where journaling would inflate query volume with searches nobody performed.
+     */
+    probe?: boolean;
+    /**
      * Free-text query. An empty string (the default) means match all documents.
      */
     query?: string;

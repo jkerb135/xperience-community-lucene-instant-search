@@ -277,18 +277,19 @@ when their plan ships; the others verify what should already work.
     not a CSS swap: `loadMore` replaces `results`+`pagination` and owns `state.page`
     (widget-reference §loadMore), so this needs a mount-time viewport decision (plan 1.1-01).
 82. **Sheet apply button previews the pending count.** In the Filter & Sort sheet, tick a
-    pending facet: the apply button reads "Show N results" with a live N. **KNOWN FAIL today**
-    — TH-2 STOP clause: every server query is journaled, no probe flag in the contract
-    (plan 1.1-02 ES-1; same probe flag feeds item 84).
+    pending facet: the apply button reads "Show N results" with a live N (~250ms after the tick).
+    Walkable since ES-1 (needs a bundle rebuild on the host). Check the analytics too: the
+    previews must add **no** rows to the query log — that is what `probe: true` buys.
 83. **First-search skeleton matches the card layout.** Cold load with a query: skeleton rows
     show a media square + text lines matching the thumbnail card (the mock's shape); skeletons
     appear only when no earlier results are on screen; refinements dim stale results instead of
-    blanking. Verify the media square exists now that cards carry images (suspect: skeleton
-    predates HW-14 thumbnails — if it is lines-only, log under plan 1.1-02).
+    blanking. The media square is in the library markup (verified ES-1, `themes/fixtures/results.html`
+    and `results.ts`; shell.css squares it off the media width), so this is a plain walk.
 84. **Filtered no-results shows the unfiltered count.** `?q=<no-hits-with-filter>` + an active
     facet: "No results for ... with these filters", "There are N results without them", and the
-    button reads "Clear filters and show N results". **KNOWN FAIL today** — button ships
-    countless (plan 1.1-02 ES-1).
+    button reads "Clear filters and show N results". Walkable since ES-1 (needs a bundle rebuild
+    on the host). The count appears ~250ms after the empty state; with nothing behind the filters
+    either, the countless "Clear filters" is the correct answer, not a bug.
 85. **No-results recovery: did-you-mean.** Misspelled query with no hits shows "Did you mean
     <correction>?" which runs the corrected query on click. **KNOWN FAIL today** — no
     suggester/contract support (folded into plan 04-04 SG-1).

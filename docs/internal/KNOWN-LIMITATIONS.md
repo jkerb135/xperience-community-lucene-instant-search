@@ -32,36 +32,6 @@ and how to lift it.
   Core's Razor class library a fourth package (`XperienceCommunity.Search.Views`) that both Widgets
   and plain hosts reference.
 
-## The empty state's "…and show 7 results" preview (`defaultEmpty` in `Client/src/widgets/results.ts`)
-
-- **Simplified:** the refined empty state offers "Clear filters" without saying how many results
-  clearing would bring back. The approved mockup shows the count.
-- **Ceiling:** the number is the total of the *same query with no filters*, which no response in
-  hand carries — it needs a second, unfiltered search. Nothing in the pipeline client issues one
-  today (`withResults` renders the one response the instance holds), so the button is honest but
-  vague, and a visitor may clear filters to find nothing behind them either.
-- **Upgrade path:** ask the pipeline for it rather than the client — either a response field
-  (`totalUnfiltered`, computed server-side from the same Lucene query without the filter clauses,
-  which costs one extra count per empty search) or an opt-in `probeUnfiltered` request flag. Then
-  `hasRefinements` grows a sibling `unfilteredTotal?: number` and the template appends the count.
-
-## The sheet's countless Apply button (`filterSort` in `Client/src/widgets/filterSort.ts`)
-
-- **Simplified:** the primary button reads "Show results", not "Show N results". The approved mockup
-  previews the count the pending selection would return.
-- **Ceiling:** the preview needs a count-probe query per pending tick, and **every** request the
-  query endpoint answers is journaled: `CachedSearchPipeline.ExecuteAsync` calls
-  `ISearchRequestJournal.Record` on both the cached and the uncached path, unconditionally, and the
-  contract's `SearchRequest` has no flag to opt out (the journal's only skip is a `queryId` it has
-  already recorded). Probing would therefore log a search activity and a query-log row per tick,
-  inflating query volume and deflating click-through for every visitor who opens the sheet. The
-  widget ships without the probe rather than pollute analytics.
-- **Upgrade path:** a coordinated contract change — a `probe` (or `dontJournal`) boolean on
-  `SearchRequest` that `CachedSearchPipeline` honours by skipping `Record`, plus a rate limit so it
-  cannot be used to run unlogged queries. Then the widget debounces (~250ms) a smallest-page-size
-  probe through the public `SearchClient`, discards a result that arrives after Apply, and falls
-  back to the countless label on failure.
-
 ## `filterSort` registers no routable attribute (`Client/src/widgets/filterSort.ts`)
 
 - **Simplified:** a widget declares at most one routable attribute (`Widget.$$routable` is a single

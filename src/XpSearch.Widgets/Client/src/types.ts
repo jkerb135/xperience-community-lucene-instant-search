@@ -189,7 +189,23 @@ export interface SearchInstance {
    * cancelled — {@link withSuggestions} owns that policy.
    */
   suggest(request: Omit<SuggestRequest, 'index'>): Promise<SuggestResponse>;
+  /**
+   * Asks how many results a variation of the current search would return, over this instance's own
+   * index and transport (ES-1). One request, built from the committed state with `overrides` applied
+   * — `{ filters: undefined }` for the unfiltered count, a pending filter set for a preview.
+   *
+   * It carries `probe: true`, so the server answers it like any other search but journals nothing:
+   * a preview count never becomes a search in the analytics. It touches no instance state, renders
+   * nothing, and is not debounced — a caller that probes per keystroke or per tick debounces itself
+   * and discards an answer that arrives after the state moved on.
+   */
+  probe(overrides?: ProbeOverrides): Promise<{ total: number }>;
 }
+
+/** What {@link SearchInstance.probe} may vary about the committed search. */
+export type ProbeOverrides = Partial<
+  Pick<SearchRequest, 'query' | 'filters' | 'page' | 'pageSize' | 'sort'>
+>;
 
 /** `routing: { stateToRoute, routeToState }` (spec 5.5). */
 export interface RoutingOptions {

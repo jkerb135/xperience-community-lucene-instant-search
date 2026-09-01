@@ -105,6 +105,18 @@ export class SearchClient {
     });
   }
 
+  /**
+   * A count probe: the same query endpoint with `probe: true`, which the server answers normally
+   * but never journals, so a preview count costs no analytics (ES-1).
+   *
+   * Deliberately outside {@link SearchClient.search}'s debounce and supersede machinery: a probe
+   * runs alongside the real search and must neither cancel it nor be cancelled by it. Callers own
+   * the debouncing and the discarding of a stale answer.
+   */
+  probe(request: SearchRequest): Promise<SearchResponse> {
+    return this.#send<SearchResponse>(this.#options.endpoint, { ...request, probe: true });
+  }
+
   /** Autocomplete. Not debounced and not cancelled — the suggestions behaviour owns that policy. */
   suggest(request: SuggestRequest): Promise<SuggestResponse> {
     return this.#send<SuggestResponse>(this.#options.suggestEndpoint, request);

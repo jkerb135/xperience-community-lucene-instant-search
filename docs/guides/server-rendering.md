@@ -29,6 +29,11 @@ returned `QueryId` to `createSearch` so the hydration query is journaled as the 
 `RenderAsync` returns `null` when the search could not run: the warning goes to the log and the
 element stays empty for the client to fill. It never throws through into the page.
 
+A server-rendered search that found nothing paints the plain empty block. The recovery states the
+client adds — the unfiltered count behind "Clear filters and show N results" — are client-side by
+design: each needs a second request, and the first paint is one query or it is not a first paint.
+They appear as soon as the client hydrates.
+
 ```cshtml
 @page
 @using Microsoft.AspNetCore.Html

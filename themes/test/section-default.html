@@ -380,21 +380,27 @@
       <div class="xps xps-results xps-results--empty">      
         <p class="xps-results__status xps-sr-only" role="status">No results for “xyzzy”</p>      
         <div class="xps-results__empty">      
+          <svg class="xps-results__empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"></circle><path d="M8 11h6"></path><path d="m20 20-4.35-4.35"></path></svg>      
           <p>No results for <strong>xyzzy</strong>.</p>      
           <p>Try fewer words, or clear some filters.</p>      
         </div>      
       </div>      
             
-      <!-- empty, with refinements applied: the copy names the filters and offers to clear them -->      
+      <!-- empty, with refinements applied: the unfiltered count comes from a probe, so both the copy and      
+           the button say what clearing would bring back. Without that count both drop to the countless      
+           form: no "There are …" line, and a plain "Clear filters" button. -->      
       <div class="xps xps-results xps-results--empty">      
         <p class="xps-results__status xps-sr-only" role="status">No results for “xyzzy”</p>      
         <div class="xps-results__empty">      
+          <svg class="xps-results__empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"></circle><path d="M8 11h6"></path><path d="m20 20-4.35-4.35"></path></svg>      
           <p>No results for <strong>xyzzy</strong> with these filters.</p>      
-          <button class="xps-button xps-button--primary xps-results__clear" type="button">Clear filters</button>      
+          <p>There are <strong>7 results</strong> without them.</p>      
+          <button class="xps-button xps-button--primary xps-results__clear" type="button">Clear filters and show 7 results</button>      
         </div>      
       </div>      
             
-      <!-- loading: three skeleton results, announced as busy -->      
+      <!-- loading: skeleton results matching the thumbnail card - a media square beside the text lines -      
+           announced as busy. First search only: a refinement dims the stale list instead. -->      
       <div class="xps xps-results xps-results--loading" aria-busy="true">      
         <p class="xps-results__status xps-sr-only" role="status">Searching…</p>      
         <ol class="xps-results__list">      
@@ -696,7 +702,9 @@
           </div>      
           <footer class="xps-sheet__footer">      
             <button class="xps-button xps-sheet__clear" type="button">Clear all</button>      
-            <button class="xps-button xps-button--primary xps-sheet__apply" type="button">Show results</button>      
+            <!-- The count is the live preview of the pending selection; until a probe answers, and if one      
+                 never does, the button reads "Show results". -->      
+            <button class="xps-button xps-button--primary xps-sheet__apply" type="button">Show 12 results</button>      
           </footer>      
         </div>      
       </div>

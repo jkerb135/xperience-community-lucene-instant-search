@@ -9,8 +9,15 @@
  */
 import { withFacetList, type FacetListItem } from '../behaviors/facetList';
 import { withSortSelect, type SortSelectItem } from '../behaviors/sortSelect';
+import * as st from '../state';
 import { html, render, type Renderable } from '../templates/html';
-import type { RenderArgs, SearchActions, SearchState, Widget } from '../types';
+import type {
+  RenderArgs,
+  SearchActions,
+  SearchInstance,
+  SearchState,
+  Widget,
+} from '../types';
 import { createRoot, resolveContainer, widgetId } from './dom';
 
 /** One facet group in the sheet, in the order it is listed. */
@@ -29,7 +36,11 @@ export type FilterSortWidgetParams = {
   sortOptions?: SortSelectItem[];
   /** Trigger and sheet heading. Defaults to "Filter & Sort". */
   label?: string;
-  /** Footer primary button. Defaults to "Show results". */
+  /**
+   * Footer primary button. Defaults to `'Show {count} results'`. A `{count}` placeholder is
+   * replaced with how many results the pending selection would return, from a debounced probe;
+   * while that count is unknown it is dropped, with the space after it, leaving "Show results".
+   */
   applyLabel?: string;
   /** Footer secondary button. Defaults to "Clear all". */
   clearLabel?: string;
@@ -37,6 +48,8 @@ export type FilterSortWidgetParams = {
   closeLabel?: string;
 };
 
+/** How long a pending change settles before the count preview is asked for. */
+const PREVIEW_DEBOUNCE_MS = 250;
 const FOCUSABLE = 'a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled)';
 const SEPARATOR = '\u0000';
 
@@ -45,7 +58,7 @@ export function filterSort(params: FilterSortWidgetParams): Widget {
   const doc = container.ownerDocument;
   const facets = params.facets ?? [];
   const label = params.label ?? 'Filter & Sort';
-  const applyLabel = params.applyLabel ?? 'Show results';
+  const applyLabel = params.applyLabel ?? 'Show {count} results';
   const clearLabel = params.clearLabel ?? 'Clear all';
   const closeLabel = params.closeLabel ?? 'Close';
   const sortOptions = params.sortOptions ?? [];
@@ -54,12 +67,19 @@ export function filterSort(params: FilterSortWidgetParams): Widget {
   const items = new Map<string, FacetListItem[]>();
   let state: SearchState | undefined;
   let actions: SearchActions | undefined;
+  let search: SearchInstance | undefined;
 
   // Pending selection: `pending` holds the values toggled since the sheet opened, `pendingClear`
   // is "Clear all" waiting for Apply. A row is checked when committed XOR pending-toggled.
   const pending = new Set<string>();
   let pendingClear = false;
   let pendingSort: string | undefined;
+
+  // The apply button's live count. `previewSeq` is bumped by anything that invalidates an answer -
+  // a newer pending change, Apply, closing the sheet - so a probe that lands afterwards is dropped.
+  let previewCount: number | undefined;
+  let previewTimer: ReturnType<typeof setTimeout> | undefined;
+  let previewSeq = 0;
 
   let trigger: HTMLButtonElement | undefined;
   let badge: HTMLElement | undefined;
@@ -107,6 +127,59 @@ export function filterSort(params: FilterSortWidgetParams): Widget {
     );
   }
 
+  // --- the apply button's live count ---------------------------------------
+
+  /** The label, counted once a probe has answered and countless until then (and on failure). */
+  const applyText = (): string =>
+    previewCount === undefined
+      ? applyLabel.replace('{count} ', '').replace('{count}', '')
+      : applyLabel.split('{count}').join(String(previewCount));
+
+  /** The state Apply would commit: the committed filters with the pending toggles applied. */
+  const pendingState = (): SearchState => {
+    let next = state ?? st.createState();
+    if (pendingClear) for (const facet of facets) next = st.clearFilters(next, facet.attribute);
+    for (const entry of pending) {
+      const at = entry.indexOf(SEPARATOR);
+      next = st.toggleFacet(next, entry.slice(0, at), entry.slice(at + 1));
+    }
+    return next;
+  };
+
+  /** Drops the debounced probe and discards whatever is already in flight. */
+  const stopPreview = (): void => {
+    if (previewTimer !== undefined) clearTimeout(previewTimer);
+    previewTimer = undefined;
+    previewSeq++;
+  };
+
+  const paintApply = (): void => {
+    const button = panel?.querySelector('.xps-sheet__apply');
+    if (button) button.textContent = applyText();
+  };
+
+  /**
+   * Debounced "Show N results" preview of the pending selection: one probe, which the server never
+   * journals, so ticking through the sheet leaves no trace in the analytics.
+   */
+  const preview = (): void => {
+    stopPreview();
+    const seq = previewSeq;
+    previewTimer = setTimeout(() => {
+      search?.probe({ filters: st.stateToWireFragment(pendingState()).filters }).then(
+        ({ total }) => {
+          // Superseded, applied or closed while it ran: the answer is about a selection that is
+          // no longer pending.
+          if (seq !== previewSeq || !panel) return;
+          previewCount = total;
+          paintApply();
+        },
+        // A failed probe leaves the countless label rather than an error in a footer button.
+        () => {}
+      );
+    }, PREVIEW_DEBOUNCE_MS);
+  };
+
   // --- the sheet -----------------------------------------------------------
   const id = (part: string): string => widgetId(container, 'filter-sort', part);
 
@@ -151,7 +224,7 @@ export function filterSort(params: FilterSortWidgetParams): Widget {
       : ''}${facets.map(sectionHtml)}</div>
     <footer class="xps-sheet__footer">
       <button class="xps-button xps-sheet__clear" type="button">${clearLabel}</button>
-      <button class="xps-button xps-button--primary xps-sheet__apply" type="button">${applyLabel}</button>
+      <button class="xps-button xps-button--primary xps-sheet__apply" type="button">${applyText()}</button>
     </footer>
   </div>`,
       element
@@ -176,6 +249,7 @@ export function filterSort(params: FilterSortWidgetParams): Widget {
       const entry = key(target.name, target.value);
       if (pending.has(entry)) pending.delete(entry);
       else pending.add(entry);
+      preview();
     });
     element.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') {
@@ -217,6 +291,7 @@ export function filterSort(params: FilterSortWidgetParams): Widget {
     for (const box of panel?.querySelectorAll<HTMLInputElement>('.xps-sheet__checkbox') ?? []) {
       box.checked = false;
     }
+    preview();
   };
 
   const open = (): void => {
@@ -224,6 +299,8 @@ export function filterSort(params: FilterSortWidgetParams): Widget {
     pending.clear();
     pendingClear = false;
     pendingSort = undefined;
+    stopPreview();
+    previewCount = undefined;
     sheet = build();
     panel = sheet.querySelector<HTMLElement>('.xps-sheet__panel') ?? undefined;
     previousOverflow = doc.body.style.overflow;
@@ -237,6 +314,8 @@ export function filterSort(params: FilterSortWidgetParams): Widget {
     sheet.remove();
     sheet = undefined;
     panel = undefined;
+    stopPreview();
+    previewCount = undefined;
     pending.clear();
     pendingClear = false;
     pendingSort = undefined;
@@ -279,6 +358,7 @@ export function filterSort(params: FilterSortWidgetParams): Widget {
     init(options) {
       state = options.state;
       actions = options.actions;
+      search = options.search;
       trigger = doc.createElement('button');
       trigger.className = 'xps-button xps-filter-sort__trigger';
       trigger.type = 'button';
@@ -301,6 +381,7 @@ export function filterSort(params: FilterSortWidgetParams): Widget {
     render(options: RenderArgs) {
       state = options.state;
       actions = options.actions;
+      search = options.search;
       for (const child of children) child.render?.(options);
       paintTrigger();
     },

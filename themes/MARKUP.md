@@ -156,14 +156,15 @@ Fixture: `fixtures/results.html`. Root `<div class="xps xps-results">`.
 | `xps-results__list` | `<ol>` | Ordered — result rank is meaningful. |
 | `xps-results__item` | `<li>` | One per result; wraps the item template output. |
 | `xps-results__empty` | `<div>` | The `templates.empty` output. |
-| `xps-results__clear` | `<button type="button" class="xps-button xps-button--primary">` | Only in the empty state, and only while filters are applied: clears them. Delegated from the results root, so re-rendering it is safe. |
+| `xps-results__empty-icon` | `<svg aria-hidden="true" focusable="false">` | The magnifier-with-minus above the empty-state copy, in both variants. 24px grid, `currentColor`, no external asset. |
+| `xps-results__clear` | `<button type="button" class="xps-button xps-button--primary">` | Only in the empty state, and only while filters are applied: clears them. Reads "Clear filters and show N results" once an unfiltered probe has answered with a count, and "Clear filters" until then (and if it never does). Delegated from the results root, so re-rendering it is safe. |
 
 The default item template (`templates.item`) produces:
 
 | Class | Element | Notes |
 |---|---|---|
 | `xps-result` | `<article>` | |
-| `xps-result--skeleton` | modifier | Placeholder row during loading; also `aria-hidden="true"`. |
+| `xps-result--skeleton` | modifier | Placeholder row during the first search only; also `aria-hidden="true"`. Mirrors the thumbnail card: an `xps-skeleton` square in `xps-result__media` (squared off the media width) beside the title and text bars. |
 | `xps-result__media` | `<div>` | Image slot. Omitted when the result has neither an `image` nor a `fileType`. |
 | `xps-result__image` | `<img alt="" width height>` | Decorative: the title link carries the accessible name. |
 | `xps-result__icon` | `<svg aria-hidden="true" focusable="false">` | The media slot's stand-in when the result has a `fileType` but no `image`. Inline, `currentColor`, no external asset. |
@@ -312,7 +313,7 @@ removed when it closes.
 | `xps-sheet__value-count` | `<span>` | Facet count. |
 | `xps-sheet__footer` | `<footer>` | Sticky at the bottom of the panel. |
 | `xps-sheet__clear` | `<button type="button" class="xps-button">` | "Clear all" — pending, like every other selection in the sheet. |
-| `xps-sheet__apply` | `<button type="button" class="xps-button xps-button--primary">` | Applies the pending selection in one batch and closes. |
+| `xps-sheet__apply` | `<button type="button" class="xps-button xps-button--primary">` | Applies the pending selection in one batch and closes. Its label previews the count the pending selection would return ("Show 12 results"); until a probe answers, and if none does, it reads "Show results". |
 
 `xps-active-filters--scroll` keeps the chips on one row that scrolls sideways instead of wrapping.
 The widget sets it from `scroll: true` (`Scroll sideways` in the Page Builder); a page composing

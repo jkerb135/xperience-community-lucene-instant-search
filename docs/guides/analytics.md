@@ -178,6 +178,13 @@ the rows of one experiment and one variant, so the two can never disagree.
 Rows are written by `XpSearchQueryLogQueueWorker`, a `ThreadQueueWorker`, so a search response never
 waits for the database.
 
+**A probe writes nothing.** A request that carries `probe: true` — what the client sends to count a
+preview, like the filter sheet's "Show 12 results" or the empty state's "Clear filters and show 7
+results" — is answered like any other search, from the cache or from the pipeline, but is never
+journaled: no query log row and no search activity, and so nothing in these reports, in the mined
+synonyms or in the popularity signal. A count rendered for a visitor is not a search the visitor
+made, and the numbers here only ever mean the second thing.
+
 ### Retention
 
 `XpSearchQueryLogRetentionTask` deletes rows older than `Analytics.RetentionDays` in batches. It is
