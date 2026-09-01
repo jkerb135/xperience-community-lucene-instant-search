@@ -1,0 +1,32 @@
+name = "xperience-search"
+version = "0.9.0"
+status = "active"
+path = "libraries/xperience-search"
+tags = []
+
+[paul]
+version = "1.4"
+source = "https://chrisai.cv/skool"
+
+[milestone]
+name = "v1.0 Public Release"
+version = "1.0.0"
+status = "in_progress"
+phases = 5
+
+[phase]
+number = 1
+name = "Default experience completion"
+status = "complete"
+plans_completed = 2
+
+[loop]
+position = "APPLY"
+
+[satellite]
+groom = true
+
+[stats]
+total_plans = 0
+total_phases = 0
+last_activity = "2026-09-01T00:00:00Z"
