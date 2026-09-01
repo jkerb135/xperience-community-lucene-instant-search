@@ -25,8 +25,8 @@ Phases: 1 of 5 complete
 | Phase | Name | Plans | Status | Completed |
 |-------|------|-------|--------|-----------|
 | 1 | Default experience completion | 2 | Complete (2026-09-01) | 2026-09-01 |
-| 1.1 | [INSERTED] Mobile composition + edge-state parity | 2 | Not started | - |
-| 2 | Fuzzy search configuration (FZ-1) | 1 | In progress (dispatched) | - |
+| 1.1 | [INSERTED] Mobile composition + edge-state parity | 2 | Complete (2026-09-01) | 2026-09-01 |
+| 2 | Fuzzy search configuration (FZ-1) | 1 | Complete (2026-09-01; §R browser items owner-pending) | 2026-09-01 |
 | 3 | Verification closure & defect burn-down | TBD | In progress (owner items) | - |
 | 4 | Remaining spec scope | 5 | Not started | - |
 | 5 | Packaging & release (spec Phase 8) | TBD | Not started | - |
@@ -60,15 +60,16 @@ with SG-1's later contract work — coordinate the contract regen).
 owner-directed: dispatch after FZ-1 merges — ES-1 must branch from post-FZ-1 main, shared
 pipeline/cache files).
 
-**Scope & Plans:**
-- [ ] 1.1-01 MB-1 — mobile swap: host applies the guide's sidebar-hide half of the swap
+**Scope & Plans:** (both merged 2026-09-01: MB-1 dc4e86e, ES-1 879ebb6; counted empty state
+verified live — "There are 2 results without them / Clear filters and show 2 results")
+- [x] 1.1-01 MB-1 — mobile swap: host applies the guide's sidebar-hide half of the swap
   (`.search-sidebar { display:none }` under 1024px — guide has it, host never adopted it), AND a
   supported mechanism for the pagination↔load-more swap. NOT a CSS swap: `loadMore` replaces
   `results`+`pagination` and owns `state.page`, so this needs a mount-time viewport decision —
   design the smallest honest mechanism (host boot-time choice via `matchMedia` documented as the
   recipe, or a library `pagination` style that degrades; decide in the unit spec) and apply it to
   the demo. Checklist items 80–81.
-- [ ] 1.1-02 ES-1 — probe flag + counted recovery: contract gains an opt-out-of-journaling probe
+- [x] 1.1-02 ES-1 — probe flag + counted recovery: contract gains an opt-out-of-journaling probe
   member on `SearchRequest` (coordinated contract regen); the results widget's filtered-empty
   state runs the unfiltered probe and renders "There are N results without them" + "Clear filters
   and show N results"; TH-2's sheet apply button consumes the same flag for its live "Show N

@@ -16,10 +16,10 @@ See: .paul/PROJECT.md (updated 2026-09-01)
 ## Current Position
 
 Milestone: v1.0 Public Release (v1.0.0)
-Phase: 2 (FZ-1) in flight; Phase 1.1 [INSERTED] queued (mobile composition + edge-state parity)
-Plan: 02-01 FZ-1 dispatched (worktree `fz-1`; owner approved the three spec decisions)
-Status: Phase 1 closed; owner design-note review 2026-09-01 found the mobile-note + edge-state artboards partially unimplemented → checklist §Q items 80–86 written as the acceptance test, Phase 1.1 inserted with plans MB-1/ES-1, SG-1 scope extended (did-you-mean, popular searches)
-Last activity: 2026-09-01 — FZ-1 dispatched; §Q review check added; Phase 1.1 inserted
+Phase: 1, 1.1 and 2 COMPLETE — next: Phase 3 (owner checklist walk + command-discovery unit) or pull Phase 4's SG-1 forward
+Plan: none in flight
+Status: FZ-1 merged b5893ac (default OFF; checklist §R 87–94 = owner browser items incl. flipping the toggle); MB-1 merged dc4e86e (mobile swap live: sidebar hides <1024px via .dg-side-panel:has(>.xps-mount), mount-time matchMedia results→loadMore + inert pagination); ES-1 merged 879ebb6 (contract `probe` flag journal-skipped at the single Journal call site; SearchInstance.probe(); counted empty state + sheet live "Show N results"; skeleton/icon parity; also fixed FZ-1's migrating-from-algolia template drift). Counted empty state verified LIVE on the demo. Checklist §Q items 80–84 now walkable; 85–86 (did-you-mean, popular searches) remain KNOWN FAIL until SG-1.
+Last activity: 2026-09-01 — Phase 1.1 both plans merged; host bundles rebuilt; live verification done
 
 Progress:
 - Milestone: [██░░░░░░░░] ~20% (of the closing stretch; spec Phases 0–7 already shipped pre-PAUL)
