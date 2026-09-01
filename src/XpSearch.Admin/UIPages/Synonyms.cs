@@ -237,17 +237,23 @@ public abstract class SynonymListingBase : ListingPage
 public class SynonymListing : SynonymListingBase
 {
     private readonly IInfoProvider<XpSearchSynonymSuggestionInfo> suggestions;
+    private readonly IPageLinkGenerator pageLinkGenerator;
 
     /// <summary>Initializes a new instance of the <see cref="SynonymListing"/> class.</summary>
     /// <param name="storageService">Reads the stored index configuration, to resolve the index in the URL.</param>
     /// <param name="provider">Provider of synonym objects, to check what a delete would remove.</param>
     /// <param name="suggestions">Provider of mined synonym candidates, counted for the banner that points at them (SY-1).</param>
+    /// <param name="pageLinkGenerator">Generates the banner button's link to the suggestions listing.</param>
     public SynonymListing(
         ILuceneConfigurationStorageService storageService,
         IInfoProvider<XpSearchSynonymInfo> provider,
-        IInfoProvider<XpSearchSynonymSuggestionInfo> suggestions)
-        : base(storageService, provider) =>
+        IInfoProvider<XpSearchSynonymSuggestionInfo> suggestions,
+        IPageLinkGenerator pageLinkGenerator)
+        : base(storageService, provider)
+    {
         this.suggestions = suggestions;
+        this.pageLinkGenerator = pageLinkGenerator;
+    }
 
     /// <summary>Deletes one live synonym group.</summary>
     /// <param name="id">The identifier of the row to delete.</param>
@@ -268,14 +274,18 @@ public class SynonymListing : SynonymListingBase
                 {
                     Headline = pending == 1 ? "1 suggested synonym is waiting" : $"{pending} suggested synonyms are waiting",
                     Content = "The popularity task found searches that got no click, followed by a different search that did. "
-                        + "Open Synonym suggestions in the menu to approve or dismiss them; nothing is applied until you do.",
+                        + "Approve or dismiss the suggestions; nothing is applied until you do.",
                     ContentAsHtml = false,
+                    ActionButton = new CalloutRedirectButtonConfiguration
+                    {
+                        Text = "Suggestions",
+                        RedirectUrl = pageLinkGenerator.GetPath<SynonymSuggestionListing>(IndexScope.Route(IndexIdentifier)),
+                    },
                 }
             ];
         }
 
         PageConfiguration.HeaderActions.AddLink<SynonymCreate>("New synonym", parameters: IndexScope.Route(IndexIdentifier));
-        PageConfiguration.HeaderActions.AddLink<SynonymSuggestionListing>("Suggestions", parameters: IndexScope.Route(IndexIdentifier));
         PageConfiguration.AddEditRowAction<SynonymEdit>(parameters: IndexScope.Route(IndexIdentifier));
         PageConfiguration.TableActions.AddDeleteAction(nameof(Delete), "Delete");
     }

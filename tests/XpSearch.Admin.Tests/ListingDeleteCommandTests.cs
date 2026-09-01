@@ -77,7 +77,7 @@ internal sealed class ListingDeleteCommandTests
 
     [Test]
     public void Delete_RefusesASynonymItCannotProveBelongsToTheIndexInTheUrl() =>
-        AssertRefused(new SynonymListing(Storage(), Provider<XpSearchSynonymInfo>(), Provider<XpSearchSynonymSuggestionInfo>()) { IndexIdentifier = IndexIdentifier });
+        AssertRefused(new SynonymListing(Storage(), Provider<XpSearchSynonymInfo>(), Provider<XpSearchSynonymSuggestionInfo>(), Substitute.For<IPageLinkGenerator>()) { IndexIdentifier = IndexIdentifier });
 
     [Test]
     public void Delete_RefusesAStopwordListItCannotProveBelongsToTheIndexInTheUrl() =>
