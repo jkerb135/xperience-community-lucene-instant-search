@@ -5,18 +5,26 @@
 // Each one only supplies the DEFAULT value of the custom property of the same name. The
 // --xps-* properties are still emitted, so overriding them in a plain stylesheet at runtime
 // (the tag-helper path) works exactly as before — with no build step and no sass.
-$color-accent: #0b5fff !default;
-$color-text: #111 !default;
-$color-muted: #666 !default;
+//
+// The shipped values are the Kentico Violet family (brand.kentico.com). Every derived colour in
+// default.css is a `color-mix` of one of these, so overriding `--xps-color-accent` alone re-skins
+// the whole set. Contrast, measured (WCAG 2.1 relative luminance):
+//   accent  #AF00FA on #fff  5.00:1  — AA for link text, AA for white-on-accent buttons
+//   text    #1f2430 on #fff 15.52:1
+//   muted   #5c6370 on #fff  6.05:1
+$color-accent: #af00fa !default;
+$color-text: #1f2430 !default;
+$color-muted: #5c6370 !default;
 $color-surface: #fff !default;
-$color-border: #e2e2e2 !default;
+$color-border: #e3e5ea !default;
 $radius: 6px !default;
 $space: 0.75rem !default;
 $font: inherit !default;
 
-// Opt-in dark mode (data-xps-theme="auto"); values only, no new rules.
-$dark-color-accent: #6f9dff !default;
-$dark-color-text: #f2f2f2 !default;
-$dark-color-muted: #a9a9a9 !default;
-$dark-color-surface: #16181d !default;
-$dark-color-border: #33363d !default;
+// Opt-in dark mode (data-xps-theme="auto"); values only, no new rules. Same family, re-derived
+// against the dark surface: accent 6.91:1, text 15.88:1, muted 7.55:1 on #17161d.
+$dark-color-accent: #c983f7 !default;
+$dark-color-text: #f2f0f5 !default;
+$dark-color-muted: #aaa6b4 !default;
+$dark-color-surface: #17161d !default;
+$dark-color-border: #35323d !default;

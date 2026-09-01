@@ -35,3 +35,18 @@
 .xps-suggestions__see-all {
   color: var(--xps-color-accent);
 }
+
+.xps-suggestions__hints {
+  color: var(--xps-color-muted);
+  font-size: 0.75em;
+}
+
+.xps-suggestions__key {
+  background-color: var(--xps-color-surface);
+  border: 1px solid var(--xps-color-border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  color: var(--xps-color-muted);
+  font-family: inherit;
+  font-size: 1em;
+}

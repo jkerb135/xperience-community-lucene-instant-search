@@ -40,7 +40,7 @@ cd src/XpSearch.Admin/Client && npm ci && npm run build
 cd src/XpSearch.Widgets/Client && npm run contract:gen && npm run contract:check
 ```
 
-Suite sizes (2026-09-01, after PK-1+PK-2): Core 285, Admin 186, Ingestion 47, Widgets 72, JS 198 — if
+Suite sizes (2026-09-01, after TH-1): Core 286, Admin 187, Ingestion 47, Widgets 72, JS 208 — if
 your run shows fewer, you ran the wrong project. There is no solution file in the repo root; run each
 test project by path. The Admin C# suite needs `src/XpSearch.Admin/Client` built first, like the
 Widgets one.
@@ -58,7 +58,12 @@ Widgets one.
 - Stylesheets: authored in `themes/src/scss/{shell,default}/_<widget>.scss`, bundled by
   `scss/{shell,default}.scss`, à la carte via `scss/widgets/_<widget>.scss`. `themes/src/*.css` is
   generated **and committed** (`cd themes && npm run build`); the widgets client recompiles the same
-  sources and fails if the rules differ.
+  sources and fails if the rules differ. `themes/npm run check` also recomputes the palette's
+  contrast ratios and the single-token re-skin, so a token value change has to stay AA.
+- Default result card: it exists THREE times (client `defaultResultItem`, `_Result.cshtml`,
+  `ServerRenderedResults.DefaultCard`). Change all three together;
+  `Client/src/widgets/card-parity.test.ts` compares them and `ServerRenderedResultsTests` in both
+  the Core and Widgets suites pin the strings.
 - Pipeline stage: implement + register like `ResolveContactGroupsStage` (order constants matter;
   anything affecting results must join the response cache key).
 - Admin page: custom templates need `RoutingContentPlaceholder` in parent templates; ActionCell

@@ -154,6 +154,7 @@
             </li>      
           </ul>      
           <div class="xps-suggestions__footer">      
+            <span class="xps-suggestions__hints" aria-hidden="true"><kbd class="xps-suggestions__key">↑</kbd><kbd class="xps-suggestions__key">↓</kbd> navigate <kbd class="xps-suggestions__key">↵</kbd> select <kbd class="xps-suggestions__key">esc</kbd> close</span>      
             <a class="xps-suggestions__see-all" href="/search?q=esp">See all results for “esp”</a>      
           </div>      
         </div>      
@@ -267,9 +268,10 @@
                 <h3 class="xps-result__title">      
                   <a class="xps-result__link" href="/blog/choosing-an-espresso-machine">Choosing an <mark class="xps-highlight">espresso</mark> <mark class="xps-highlight">machine</mark></a>      
                 </h3>      
+                <p class="xps-result__path">Home / Blog / Coffee</p>      
                 <p class="xps-result__snippet">A dual-boiler <mark class="xps-highlight">espresso</mark> <mark class="xps-highlight">machine</mark> holds brew and steam temperature independently, which is what lets you pull a shot and steam milk without waiting.</p>      
                 <ul class="xps-result__meta">      
-                  <li class="xps-result__meta-item">Article</li>      
+                  <li class="xps-result__meta-item xps-result__type">Article</li>      
                   <li class="xps-result__meta-item">12 March 2026</li>      
                 </ul>      
               </div>      
@@ -277,13 +279,16 @@
           </li>      
           <li class="xps-results__item">      
             <article class="xps-result">      
+              <div class="xps-result__media">      
+                <svg class="xps-result__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"></path><path d="M14 2v5h5"></path></svg>      
+              </div>      
               <div class="xps-result__body">      
                 <h3 class="xps-result__title">      
                   <a class="xps-result__link" href="/products/rocket-appartamento">Rocket Appartamento</a>      
                 </h3>      
                 <p class="xps-result__snippet">A heat-exchanger <mark class="xps-highlight">machine</mark> for the home barista who has run out of counter space.</p>      
                 <ul class="xps-result__meta">      
-                  <li class="xps-result__meta-item">Product</li>      
+                  <li class="xps-result__meta-item xps-result__type">Product</li>      
                 </ul>      
               </div>      
             </article>      
@@ -296,7 +301,7 @@
                 </h3>      
                 <p class="xps-result__snippet">Scale is the single largest cause of warranty claims. Descale every 300 litres, or every three months on hard water.</p>      
                 <ul class="xps-result__meta">      
-                  <li class="xps-result__meta-item">Support</li>      
+                  <li class="xps-result__meta-item xps-result__type">Support</li>      
                   <li class="xps-result__meta-item">2 January 2026</li>      
                 </ul>      
               </div>      
@@ -311,6 +316,15 @@
         <div class="xps-results__empty">      
           <p>No results for <strong>xyzzy</strong>.</p>      
           <p>Try fewer words, or clear some filters.</p>      
+        </div>      
+      </div>      
+            
+      <!-- empty, with refinements applied: the copy names the filters and offers to clear them -->      
+      <div class="xps xps-results xps-results--empty">      
+        <p class="xps-results__status xps-sr-only" role="status">No results for “xyzzy”</p>      
+        <div class="xps-results__empty">      
+          <p>No results for <strong>xyzzy</strong> with these filters.</p>      
+          <button class="xps-button xps-button--primary xps-results__clear" type="button">Clear filters</button>      
         </div>      
       </div>      
             

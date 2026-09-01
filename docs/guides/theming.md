@@ -64,12 +64,12 @@ Every one of these is declared on `.xps` in `default.css` with the default shown
 
 | Variable | Default | Drives |
 |---|---|---|
-| `--xps-color-accent` | `#0b5fff` | Links and result titles, the current pagination page, the primary button, chip tint, the active suggestions option, checkbox and range `accent-color`, the `<mark>` highlight, the focus ring colour. |
-| `--xps-color-text` | `#111` | Body text inside widgets, pagination links, category-tree links, the suggestions panel's shadow tint. |
-| `--xps-color-muted` | `#666` | Facet counts, result metadata, result stats, placeholders, group titles, empty states, the skeleton tint. |
-| `--xps-color-surface` | `#fff` | Input, button and suggestions-panel backgrounds; the text colour on accent-filled elements. |
-| `--xps-color-border` | `#e2e2e2` | Every border and the suggestions footer rule. |
-| `--xps-radius` | `6px` | Corner radius on inputs, buttons, chips, the panel and hit images. Derived values (`calc(--xps-radius / 2)`) round the skeletons and highlights. |
+| `--xps-color-accent` | `#af00fa` | Links and result titles, the current pagination page and its underline, the result type label, the primary button, chip tint, the active suggestions option, checkbox and range `accent-color`, the `<mark>` highlighter band, the focus ring colour. |
+| `--xps-color-text` | `#1f2430` | Body text inside widgets, category-tree links, the facet group-title rule, the input inset shadow, the suggestions panel's shadow tint. |
+| `--xps-color-muted` | `#5c6370` | Facet counts, result metadata, the result path line, result stats, pagination links, placeholders, group titles, empty states, keycaps, the skeleton tint. |
+| `--xps-color-surface` | `#fff` | Input, button, keycap and suggestions-panel backgrounds; the text colour on accent-filled elements. |
+| `--xps-color-border` | `#e3e5ea` | Every border, the keycaps, and the suggestions footer rule. |
+| `--xps-radius` | `6px` | Corner radius on inputs, buttons, chips, the panel and hit images. A derived value (`calc(--xps-radius / 2)`) rounds the skeletons. |
 | `--xps-space` | `0.75rem` | The whole spacing rhythm — gaps and padding are `var(--xps-space)`, `calc(var(--xps-space) / 2)` or `calc(var(--xps-space) * 2)`. **Also declared by `shell.css`**, so structure keeps its rhythm when the theme is not loaded. |
 | `--xps-font` | `inherit` | `font-family` on `.xps`, and nothing else. The widgets never set a font size in absolute units; sizes are `em`-relative to your text. |
 
@@ -80,6 +80,24 @@ scoped rule for one widget:
 /* one widget, different accent */
 .xps-pagination { --xps-color-accent: #007a5e; }
 ```
+
+#### One token re-skins the theme
+
+Every derived colour in `default.css` is a `color-mix` of the variables above — the hover fills,
+the chip tints, the highlighter band, the input shadow. Nothing hard-codes the shipped violet, so
+setting the accent alone is a complete re-skin:
+
+```css
+/* Kentico Heritage Orange */
+.xps { --xps-color-accent: #f05a22; }
+```
+
+One caveat with that particular swap, and with any light accent: `#f05a22` is `3.39:1` on
+white, which is fine for a button fill or a border but **fails WCAG AA for link text**. If you use
+a light accent, either keep links on the text colour, or pick a darker shade of your brand colour
+for the accent and use the light one elsewhere. The shipped `#af00fa` is `5.00:1` on white, and
+the dark-mode `#c983f7` is `6.91:1` on `#17161d`; `themes/scripts/check.mjs` recomputes both on
+every build.
 
 ### Dark mode
 
@@ -97,13 +115,16 @@ own selector instead — that is the same thing with your trigger:
 
 ```css
 [data-theme="dark"] .xps {
-  --xps-color-text: #f2f2f2;
-  --xps-color-muted: #a9a9a9;
-  --xps-color-surface: #16181d;
-  --xps-color-border: #33363d;
-  --xps-color-accent: #6f9dff;
+  --xps-color-text: #f2f0f5;
+  --xps-color-muted: #aaa6b4;
+  --xps-color-surface: #17161d;
+  --xps-color-border: #35323d;
+  --xps-color-accent: #c983f7;
 }
 ```
+
+Those are the shipped dark values. The accent is a lighter violet than the light-mode one on
+purpose: `#af00fa` is only `3.60:1` on `#17161d`, short of AA for link text.
 
 ### What shell gives you
 

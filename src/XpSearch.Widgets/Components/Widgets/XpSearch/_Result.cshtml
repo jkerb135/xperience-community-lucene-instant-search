@@ -13,10 +13,20 @@
             <img class="xps-result__image" src="@Model.Image" alt="" width="96" height="96">
         </div>
     }
+    else if (Model.FileType is not null)
+    {
+        <div class="xps-result__media">
+            <svg class="xps-result__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"></path><path d="M14 2v5h5"></path></svg>
+        </div>
+    }
     <div class="xps-result__body">
         <h3 class="xps-result__title">
             <a class="xps-result__link" href="@Model.Url">@Model.Title</a>
         </h3>
+        @if (Model.Path is not null)
+        {
+            <p class="xps-result__path">@Model.Path</p>
+        }
         @if (Model.Snippet is not null)
         {
             <p class="xps-result__snippet">@Model.Snippet</p>
@@ -24,7 +34,7 @@
         @if (Model.ContentType is not null)
         {
             <ul class="xps-result__meta">
-                <li class="xps-result__meta-item">@Model.ContentType</li>
+                <li class="xps-result__meta-item xps-result__type">@Model.ContentType</li>
             </ul>
         }
     </div>

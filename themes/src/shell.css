@@ -243,6 +243,13 @@
   display: block;
 }
 
+/* The media slot's stand-in when a result has a file type but no image. */
+.xps-result__icon {
+  display: block;
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
 .xps-result__body {
   display: flex;
   flex-direction: column;
@@ -442,6 +449,33 @@
   padding: calc(var(--xps-space) / 2) var(--xps-space);
 }
 
+.xps-suggestions__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--xps-space) / 2);
+}
+
+.xps-suggestions__hints {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--xps-space) / 4);
+}
+
+.xps-suggestions__key {
+  display: inline-block;
+  min-width: 1.25em;
+  padding: 0 calc(var(--xps-space) / 4);
+  text-align: center;
+}
+
+/* Keyboard hints are noise on a touch keyboard. */
+@media (pointer: coarse) {
+  .xps-suggestions__hints {
+    display: none;
+  }
+}
 /* --------------------------------------------------------------------------
  * rangeSlider
  * ------------------------------------------------------------------------ */

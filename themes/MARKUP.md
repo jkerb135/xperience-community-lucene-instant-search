@@ -141,6 +141,7 @@ Fixture: `fixtures/results.html`. Root `<div class="xps xps-results">`.
 | `xps-results__list` | `<ol>` | Ordered — result rank is meaningful. |
 | `xps-results__item` | `<li>` | One per result; wraps the item template output. |
 | `xps-results__empty` | `<div>` | The `templates.empty` output. |
+| `xps-results__clear` | `<button type="button" class="xps-button xps-button--primary">` | Only in the empty state, and only while filters are applied: clears them. Delegated from the results root, so re-rendering it is safe. |
 
 The default item template (`templates.item`) produces:
 
@@ -148,14 +149,21 @@ The default item template (`templates.item`) produces:
 |---|---|---|
 | `xps-result` | `<article>` | |
 | `xps-result--skeleton` | modifier | Placeholder row during loading; also `aria-hidden="true"`. |
-| `xps-result__media` | `<div>` | Image slot. Omitted when the result has no image. |
+| `xps-result__media` | `<div>` | Image slot. Omitted when the result has neither an `image` nor a `fileType`. |
 | `xps-result__image` | `<img alt="" width height>` | Decorative: the title link carries the accessible name. |
+| `xps-result__icon` | `<svg aria-hidden="true" focusable="false">` | The media slot's stand-in when the result has a `fileType` but no `image`. Inline, `currentColor`, no external asset. |
 | `xps-result__body` | `<div>` | |
 | `xps-result__title` | `<h3>` | Heading level is configurable; the class does not change. |
 | `xps-result__link` | `<a href>` | Wraps the highlighted title. |
+| `xps-result__path` | `<p>` | Breadcrumb path, between title and snippet. Omitted when the result carries no `path`. Plain text, never highlighted. |
 | `xps-result__snippet` | `<p>` | Highlighted excerpt; contains `<mark class="xps-highlight">`. |
 | `xps-result__meta` | `<ul>` | Content type, date, and any configured attributes. |
 | `xps-result__meta-item` | `<li>` | |
+| `xps-result__type` | first `<li class="xps-result__meta-item">` | The content-type label, so the theme can set it apart from the rest of the meta row. |
+
+The three default card renderers — the client's `defaultResultItem`, the widgets' `_Result.cshtml`
+and `ServerRenderedResults.DefaultCard` — emit this table element for element; the widgets client's
+`card-parity.test.ts` fails when one of them moves.
 
 Only `xps-results__status` announces counts. `resultStats` renders the same number visually but is not a
 live region, so a page with both widgets announces the change once.
@@ -318,7 +326,9 @@ Implements the WAI-ARIA APG combobox-with-listbox pattern:
 | `xps-suggestions__option-title` | `<span>` | May contain `<mark class="xps-highlight">`. |
 | `xps-suggestions__option-meta` | `<span>` | Secondary line for a matching document. |
 | `xps-suggestions__empty` | `<p role="status">` | Open with no suggestions. |
-| `xps-suggestions__footer` | `<div>` | Holds `xps-suggestions__see-all` (`<a href>`). |
+| `xps-suggestions__footer` | `<div>` | Holds `xps-suggestions__hints` and `xps-suggestions__see-all` (`<a href>`), in that order. |
+| `xps-suggestions__hints` | `<span aria-hidden="true">` | Decorative keyboard hints. Hidden from assistive tech (the combobox roles already convey the model) and from coarse pointers. |
+| `xps-suggestions__key` | `<kbd>` | One keycap inside the hints cluster. |
 | `xps-suggestions__see-all` | `<a href>` | Link to the full results page. |
 
 Keyboard, per the APG: `Down`/`Up` move `aria-activedescendant` (DOM focus stays in the input),

@@ -39,6 +39,13 @@
   display: block;
 }
 
+/* The media slot's stand-in when a result has a file type but no image. */
+.xps-result__icon {
+  display: block;
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
 .xps-result__body {
   display: flex;
   flex-direction: column;

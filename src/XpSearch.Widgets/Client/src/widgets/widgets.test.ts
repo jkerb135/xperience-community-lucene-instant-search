@@ -407,6 +407,61 @@ describe('results', () => {
     expect(spy).not.toHaveBeenCalled();
   });
 
+  it('renders the path line and the type label, and reads pathAttribute', async () => {
+    const response: SearchResponse = {
+      ...RESPONSE,
+      results: [
+        {
+          id: 'doc-1',
+          attributes: {
+            title: 'Choosing an espresso machine',
+            url: '/blog/choosing',
+            breadcrumb: 'Home / Blog / Coffee',
+            contentType: 'Article',
+          },
+        },
+      ],
+    };
+    const root = mount({ pathAttribute: 'breadcrumb' }, response);
+    await settled(search!);
+
+    const path = root.querySelector('.xps-result__path') as HTMLElement;
+    expect(path.tagName).toBe('P');
+    expect(path.textContent).toBe('Home / Blog / Coffee');
+    // The path sits between the title and where a snippet would be.
+    expect(path.previousElementSibling?.className).toBe('xps-result__title');
+    expect(classesOf(root.querySelector('.xps-result__meta-item'))).toEqual([
+      'xps-result__meta-item',
+      'xps-result__type',
+    ]);
+  });
+
+  it('omits the path line when the attribute is absent', async () => {
+    const root = mount();
+    await settled(search!);
+    expect(root.querySelector('.xps-result__path')).toBeNull();
+  });
+
+  it('falls back to the file-type glyph when a result has a fileType but no image', async () => {
+    const response: SearchResponse = {
+      ...RESPONSE,
+      results: [
+        { id: 'doc-1', attributes: { title: 'Warranty', url: '/w.pdf', fileType: 'pdf' } },
+        { id: 'doc-2', attributes: { title: 'No media', url: '/none' } },
+      ],
+    };
+    const root = mount({}, response);
+    await settled(search!);
+    const [file, none] = [...root.querySelectorAll('.xps-results__item')];
+
+    const icon = file?.querySelector('.xps-result__icon') as SVGElement;
+    expect(icon.tagName).toBe('svg');
+    expect(icon.parentElement?.className).toBe('xps-result__media');
+    expect(icon.getAttribute('aria-hidden')).toBe('true');
+    expect(icon.getAttribute('stroke')).toBe('currentColor');
+    expect(none?.querySelector('.xps-result__media')).toBeNull();
+  });
+
   it('renders the empty state', async () => {
     const root = mount({}, { ...RESPONSE, results: [], total: 0, totalPages: 0 });
     search?.actions.setQuery('xyzzy');
@@ -414,7 +469,54 @@ describe('results', () => {
     expect(classesOf(root)).toEqual(['xps', 'xps-results', 'xps-results--empty']);
     expect(root.querySelector('.xps-results__list')).toBeNull();
     expect(root.querySelector('.xps-results__empty')?.textContent).toContain('No results for');
+    expect(root.querySelector('.xps-results__clear')).toBeNull();
     expect(root.querySelector('.xps-results__status')?.textContent).toBe('No results for “xyzzy”');
+  });
+
+  it('offers to clear the filters when the empty state is a refined one', async () => {
+    const root = mount({}, { ...RESPONSE, results: [], total: 0, totalPages: 0 });
+    search?.actions.setQuery('xyzzy').toggleFacet('contentType', 'Article').search();
+    await settled(search!);
+
+    expect(root.querySelector('.xps-results__empty')?.textContent).toContain('with these filters');
+    const clear = root.querySelector('.xps-results__clear') as HTMLButtonElement;
+    expect(clear.tagName).toBe('BUTTON');
+    expect(clear.type).toBe('button');
+    expect(classesOf(clear)).toEqual(['xps-button', 'xps-button--primary', 'xps-results__clear']);
+    // The live region is unchanged by the variant: still one announcement of the empty result.
+    expect(root.querySelector('.xps-results__status')?.textContent).toBe('No results for “xyzzy”');
+
+    const before = calls.length;
+    clear.click();
+    // Clearing searches: the state drops the facet and the next request carries no filters at all.
+    await vi.waitFor(() => expect(calls.length).toBeGreaterThan(before));
+    expect(search?.state.filters.facets).toEqual([]);
+    expect(calls[calls.length - 1]?.body['filters']).toBeUndefined();
+  });
+
+  it('hands templates.empty the refinement state and the clear action', async () => {
+    const seen: Array<{ query: string; hasRefinements: boolean }> = [];
+    let clear = (): void => {};
+    const root = mount(
+      {
+        templates: {
+          empty: (data: { query: string; hasRefinements: boolean; clearRefinements: () => void }) => {
+            seen.push({ query: data.query, hasRefinements: data.hasRefinements });
+            clear = data.clearRefinements;
+            return html`<p id="mine">custom</p>`;
+          },
+        },
+      },
+      { ...RESPONSE, results: [], total: 0, totalPages: 0 }
+    );
+    search?.actions.setQuery('xyzzy').toggleFacet('contentType', 'Article').search();
+    await settled(search!);
+
+    expect(root.querySelector('#mine')?.textContent).toBe('custom');
+    expect(seen[seen.length - 1]).toEqual({ query: 'xyzzy', hasRefinements: true });
+
+    clear();
+    await vi.waitFor(() => expect(search?.state.filters.facets.length).toBe(0));
   });
 
   it('renders skeletons once a first search outlives the stall threshold', async () => {
@@ -1413,6 +1515,22 @@ describe('suggestions', () => {
     expect(assign).toHaveBeenCalledWith(location.origin + '/search?q=esp');
   });
 
+  it('prefixes the footer with decorative keyboard hints', async () => {
+    const host = mount({ resultsUrl: '/search' });
+    await settled(search!);
+    await type(host, 'esp');
+
+    const footer = host.querySelector('.xps-suggestions__footer')!;
+    const hints = footer.firstElementChild!;
+    expect(classesOf(hints)).toEqual(['xps-suggestions__hints']);
+    // Decoration only: the combobox roles already convey the keyboard model.
+    expect(hints.getAttribute('aria-hidden')).toBe('true');
+    expect([...hints.querySelectorAll('kbd')].map((kbd) => kbd.className)).toEqual(
+      Array(4).fill('xps-suggestions__key')
+    );
+    expect(footer.lastElementChild?.className).toBe('xps-suggestions__see-all');
+  });
+
   it('says so when there is nothing to suggest, and the reset button clears', async () => {
     const host = mount({}, []);
     await settled(search!);
@@ -1456,5 +1574,29 @@ describe('the samples in docs/guides/widget-reference.md', () => {
     expect(list.querySelectorAll('.xps-load-more__item').length).toBe(3);
     expect(suggest.querySelector('.xps-suggestions__input')).not.toBeNull();
     expect(tree.querySelector('.xps-category-tree__list--lvl2')).not.toBeNull();
+  });
+
+  it('clear the filters from a custom empty template that reuses the shipped button class', async () => {
+    const host = container('search-results');
+    search = start(
+      [
+        results({
+          container: '#search-results',
+          templates: {
+            empty: ({ query, hasRefinements }, { html: markup }) =>
+              hasRefinements
+                ? markup`<p>Nothing matched “${query}” with these filters.</p>
+               <button type="button" class="xps-button xps-button--primary xps-results__clear">Start over</button>`
+                : markup`<p>Nothing matched “${query}”.</p>`,
+          },
+        }),
+      ],
+      { ...RESPONSE, results: [], total: 0, totalPages: 0 }
+    );
+    search.actions.setQuery('xyzzy').toggleFacet('contentType', 'Article').search();
+    await settled(search);
+
+    host.querySelector<HTMLButtonElement>('.xps-results__clear')!.click();
+    await vi.waitFor(() => expect(search?.state.filters.facets).toEqual([]));
   });
 });

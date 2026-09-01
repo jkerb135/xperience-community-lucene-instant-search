@@ -12,6 +12,32 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Changed (themes):** the default theme ships a Kentico-violet palette instead of the placeholder
+  blue — `--xps-color-accent` `#af00fa` (5.00:1 on white), `--xps-color-text` `#1f2430`,
+  `--xps-color-muted` `#5c6370`, `--xps-color-border` `#e3e5ea`, and a re-derived dark-mode block
+  (accent `#c983f7`, 6.91:1 on `#17161d`). Token names, count and mechanism are unchanged, every
+  derived colour is still a `color-mix` of them, and `themes/scripts/check.mjs` now recomputes the
+  contrast ratios and proves a single `$color-accent` override leaves no shipped violet behind.
+  Along with it: the `<mark>` highlight is a highlighter band rather than a tinted box, facet group
+  titles get a rule, facet counts and pagination lose their boxes (current page is accent text with
+  an underline), inputs get a subtle inset shadow, and a refining search dims the stale list instead
+  of blanking it.
+
+- **Added (widgets, core):** the default result card gained three optional, attribute-driven parts —
+  a `xps-result__path` breadcrumb line under the title (client option `pathAttribute`, default
+  `path`), a `xps-result__type` class on the content-type meta item, and an inline document glyph
+  (`xps-result__icon`) in the media slot for a result with a `fileType` but no `image`. All three
+  land identically in the client's `defaultResultItem`, the widgets' `_Result.cshtml` and
+  `ServerRenderedResults.DefaultCard`; `SearchResultViewModel` gained `Path` and `FileType`, and
+  `Client/src/widgets/card-parity.test.ts` now fails when one of the three renderers moves alone.
+
+- **Added (widgets):** the results empty state knows whether filters are narrowing the search.
+  `templates.empty` receives `hasRefinements` and `clearRefinements` beside `query`, and the default
+  copy becomes "No results for … with these filters" plus a primary **Clear filters** button. Clicks
+  on `xps-results__clear` are delegated by the widget, so a custom template can reuse the class
+  without wiring a handler. The suggestions footer gained a decorative, `aria-hidden` keyboard-hint
+  cluster (`xps-suggestions__hints` / `__key`), hidden on coarse pointers.
+
 - **Fixed (admin):** an experiment's breadcrumb and sidebar section header showed its GUID instead of
   its name on the experiment detail page and every variant-scoped tuning page. `XpSearchExperimentInfo`
   declared no display name column, so Xperience resolved the object's display name through its code

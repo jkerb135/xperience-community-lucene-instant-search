@@ -21,6 +21,29 @@
   font-size: 0.875em;
 }
 
+.xps-result__path {
+  color: var(--xps-color-muted);
+  font-size: 0.75em;
+}
+
+/* 0.85em of the 0.875em `xps-result__meta` it sits in — ~0.74em of the card, not 0.72 * 0.875. */
+.xps-result__type {
+  color: var(--xps-color-accent);
+  font-size: 0.85em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .xps-result__image {
   border-radius: var(--xps-radius);
+}
+
+.xps-result__icon {
+  color: var(--xps-color-muted);
+}
+
+/* A refinement dims the stale list instead of blanking it — skeletons stay first-search-only. */
+.xps-results--loading .xps-results__list {
+  opacity: 0.55;
 }

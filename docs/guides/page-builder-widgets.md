@@ -339,6 +339,7 @@ The view is a partial over `SearchResultViewModel`:
 | `Url` | `string` | The link attribute, or `#` |
 | `Snippet` | `IHtmlContent?` | The first snippet attribute with a value, highlighted; `null` when there is none |
 | `ContentType` / `Image` | `string?` | `contentType` and `image`, or `null` |
+| `Path` / `FileType` | `string?` | `path` (the breadcrumb line the built-in card shows under the title) and `fileType` (which makes the built-in card draw a document glyph when there is no image), or `null` |
 | `Attribute(name)` | `string?` | Any attribute as text |
 | `Highlight(name)` | `IHtmlContent` | Any attribute as HTML: the highlighted form if there is one, else the encoded value |
 

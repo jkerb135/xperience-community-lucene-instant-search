@@ -59,6 +59,16 @@ public sealed class ServerRenderedResults
     private const string Empty = "<div data-xps-server-rendered class=\"xps xps-results xps-results--empty\">"
         + "<div class=\"xps-results__empty\"><p>No results.</p></div></div>";
 
+    /// <summary>
+    /// The document glyph the media slot falls back to for a result with a file type but no image.
+    /// Byte-identical to the client's <c>FILE_ICON</c> and <c>_Result.cshtml</c>'s copy; the widgets
+    /// client's <c>card-parity.test.ts</c> fails if one of the three moves.
+    /// </summary>
+    internal const string FileIcon = "<svg class=\"xps-result__icon\" viewBox=\"0 0 24 24\" fill=\"none\""
+        + " stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\""
+        + " aria-hidden=\"true\" focusable=\"false\"><path d=\"M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0"
+        + " 0 0 2-2V7z\"></path><path d=\"M14 2v5h5\"></path></svg>";
+
     private readonly ISearchPipeline pipeline;
     private readonly ICompositeViewEngine viewEngine;
     private readonly ISearchResultTemplateRegistry templates;
@@ -167,12 +177,21 @@ public sealed class ServerRenderedResults
                 .Append(image)
                 .AppendHtml("\" alt=\"\" width=\"96\" height=\"96\"></div>");
         }
+        else if (model.FileType is not null)
+        {
+            card.AppendHtml("<div class=\"xps-result__media\">").AppendHtml(FileIcon).AppendHtml("</div>");
+        }
 
         card.AppendHtml("<div class=\"xps-result__body\"><h3 class=\"xps-result__title\"><a class=\"xps-result__link\" href=\"")
             .Append(model.Url)
             .AppendHtml("\">")
             .AppendHtml(model.Title)
             .AppendHtml("</a></h3>");
+
+        if (model.Path is { } path)
+        {
+            card.AppendHtml("<p class=\"xps-result__path\">").Append(path).AppendHtml("</p>");
+        }
 
         if (model.Snippet is { } snippet)
         {
@@ -181,7 +200,7 @@ public sealed class ServerRenderedResults
 
         if (model.ContentType is { } contentType)
         {
-            card.AppendHtml("<ul class=\"xps-result__meta\"><li class=\"xps-result__meta-item\">")
+            card.AppendHtml("<ul class=\"xps-result__meta\"><li class=\"xps-result__meta-item xps-result__type\">")
                 .Append(contentType)
                 .AppendHtml("</li></ul>");
         }

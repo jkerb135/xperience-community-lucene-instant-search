@@ -93,14 +93,19 @@ built-in card — the same markup as the client's default item template and as t
         <div class="xps-result__media"><img class="xps-result__image" src="…" alt="" width="96" height="96"></div>
         <div class="xps-result__body">
           <h3 class="xps-result__title"><a class="xps-result__link" href="…">Title</a></h3>
+          <p class="xps-result__path">Home / Blog / Coffee</p>
           <p class="xps-result__snippet">Snippet</p>
-          <ul class="xps-result__meta"><li class="xps-result__meta-item">Article</li></ul>
+          <ul class="xps-result__meta"><li class="xps-result__meta-item xps-result__type">Article</li></ul>
         </div>
       </article>
     </li>
   </ol>
 </div>
 ```
+
+The path line and the media slot are drawn only when the result carries `path` / `image`; a result
+with a `fileType` and no `image` gets an inline `xps-result__icon` document glyph in the slot
+instead. Ask for those fields in `Fields` if you want them.
 
 For your own card, either pass `DefaultViewPath` — a partial over
 `XpSearch.Core.Rendering.SearchResultViewModel`, see the member table in

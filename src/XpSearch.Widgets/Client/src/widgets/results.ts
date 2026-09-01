@@ -15,9 +15,18 @@ import {
 import type { Result, Widget } from '../types';
 import { createRoot, resolveContainer, setAttr } from './dom';
 
+/** What `templates.empty` receives: the query, and whether filters are narrowing it. */
+export interface EmptyTemplateData {
+  query: string;
+  /** Whether any facet or numeric filter is applied — the empty state's "or clear them" case. */
+  hasRefinements: boolean;
+  /** Clears every filter and searches. The same action `activeFilters`' Clear all uses. */
+  clearRefinements(): void;
+}
+
 export interface ResultsTemplates<TAttributes extends Record<string, unknown>> {
   item?: (result: Result<TAttributes>, helpers: TemplateHelpers) => Renderable;
-  empty?: (data: { query: string }, helpers: TemplateHelpers) => Renderable;
+  empty?: (data: EmptyTemplateData, helpers: TemplateHelpers) => Renderable;
   loading?: (helpers: TemplateHelpers) => Renderable;
 }
 
@@ -39,6 +48,8 @@ export type ResultsWidgetParams<
    * wins. Defaults to `summary`, `content`, `excerpt`.
    */
   snippetAttributes?: string[];
+  /** Attribute the default template reads the breadcrumb path from. Defaults to `path`. */
+  pathAttribute?: string;
 };
 
 /**
@@ -48,13 +59,23 @@ export type ResultsWidgetParams<
  */
 const TITLE_ATTRIBUTE = 'title';
 const URL_ATTRIBUTE = 'url';
+const PATH_ATTRIBUTE = 'path';
 const SNIPPET_ATTRIBUTES = ['summary', 'content', 'excerpt'];
 
-/** The three options the default item template reads. Shared with `loadMore`, which reuses it. */
+/**
+ * The document glyph the media slot falls back to for a `fileType` result with no image. Kept
+ * byte-identical in `_Result.cshtml` and `ServerRenderedResults.DefaultCard`; `card-parity.test.ts`
+ * fails if one of the three moves.
+ */
+const FILE_ICON =
+  '<svg class="xps-result__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"></path><path d="M14 2v5h5"></path></svg>';
+
+/** The options the default item template reads. Shared with `loadMore`, which reuses it. */
 export interface ResultItemOptions {
   titleAttribute?: string;
   urlAttribute?: string;
   snippetAttributes?: string[];
+  pathAttribute?: string;
 }
 
 /** The `xps-result` block of `themes/fixtures/results.html`. Exported for `loadMore` to reuse. */
@@ -67,6 +88,9 @@ export function defaultResultItem<TAttributes extends Record<string, unknown>>(
   const urlAttribute = params.urlAttribute ?? URL_ATTRIBUTE;
   const url = typeof attributes[urlAttribute] === 'string' ? attributes[urlAttribute] : '#';
   const type = typeof attributes['contentType'] === 'string' ? attributes['contentType'] : '';
+  const fileType = typeof attributes['fileType'] === 'string' ? attributes['fileType'] : '';
+  const pathAttribute = params.pathAttribute ?? PATH_ATTRIBUTE;
+  const path = typeof attributes[pathAttribute] === 'string' ? attributes[pathAttribute] : '';
   const title = params.titleAttribute ?? TITLE_ATTRIBUTE;
   const field = (params.snippetAttributes ?? SNIPPET_ATTRIBUTES).find(
     (name) => highlight(name, result).value !== ''
@@ -74,21 +98,34 @@ export function defaultResultItem<TAttributes extends Record<string, unknown>>(
   return html`<article class="xps-result">
     ${image
       ? html`<div class="xps-result__media"><img class="xps-result__image" src="${image}" alt="" width="96" height="96"></div>`
-      : ''}
+      : fileType
+        ? html`<div class="xps-result__media">${html.raw(FILE_ICON)}</div>`
+        : ''}
     <div class="xps-result__body">
       <h3 class="xps-result__title"><a class="xps-result__link" href="${url}">${highlight(title, result)}</a></h3>
+      ${path ? html`<p class="xps-result__path">${path}</p>` : ''}
       ${field ? html`<p class="xps-result__snippet">${highlight(field, result)}</p>` : ''}
       ${type
-        ? html`<ul class="xps-result__meta"><li class="xps-result__meta-item">${type}</li></ul>`
+        ? html`<ul class="xps-result__meta"><li class="xps-result__meta-item xps-result__type">${type}</li></ul>`
         : ''}
     </div>
   </article>`;
 }
 
-const defaultEmpty = ({ query }: { query: string }): Renderable =>
-  query === ''
+/** The button the empty state's Clear filters is delegated through (see the root click handler). */
+const CLEAR_CLASS = 'xps-results__clear';
+
+const defaultEmpty = ({ query, hasRefinements }: EmptyTemplateData): Renderable => {
+  if (hasRefinements) {
+    const clear = html`<button class="xps-button xps-button--primary ${CLEAR_CLASS}" type="button">Clear filters</button>`;
+    return query === ''
+      ? html`<p>No results with these filters.</p>${clear}`
+      : html`<p>No results for <strong>${query}</strong> with these filters.</p>${clear}`;
+  }
+  return query === ''
     ? html`<p>No results.</p><p>Try a different search term, or clear some filters.</p>`
     : html`<p>No results for <strong>${query}</strong>.</p><p>Try fewer words, or clear some filters.</p>`;
+};
 
 const skeleton = (): Renderable =>
   html`<article class="xps-result xps-result--skeleton" aria-hidden="true">
@@ -112,6 +149,7 @@ export function results<TAttributes extends Record<string, unknown> = Record<str
   let status: HTMLElement | undefined;
   let shown: Array<Result<TAttributes>> = [];
   let send: (result: Result<TAttributes>) => void = () => {};
+  let clearRefinements: () => void = () => {};
 
   const widget = withResults<TAttributes, ResultsWidgetParams<TAttributes>>(
     (options, isFirstRender) => {
@@ -119,6 +157,9 @@ export function results<TAttributes extends Record<string, unknown> = Record<str
       const rows = options.params.loadingRows ?? 3;
       shown = options.items;
       send = (result) => options.sendEvent('click', result);
+      clearRefinements = () => {
+        options.actions.clearFilters().search();
+      };
 
       if (isFirstRender) {
         root = createRoot(container, 'div', 'xps xps-results');
@@ -131,6 +172,10 @@ export function results<TAttributes extends Record<string, unknown> = Record<str
         root.addEventListener('click', (event) => {
           const target = event.target;
           if (!(target instanceof Element)) return;
+          if (target.closest(`.${CLEAR_CLASS}`)) {
+            clearRefinements();
+            return;
+          }
           const item = target.closest('a')?.closest('.xps-results__item');
           const parent = item?.parentElement;
           if (!item || !parent) return;
@@ -153,8 +198,15 @@ export function results<TAttributes extends Record<string, unknown> = Record<str
           : list(Array.from({ length: rows }, skeleton));
         announcement = 'Searching…';
       } else if (empty) {
+        const filters = options.state.filters;
+        const data: EmptyTemplateData = {
+          query,
+          hasRefinements:
+            filters.numeric.length > 0 || filters.facets.some((facet) => facet.values.length > 0),
+          clearRefinements,
+        };
         body = html`<div class="xps-results__empty">${
-          templates.empty ? templates.empty({ query }, helpers) : defaultEmpty({ query })
+          templates.empty ? templates.empty(data, helpers) : defaultEmpty(data)
         }</div>`;
         announcement = query === '' ? 'No results.' : `No results for “${query}”`;
       } else if (options.items.length > 0) {

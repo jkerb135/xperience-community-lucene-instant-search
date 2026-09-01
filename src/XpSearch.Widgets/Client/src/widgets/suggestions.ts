@@ -12,6 +12,13 @@ import type { Suggestion, Widget } from '../types';
 import { createRoot, resolveContainer, setAttr, widgetId } from './dom';
 import { markMatch } from './facetList';
 
+/**
+ * Decoration only, and hidden from assistive tech: the combobox pattern already conveys the
+ * keyboard model through the roles and `aria-activedescendant`, so repeating it here would be
+ * announced twice. Hidden on a touch keyboard by `shell.css`.
+ */
+const KEYBOARD_HINTS = html`<span class="xps-suggestions__hints" aria-hidden="true"><kbd class="xps-suggestions__key">&uarr;</kbd><kbd class="xps-suggestions__key">&darr;</kbd> navigate <kbd class="xps-suggestions__key">&crarr;</kbd> select <kbd class="xps-suggestions__key">esc</kbd> close</span>`;
+
 export type SuggestionsWidgetParams = {
   container: string | HTMLElement;
   /** Trailing debounce before `/suggest` is called. Defaults to 150 ms. */
@@ -204,7 +211,7 @@ export function suggestions(params: SuggestionsWidgetParams): Widget {
       ? html`<p class="xps-suggestions__empty" role="status">No suggestions for &ldquo;${query}&rdquo;.</p>`
       : ''}
     ${options.seeAllUrl !== null && ordered.length > 0
-      ? html`<div class="xps-suggestions__footer"><a class="xps-suggestions__see-all" href="${options.seeAllUrl}">See all results for &ldquo;${query}&rdquo;</a></div>`
+      ? html`<div class="xps-suggestions__footer">${KEYBOARD_HINTS}<a class="xps-suggestions__see-all" href="${options.seeAllUrl}">See all results for &ldquo;${query}&rdquo;</a></div>`
       : ''}`,
         panel
       );

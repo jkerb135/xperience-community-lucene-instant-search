@@ -2,22 +2,20 @@
  * pagination (the muted rule is shared with resultStats)
  * ------------------------------------------------------------------------ */
 
+/* Plain text, not boxes: the hit target is shell.css's 2.25rem minimum, the box was never it. */
 .xps-pagination__link {
-  color: var(--xps-color-text);
+  color: var(--xps-color-muted);
   text-decoration: none;
-  border: 1px solid var(--xps-color-border);
-  border-radius: var(--xps-radius);
 
   &:hover[href] {
-    border-color: color-mix(in srgb, var(--xps-color-accent) 50%, var(--xps-color-border));
+    color: var(--xps-color-text);
   }
 }
 
 .xps-pagination__item--current .xps-pagination__link {
-  background-color: var(--xps-color-accent);
-  border-color: var(--xps-color-accent);
-  color: var(--xps-color-surface);
-  font-weight: 600;
+  color: var(--xps-color-accent);
+  font-weight: 700;
+  border-bottom: 2px solid var(--xps-color-accent);
 }
 
 .xps-pagination__ellipsis,

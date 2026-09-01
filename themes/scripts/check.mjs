@@ -4,6 +4,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { compileString } from 'sass';
 
 const themes = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(themes, p), 'utf8');
@@ -76,6 +77,52 @@ for (const [name, css] of [['src/shell.css', shell], ['src/default.css', theme]]
     if (killsOutline && !replaces) fail(name, `"${selector}" removes the outline without a replacement`);
   }
 }
+
+// (vi) the shipped palette is actually readable, and re-skinnable through the one token.
+const RATIOS = [
+  ['light', '.xps'],
+  ['dark', '.xps[data-xps-theme=auto]'],
+];
+const channel = (c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+const luminance = (hex) => {
+  let h = hex.replace('#', '');
+  if (h.length === 3) h = [...h].map((c) => c + c).join('');
+  const [r, g, b] = [0, 2, 4].map((i) => channel(parseInt(h.slice(i, i + 2), 16) / 255));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+const contrast = (a, b) => {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+};
+
+const tokensOf = (selector) => {
+  const block = blocks(theme).find((b) => b.selector === selector);
+  return Object.fromEntries(decls(block?.body ?? '').filter(([p]) => p.startsWith('--')));
+};
+
+for (const [mode, selector] of RATIOS) {
+  const t = tokensOf(selector);
+  const surface = t['--xps-color-surface'] ?? tokensOf('.xps')['--xps-color-surface'];
+  for (const token of ['--xps-color-accent', '--xps-color-text', '--xps-color-muted']) {
+    // Accent is link text and white-on-accent button fill; muted is the counts and the path line.
+    // All three are body text, so all three owe AA's 4.5:1 against the surface they sit on.
+    const ratio = contrast(t[token], surface);
+    console.log(`        ${mode} ${token} ${t[token]} on ${surface}: ${ratio.toFixed(2)}:1`);
+    if (ratio < 4.5) fail('src/default.css', `${mode} ${token} is ${ratio.toFixed(2)}:1 on ${surface} — AA needs 4.5:1`);
+  }
+}
+
+// One token re-skins everything: compiling with a different $color-accent must leave no shipped
+// violet behind anywhere in the file.
+const reskinned = compileString(`@use 'default' with ($color-accent: #b8005c);`, {
+  loadPaths: [join(themes, 'src/scss')],
+  charset: false,
+}).css.toLowerCase();
+if (reskinned.includes('#af00fa')) fail('src/scss', '#af00fa survives a $color-accent override — derive it with color-mix');
+if (!reskinned.includes('#b8005c')) fail('src/scss', 'the overridden $color-accent never reaches --xps-color-accent');
+// The dark accent is its own knob, so it survives — but only as its one variable declaration.
+const darkLeft = reskinned.split('#c983f7').length - 1;
+if (darkLeft !== 1) fail('src/scss', `#c983f7 appears ${darkLeft} times after a re-skin; only the dark --xps-color-accent may hold it`);
 
 // (iv) three-way agreement between fixtures, CSS and MARKUP.md.
 const fixtureClasses = new Map(); // class -> fixture that uses it

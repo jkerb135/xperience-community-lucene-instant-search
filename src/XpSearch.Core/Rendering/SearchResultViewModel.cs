@@ -58,6 +58,15 @@ public sealed class SearchResultViewModel
     /// <summary>Gets the content type, or <see langword="null"/> when the result carries none.</summary>
     public string? ContentType => Attribute("contentType") is { Length: > 0 } type ? type : null;
 
+    /// <summary>Gets the breadcrumb path shown under the title, or <see langword="null"/> when the result carries none.</summary>
+    public string? Path => Attribute("path") is { Length: > 0 } path ? path : null;
+
+    /// <summary>
+    /// Gets the file type, or <see langword="null"/> when the result carries none. Only decides
+    /// whether the default card shows its document glyph in place of a missing image.
+    /// </summary>
+    public string? FileType => Attribute("fileType") is { Length: > 0 } fileType ? fileType : null;
+
     /// <summary>
     /// Gets the snippet: the first configured attribute that has a value, highlighted, or
     /// <see langword="null"/> when none of them does.
