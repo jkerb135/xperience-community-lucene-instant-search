@@ -35,7 +35,12 @@ sidebar label **Edit index** — old `/tuning/` bookmarks 500.
 ## B. Deletes (AD-8) — the reported bug
 11. Delete a field weight, a synonym, a stopword, a rule and an API key from their listings — each
     deletes with a confirmation and the row is gone after refresh.
-12. A deleted rule stops affecting `/search` results without an app restart (invalidation).
+12. A deleted rule/synonym/stopword stops applying (verify in the Query tester) without an app
+    restart — the tuning cache invalidates on the provider's delete events.
+12b. Cross-index refusal: on index A's weights listing, hand-edit the delete request's row id to a
+    row of index B — expect "This record belongs to a different search index and was not deleted."
+12c. A role with View but not Delete on Lucene Search cannot invoke the tuning deletes; API keys
+    delete under Search ingestion's Delete.
 
 ## C. Analytics + admin polish (AD-6/7, pager swap, range pickers)
 13. Report tables: numbered `Pagination` control when rows exceed the page size; "Page X of Y · N rows";
