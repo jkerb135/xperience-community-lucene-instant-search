@@ -119,14 +119,24 @@ Fixture: `fixtures/search-box.html`. Root `<form class="xps xps-search-box" role
 | `xps-search-box` | `<form role="search">` | `novalidate`; submitting runs the search. |
 | `xps-search-box--stalled` | root modifier | A request has outlived the stall threshold; reveals the loading indicator. |
 | `xps-search-box__label` | `<label for>` | Always rendered and always associated. Add `xps-sr-only` when the label is not shown. |
-| `xps-search-box__field` | `<div>` | Flex row: input, loading indicator, reset, submit. |
-| `xps-search-box__input` | `<input type="search" name="q">` | `autocomplete="off"`; `placeholder` from options. |
+| `xps-search-box__field` | `<div>` | Positioning context: the icon, the loading indicator and the reset sit inside the input; the submit follows it in the flex row. |
+| `xps-search-box__icon` | `<svg aria-hidden="true" focusable="false">` | Decorative magnifier, `stroke="currentColor"` on the 24px grid. Always rendered. |
+| `xps-search-box__input` | `<input type="search" name="q">` | `autocomplete="off"`; `placeholder` from options. Padded on both sides so text never runs under the icon or the reset. |
 | `xps-search-box__loading` | `<span class="xps-skeleton" aria-hidden="true">` | Only visible under `--stalled`. |
-| `xps-search-box__reset` | `<button type="reset">` | `xps-button`; `aria-label="Clear the search query"`; `hidden` while the query is empty. |
+| `xps-search-box__reset` | `<button type="reset">` | `xps-button`; `aria-label="Clear the search query"`; `hidden` while the query is empty. Hit target ≥ 2.25rem. |
 | `xps-search-box__submit` | `<button type="submit">` | `xps-button`; `aria-label="Submit the search query"`; omitted entirely when `showSubmit: false`. |
 
 Accessibility: `role="search"` on the form, label associated by `for`/`id`, both icon buttons
 labelled by `aria-label` with their glyph `aria-hidden="true"`.
+
+**Integrated suggestions** (`params.suggestions`, `EnableSuggestions` in the Page Builder): the
+input gains the combobox attributes described under [suggestions](#suggestions) —
+`role="combobox"`, `aria-expanded`, `aria-controls`, `aria-autocomplete="list"`,
+`aria-activedescendant` — and a `xps-suggestions__panel` becomes the last child of the form,
+below the field; the root takes `xps-suggestions--open` while the popup is shown. The panel is
+byte-for-byte the standalone widget's (same renderer), so the same styles apply. Selecting
+searches in place, so there is no `xps-suggestions__see-all` and therefore no footer. Use this
+*or* the standalone widget on a page, never both: two fields is two search boxes.
 
 ## results
 

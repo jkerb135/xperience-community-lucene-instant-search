@@ -1552,13 +1552,176 @@ describe('suggestions', () => {
   });
 });
 
+describe('searchBox with integrated suggestions', () => {
+  const SUGGESTIONS: Suggestion[] = [
+    { text: 'espresso machine' },
+    {
+      text: 'Choosing an espresso machine',
+      url: '/blog/choosing',
+      result: { id: 'doc-1', attributes: { contentType: 'Article' } },
+    },
+  ];
+
+  /** One instance carrying whichever widgets the test wants, answering `/suggest` for real. */
+  const startSuggesting = (build: (host: HTMLElement) => Widget, hostId: string): HTMLElement => {
+    const host = container(hostId);
+    const fetchFn = (async (url: string, init: RequestInit) => {
+      calls.push({
+        url: String(url),
+        body: JSON.parse(String(init.body)) as Record<string, unknown>,
+      });
+      const body = String(url).endsWith(SUGGEST_ROUTE) ? { suggestions: SUGGESTIONS } : RESPONSE;
+      return new Response(JSON.stringify(body), {
+        status: 200,
+        headers: { [API_VERSION_HEADER]: '1' },
+      });
+    }) as unknown as typeof fetch;
+    search = createSearch({ index: 'site-content', fetchFn, debounceMs: 0 });
+    started.push(search);
+    search.addWidgets([build(host)]);
+    search.start();
+    return host;
+  };
+
+  const mount = (params: Record<string, unknown> = {}): HTMLElement =>
+    startSuggesting(
+      (host) => searchBox({ container: host, suggestions: { debounceMs: 0 }, ...params }),
+      'search'
+    );
+
+  const type = async (host: HTMLElement, value: string): Promise<HTMLInputElement> => {
+    const input = host.querySelector<HTMLInputElement>('input')!;
+    input.value = value;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await vi.waitFor(() => expect(host.querySelector('[role="option"]')).not.toBeNull());
+    return input;
+  };
+
+  it('renders the decorative magnifier icon, with or without suggestions', () => {
+    const plain = container('plain');
+    search = start([searchBox({ container: plain })]);
+    for (const host of [plain, mount()]) {
+      const icon = host.querySelector('.xps-search-box__icon') as SVGElement;
+      expect(icon.tagName.toLowerCase()).toBe('svg');
+      expect(icon.getAttribute('aria-hidden')).toBe('true');
+      expect(icon.getAttribute('focusable')).toBe('false');
+      expect(icon.getAttribute('stroke')).toBe('currentColor');
+      // Inside the field, before the input.
+      expect(icon.parentElement?.className).toBe('xps-search-box__field');
+      expect(icon.nextElementSibling?.className).toBe('xps-search-box__input');
+    }
+  });
+
+  it('turns its own input into a combobox, and leaves it alone when the option is off', () => {
+    const off = container('off');
+    search = start([searchBox({ container: off })]);
+    const plain = off.querySelector('input')!;
+    expect(plain.hasAttribute('role')).toBe(false);
+    expect(plain.hasAttribute('aria-expanded')).toBe(false);
+    expect(plain.hasAttribute('aria-controls')).toBe(false);
+    expect(off.querySelector('.xps-suggestions__panel')).toBeNull();
+
+    const host = mount();
+    const input = host.querySelector('input')!;
+    const prefix = input.id.replace(/-input$/, '');
+    expect(input.getAttribute('role')).toBe('combobox');
+    expect(input.getAttribute('aria-expanded')).toBe('false');
+    expect(input.getAttribute('aria-controls')).toBe(prefix + '-listbox');
+    expect(input.getAttribute('aria-autocomplete')).toBe('list');
+    expect(input.hasAttribute('aria-activedescendant')).toBe(false);
+    // The listbox exists even when closed, so aria-controls never dangles.
+    expect(host.querySelector('.xps-suggestions__list')?.id).toBe(prefix + '-listbox');
+    expect(host.querySelector<HTMLElement>('.xps-suggestions__panel')?.hidden).toBe(true);
+    // The panel hangs under the field, inside the search box's own form.
+    expect(host.querySelector('.xps-suggestions__panel')?.parentElement?.className).toBe(
+      'xps xps-search-box'
+    );
+  });
+
+  it('moves aria-activedescendant with the arrows and searches for the picked suggestion', async () => {
+    const host = mount();
+    await settled(search!);
+    const input = await type(host, 'esp');
+    input.focus();
+    expect(input.getAttribute('aria-expanded')).toBe('true');
+
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    expect(input.getAttribute('aria-activedescendant')).toBe(
+      input.id.replace(/-input$/, '') + '-option-0'
+    );
+    expect(document.activeElement).toBe(input);
+
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    await vi.waitFor(() => expect(search!.state.query).toBe('espresso machine'));
+    expect(input.value).toBe('espresso machine');
+    expect(host.querySelector<HTMLElement>('.xps-suggestions__panel')?.hidden).toBe(true);
+  });
+
+  it('still follows a redirect rule when Enter submits with no active option', async () => {
+    const assigned: string[] = [];
+    const host = container('redirect');
+    search = start(
+      [
+        searchBox({
+          container: host,
+          suggestions: { debounceMs: 0 },
+          windowRef: {
+            location: { assign: (url: string) => assigned.push(url) },
+          } as unknown as Window,
+        }),
+      ],
+      { ...RESPONSE, redirect: { url: '/support', rule: 'Support redirect' } }
+    );
+    const input = host.querySelector('input')!;
+    await settled(search);
+
+    input.value = 'help';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    await vi.waitFor(() => expect(assigned).toEqual(['/support']));
+  });
+
+  it('renders the same panel as the standalone widget', async () => {
+    const box = mount();
+    const standalone = startSuggesting(
+      (host) => suggestions({ container: host, debounceMs: 0 }),
+      'standalone'
+    );
+    await type(box, 'esp');
+    await type(standalone, 'esp');
+
+    /** The two widgets differ only in the id prefix MARKUP.md rule 4 gives them. */
+    const panel = (host: HTMLElement): string =>
+      host
+        .querySelector('.xps-suggestions__panel')!
+        .innerHTML.split(host.querySelector('input')!.id.replace(/-input$/, ''))
+        .join('xps-id');
+
+    expect(panel(box)).toBe(panel(standalone));
+    expect(panel(box)).toContain('xps-suggestions__option-meta');
+  });
+});
+
 describe('the samples in docs/guides/widget-reference.md', () => {
   it('mount and render exactly as written', async () => {
     const price = container('filter-price');
     const list = container('search-results');
     const suggest = container('search-suggest');
     const tree = container('facet-category');
+    const box = container('search-box');
     search = start([
+      searchBox({
+        container: '#search-box',
+        placeholder: 'Search…',
+        label: 'Search this site',
+        showLabel: false,
+        showReset: true,
+        showSubmit: false,
+        autofocus: false,
+        followRedirects: true,
+        queryHook: (query: string, apply: (value: string) => void) => apply(query.trim()),
+        suggestions: { debounceMs: 150, minQueryLength: 1, limit: 5 },
+      }),
       rangeFilter({ container: '#filter-price', attribute: 'price', label: 'Price', min: 0, max: 500, step: 5 }),
       categoryTree({ container: '#facet-category', attribute: 'category', label: 'Categories', limit: 10 }),
       loadMore({ container: '#search-results', autoLoad: true }),
@@ -1575,6 +1738,7 @@ describe('the samples in docs/guides/widget-reference.md', () => {
     expect(list.querySelectorAll('.xps-load-more__item').length).toBe(3);
     expect(suggest.querySelector('.xps-suggestions__input')).not.toBeNull();
     expect(tree.querySelector('.xps-category-tree__list--lvl2')).not.toBeNull();
+    expect(box.querySelector('input')?.getAttribute('role')).toBe('combobox');
   });
 
   it('clear the filters from a custom empty template that reuses the shipped button class', async () => {

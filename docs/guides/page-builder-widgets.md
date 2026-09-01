@@ -75,7 +75,7 @@ Then, per widget:
 
 | Widget | Properties |
 |---|---|
-| Search box | Placeholder · Show reset button · Focus on page load · Sync search state to the URL — see [Shareable result URLs](#shareable-result-urls) |
+| Search box | Placeholder · Show reset button · Focus on page load · Suggest as the visitor types · Maximum suggestions (shown once suggesting is on) · Sync search state to the URL — see [Shareable result URLs](#shareable-result-urls) and [One page, one search field](#one-page-one-search-field) |
 | Results | Results per page · Result template · Fields to show (a selector over the index fields — `title`, `url`, `contentType`, `language` or any stored field of your content types) · Title attribute · Link attribute · Snippet attributes — see [Pointing a card at other attributes](#pointing-a-card-at-other-attributes) |
 | Facet list | Attribute · Label · Operator (any / all of the selected values) · Values shown · Show a "show more" button |
 | Category tree | Attribute · Label · Nodes per level. Pick a **taxonomy** attribute: the tree comes from the tag hierarchy, and a flat attribute renders as one level. Selection is one value at a time, because a parent's count already includes its children |
@@ -88,6 +88,21 @@ Then, per widget:
 
 A blank text property is left out of `data-xps-config` entirely, so the JavaScript widget's own default
 applies rather than an empty string overriding it.
+
+#### One page, one search field
+
+**Suggest as the visitor types** turns the search box's own input into an autocomplete combobox: the
+suggestion panel drops under the field, and picking one searches on that page. Use it on a results
+page, where the search box is already the field that carries the query and the URL syncing.
+
+The separate **Suggestions** widget renders a search field of its own, so a page with both shows two.
+Place it on a landing page or in a header instead — somewhere the visitor should be sent *to* the
+results page — and leave the search box's suggestions off there. The two emit the same panel markup,
+so they look identical either way:
+
+```html
+<div class="xps-mount" data-xps-config="{&quot;showReset&quot;:true,&quot;autofocus&quot;:false,&quot;suggestions&quot;:{&quot;limit&quot;:5}}" data-xps-instance="default" data-xps-instance-config="{&quot;index&quot;:&quot;site-content&quot;,&quot;routing&quot;:true}" data-xps-widget="searchBox"></div>
+```
 
 #### The attribute drop-down is filled from the index
 

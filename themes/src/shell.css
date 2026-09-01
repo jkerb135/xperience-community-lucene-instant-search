@@ -171,15 +171,34 @@
  * searchBox
  * ------------------------------------------------------------------------ */
 .xps-search-box {
+  /* Positioning context for the integrated suggestions panel, which hangs below the field. */
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: calc(var(--xps-space) / 2);
 }
 
+/* The icon and the two indicators sit *inside* the input, which is the element that carries the
+ * border; --xps-search-box-trailing is how far in from the field's end that inside is, which the
+ * optional submit button — a real control outside the input — pushes over. */
 .xps-search-box__field {
+  --xps-search-box-trailing: 0rem;
+  position: relative;
   display: flex;
   align-items: center;
   gap: calc(var(--xps-space) / 2);
+}
+
+.xps-search-box__field:has(.xps-search-box__submit) {
+  --xps-search-box-trailing: 2.75rem;
+}
+
+.xps-search-box__icon {
+  position: absolute;
+  inset-inline-start: calc(var(--xps-space) / 2);
+  width: 1.25rem;
+  height: 1.25rem;
+  pointer-events: none;
 }
 
 .xps-search-box__input {
@@ -187,11 +206,15 @@
   min-width: 0;
   min-height: 2.25rem;
   padding: calc(var(--xps-space) / 2);
+  /* Room for the icon on one side, the reset button on the other. */
+  padding-inline-start: 2.25rem;
+  padding-inline-end: 2.25rem;
 }
 
 .xps-search-box__loading {
   display: none;
-  flex: 0 0 auto;
+  position: absolute;
+  inset-inline-end: calc(var(--xps-search-box-trailing) + 2.5rem);
   width: 1em;
   height: 1em;
 }
@@ -200,7 +223,13 @@
   display: block;
 }
 
-.xps-search-box__reset,
+.xps-search-box__reset {
+  position: absolute;
+  inset-inline-end: calc(var(--xps-search-box-trailing) + var(--xps-space) / 4);
+  min-width: 2.25rem;
+  padding-inline: calc(var(--xps-space) / 2);
+}
+
 .xps-search-box__submit {
   flex: 0 0 auto;
 }

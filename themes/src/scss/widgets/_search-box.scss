@@ -2,3 +2,6 @@
 // once per page as well — these files carry no reset and no design tokens.
 @use '../shell/search-box' as structure-search-box;
 @use '../default/form-controls' as theme-form-controls;
+// The integrated `suggestions` param group renders the standalone widget's panel inside this one.
+@use '../shell/suggestions' as structure-suggestions;
+@use '../default/suggestions' as theme-suggestions;

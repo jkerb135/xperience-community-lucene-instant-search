@@ -125,6 +125,7 @@ searchBox({
   autofocus: false,
   followRedirects: true,
   queryHook: (query, apply) => apply(query.trim()),
+  suggestions: { debounceMs: 150, minQueryLength: 1, limit: 5 },
 });
 ```
 
@@ -140,10 +141,25 @@ searchBox({
 | `queryHook` | — | `(query, apply) => void`. Nothing reaches the state unless you call `apply`. |
 | `followRedirects` | `true` | Navigate to `response.redirect.url` when a [redirect rule](relevance-tuning.md#redirect-rules) matched. Only ever for a submitted query. |
 | `windowRef` | `window` | The window to navigate. Injectable for tests and SSR. |
+| `suggestions` | — | Set it (even to `{}`) to turn the input into an autocomplete combobox. Takes `debounceMs`, `minQueryLength`, `limit`, `language` and `groupLabels`, which mean exactly what they do on [`suggestions`](#suggestions). |
 
 Markup (`themes/MARKUP.md` → *searchBox*): `<form class="xps xps-search-box" role="search" novalidate>`
-with `xps-search-box__label`, `__field`, `__input`, `__loading`, `__reset` and optionally `__submit`.
-The root gains `xps-search-box--stalled` while a request outlives the stall threshold.
+with `xps-search-box__label`, `__field`, `__icon` (a decorative magnifier, always rendered),
+`__input`, `__loading`, `__reset` and optionally `__submit`. The root gains
+`xps-search-box--stalled` while a request outlives the stall threshold.
+
+**Integrated suggestions.** With the `suggestions` option the widget's own input becomes the
+combobox — `role="combobox"`, `aria-expanded`, `aria-controls`, `aria-activedescendant`, the arrow
+keys, `Escape`, the lot — and a `xps-suggestions__panel` is appended to the form, below the field.
+The panel is rendered by the same code as the standalone widget, so it looks and behaves the same;
+the root gains `xps-suggestions--open` while it is shown. Picking a suggestion searches in place
+(a document suggestion still navigates to its `url`), and `Enter` with no active option goes
+through the search box's own submit, so [redirect rules](relevance-tuning.md#redirect-rules) still
+apply. There is no "see all results" link, because this box *is* the results page.
+
+**One page, one search field.** Use this on a results page, and the standalone
+[`suggestions`](#suggestions) widget on a landing page or in a header, where a `resultsUrl`
+navigation is what you want. Placing both on one page gives the visitor two search fields.
 
 Redirect rules: a search that matches one comes back with
 `redirect: { url, rule }` next to its results. The widget follows it with `window.location.assign`
@@ -657,6 +673,10 @@ suggestions({ container: '#search-suggest', resultsUrl: '/search', debounceMs: 1
 | `groupLabels` | `{ suggestions: 'Suggestions', documents: 'Pages' }` | Group headings, used only when a response mixes both sources. |
 | `mode` | `'documents'` | Accepted so the Page Builder mount can pass it through, and otherwise unused: whether an index answers with query suggestions or with matching documents is server-side configuration, not a request field. |
 | `windowRef` | `window` | Injectable, for tests and SSR. |
+
+This widget renders **its own search field**. On a results page, where a `searchBox` already carries
+the query and the URL syncing, set that widget's [`suggestions`](#searchbox) option instead — it is
+the same panel over the field the page already has.
 
 **`resultsUrl` decides what kind of search box this is.** Set it and the widget is a header box: the
 form posts to that URL, typing does *not* search in place, Enter with no active option navigates to

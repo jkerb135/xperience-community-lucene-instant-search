@@ -35,7 +35,7 @@ export type { FacetListWidgetParams } from './facetList';
 export { filterSort } from './filterSort';
 export type { FilterSortFacet, FilterSortWidgetParams } from './filterSort';
 export { searchBox } from './searchBox';
-export type { SearchBoxWidgetParams } from './searchBox';
+export type { SearchBoxSuggestionsParams, SearchBoxWidgetParams } from './searchBox';
 export { sortSelect } from './sortSelect';
 export type { SortSelectWidgetParams } from './sortSelect';
 export { resultStats } from './resultStats';
