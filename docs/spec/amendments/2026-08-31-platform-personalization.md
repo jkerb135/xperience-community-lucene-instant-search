@@ -12,7 +12,10 @@ One small unit adding two Page Builder **personalization condition types** (stan
 the Admin package):
 
 1. **"Searched for" condition** — *contact searched for {term} in the last {N} days*.
-   Evaluates against the AN-2 `xpsearch_search` activities for the current contact
+   Evaluates against the AN-2 search activities for the current contact
+   *(correction 2026-09-01, PS-1: this originally named `xpsearch_search`, which does not
+   exist — the real AN-2 types are `xpsearch_query` and `xpsearch_noresults`, and the shipped
+   condition reads both)*
    (`ActivityValue` = query since AN-2). Term match: contains, case-insensitive; same consent
    gate as activity logging (no consent → condition false → original variant, which is also the
    crawler-safe behaviour the docs recommend).
