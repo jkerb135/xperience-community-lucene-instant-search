@@ -297,6 +297,7 @@ export const RuleBuilderTemplate = ({ indexName, rule, contactGroups, languages,
         <div className={styles.flow}>
           <div className={styles.flowLabel}>
             <div className={styles.sectionRow}>
+              <Headline size={HeadlineSize.M}>Condition</Headline>
               <Tag label="If" readOnly background={{ color: Colors.BackgroundTagXperienceViolet }} />
             </div>
             <p style={muted}>All conditions must hold. A rule needs at least one.</p>
@@ -359,6 +360,7 @@ export const RuleBuilderTemplate = ({ indexName, rule, contactGroups, languages,
         <div className={styles.flow}>
           <div className={styles.flowLabel}>
             <div className={styles.sectionRow}>
+              <Headline size={HeadlineSize.M}>Action</Headline>
               <Tag label="Then" readOnly background={{ color: Colors.BackgroundTagSkyBlue }} />
             </div>
             <p style={muted}>
