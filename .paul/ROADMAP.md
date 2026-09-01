@@ -56,6 +56,10 @@ acceptance test; KNOWN-FAIL items flip to pass as these plans ship).
 with SG-1's later contract work — coordinate the contract regen).
 **Research:** Unlikely (gaps are diagnosed with evidence)
 
+**Specs:** `docs/internal/units/MB-1.md` + `docs/internal/units/ES-1.md` (written 2026-09-01;
+owner-directed: dispatch after FZ-1 merges — ES-1 must branch from post-FZ-1 main, shared
+pipeline/cache files).
+
 **Scope & Plans:**
 - [ ] 1.1-01 MB-1 — mobile swap: host applies the guide's sidebar-hide half of the swap
   (`.search-sidebar { display:none }` under 1024px — guide has it, host never adopted it), AND a
