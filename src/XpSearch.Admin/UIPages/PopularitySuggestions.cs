@@ -116,6 +116,7 @@ public class PopularitySuggestionListing : ListingPage
             RuleIndexName = row.SuggestionIndexName,
             RuleName = name,
             RuleEnabled = true,
+            RuleMigrated = false,
             RulePriority = 100,
             RuleConditions = RuleJson.Write(conditions),
             RuleActions = RuleJson.Write(actions),

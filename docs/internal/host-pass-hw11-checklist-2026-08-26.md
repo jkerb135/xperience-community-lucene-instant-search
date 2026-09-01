@@ -180,3 +180,13 @@ sidebar label **Edit index** — old `/tuning/` bookmarks 500.
 64. Bucket pairing: put the same three values (B, 50 %, `hw11`) on a second widget on the page -
     both widgets flip together for a given browser, never one of each. Change one widget's split
     name and confirm they stop agreeing.
+
+## M. RK-2 popularity task NULL-column fix (added 2026-09-01)
+65. Re-run the failing task: **Scheduled tasks** -> `XpSearch.PopularitySignal` -> Execute. It now
+    finishes green (no "Cannot insert the value NULL into column 'PopularityIndexEnabled'"), and
+    XpSearch_PopularityIndex holds a row for the index with PopularityIndexEnabled = 0 and a
+    computed-at stamp.
+66. Idempotent: execute it a second time - still green, still one row per index, the stamp moves,
+    and the opt-in toggle on Field weights still flips that row on and off.
+67. Approve a popularity suggestion (Suggestions -> Approve): the rule is created without a
+    RuleMigrated NULL error and appears on Rules.

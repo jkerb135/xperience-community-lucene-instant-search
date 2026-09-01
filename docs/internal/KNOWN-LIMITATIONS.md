@@ -1056,3 +1056,16 @@ and how to lift it.
   the day count promises. Every extra condition on the page is free, which is the trade.
 - **Upgrade path:** query per distinct day window (memoized per window on `HttpContext.Items`), or push
   the term match into SQL with a `LIKE`, once a host reports a false negative.
+
+## Required-column guard is a source scan, in `InfoCreationSiteTests` (`tests/XpSearch.Core.Tests/InfoCreationSiteTests.cs`)
+
+- **Simplified:** the RK-2 rule (every non-`allowEmpty` form field must be set at every `new
+  XpSearch...Info { ... }` site) is checked by reading the `XpSearch.Core` sources and matching
+  `Name =` inside each object initializer, because constructing an Info object needs Kentico's IoC
+  container and cannot happen in a unit test.
+- **Ceiling:** only `XpSearch.Core` and only fields assigned in the initializer itself - a site in
+  `XpSearch.Admin`/`XpSearch.Ingestion`, or one that assigns a required field after construction, is
+  not covered; the check also relies on the sources sitting next to the test file (it is inconclusive
+  otherwise).
+- **Upgrade path:** move it to a Roslyn analyzer over the whole solution, or drop it once a host-level
+  integration test can create the objects for real.
