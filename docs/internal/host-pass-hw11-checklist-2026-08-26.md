@@ -85,3 +85,9 @@ sidebar label **Edit index** — old `/tuning/` bookmarks 500.
     show" plus a matching Title attribute no longer paints blank cards.
 29. Awareness: first load journals TWO query-log rows (server + hydration; different queryIds) —
     known limitation with recorded upgrade path, verify it does not distort the Analytics page.
+
+## H. PB-5 foreign-param routing fix (added 2026-09-01)
+30. In admin PREVIEW mode (URL carries `uh=...`): searching on /search works — no 400, results
+    paint, and `uh` stays in the address bar while q/filters/page update around it.
+31. Deep link with page + facet (e.g. ?q=coffee&page=2 plus a facet param) still hydrates fully —
+    page 2 preserved, facet applied.
