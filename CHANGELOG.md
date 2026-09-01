@@ -12,6 +12,16 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Added (core, admin):** typo tolerance, one per-index toggle on the **Synonyms** page (FZ-1). With
+  it on, every free-text term also matches near-spellings on both query paths, the plain one and the
+  synonym expansion: 1–2 letters stay exact, 3–5 allow one edit, 6 and up allow two, the first letter
+  always has to match, and an all-digit term is never fuzzy. Exact hits still rank first, every query
+  position is still required, and `explain` reports `fuzzy:on`. **Off by default** — turning it on
+  changes recall and ranking, so it is opt-in like the popularity boost. The setting is stored in the
+  new `XpSearch.FuzzyIndex` class (installed automatically), read through `ITypoToleranceSource`
+  behind one cache entry per index, and folded into the response cache key, so flipping it never
+  serves a stale page. Rule conditions, suggestions and the JSON contract are unchanged.
+
 - **Fixed (themes, widgets):** the range filter is one slider again, as the design has it. Both
   native range inputs are overlaid on the single `xps-range-filter__track` rail instead of stacking
   as two, and the segment between the handles is filled with the accent while the rest stays muted.

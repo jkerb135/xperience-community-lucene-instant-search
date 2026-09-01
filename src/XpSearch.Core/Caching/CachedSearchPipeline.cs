@@ -6,6 +6,7 @@ using XpSearch.Core.Abstractions;
 using XpSearch.Core.Analytics;
 using XpSearch.Core.Contract;
 using XpSearch.Core.Experiments;
+using XpSearch.Core.Fuzzy;
 using XpSearch.Core.Options;
 using XpSearch.Core.Personalization;
 using XpSearch.Core.Pipeline;
@@ -40,6 +41,7 @@ public sealed class CachedSearchPipeline : ISearchPipeline
     private readonly IExperimentAssignmentResolver experiments;
     private readonly ISearchRequestJournal journal;
     private readonly IPopularitySignalStore popularity;
+    private readonly ITypoToleranceSource typoTolerance;
 
     /// <summary>Initializes a new instance of the <see cref="CachedSearchPipeline"/> class.</summary>
     /// <param name="inner">The pipeline that does the work on a cache miss.</param>
@@ -62,6 +64,11 @@ public sealed class CachedSearchPipeline : ISearchPipeline
     /// served after the next one; an index that has not opted in reports version zero, which changes
     /// no key at all.
     /// </param>
+    /// <param name="typoTolerance">
+    /// Answers whether the index matches near-spellings (FZ-1). Asked here because the flag decides
+    /// what the pipeline would have found, so a response answered with it on must never be served
+    /// after it is turned off; the answer is one cache read, like the signal above.
+    /// </param>
     public CachedSearchPipeline(
         ISearchPipeline inner,
         ISearchCache cache,
@@ -69,7 +76,8 @@ public sealed class CachedSearchPipeline : ISearchPipeline
         IContactGroupResolver contactGroups,
         IExperimentAssignmentResolver experiments,
         ISearchRequestJournal journal,
-        IPopularitySignalStore popularity)
+        IPopularitySignalStore popularity,
+        ITypoToleranceSource typoTolerance)
     {
         ArgumentNullException.ThrowIfNull(inner);
         ArgumentNullException.ThrowIfNull(cache);
@@ -78,8 +86,10 @@ public sealed class CachedSearchPipeline : ISearchPipeline
         ArgumentNullException.ThrowIfNull(experiments);
         ArgumentNullException.ThrowIfNull(journal);
         ArgumentNullException.ThrowIfNull(popularity);
+        ArgumentNullException.ThrowIfNull(typoTolerance);
 
         this.popularity = popularity;
+        this.typoTolerance = typoTolerance;
         this.inner = inner;
         this.cache = cache;
         this.options = options.Value;
@@ -111,8 +121,9 @@ public sealed class CachedSearchPipeline : ISearchPipeline
 
         var groups = await contactGroups.GetContactGroupsAsync(cancellationToken).ConfigureAwait(false);
         var signal = await popularity.GetSignalAsync(request.Index, cancellationToken).ConfigureAwait(false);
+        bool fuzzy = await typoTolerance.IsEnabledAsync(request.Index, cancellationToken).ConfigureAwait(false);
 
-        string key = SearchCacheKey.Compute(request, queryText, groups, experiment, signal.Version);
+        string key = SearchCacheKey.Compute(request, queryText, groups, experiment, signal.Version, fuzzy);
 
         var cached = await cache
             .GetOrAddAsync(request.Index, key, token => inner.ExecuteAsync(request, token), cancellationToken)

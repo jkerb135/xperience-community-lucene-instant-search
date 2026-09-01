@@ -233,3 +233,28 @@ re-observed under the host bundle.
     *Docs demo experiment*, not the experiment GUID (`3be7f5a5-...`). Same on a variant-scoped tuning page - open
     the experiment's **Rules** (`/admin/lucene/indexes/edit/2/experiments/2/rules`) and check both
     again. — **PASS** (owner, 2026-09-01, on the running host).
+
+## P. FZ-1 typo tolerance (added 2026-09-01)
+
+76. Startup after rebuild: event log clean, and the `XpSearch_FuzzyIndex` table exists (no row yet —
+    an index nobody opted in has none).
+77. Off by default: before touching anything, search a misspelling on /search (e.g. `grinderr` —
+    *not* `expresso`, which the seeded synonym group already covers) and confirm it returns nothing,
+    exactly as before this unit.
+78. Turn it on: **Edit index → Synonyms** shows the *Typo tolerance: off* callout and a **Turn typo
+    tolerance on** header button. Click it — the success message appears, the callout flips to *on*,
+    the button now reads *Turn typo tolerance off*, and `XpSearch_FuzzyIndex` holds one row for the
+    index with the enabled flag set. (This DB round trip is what the unit tests could not cover.)
+79. It works, without a restart: the same `grinderr` search now returns the grinder results, and each
+    result's snippet still highlights the matched word (`<mark>grinder</mark>`) — the fuzzy-hit
+    highlighting path. `explain: true` lists `fuzzy:on` beside the weight entries.
+80. No stale page in between: the search in item 77 was cached before the toggle; running it again
+    right after flipping (inside the cache TTL) returns the new results, not the empty page. Toggle
+    back off and repeat — the empty result comes straight back.
+81. Still ANDed, still exact-first: `espresso machne` returns only pages that have both words, and a
+    correctly spelled `espresso` search keeps the exactly matching pages at the top.
+82. Untouched by design: a rule whose condition is *Query contains espresso* does **not** fire for
+    `expresso` (rule matching stays exact), and the suggestions dropdown still only completes what
+    has been typed.
+83. Experiment boundary: with an experiment running, A- and B-bucketed browsers both see typo
+    tolerance, and the experiment's variant-B Synonyms page has no toggle.

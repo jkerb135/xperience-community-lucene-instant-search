@@ -290,7 +290,8 @@ internal sealed class ActivityLoggingTests
             new StubContactGroupResolver(),
             new StubExperimentResolver(experiment),
             new SearchRequestJournal(activities, contexts, queue, channel, NullLogger<SearchRequestJournal>.Instance),
-            new FakePopularitySignalStore());
+            new FakePopularitySignalStore(),
+            new Fixtures.FixedTypoToleranceSource(false));
 
         return new JournaledPipeline(pipeline, inner, queue, contexts, activities);
     }

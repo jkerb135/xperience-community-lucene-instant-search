@@ -13,6 +13,7 @@ using XpSearch.Admin.Persistence;
 using XpSearch.Admin.Tuning;
 using XpSearch.Admin.UIPages;
 using XpSearch.Admin.UIPages.Experiments;
+using XpSearch.Core.Fuzzy;
 using XpSearch.Core.Popularity;
 using XpSearch.Core.Tuning;
 
@@ -233,25 +234,63 @@ public abstract class SynonymListingBase : ListingPage
     }
 }
 
+/// <summary>
+/// The typo tolerance toggle's own texts (FZ-1), kept next to nothing else so both states can be
+/// checked without a page.
+/// </summary>
+public static class TypoToleranceToggle
+{
+    /// <summary>The callout describing what the current setting does.</summary>
+    /// <param name="enabled">Whether the index opted in.</param>
+    /// <returns>The callout to put on the listing.</returns>
+    public static CalloutConfiguration Callout(bool enabled) =>
+        new()
+        {
+            Headline = enabled ? "Typo tolerance: on" : "Typo tolerance: off",
+            Content = enabled
+                ? "Searches also match near-spellings: up to one edit for a word of 3-5 letters, two from 6 letters up, "
+                    + "and the first letter always has to match. Exactly spelled matches still rank first."
+                : "Only exactly spelled words match. Turn typo tolerance on to also find results for misspelled searches.",
+            ContentAsHtml = false,
+        };
+
+    /// <summary>The label of the header command, which says what clicking it does.</summary>
+    /// <param name="enabled">Whether the index opted in.</param>
+    /// <returns>The button text.</returns>
+    public static string ActionLabel(bool enabled) => enabled ? "Turn typo tolerance off" : "Turn typo tolerance on";
+
+    /// <summary>The message shown after the toggle was flipped.</summary>
+    /// <param name="enabled">The setting as it now is.</param>
+    /// <returns>The success message.</returns>
+    public static string SuccessMessage(bool enabled) =>
+        enabled
+            ? "Misspelled searches now also match this index."
+            : "This index matches exactly spelled words only again.";
+}
+
 /// <summary>Lists the live synonym groups of one index (spec §8.1).</summary>
 public class SynonymListing : SynonymListingBase
 {
     private readonly IInfoProvider<XpSearchSynonymSuggestionInfo> suggestions;
+    private readonly IInfoProvider<XpSearchFuzzyIndexInfo> fuzzy;
     private readonly IPageLinkGenerator pageLinkGenerator;
 
     /// <summary>Initializes a new instance of the <see cref="SynonymListing"/> class.</summary>
     /// <param name="storageService">Reads the stored index configuration, to resolve the index in the URL.</param>
     /// <param name="provider">Provider of synonym objects, to check what a delete would remove.</param>
     /// <param name="suggestions">Provider of mined synonym candidates, counted for the banner that points at them (SY-1).</param>
+    /// <param name="fuzzy">Provider of the index's typo tolerance setting, behind the opt-in toggle (FZ-1).</param>
     /// <param name="pageLinkGenerator">Generates the banner button's link to the suggestions listing.</param>
     public SynonymListing(
         ILuceneConfigurationStorageService storageService,
         IInfoProvider<XpSearchSynonymInfo> provider,
         IInfoProvider<XpSearchSynonymSuggestionInfo> suggestions,
+        IInfoProvider<XpSearchFuzzyIndexInfo> fuzzy,
         IPageLinkGenerator pageLinkGenerator)
         : base(storageService, provider)
     {
         this.suggestions = suggestions;
+        this.fuzzy = fuzzy;
         this.pageLinkGenerator = pageLinkGenerator;
     }
 
@@ -261,14 +300,43 @@ public class SynonymListing : SynonymListingBase
     [PageCommand(Permission = SystemPermissions.DELETE)]
     public override Task<ICommandResponse<RowActionResult>> Delete(int id) => DeleteScoped(id);
 
+    /// <summary>
+    /// Turns typo tolerance on or off for this index (FZ-1). It lives beside the synonyms because both
+    /// are query understanding, and it is an index-wide setting rather than a tuning row: an experiment
+    /// tests tuning, and both of its variants see the same typo tolerance (ADR-0025).
+    /// </summary>
+    /// <returns>The row action result, which reloads the listing.</returns>
+    [PageCommand(Permission = SystemPermissions.UPDATE)]
+    public Task<ICommandResponse<RowActionResult>> ToggleTypoTolerance()
+    {
+        if (string.IsNullOrEmpty(IndexName))
+        {
+            return Task.FromResult(ResponseFrom(new RowActionResult(false)).AddErrorMessage(IndexScope.CrossIndexDeleteRefusal));
+        }
+
+        var row = Settings() ?? new XpSearchFuzzyIndexInfo
+        {
+            FuzzyIndexGuid = Guid.NewGuid(),
+            FuzzyIndexName = IndexName,
+            FuzzyIndexEnabled = false
+        };
+
+        row.FuzzyIndexEnabled = !row.FuzzyIndexEnabled;
+        fuzzy.Set(row);
+
+        return Task.FromResult(ResponseFrom(new RowActionResult(true))
+            .AddSuccessMessage(TypoToleranceToggle.SuccessMessage(row.FuzzyIndexEnabled)));
+    }
+
     /// <inheritdoc />
     protected override void ConfigureActions()
     {
         int pending = PendingSuggestions();
+        bool enabled = Settings()?.FuzzyIndexEnabled ?? false;
 
-        if (pending > 0)
-        {
-            PageConfiguration.Callouts =
+        PageConfiguration.Callouts = pending == 0
+            ? [TypoToleranceToggle.Callout(enabled)]
+            :
             [
                 new CalloutConfiguration
                 {
@@ -281,14 +349,21 @@ public class SynonymListing : SynonymListingBase
                         Text = "Suggestions",
                         RedirectUrl = pageLinkGenerator.GetPath<SynonymSuggestionListing>(IndexScope.Route(IndexIdentifier)),
                     },
-                }
+                },
+                TypoToleranceToggle.Callout(enabled)
             ];
-        }
 
         PageConfiguration.HeaderActions.AddLink<SynonymCreate>("New synonym", parameters: IndexScope.Route(IndexIdentifier));
+        PageConfiguration.HeaderActions.AddCommand(TypoToleranceToggle.ActionLabel(enabled), nameof(ToggleTypoTolerance));
         PageConfiguration.AddEditRowAction<SynonymEdit>(parameters: IndexScope.Route(IndexIdentifier));
         PageConfiguration.TableActions.AddDeleteAction(nameof(Delete), "Delete");
     }
+
+    private XpSearchFuzzyIndexInfo? Settings() =>
+        fuzzy.Get()
+            .WhereEquals(nameof(XpSearchFuzzyIndexInfo.FuzzyIndexName), IndexName)
+            .TopN(1)
+            .FirstOrDefault();
 
     private int PendingSuggestions() =>
         suggestions.Get()

@@ -29,7 +29,8 @@ deliberately): synonym group `espresso expresso`, stopword list `the a an of and
 | `tuning--rules.png` | `…/edit/2/rules` | seeded rule | `src/XpSearch.Admin/UIPages/Rules.cs` | 2026-09-01 |
 | `tuning--rule-builder.png` | `…/edit/2/rules` → open seeded rule | seeded rule | `src/XpSearch.Admin/UIPages/RuleBuilder/RuleBuilderPage.cs`, `Client/src/rule-builder/RuleBuilderTemplate.tsx` | 2026-09-01 |
 | `tuning--popularity-suggestions.png` | `…/edit/2/suggestions` | popularity task run | `src/XpSearch.Admin/UIPages/PopularitySuggestions.cs` | 2026-09-01 |
-| `tuning--synonyms.png` | `…/edit/2/synonyms` | seeded synonym | `src/XpSearch.Admin/UIPages/Synonyms.cs` | 2026-09-01 |
+| `tuning--synonyms.png` | `…/edit/2/synonyms` | seeded synonym | `src/XpSearch.Admin/UIPages/Synonyms.cs` | 2026-09-01 — **STALE** (FZ-1 added the typo tolerance callout and header button) |
+| `tuning--typo-tolerance.png` | `…/edit/2/synonyms` (typo tolerance off) | seeded synonym; typo tolerance off | `src/XpSearch.Admin/UIPages/Synonyms.cs` | **PENDING** — new in FZ-1; add the shot to `routes.json` and capture with the rest |
 | `tuning--synonym-create.png` | `…/edit/2/synonyms/create` | — | `src/XpSearch.Admin/UIPages/Synonyms.cs` | 2026-09-01 |
 | `tuning--synonym-suggestions.png` | `…/edit/2/synonym-suggestions` | mined pairs (HW-11 seeding) | `src/XpSearch.Admin/UIPages/SynonymSuggestions.cs` | 2026-09-01 |
 | `tuning--stopwords.png` | `…/edit/2/stopwords` | seeded list | `src/XpSearch.Admin/UIPages/Stopwords.cs` | 2026-09-01 |

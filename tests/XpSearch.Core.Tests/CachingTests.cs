@@ -250,7 +250,8 @@ internal sealed class CachingTests
                 new StubContactGroupResolver(),
                 new StubExperimentResolver(),
                 Substitute.For<ISearchRequestJournal>(),
-                popularity ?? new FakePopularitySignalStore()),
+                popularity ?? new FakePopularitySignalStore(),
+                new Fixtures.FixedTypoToleranceSource(false)),
             inner,
             cache);
     }
@@ -263,7 +264,8 @@ internal sealed class CachingTests
             new StubContactGroupResolver(),
             new StubExperimentResolver(),
             Substitute.For<ISearchRequestJournal>(),
-            new FakePopularitySignalStore());
+            new FakePopularitySignalStore(),
+            new Fixtures.FixedTypoToleranceSource(false));
 
     private sealed class FixedPipeline(SearchResponse response) : ISearchPipeline
     {

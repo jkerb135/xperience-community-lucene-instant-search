@@ -1213,6 +1213,30 @@ and how to lift it.
 - **Upgrade path:** move it to a Roslyn analyzer over the whole solution, or drop it once a host-level
   integration test can create the objects for real.
 
+## Typo tolerance is one toggle with a fixed policy, in `FuzzyPolicy` (`XpSearch.Core/Fuzzy/TypoTolerance.cs`)
+
+- **Simplified:** the edit distance is a function of the term's length alone (≤2 exact, 3–5 one edit,
+  6+ two edits, all-digit exact, prefix length 1). There is no per-field, per-index or per-request
+  setting: the index is either tolerant or it is not.
+- **Ceiling:** a host that wants exact matching for one query (a SKU lookup through the same index) or
+  a stricter distance on a keyword-ish field cannot ask for it, and a field of part numbers gets the
+  same tolerance as prose. A term of 6+ letters is always allowed 2 edits, which on a small corpus can
+  surface a genuinely different word.
+- **Upgrade path:** a `fuzzy` field on the contract's `SearchRequest` (off/on/auto) threaded into
+  `BuildQueryStage` for the per-request case, and a per-field override on `SchemaField` for the second;
+  both would have to join `SearchCacheKey.Compute` the way the index-wide flag does.
+
+## Fuzzy terms skip the analyzer, in `BuildQueryStage.Prepare` (`XpSearch.Core/Pipeline/Stages/BuildQueryStage.cs`)
+
+- **Simplified:** typo tolerance is expressed as a `~N` suffix on the escaped term, and Lucene's
+  classic parser builds a `FuzzyQuery` from the raw term text (lowercased only) instead of running it
+  through the index's analyzer, as it does for an exact term.
+- **Ceiling:** with a stemming or folding analyzer, a tolerant search matches the surface form plus its
+  near-spellings rather than the stem - `runnning` finds `running` but not `ran`. With the standard
+  analyzer the library ships against this is invisible (it only lowercases and drops stopwords).
+- **Upgrade path:** analyze each token before appending the suffix, or build the `FuzzyQuery` objects
+  directly per field from the analyzed terms, once an index ships with a stemming analyzer.
+
 ## Both range thumbs ride one rail, in `.xps-range-filter__track` (`themes/src/scss/{shell,default}/_range-filter.scss`)
 
 - **Simplified:** the two native range inputs are absolutely overlaid on the wrapper and only their

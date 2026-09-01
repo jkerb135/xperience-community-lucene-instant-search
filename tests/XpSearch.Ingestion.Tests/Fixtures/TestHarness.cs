@@ -7,6 +7,7 @@ using XpSearch.Core.Abstractions;
 using XpSearch.Core.Caching;
 using XpSearch.Core.Contract;
 using XpSearch.Core.Facets;
+using XpSearch.Core.Fuzzy;
 using XpSearch.Core.Highlighting;
 using XpSearch.Core.Indexing;
 using XpSearch.Core.Options;
@@ -285,7 +286,7 @@ internal sealed class TestHarness : IDisposable
             new FixedSchemaProvider(Schema.Fields),
             [
                 new NormalizeRequestStage(options),
-                new BuildQueryStage(),
+                new BuildQueryStage(new DisabledTypoToleranceSource()),
                 new FacetFilterStage(),
                 new NumericFilterStage(),
                 new ExecuteSearchStage(Index),
