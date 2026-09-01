@@ -224,3 +224,12 @@ re-observed under the host bundle.
     Category tree, or switch Pagination's style to *load more*) → that one mount logs a
     `console.error` and is skipped while the rest of the page keeps working. Documented in
     `src/Search/README.md`; revert the page afterwards.
+
+## O. XP-2 experiment section name (added 2026-09-01)
+
+75. **The experiment section is named, not GUID'd.** Open an index's **Experiments** listing and click
+    the experiment row (the seeded "Docs demo experiment" on DancingGoatSample, id 2, is the
+    ready-made subject): the breadcrumb and the sidebar section header on the detail page show
+    *Docs demo experiment*, not the experiment GUID (`3be7f5a5-...`). Same on a variant-scoped tuning page - open
+    the experiment's **Rules** (`/admin/lucene/indexes/edit/2/experiments/2/rules`) and check both
+    again.

@@ -53,6 +53,17 @@ internal sealed class ExperimentStorageTests
             }));
 
     /// <summary>
+    /// Without a display name column, ObjectDisplayName falls back to the code name column and then to
+    /// the GUID one, so the breadcrumb and sidebar of every EditSectionPage-routed experiment page show
+    /// the GUID (XP-2).
+    /// </summary>
+    [Test]
+    public void TheExperimentTypeNamesItselfByItsDisplayName() =>
+        Assert.That(
+            XpSearchExperimentInfo.TYPEINFO.DisplayNameColumn,
+            Is.EqualTo(nameof(XpSearchExperimentInfo.ExperimentDisplayName)));
+
+    /// <summary>
     /// The cached tuning of variant B must not be served to variant A, and the other way round: the
     /// entries are separate or the swap would depend on which variant searched first.
     /// </summary>
