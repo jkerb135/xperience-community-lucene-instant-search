@@ -8,6 +8,18 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Added (widgets):** two **Page Builder personalization condition types**, so a marketer can
+  personalize *any* widget by search behaviour. **Search - searched for** shows a variant to visitors
+  whose logged search text contained a term within the last N days (default 30) — consent-gated like
+  the activities themselves, and therefore false for crawlers, which keeps the original content
+  indexable. **Search - A/B bucket** puts a visitor in bucket A or B of a named percentage split,
+  reusing the experiments' `xpsearch_bucket` cookie: sticky per visitor, works without tracking
+  consent, and two widgets given the same split name flip together, which turns ordinary widget
+  variants into one page-level A/B test measured through Analytics. Deliberately no experiment entity
+  and no report — for search-tuning A/B use Experiments. Requires the Xperience **Advanced** license
+  tier (a platform gate on widget personalization). New guide:
+  `docs/guides/search-personalization.md`.
+
 - **Added (core, admin):** **popularity boosts** — the results your visitors click can raise their own
   ranking, bounded and opt-in (ADR-0025). A new scheduled task (`XpSearch.PopularitySignal`) aggregates
   the last 30 days of query log clicks into a per-document signal per index, weighting each click by

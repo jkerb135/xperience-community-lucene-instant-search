@@ -3,10 +3,12 @@
 using CMS;
 
 using Kentico.PageBuilder.Web.Mvc;
+using Kentico.PageBuilder.Web.Mvc.Personalization;
 
 using NUnit.Framework;
 
 using XpSearch.Widgets;
+using XpSearch.Widgets.Components.PageBuilder.PersonalizationConditions;
 using XpSearch.Widgets.Components.Widgets.XpSearch;
 
 namespace XpSearch.Widgets.Tests;
@@ -72,5 +74,34 @@ internal sealed class AssemblyDiscoveryTests
             XpSearchWidgetConstants.SuggestionsIdentifier,
             XpSearchWidgetConstants.RangeFilterIdentifier
         }));
+    }
+
+    /// <summary>
+    /// Both personalization condition types are registered (PS-1). An unregistered condition type is
+    /// simply absent from the condition selector when an editor personalizes a widget, with nothing
+    /// logged - the same silent failure as a missing widget registration.
+    /// </summary>
+    [Test]
+    public void Both_personalization_condition_types_are_registered()
+    {
+        var registered = typeof(SearchBoxWidgetProperties).Assembly
+            .GetCustomAttributes<RegisterPersonalizationConditionTypeAttribute>()
+            .ToList();
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(
+                registered.Select(attribute => attribute.Identifier),
+                Is.EquivalentTo(new[]
+                {
+                    XpSearchConditionTypes.SearchedForIdentifier,
+                    XpSearchConditionTypes.BucketIdentifier
+                }));
+            Assert.That(
+                registered.Select(attribute => attribute.MarkedType),
+                Is.EquivalentTo(new[] { typeof(SearchedForConditionType), typeof(SearchBucketConditionType) }));
+            Assert.That(registered.Select(attribute => attribute.Name), Has.All.Not.Empty);
+            Assert.That(registered.Select(attribute => attribute.IconClass), Has.All.Not.Empty);
+        });
     }
 }
