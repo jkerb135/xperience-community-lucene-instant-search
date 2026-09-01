@@ -52,7 +52,8 @@ public static class FacetAttributeOptions
     /// drop-down needs; <see cref="IsRangeFilterable"/> is what the range filter's needs.
     /// </param>
     /// <returns>
-    /// The option lines in the format <c>DropDownComponent.Options</c> expects, or
+    /// The option lines in the format <c>DropDownComponent.Options</c> expects, ordered
+    /// alphabetically by field name (case-insensitive, invariant culture), or
     /// <see langword="null"/> when no index is selected, the index is unknown, or no field matches -
     /// in each of those cases the field should be hidden.
     /// </returns>
@@ -81,6 +82,7 @@ public static class FacetAttributeOptions
 
         var lines = schema.Fields
             .Where(include ?? (field => field.Facetable))
+            .OrderBy(field => field.Name, StringComparer.InvariantCultureIgnoreCase)
             .Select(field => $"{field.Name};{field.Name}")
             .ToList();
 

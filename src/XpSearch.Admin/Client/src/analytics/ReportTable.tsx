@@ -51,7 +51,7 @@ export const text = (columnName: string, value: string) => ({
  * are icon-only Buttons without a `label`, so they announce as "button" (the HW-10 #5 pattern in
  * the platform's own component); the aria-live count line next to it carries the page context.
  */
-const TablePager = ({
+export const TablePager = ({
   page,
   totalPages,
   total,

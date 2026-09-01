@@ -230,7 +230,7 @@ The controls sit in one card under the headline:
 1. **Range** — a **7 days / 30 days / 90 days** toggle. Picking one reloads immediately.
 2. **Date range** — one range picker, UTC days, both ends included. Picking a custom span leaves
    the range toggle unselected until it matches a preset again.
-3. **Rows per page** — how many rows one page of each table holds: 10, 25 (the default), 50 or 100.
+3. **Rows per page** — how many rows one page of each table holds: 10 (the default), 25, 50 or 100.
    It takes effect straight away, without a reload, and sends every table back to page one.
 4. **Load** — reruns the report. It shows a spinner and disables itself while the load is in flight.
 
@@ -248,7 +248,7 @@ What you get, in the order the page shows it:
   position*. A tile with nothing to divide by reads `—` rather than `0%`.
 - **Searches over time** — two lines, total searches and zero-result searches, one point per day.
   *Show the numbers* opens the same data as an ordinary table, one row per day, for anyone who cannot
-  read the chart.
+  read the chart. It pages like the reports below it, on the same **Rows per page** setting.
 - **Zero-result queries** — what visitors asked for and did not find, most searched first, with the
   date it was last asked, and a **Create rule** action on every row. This is the report to read
   first, and the only table on the page that changes anything.

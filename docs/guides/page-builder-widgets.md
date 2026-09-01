@@ -90,7 +90,8 @@ applies rather than an empty string overriding it.
 #### The attribute drop-down is filled from the index
 
 The facet list's and the category tree's **Attribute** property is not a free-text field. It is a
-drop-down populated from the selected index's actual schema, listing only fields that are facetable. Pick the index first: until you
+drop-down populated from the selected index's actual schema, listing only fields that are facetable,
+in alphabetical order. Pick the index first: until you
 do, the attribute field is hidden, and changing the index repopulates it.
 
 The range filter's **Attribute** property works the same way, but lists the index's numeric and date
