@@ -52,8 +52,15 @@ public sealed class FilterSortWidgetProperties : XpSearchMountWidgetProperties
     [TextInputComponent(Label = "Label", Order = OrderFirstWidgetProperty + 20)]
     public string Label { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the text of the sheet's primary button. Empty keeps the JavaScript default.</summary>
-    [TextInputComponent(Label = "Apply button text", Order = OrderFirstWidgetProperty + 30)]
+    /// <summary>
+    /// Gets or sets the text of the sheet's primary button. A <c>{count}</c> placeholder is replaced
+    /// with how many results the pending selection would return; it disappears, with the space after
+    /// it, while that count is unknown. Empty keeps the JavaScript default, "Show {count} results".
+    /// </summary>
+    [TextInputComponent(
+        Label = "Apply button text",
+        ExplanationText = "Use {count} for the live result count, e.g. \"Show {count} results\". Leave empty for that default.",
+        Order = OrderFirstWidgetProperty + 30)]
     public string ApplyLabel { get; set; } = string.Empty;
 }
 

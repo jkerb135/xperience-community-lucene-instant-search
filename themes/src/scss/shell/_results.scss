@@ -64,3 +64,17 @@
   gap: v.$half;
   width: 100%;
 }
+
+/* The first-search skeleton mirrors the thumbnail card: a square in the media slot beside the text
+   lines. Squared off the media width, so the two cannot drift apart. */
+.xps-result--skeleton .xps-result__media > .xps-skeleton {
+  height: auto;
+  aspect-ratio: 1;
+}
+
+/* The glyph above the empty state's copy. 24px grid, sized like a heading, centred with the block. */
+.xps-results__empty-icon {
+  display: block;
+  width: 2rem;
+  height: 2rem;
+}

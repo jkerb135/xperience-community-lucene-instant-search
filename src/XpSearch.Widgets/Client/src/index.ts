@@ -88,6 +88,7 @@ export type {
   InitOptions,
   NumericFilter,
   NumericOperator,
+  ProbeOverrides,
   RenderArgs,
   RenderOptions,
   Result,

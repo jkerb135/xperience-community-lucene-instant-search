@@ -141,13 +141,27 @@ public sealed class CachedSearchPipeline : ISearchPipeline
     /// Journals the answered search once, hit or miss. The elapsed time is this decorator's own, so a
     /// cache hit truthfully reports the near-zero cost of the lookup.
     /// </summary>
+    /// <remarks>
+    /// A probe request (<c>SearchRequest.probe</c>) is answered like any other but never journaled: it
+    /// is a count the client asked for on the visitor's behalf - the sheet's "Show N results", the
+    /// empty state's unfiltered count - not a search anyone performed. The skip lives here because
+    /// this is the single place the journal is called from, so it covers the cached and the uncached
+    /// path alike, and with it every report, suggestion miner and popularity signal downstream of the
+    /// journal's outputs.
+    /// </remarks>
     private void Journal(
         SearchResponse response,
         string queryId,
         SearchRequest request,
         string queryText,
         long start,
-        ExperimentAssignment experiment) =>
+        ExperimentAssignment experiment)
+    {
+        if (request.Probe == true)
+        {
+            return;
+        }
+
         journal.Record(
             queryId,
             queryText,
@@ -156,4 +170,5 @@ public sealed class CachedSearchPipeline : ISearchPipeline
             Stopwatch.GetElapsedTime(start),
             request.Language ?? string.Empty,
             experiment);
+    }
 }

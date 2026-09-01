@@ -9,6 +9,7 @@ import type {
   EventType,
   FacetOperator,
   NumericOperator,
+  ProbeOverrides,
   RoutingOptions,
   SearchActions,
   SearchEvents,
@@ -332,6 +333,19 @@ export function createSearch(options: XpSearchOptions): SearchInstance {
         ...request,
         index: options.index,
       });
+    },
+
+    probe(overrides: ProbeOverrides = {}): Promise<{ total: number }> {
+      // The committed state only: the widget `prepareRequest` hooks are skipped on purpose, so a
+      // probe asks for a count and nothing else - no facet counts, no projection, no side effects.
+      return client
+        .probe({
+          index: options.index,
+          ...st.stateToWireFragment(store.get()),
+          ...(options.language === undefined ? {} : { language: options.language }),
+          ...overrides,
+        })
+        .then((response) => ({ total: response.total }));
     },
 
     sendEvent(type: EventType, resultId: string, position?: number) {

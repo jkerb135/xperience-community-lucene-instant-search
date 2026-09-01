@@ -111,13 +111,44 @@ declarations for every entry — see [JavaScript bundler setup](javascript-bundl
 
 The instance exposes `addWidgets(widgets)`, `removeWidgets(widgets)`, `start()`, `dispose()`,
 `on(event, handler)`, `off(event, handler)`, `urlFor(state?)`, `sendEvent(type, resultId, position?)`,
-`suggest({ query, limit?, language? })`, and the read-only `state`, `results`, `status`, `actions`
-and `index`.
+`suggest({ query, limit?, language? })`, `probe(overrides?)`, and the read-only `state`, `results`,
+`status`, `actions` and `index`.
 
 `suggest()` is autocomplete over the instance's own index and transport — the endpoint, headers,
 `fetchFn` and contract-version check it was configured with. It is neither debounced nor cancelled:
 the [`suggestions` widget](widget-reference.md) owns that policy, and so does anything you build on
 `withSuggestions`.
+
+### `probe()`: asking how many, without asking the analytics
+
+`probe(overrides?)` answers **how many results a variation of the current search would return**, over
+the same index and transport. It runs one request built from the committed state with `overrides`
+applied, and resolves with `{ total }`:
+
+```js
+// "There are N results without the filters" — the number the empty state offers to clear back to.
+const { total } = await search.probe({ filters: undefined });
+
+// "Show N results" — what a pending selection would return, before it is committed.
+const preview = await search.probe({
+  filters: { facets: [{ attribute: 'contentType', values: ['Article'] }] },
+});
+```
+
+`overrides` may carry `query`, `filters`, `page`, `pageSize` and `sort`; anything omitted comes from
+the committed state, and passing `undefined` explicitly (as `filters` above) drops that part of the
+request entirely.
+
+The request carries `probe: true`, which the server answers exactly like any other search — same
+pipeline, same tuning rules, same response cache — but **never journals**: no search activity, no
+query-log row, nothing that reaches a report, the suggestion miner or the popularity signal. A count
+you rendered for a visitor is not a search the visitor made, and the analytics stay honest.
+
+It touches no instance state, renders nothing, and is **not debounced** — it neither cancels nor is
+cancelled by the real search running beside it. A caller that probes per keystroke or per tick
+debounces itself (250ms is what the shipped widgets use) and discards an answer that arrives after
+the state has moved on. `probe()` rejects like any failed request; both shipped consumers fall back
+to a countless label rather than surface an error.
 
 ### Changing state: the actions
 

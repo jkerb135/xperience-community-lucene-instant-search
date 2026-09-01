@@ -98,8 +98,10 @@ A connector becomes a **behaviour**: same idea, `with` prefix, and verbs that sa
 
 Things Algolia does that this product does not, stated plainly rather than approximated:
 
-- **Typo tolerance.** No fuzzy matching. A misspelled query returns nothing rather than a near match.
-  Lucene supports it; exposing it is a contract decision that has not been made.
+- **Typo tolerance per query.** There *is* typo tolerance, but it is an index-wide toggle an admin
+  turns on ([Relevance tuning → Typo tolerance](relevance-tuning.md#typo-tolerance)) with a fixed
+  length-based policy — not Algolia's per-request `typoTolerance` / `minWordSizefor1Typo` knobs, and
+  there is no did-you-mean.
 - **A query-suggestions index.** `/suggest` prefix-matches an index's suggest field and returns matching
   documents. Suggesting previously typed queries needs the analytics store (Phase 6).
 - **Facet-value search.** There is no `searchForFacetValues` route. `facetList({ searchable: true })`

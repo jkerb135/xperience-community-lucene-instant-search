@@ -274,6 +274,55 @@ internal sealed class ActivityLoggingTests
         });
     }
 
+    /// <summary>
+    /// ES-1: a probe is a count the client asked for on the visitor's behalf - the sheet's
+    /// "Show N results", the empty state's unfiltered count - and must be invisible to every report,
+    /// suggestion miner and popularity signal. They all read the journal's outputs, so the query log
+    /// enqueue is asserted specifically: no row, no activity, no click-attribution context.
+    /// </summary>
+    [TestCase(false, TestName = "AProbeRequestOnACacheMiss_IsAnsweredButNeverJournaled")]
+    [TestCase(true, TestName = "AProbeRequestWithCachingDisabled_IsAnsweredButNeverJournaled")]
+    public async Task AProbeRequestOnACacheMiss_IsAnsweredButNeverJournaled(bool cachingDisabled)
+    {
+        var journaled = BuildJournaled(cachingDisabled ? new XpSearchOptions { CacheTtl = TimeSpan.Zero } : null);
+        var request = TestHarness.Request("lucene");
+        request.Probe = true;
+
+        var response = await journaled.Pipeline.ExecuteAsync(request, CancellationToken.None);
+
+        journaled.Activities.DidNotReceiveWithAnyArgs().LogSearch(default!, default);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(journaled.Inner.Calls, Is.EqualTo(1), "a probe is still answered by the pipeline");
+            Assert.That(response.Total, Is.EqualTo(StubPipeline.Total), "the count is what the caller came for");
+            Assert.That(journaled.Queue.Items, Is.Empty, "a probe must add no query log row");
+            Assert.That(journaled.Contexts.Get(response.QueryId!), Is.Null);
+        });
+    }
+
+    [Test]
+    public async Task AProbeRequestServedFromTheCache_IsNotJournaledEither()
+    {
+        var journaled = BuildJournaled();
+        var probe = TestHarness.Request("lucene");
+        probe.Probe = true;
+
+        var search = await journaled.Pipeline.ExecuteAsync(TestHarness.Request("lucene"), CancellationToken.None);
+        await journaled.Pipeline.ExecuteAsync(probe, CancellationToken.None);
+
+        journaled.Activities.Received(1).LogSearch("lucene", StubPipeline.Total);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(journaled.Inner.Calls, Is.EqualTo(1), "the probe shares the cache entry of the same search");
+            Assert.That(
+                journaled.Queue.Items.Select(item => item.Entry!.QueryId),
+                Is.EqualTo(new[] { search.QueryId }),
+                "only the real search is journaled");
+        });
+    }
+
     private static JournaledPipeline BuildJournaled(XpSearchOptions? options = null, ExperimentAssignment? experiment = null)
     {
         var activities = Substitute.For<ISearchActivityLogger>();

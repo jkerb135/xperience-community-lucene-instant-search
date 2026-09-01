@@ -282,6 +282,63 @@ describe('multi-instance (spec 12)', () => {
   });
 });
 
+describe('probe (ES-1)', () => {
+  /** Starts an instance with a query and one facet committed, and waits for its first search. */
+  const started = async (): Promise<{ search: SearchInstance; requests: SearchRequest[] }> => {
+    const { fetchFn, requests } = stubFetch();
+    const search = create({ index: 'site-content', fetchFn, language: 'en' });
+    search.start();
+    await vi.waitFor(() => expect(search.results).not.toBeNull());
+    search.actions.setQuery('espresso').toggleFacet('tags', 'coffee').search();
+    await vi.waitFor(() => expect(requests.length).toBeGreaterThan(1));
+    requests.length = 0;
+    return { search, requests };
+  };
+
+  it('sends one flagged request built from the committed state, with the overrides applied', async () => {
+    const { search, requests } = await started();
+
+    const answer = await search.probe({ filters: undefined });
+
+    expect(answer).toEqual({ total: 1 });
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toEqual({
+      index: 'site-content',
+      query: 'espresso',
+      page: 1,
+      sort: 'relevance',
+      language: 'en',
+      probe: true,
+    });
+  });
+
+  it('carries the committed filters when the caller overrides nothing', async () => {
+    const { search, requests } = await started();
+
+    await search.probe();
+
+    expect(requests[0]?.filters).toEqual({ facets: [{ attribute: 'tags', values: ['coffee'] }] });
+  });
+
+  it('changes no state and does not supersede a search running beside it', async () => {
+    const { search, requests } = await started();
+    const before = search.state;
+
+    // A probe fired while a real search is still inside the client's debounce window.
+    search.actions.setQuery('milk').search();
+    const probed = await search.probe({ query: 'something else' });
+
+    expect(probed.total).toBe(1);
+    expect(before.query).toBe('espresso'); // the state handed out earlier is untouched
+    expect(search.state.query).toBe('milk'); // and the override never became state
+    await vi.waitFor(() =>
+      expect(requests.some((request) => request.query === 'milk' && request.probe === undefined)).toBe(
+        true
+      )
+    );
+  });
+});
+
 describe('analytics', () => {
   it('correlates a click event with the last queryId', async () => {
     const posts: Array<{ url: string; body: string }> = [];

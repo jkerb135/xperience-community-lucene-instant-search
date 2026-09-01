@@ -202,7 +202,7 @@ results({
 |---|---|---|
 | `container` | — | Selector or element. Required. |
 | `templates.item` | title link, path line, highlighted snippet and content-type label, plus an image (or a file-type glyph) when the result has one | `(result, helpers) => Renderable` |
-| `templates.empty` | "No results for …", plus a **Clear filters** button when filters are applied | `({ query, hasRefinements, clearRefinements }, helpers) => Renderable` |
+| `templates.empty` | an icon, "No results for …", and — when filters are applied — how many results there are without them plus a **Clear filters and show N results** button | `({ query, hasRefinements, unfilteredCount, clearRefinements }, helpers) => Renderable` |
 | `templates.loading` | `loadingRows` skeleton rows | `(helpers) => Renderable` |
 | `transformItems` | — | `(results) => results`, applied before rendering. |
 | `loadingRows` | `3` | Skeleton rows in the default loading template. |
@@ -225,17 +225,25 @@ appears until you ask for the field in `fields`:
 - `fileType`, on a result with **no** `image` → an inline document glyph in the media slot
   (`xps-result__icon`), so a list of documents does not read as a column of holes.
 
-The empty state knows whether filters are narrowing the search. With filters applied it says so and
-renders a primary **Clear filters** button; your own `templates.empty` gets the same two members:
+The empty state knows whether filters are narrowing the search. With filters applied it says so, and
+it also says what clearing them would bring back: the widget runs the same query unfiltered as a
+**probe** — a request the server answers normally but never records in the analytics — 250ms after
+the empty state appears, then renders "There are **7 results** without them." and a **Clear filters
+and show 7 results** button. Until that answer arrives, if it fails, or if there is nothing behind
+the filters either, the copy and the button stay in their countless form; a visitor never sees
+"show 0 results" or an error. The count reaches your own `templates.empty` as `unfilteredCount`,
+which is `undefined` in exactly those cases:
 
 ```js
 results({
   container: '#search-results',
   templates: {
-    empty: ({ query, hasRefinements }, { html }) =>
+    empty: ({ query, hasRefinements, unfilteredCount }, { html }) =>
       hasRefinements
         ? html`<p>Nothing matched “${query}” with these filters.</p>
-               <button type="button" class="xps-button xps-button--primary xps-results__clear">Start over</button>`
+               <button type="button" class="xps-button xps-button--primary xps-results__clear">${
+                 unfilteredCount === undefined ? 'Start over' : `Start over (${unfilteredCount})`
+               }</button>`
         : html`<p>Nothing matched “${query}”.</p>`
   }
 });
@@ -466,14 +474,20 @@ filterSort({
 | `facets` | — | `{ attribute, label?, limit? }[]`, one section per entry, in order. Required; the widget asks the server to count every one of them. |
 | `sortOptions` | — | Same `{ label, value }[]` `sortSelect` takes. Omit for no "Sort by" section. |
 | `label` | `'Filter & Sort'` | Trigger text and sheet heading. |
-| `applyLabel` | `'Show results'` | The footer's primary button. |
+| `applyLabel` | `'Show {count} results'` | The footer's primary button. `{count}` is replaced with the live preview of the pending selection; while that count is unknown the placeholder is dropped along with the space after it, so the default reads "Show results". |
 | `clearLabel` | `'Clear all'` | The footer's secondary button. |
 | `closeLabel` | `'Close'` | Accessible name of the header's close button. |
 
 **Nothing refines while the sheet is open.** Ticking a value, or pressing "Clear all", changes a
 *pending* selection; **Apply** replays the whole pending set through the public actions in one chain
-and runs exactly one search. Closing by the backdrop, `Esc` or the X discards it. The button reads
-"Show results" without a count — see the note under [Mobile filtering](#mobile-filtering).
+and runs exactly one search. Closing by the backdrop, `Esc` or the X discards it.
+
+**The Apply button previews the count.** 250ms after each pending change the widget runs one
+**probe** — the committed filters with the pending ticks applied, as a request the server answers
+normally but never records in the analytics — and puts the answer where `{count}` is: "Show 12
+results". A probe that lands after Apply, after the sheet closed, or after a newer tick is
+discarded, and a probe that fails leaves the countless label; the button is never wrong and never
+shows an error.
 
 The trigger's badge counts the active refinements on the configured attributes plus a non-default
 sort, and is `hidden` at zero.
@@ -576,11 +590,6 @@ as `results` does, and the first query still spends the handed-over `queryId`.
 the window or rotating a tablet keeps the layout it booted with, and the other one appears on the
 next navigation. Live-swapping would mean unmounting the widget the visitor is scrolling and
 throwing away the accumulated list, which is worse than the stale layout.
-
-The apply button deliberately carries no result count. A live preview would mean a second query per
-tick, and every query the server answers is journaled as a search (there is no "do not journal"
-flag in the JSON contract), so previewing would inflate the search analytics of every visitor who
-opens the sheet.
 
 ## `clearFilters`
 

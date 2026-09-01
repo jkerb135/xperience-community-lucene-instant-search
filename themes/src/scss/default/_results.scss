@@ -46,7 +46,8 @@
   border-radius: var(--xps-radius);
 }
 
-.xps-result__icon {
+.xps-result__icon,
+.xps-results__empty-icon {
   color: var(--xps-color-muted);
 }
 

@@ -87,10 +87,18 @@ const calls: Array<{ url: string; body: Record<string, unknown> }> = [];
 /** Every instance a test starts, so none of them leaks into the next test's `calls`. */
 const started: SearchInstance[] = [];
 
-function start(widgets: Widget[], response: SearchResponse = RESPONSE): SearchInstance {
+/**
+ * A fixed response, or one chosen per request — which is what a probe test needs, since a probe and
+ * the search it previews hit the same endpoint and must answer differently.
+ */
+type Responder = SearchResponse | ((body: Record<string, unknown>) => Promise<SearchResponse>);
+
+function start(widgets: Widget[], response: Responder = RESPONSE): SearchInstance {
   const fetchFn = (async (url: string, init: RequestInit) => {
-    calls.push({ url: String(url), body: JSON.parse(String(init.body)) as Record<string, unknown> });
-    return new Response(JSON.stringify(response), {
+    const body = JSON.parse(String(init.body)) as Record<string, unknown>;
+    calls.push({ url: String(url), body });
+    const answer = typeof response === 'function' ? await response(body) : response;
+    return new Response(JSON.stringify(answer), {
       status: 200,
       headers: { [API_VERSION_HEADER]: '1' },
     });
@@ -293,8 +301,11 @@ describe('searchBox', () => {
   });
 });
 
+/** An empty result set: what every filtered-empty-state test searches into. */
+const NOTHING: SearchResponse = { ...RESPONSE, results: [], total: 0, totalPages: 0 };
+
 describe('results', () => {
-  const mount = (params: Record<string, unknown> = {}, response = RESPONSE): HTMLElement => {
+  const mount = (params: Record<string, unknown> = {}, response: Responder = RESPONSE): HTMLElement => {
     const host = container('results');
     search = start([results({ container: host, ...params })], response);
     return host.querySelector('.xps-results') as HTMLElement;
@@ -495,6 +506,124 @@ describe('results', () => {
     await vi.waitFor(() => expect(calls.length).toBeGreaterThan(before));
     expect(search?.state.filters.facets).toEqual([]);
     expect(calls[calls.length - 1]?.body['filters']).toBeUndefined();
+  });
+
+  /**
+   * ES-1: the refined empty state probes for how many results the same query returns unfiltered,
+   * and says so. `unfiltered` answers a probe with `total`, and the search itself with nothing.
+   */
+  const emptyWithProbe = (total: number | 'fail'): Responder =>
+    async (body) => {
+      if (body['probe'] !== true) return NOTHING;
+      if (total === 'fail') throw new Error('probe is down');
+      return { ...RESPONSE, results: [], total, totalPages: 1 };
+    };
+
+  const refine = async (root: HTMLElement): Promise<void> => {
+    search?.actions.setQuery('xyzzy').toggleFacet('contentType', 'Article').search();
+    await vi.waitFor(() => expect(root.querySelector('.xps-results__clear')).not.toBeNull());
+  };
+
+  it('counts the empty state from an unfiltered probe, in the copy and on the button', async () => {
+    const root = mount({}, emptyWithProbe(7));
+    await refine(root);
+
+    await vi.waitFor(() =>
+      expect(root.querySelector('.xps-results__clear')?.textContent).toBe(
+        'Clear filters and show 7 results'
+      )
+    );
+    expect(root.querySelector('.xps-results__empty')?.textContent).toContain(
+      'There are 7 results without them.'
+    );
+
+    // The probe is one request, unfiltered, flagged, and it left the widget's own state alone.
+    const probe = calls.filter((call) => call.body['probe'] === true);
+    expect(probe).toHaveLength(1);
+    expect(probe[0]?.body['filters']).toBeUndefined();
+    expect(probe[0]?.body['query']).toBe('xyzzy');
+    expect(search?.state.filters.facets.map((facet) => facet.attribute)).toEqual(['contentType']);
+  });
+
+  it('says "1 result", not "1 results"', async () => {
+    const root = mount({}, emptyWithProbe(1));
+    await refine(root);
+
+    await vi.waitFor(() =>
+      expect(root.querySelector('.xps-results__clear')?.textContent).toBe(
+        'Clear filters and show 1 result'
+      )
+    );
+  });
+
+  it.each([
+    ['the probe finds nothing behind the filters either', 0 as const],
+    ['the probe fails', 'fail' as const],
+  ])('keeps the countless copy when %s', async (_why, total) => {
+    const root = mount({}, emptyWithProbe(total));
+    await refine(root);
+
+    await vi.waitFor(() => expect(calls.some((call) => call.body['probe'] === true)).toBe(true));
+    // Give the answer a turn to land: it must not change the copy at all.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(root.querySelector('.xps-results__clear')?.textContent).toBe('Clear filters');
+    expect(root.querySelector('.xps-results__empty')?.textContent).not.toContain('without them');
+  });
+
+  it('discards a probe answer for a query that is no longer the current one', async () => {
+    let release = (): void => {};
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const root = mount({}, async (body) => {
+      if (body['probe'] !== true) return NOTHING;
+      await held;
+      return { ...RESPONSE, results: [], total: 7, totalPages: 1 };
+    });
+    await refine(root);
+    await vi.waitFor(() => expect(calls.some((call) => call.body['probe'] === true)).toBe(true));
+
+    // The visitor types on while the probe is in flight; its 7 belongs to "xyzzy", not to this.
+    search?.actions.setQuery('plugh').search();
+    await vi.waitFor(() => expect(search?.state.query).toBe('plugh'));
+    release();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(root.querySelector('.xps-results__empty')?.textContent).not.toContain('7 results');
+  });
+
+  it('passes the probed count to a custom templates.empty', async () => {
+    const seen: Array<number | undefined> = [];
+    const root = mount(
+      {
+        templates: {
+          empty: (data: { unfilteredCount?: number }) => {
+            seen.push(data.unfilteredCount);
+            return html`<button type="button" class="xps-results__clear">clear</button>`;
+          },
+        },
+      },
+      emptyWithProbe(7)
+    );
+    await refine(root);
+
+    await vi.waitFor(() => expect(seen).toContain(7));
+    expect(seen[0]).toBeUndefined(); // countless until the probe answers
+  });
+
+  it('renders the empty-state icon in both variants', async () => {
+    const root = mount({}, NOTHING);
+    search?.actions.setQuery('xyzzy').search();
+    await vi.waitFor(() => expect(root.querySelector('.xps-results__empty')).not.toBeNull());
+
+    const icon = root.querySelector('.xps-results__empty-icon') as SVGElement;
+    expect(icon.tagName).toBe('svg');
+    expect(icon.getAttribute('aria-hidden')).toBe('true');
+    expect(icon.getAttribute('stroke')).toBe('currentColor');
+    expect(icon.getAttribute('viewBox')).toBe('0 0 24 24');
+
+    await refine(root);
+    expect(root.querySelector('.xps-results__empty')?.firstElementChild?.tagName).toBe('svg');
   });
 
   it('hands templates.empty the refinement state and the clear action', async () => {
@@ -1954,19 +2083,25 @@ describe('the samples in docs/guides/widget-reference.md', () => {
         results({
           container: '#search-results',
           templates: {
-            empty: ({ query, hasRefinements }, { html: markup }) =>
+            empty: ({ query, hasRefinements, unfilteredCount }, { html: markup }) =>
               hasRefinements
                 ? markup`<p>Nothing matched “${query}” with these filters.</p>
-               <button type="button" class="xps-button xps-button--primary xps-results__clear">Start over</button>`
+               <button type="button" class="xps-button xps-button--primary xps-results__clear">${
+                 unfilteredCount === undefined ? 'Start over' : `Start over (${unfilteredCount})`
+               }</button>`
                 : markup`<p>Nothing matched “${query}”.</p>`,
           },
         }),
       ],
-      { ...RESPONSE, results: [], total: 0, totalPages: 0 }
+      async (body) =>
+        body['probe'] === true ? { ...RESPONSE, total: 7 } : { ...RESPONSE, results: [], total: 0, totalPages: 0 }
     );
     search.actions.setQuery('xyzzy').toggleFacet('contentType', 'Article').search();
     await settled(search);
 
+    await vi.waitFor(() =>
+      expect(host.querySelector('.xps-results__clear')?.textContent).toBe('Start over (7)')
+    );
     host.querySelector<HTMLButtonElement>('.xps-results__clear')!.click();
     await vi.waitFor(() => expect(search?.state.filters.facets).toEqual([]));
   });
@@ -1978,19 +2113,28 @@ describe('filterSort', () => {
     { label: 'Newest first', value: 'date_desc' },
   ];
 
-  const mount = async (params: Record<string, unknown> = {}): Promise<HTMLElement> => {
+  const mount = async (
+    params: Record<string, unknown> = {},
+    response: Responder = RESPONSE
+  ): Promise<HTMLElement> => {
     const host = container('filter-sort');
-    search = start([
-      filterSort({
-        container: host,
-        facets: [{ attribute: 'contentType', label: 'Content type' }],
-        sortOptions: SORT,
-        ...params,
-      }),
-    ]);
+    search = start(
+      [
+        filterSort({
+          container: host,
+          facets: [{ attribute: 'contentType', label: 'Content type' }],
+          sortOptions: SORT,
+          ...params,
+        }),
+      ],
+      response
+    );
     await settled(search);
     return host;
   };
+
+  const apply = (): HTMLButtonElement =>
+    document.querySelector<HTMLButtonElement>('.xps-sheet__apply')!;
 
   const trigger = (host: HTMLElement): HTMLButtonElement =>
     host.querySelector<HTMLButtonElement>('.xps-filter-sort__trigger')!;
@@ -2141,6 +2285,85 @@ describe('filterSort', () => {
       new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true })
     );
     expect(document.activeElement).toBe(last);
+  });
+
+  // --- ES-1: the apply button's live count -------------------------------
+
+  /** Answers a probe with `total` and every real search with the ordinary fixture. */
+  const previewing = (total: number | 'fail'): Responder =>
+    async (body) => {
+      if (body['probe'] !== true) return RESPONSE;
+      if (total === 'fail') throw new Error('probe is down');
+      return { ...RESPONSE, total };
+    };
+
+  it('previews the pending count on the apply button, from one flagged probe', async () => {
+    const host = await mount({}, previewing(12));
+    trigger(host).click();
+    expect(apply().textContent).toBe('Show results');
+
+    check('Article');
+    await vi.waitFor(() => expect(apply().textContent).toBe('Show 12 results'));
+
+    const probes = calls.filter((call) => call.body['probe'] === true);
+    expect(probes).toHaveLength(1);
+    // Committed filters with the pending tick applied — what Apply would commit.
+    expect(probes[0]?.body['filters']).toEqual({
+      facets: [{ attribute: 'contentType', values: ['Article'] }],
+    });
+  });
+
+  it('debounces the preview: three ticks in a row cost one probe', async () => {
+    const host = await mount({}, previewing(12));
+    trigger(host).click();
+
+    check('Article');
+    check('Product');
+    check('Product');
+    await vi.waitFor(() => expect(apply().textContent).toBe('Show 12 results'));
+    expect(calls.filter((call) => call.body['probe'] === true)).toHaveLength(1);
+  });
+
+  it('keeps the countless label when the probe fails', async () => {
+    const host = await mount({}, previewing('fail'));
+    trigger(host).click();
+
+    check('Article');
+    await vi.waitFor(() => expect(calls.some((call) => call.body['probe'] === true)).toBe(true));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(apply().textContent).toBe('Show results');
+  });
+
+  it('discards a probe that lands after Apply, and starts the next sheet countless', async () => {
+    let release = (): void => {};
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const host = await mount({}, async (body) => {
+      if (body['probe'] !== true) return RESPONSE;
+      await held;
+      return { ...RESPONSE, total: 12 };
+    });
+
+    trigger(host).click();
+    check('Article');
+    await vi.waitFor(() => expect(calls.some((call) => call.body['probe'] === true)).toBe(true));
+
+    apply().click();
+    release();
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    trigger(host).click();
+    expect(apply().textContent).toBe('Show results');
+  });
+
+  it('substitutes {count} into a custom applyLabel and drops it while the count is unknown', async () => {
+    const host = await mount({ applyLabel: 'Apply ({count})' }, previewing(12));
+    trigger(host).click();
+    expect(apply().textContent).toBe('Apply ()');
+
+    check('Article');
+    await vi.waitFor(() => expect(apply().textContent).toBe('Apply (12)'));
   });
 
   it('asks the server to count every configured attribute and cleans up on dispose', async () => {

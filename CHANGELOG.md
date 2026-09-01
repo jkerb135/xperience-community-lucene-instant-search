@@ -12,6 +12,27 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Added (contract, core, widgets, themes):** `SearchRequest.probe`, an optional boolean, and the
+  counted recovery states it unblocks (ES-1). A probe request is answered exactly like any other —
+  same pipeline, same rules, same response cache, so a probe and the search it previews share a
+  cache entry — but it is **never journaled**: no search activity, no query-log row, and therefore
+  nothing in any report, in the suggestion miner or in the popularity signal. The skip lives at the
+  single journal call site in `CachedSearchPipeline`, so it covers the cached and the uncached path
+  alike. Additive, like `queryId` before it: an existing caller sends nothing and behaves exactly as
+  it did, and the contract version is unchanged. On the JavaScript side `SearchInstance` gains
+  `probe(overrides?)`, which runs one such request over the instance's own index and transport and
+  resolves with `{ total }` — committed state plus the caller's overrides, no state touched, nothing
+  rendered, not debounced. Two widgets use it: the **filtered empty state** now says "There are
+  **7 results** without them." with a **Clear filters and show 7 results** button (`templates.empty`
+  receives the count as `unfilteredCount`), and the **filter sheet's Apply button** previews the
+  pending selection as "Show 12 results" — `applyLabel` regains its `{count}` placeholder and now
+  defaults to `'Show {count} results'`. Both debounce 250ms, discard a stale or post-Apply answer,
+  and fall back to their countless label on failure or a zero count; a visitor never sees "show 0
+  results" or an error. Both empty variants also gain the muted magnifier glyph
+  (`xps-results__empty-icon`), and the first-search skeleton's media square is now squared off the
+  media width rather than by a coincidence of two lengths. Server-rendered empty states stay the
+  plain block: the recovery states are client-side by design.
+
 - **Added (core, admin):** typo tolerance, one per-index toggle on the **Synonyms** page (FZ-1). With
   it on, every free-text term also matches near-spellings on both query paths, the plain one and the
   synonym expansion: 1–2 letters stay exact, 3–5 allow one edit, 6 and up allow two, the first letter
