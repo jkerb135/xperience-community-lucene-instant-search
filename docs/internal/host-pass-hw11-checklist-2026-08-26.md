@@ -232,4 +232,4 @@ re-observed under the host bundle.
     ready-made subject): the breadcrumb and the sidebar section header on the detail page show
     *Docs demo experiment*, not the experiment GUID (`3be7f5a5-...`). Same on a variant-scoped tuning page - open
     the experiment's **Rules** (`/admin/lucene/indexes/edit/2/experiments/2/rules`) and check both
-    again.
+    again. — **PASS** (owner, 2026-09-01, on the running host).
