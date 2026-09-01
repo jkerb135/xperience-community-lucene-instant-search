@@ -90,6 +90,22 @@
   }
 }
 
+/* The muted-link button: "Clear all" next to a heading or a chips row, where a filled box would
+   shout. Still a real <button>, still focusable, still 2.25rem tall for the pointer. */
+.xps-button--link {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--xps-color-muted);
+  padding-inline: 0;
+
+  &:hover:not(:disabled) {
+    background-color: transparent;
+    border-color: transparent;
+    color: var(--xps-color-accent);
+    text-decoration: underline;
+  }
+}
+
 .xps-chip {
   background-color: color-mix(in srgb, var(--xps-color-accent) 8%, var(--xps-color-surface));
   border: 1px solid color-mix(in srgb, var(--xps-color-accent) 30%, var(--xps-color-border));

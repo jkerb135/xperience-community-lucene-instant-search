@@ -28,6 +28,19 @@
     </select>
   </div>
 
+  <!-- .xps-select__field: the same block with the widget's own chevron, as sortSelect renders it.
+       The platform arrow is only dropped when this wrapper is present. -->
+  <div class="xps-select">
+    <label class="xps-select__label" for="xps-search-3-dropdown-facet-control">Content type</label>
+    <span class="xps-select__field">
+      <select class="xps-select__control" id="xps-search-3-dropdown-facet-control">
+        <option value="">Any type</option>
+        <option value="Article" selected>Article (34)</option>
+      </select>
+      <svg class="xps-select__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"></path></svg>
+    </span>
+  </div>
+
   <!-- nothing to filter on: the real attribute plus the modifier -->
   <div class="xps-select xps-select--disabled">
     <label class="xps-select__label" for="xps-search-2-dropdown-facet-control">Content type</label>
@@ -41,6 +54,31 @@
     <span class="xps-skeleton xps-skeleton--title"></span>
     <span class="xps-skeleton xps-skeleton--text"></span>
     <span class="xps-skeleton xps-skeleton--block"></span>
+  </div>
+
+  <!-- Composition helpers: the sidebar heading row and the toolbar above the results.
+       Colourless structure — they hold widget mounts, they are not widgets. -->
+  <div class="xps-sidebar__header">
+    <h2 class="xps-sidebar__title">Filters</h2>
+    <div class="xps xps-clear-filters">
+      <button class="xps-button xps-button--link xps-clear-filters__button" type="button">Clear all</button>
+    </div>
+  </div>
+
+  <div class="xps-toolbar">
+    <div class="xps xps-result-stats">
+      <span class="xps-result-stats__text"><strong class="xps-result-stats__total">14</strong> results for “grinder” (<span class="xps-result-stats__time">8&nbsp;ms</span>)</span>
+    </div>
+    <div class="xps xps-sort-select xps-select">
+      <label class="xps-select__label xps-sr-only" for="xps-search-4-sort-select-select">Sort by</label>
+      <span class="xps-select__field">
+        <select class="xps-select__control" id="xps-search-4-sort-select-select" name="sort">
+          <option value="relevance" selected>Relevance</option>
+          <option value="price_asc">Price, low to high</option>
+        </select>
+        <svg class="xps-select__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"></path></svg>
+      </span>
+    </div>
   </div>
 
   <!-- .xps-sr-only: visible to assistive technology only -->

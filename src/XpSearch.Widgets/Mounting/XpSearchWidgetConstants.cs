@@ -46,4 +46,10 @@ public static class XpSearchWidgetConstants
 
     /// <summary>Widget identifier of the range filter widget.</summary>
     public const string RangeFilterIdentifier = "XpSearch.RangeFilter";
+
+    /// <summary>Widget identifier of the active filters widget.</summary>
+    public const string ActiveFiltersIdentifier = "XpSearch.ActiveFilters";
+
+    /// <summary>Widget identifier of the clear filters widget.</summary>
+    public const string ClearFiltersIdentifier = "XpSearch.ClearFilters";
 }

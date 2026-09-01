@@ -1,65 +1,104 @@
-<!-- facetList — states: selected, unselected, disabled (canApply=false), searchable variant, show-more -->
+<!-- facetList — states: selected, unselected, disabled (canApply=false), searchable variant, show-more.
+     The title is a disclosure button by default (collapsible: true); the last block is the
+     collapsible: false opt-out. -->
 
 <div class="xps xps-facet-list">
-  <h3 class="xps-facet-list__title" id="xps-search-1-content-type-title">Content type</h3>
-  <ul class="xps-facet-list__list" aria-labelledby="xps-search-1-content-type-title">
-    <li class="xps-facet-list__item xps-facet-list__item--selected">
-      <label class="xps-facet-list__label">
-        <input class="xps-facet-list__checkbox" type="checkbox" name="contentType" value="Article" checked>
-        <span class="xps-facet-list__value">Article</span>
-        <span class="xps-facet-list__count">24</span>
-      </label>
-    </li>
-    <li class="xps-facet-list__item">
-      <label class="xps-facet-list__label">
-        <input class="xps-facet-list__checkbox" type="checkbox" name="contentType" value="Product">
-        <span class="xps-facet-list__value">Product</span>
-        <span class="xps-facet-list__count">11</span>
-      </label>
-    </li>
-    <li class="xps-facet-list__item xps-facet-list__item--disabled">
-      <label class="xps-facet-list__label">
-        <input class="xps-facet-list__checkbox" type="checkbox" name="contentType" value="Event" disabled>
-        <span class="xps-facet-list__value">Event</span>
-        <span class="xps-facet-list__count">0</span>
-      </label>
-    </li>
-  </ul>
-  <button class="xps-button xps-facet-list__show-more" type="button" aria-expanded="false">Show more</button>
+  <h3 class="xps-facet-list__title" id="xps-search-1-content-type-title">
+    <button class="xps-facet-list__toggle" type="button" aria-expanded="true" aria-controls="xps-search-1-content-type-body">
+      <span class="xps-facet-list__toggle-label">Content type</span>
+      <svg class="xps-facet-list__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"></path></svg>
+    </button>
+  </h3>
+  <div class="xps-facet-list__body" id="xps-search-1-content-type-body">
+    <ul class="xps-facet-list__list" aria-labelledby="xps-search-1-content-type-title">
+      <li class="xps-facet-list__item xps-facet-list__item--selected">
+        <label class="xps-facet-list__label">
+          <input class="xps-facet-list__checkbox" type="checkbox" name="contentType" value="Article" checked>
+          <span class="xps-facet-list__value">Article</span>
+          <span class="xps-facet-list__count">24</span>
+        </label>
+      </li>
+      <li class="xps-facet-list__item">
+        <label class="xps-facet-list__label">
+          <input class="xps-facet-list__checkbox" type="checkbox" name="contentType" value="Product">
+          <span class="xps-facet-list__value">Product</span>
+          <span class="xps-facet-list__count">11</span>
+        </label>
+      </li>
+      <li class="xps-facet-list__item xps-facet-list__item--disabled">
+        <label class="xps-facet-list__label">
+          <input class="xps-facet-list__checkbox" type="checkbox" name="contentType" value="Event" disabled>
+          <span class="xps-facet-list__value">Event</span>
+          <span class="xps-facet-list__count">0</span>
+        </label>
+      </li>
+    </ul>
+    <button class="xps-button xps-facet-list__show-more" type="button" aria-expanded="false">Show more</button>
+  </div>
+</div>
+
+<!-- collapsed: the toggle is aria-expanded="false" and the body carries `hidden` -->
+<div class="xps xps-facet-list">
+  <h3 class="xps-facet-list__title" id="xps-search-4-tags-title">
+    <button class="xps-facet-list__toggle" type="button" aria-expanded="false" aria-controls="xps-search-4-tags-body">
+      <span class="xps-facet-list__toggle-label">Tags</span>
+      <svg class="xps-facet-list__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"></path></svg>
+    </button>
+  </h3>
+  <div class="xps-facet-list__body" id="xps-search-4-tags-body" hidden>
+    <ul class="xps-facet-list__list" aria-labelledby="xps-search-4-tags-title">
+      <li class="xps-facet-list__item">
+        <label class="xps-facet-list__label">
+          <input class="xps-facet-list__checkbox" type="checkbox" name="tags" value="espresso">
+          <span class="xps-facet-list__value">espresso</span>
+          <span class="xps-facet-list__count">18</span>
+        </label>
+      </li>
+    </ul>
+  </div>
 </div>
 
 <!-- searchable variant, show-more expanded and exhausted -->
 <div class="xps xps-facet-list xps-facet-list--searchable">
-  <h3 class="xps-facet-list__title" id="xps-search-2-tags-title">Tags</h3>
-  <div class="xps-facet-list__search">
-    <label class="xps-sr-only" for="xps-search-2-tags-search">Search in Tags</label>
-    <input class="xps-facet-list__search-input" id="xps-search-2-tags-search" type="search" value="es" placeholder="Search in Tags" autocomplete="off">
+  <h3 class="xps-facet-list__title" id="xps-search-2-tags-title">
+    <button class="xps-facet-list__toggle" type="button" aria-expanded="true" aria-controls="xps-search-2-tags-body">
+      <span class="xps-facet-list__toggle-label">Tags</span>
+      <svg class="xps-facet-list__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"></path></svg>
+    </button>
+  </h3>
+  <div class="xps-facet-list__body" id="xps-search-2-tags-body">
+    <div class="xps-facet-list__search">
+      <label class="xps-sr-only" for="xps-search-2-tags-search">Search in Tags</label>
+      <input class="xps-facet-list__search-input" id="xps-search-2-tags-search" type="search" value="es" placeholder="Search in Tags" autocomplete="off">
+    </div>
+    <ul class="xps-facet-list__list" aria-labelledby="xps-search-2-tags-title">
+      <li class="xps-facet-list__item xps-facet-list__item--selected">
+        <label class="xps-facet-list__label">
+          <input class="xps-facet-list__checkbox" type="checkbox" name="tags" value="espresso" checked>
+          <span class="xps-facet-list__value"><mark class="xps-highlight">es</mark>presso</span>
+          <span class="xps-facet-list__count">18</span>
+        </label>
+      </li>
+      <li class="xps-facet-list__item">
+        <label class="xps-facet-list__label">
+          <input class="xps-facet-list__checkbox" type="checkbox" name="tags" value="descaling">
+          <span class="xps-facet-list__value">d<mark class="xps-highlight">es</mark>caling</span>
+          <span class="xps-facet-list__count">4</span>
+        </label>
+      </li>
+    </ul>
+    <button class="xps-button xps-facet-list__show-more xps-facet-list__show-more--disabled" type="button" aria-expanded="true" disabled>Show less</button>
   </div>
-  <ul class="xps-facet-list__list" aria-labelledby="xps-search-2-tags-title">
-    <li class="xps-facet-list__item xps-facet-list__item--selected">
-      <label class="xps-facet-list__label">
-        <input class="xps-facet-list__checkbox" type="checkbox" name="tags" value="espresso" checked>
-        <span class="xps-facet-list__value"><mark class="xps-highlight">es</mark>presso</span>
-        <span class="xps-facet-list__count">18</span>
-      </label>
-    </li>
-    <li class="xps-facet-list__item">
-      <label class="xps-facet-list__label">
-        <input class="xps-facet-list__checkbox" type="checkbox" name="tags" value="descaling">
-        <span class="xps-facet-list__value">d<mark class="xps-highlight">es</mark>caling</span>
-        <span class="xps-facet-list__count">4</span>
-      </label>
-    </li>
-  </ul>
-  <button class="xps-button xps-facet-list__show-more xps-facet-list__show-more--disabled" type="button" aria-expanded="true" disabled>Show less</button>
 </div>
 
-<!-- searchable variant with no matches -->
+<!-- collapsible: false — the title is plain text again, the body stays in place -->
 <div class="xps xps-facet-list xps-facet-list--searchable">
   <h3 class="xps-facet-list__title" id="xps-search-3-tags-title">Tags</h3>
-  <div class="xps-facet-list__search">
-    <label class="xps-sr-only" for="xps-search-3-tags-search">Search in Tags</label>
-    <input class="xps-facet-list__search-input" id="xps-search-3-tags-search" type="search" value="zzz" placeholder="Search in Tags" autocomplete="off">
+  <div class="xps-facet-list__body" id="xps-search-3-tags-body">
+    <div class="xps-facet-list__search">
+      <label class="xps-sr-only" for="xps-search-3-tags-search">Search in Tags</label>
+      <input class="xps-facet-list__search-input" id="xps-search-3-tags-search" type="search" value="zzz" placeholder="Search in Tags" autocomplete="off">
+    </div>
+    <p class="xps-facet-list__no-results" role="status">No matching filters.</p>
   </div>
-  <p class="xps-facet-list__no-results" role="status">No matching filters.</p>
 </div>

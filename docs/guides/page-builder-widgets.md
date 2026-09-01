@@ -48,6 +48,8 @@ live-site code takes a dependency on `Kentico.Xperience.Admin` either way.
 | Search - Suggestions | `XpSearch.Suggestions` | `suggestions` |
 | Search - Range filter | `XpSearch.RangeFilter` | `rangeFilter` |
 | Search - Filter & sort sheet | `XpSearch.FilterSort` | `filterSort` |
+| Search - Active filters | `XpSearch.ActiveFilters` | `activeFilters` |
+| Search - Clear filters | `XpSearch.ClearFilters` | `clearFilters` |
 
 Every widget renders exactly this, and nothing else:
 
@@ -77,12 +79,14 @@ Then, per widget:
 |---|---|
 | Search box | Placeholder · Show reset button · Focus on page load · Suggest as the visitor types · Maximum suggestions (shown once suggesting is on) · Sync search state to the URL — see [Shareable result URLs](#shareable-result-urls) and [One page, one search field](#one-page-one-search-field) |
 | Results | Results per page · Result template · Fields to show (a selector over the index fields — `title`, `url`, `contentType`, `language` or any stored field of your content types) · Title attribute · Link attribute · Snippet attributes — see [Pointing a card at other attributes](#pointing-a-card-at-other-attributes) |
-| Facet list | Attribute · Label · Operator (any / all of the selected values) · Values shown · Show a "show more" button |
-| Category tree | Attribute · Label · Nodes per level. Pick a **taxonomy** attribute: the tree comes from the tag hierarchy, and a flat attribute renders as one level. Selection is one value at a time, because a parent's count already includes its children |
+| Facet list | Attribute · Label · Operator (any / all of the selected values) · Values shown · Show a "show more" button · Title folds the group (on by default — see [Folding groups](#folding-groups)) |
+| Category tree | Attribute · Label · Nodes per level · Title folds the tree (on by default). Pick a **taxonomy** attribute: the tree comes from the tag hierarchy, and a flat attribute renders as one level. Selection is one value at a time, because a parent's count already includes its children |
 | Pagination | Style (numbered pages / load more button) — "load more" emits a `loadMore` mount instead of a `pagination` one, so place one or the other, never both |
-| Result stats | Text template (`{total}`, `{tookMs}`, `{query}`, `{page}`, `{totalPages}`) · Text before the first search |
+| Result stats | Text template (`{total}`, `{tookMs}`, `{query}`, `{page}`, `{totalPages}`) — pre-filled with `{total} results for “{query}” ({tookMs} ms)`, the design's own wording, so a freshly placed widget needs no editing; the count is emphasised · Text before the first search |
 | Sort selector | Sort options (one `key;Label` per line) · Label · Hide the label visually |
-| Range filter | Attribute (numeric or date) · Label · Minimum · Maximum · Step · "From" label · "To" label — see [The range filter's bounds are hand-configured](#the-range-filters-bounds-are-hand-configured) |
+| Active filters | Screen-reader heading · Keep the chips on one scrolling row. The chips row of the design: one removable chip per refinement. Place a Clear filters widget beside it for the trailing "Clear all" |
+| Clear filters | Button text (empty leaves "Clear all"). Renders a muted link-style button, disabled while nothing is refined. Two of them on a page is normal: one in the sidebar heading, one beside the chips |
+| Range filter | Attribute (numeric or date) · Label · Minimum · Maximum · Step · "From" label · "To" label · Unit (shown after the two inputs: "USD", "kg") — see [The range filter's bounds are hand-configured](#the-range-filters-bounds-are-hand-configured) |
 | Filter & sort sheet | Facet groups (one `attribute;Label` per line, in the order they appear in the sheet) · Sort options (one `key;Label` per line, exactly as the sort selector takes them — leave empty for no "Sort by" section) · Label · Apply button text. The mobile counterpart of the facet sidebar: the mount renders only a toolbar button, and the sheet it opens is built in the browser. Place it alongside the facet list widgets, not instead of them — see [Mobile filtering](widget-reference.md#mobile-filtering) |
 | Suggestions | Mode (matching documents / popular queries) · Maximum items. Whether an index answers with documents or with query suggestions is server-side configuration; the property records the editor's intent and does not change the request |
 
@@ -103,6 +107,28 @@ so they look identical either way:
 ```html
 <div class="xps-mount" data-xps-config="{&quot;showReset&quot;:true,&quot;autofocus&quot;:false,&quot;suggestions&quot;:{&quot;limit&quot;:5}}" data-xps-instance="default" data-xps-instance-config="{&quot;index&quot;:&quot;site-content&quot;,&quot;routing&quot;:true}" data-xps-widget="searchBox"></div>
 ```
+
+#### Folding groups
+
+The facet list and the category tree render their title as a button with a chevron, and pressing it
+folds the group away. That is the shipped default: the sidebar of the design shows a chevron on
+every group. Untick **Title folds the group** for a group that must always stay open.
+
+The fold is a view state only. It is not saved, it is not in the page URL, and it changes nothing
+about the search — a folded group keeps its selected values, and they keep showing in the Active
+filters chips.
+
+#### The chips row and the two clear-all buttons
+
+**Search - Active filters** and **Search - Clear filters** are separate widgets so an editor can put
+them where the design wants them:
+
+- in the filter column's heading — a "Filters" heading of yours plus one Clear filters widget;
+- above the results — an Active filters widget plus a second Clear filters widget.
+
+Wrap each pair in a section styled with the `xps-toolbar` (or `xps-sidebar__header`) class from the
+stylesheet to get the design's one-row layout; see
+[Composing the results page](widget-reference.md#composing-the-results-page).
 
 #### The attribute drop-down is filled from the index
 

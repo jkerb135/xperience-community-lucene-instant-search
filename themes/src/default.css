@@ -78,6 +78,21 @@
   border-color: color-mix(in srgb, var(--xps-color-text) 15%, var(--xps-color-accent));
 }
 
+/* The muted-link button: "Clear all" next to a heading or a chips row, where a filled box would
+   shout. Still a real <button>, still focusable, still 2.25rem tall for the pointer. */
+.xps-button--link {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--xps-color-muted);
+  padding-inline: 0;
+}
+.xps-button--link:hover:not(:disabled) {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--xps-color-accent);
+  text-decoration: underline;
+}
+
 .xps-chip {
   background-color: color-mix(in srgb, var(--xps-color-accent) 8%, var(--xps-color-surface));
   border: 1px solid color-mix(in srgb, var(--xps-color-accent) 30%, var(--xps-color-border));
@@ -135,9 +150,18 @@
 }
 
 .xps-facet-list__checkbox,
-.xps-toggle-filter__checkbox,
-.xps-range-filter__range {
+.xps-toggle-filter__checkbox {
   accent-color: var(--xps-color-accent);
+}
+
+.xps-select__chevron {
+  color: var(--xps-color-muted);
+}
+
+/* In the toolbar above the results the select sits next to the stats line, so it reads as one
+   compact control rather than a form field. */
+.xps-toolbar .xps-select__control {
+  font-size: 0.875em;
 }
 
 /* --------------------------------------------------------------------------
@@ -151,8 +175,15 @@
   text-decoration: underline;
 }
 
+/* Three lines, whatever the host's snippet field holds: a card of body copy is a wall of text.
+   `max-height` is the fallback for engines without the clamp. */
 .xps-result__snippet {
   color: var(--xps-color-text);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  max-height: 4.5em;
 }
 
 .xps-result__meta,
@@ -194,11 +225,24 @@
  * ------------------------------------------------------------------------ */
 .xps-facet-list__title,
 .xps-category-tree__title,
-.xps-range-filter__title {
+.xps-range-filter__title,
+.xps-sidebar__header {
   font-size: 1rem;
   font-weight: 600;
   padding-bottom: calc(var(--xps-space) / 3);
   border-bottom: 2px solid var(--xps-color-text);
+}
+
+/* The sidebar heading sits in the same rule as a group title, so its own <h2> only has to stop
+   being a browser headline. */
+.xps-sidebar__title {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.xps-facet-list__chevron,
+.xps-category-tree__chevron {
+  color: var(--xps-color-muted);
 }
 
 .xps-facet-list__item--selected .xps-facet-list__value {
@@ -246,6 +290,54 @@
 
 .xps-category-tree__item > .xps-category-tree__list {
   border-inline-start: 1px solid var(--xps-color-border);
+}
+
+/* --------------------------------------------------------------------------
+ * rangeFilter — a thin rail with round handles instead of the OS slider.
+ *
+ * Only this file replaces the native control, so a site running shell.css alone keeps the
+ * platform slider it already knows how to theme.
+ * ------------------------------------------------------------------------ */
+.xps-range-filter__range {
+  appearance: none;
+  background-color: transparent;
+  height: 1rem;
+}
+
+.xps-range-filter__range::-webkit-slider-runnable-track {
+  height: 2px;
+  border-radius: 2px;
+  background-color: var(--xps-color-border);
+}
+
+.xps-range-filter__range::-moz-range-track {
+  height: 2px;
+  border-radius: 2px;
+  background-color: var(--xps-color-border);
+}
+
+.xps-range-filter__range::-webkit-slider-thumb {
+  appearance: none;
+  width: 0.875rem;
+  height: 0.875rem;
+  /* half the handle minus half the 2px rail, so it rides centred on the track */
+  margin-top: -0.375rem;
+  border-radius: 50%;
+  background-color: var(--xps-color-accent);
+  border: 2px solid var(--xps-color-surface);
+}
+
+.xps-range-filter__range::-moz-range-thumb {
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 50%;
+  background-color: var(--xps-color-accent);
+  border: 2px solid var(--xps-color-surface);
+}
+
+.xps-range-filter__unit {
+  color: var(--xps-color-muted);
+  font-size: 0.875em;
 }
 
 /* --------------------------------------------------------------------------
@@ -364,6 +456,12 @@
  * ------------------------------------------------------------------------ */
 .xps-result-stats__time {
   color: var(--xps-color-muted);
+}
+
+/* The count is the sentence's subject: it reads at full contrast while the line stays muted. */
+.xps-result-stats__total {
+  color: var(--xps-color-text);
+  font-weight: 700;
 }
 
 /* --------------------------------------------------------------------------

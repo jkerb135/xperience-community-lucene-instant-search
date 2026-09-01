@@ -658,6 +658,38 @@ describe('facetList', () => {
     expect(classesOf(button)).toContain('xps-facet-list__show-more--disabled');
   });
 
+  it('collapses the group from the title by default, and drops the button when told to', async () => {
+    const root = mount();
+    await settled(search!);
+    const toggle = root.querySelector('.xps-facet-list__toggle') as HTMLButtonElement;
+    const body = root.querySelector('.xps-facet-list__body') as HTMLElement;
+    expect(toggle.closest('h3')).toBe(root.querySelector('.xps-facet-list__title'));
+    expect(toggle.getAttribute('aria-controls')).toBe(body.id);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(body.hidden).toBe(false);
+
+    toggle.click();
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(body.hidden).toBe(true);
+    // Collapsing is a view state: it refines nothing and survives the next render.
+    expect(search?.state.filters.facets).toEqual([]);
+    search?.actions.setQuery('espresso').search();
+    await settled(search!);
+    expect((root.querySelector('.xps-facet-list__body') as HTMLElement).hidden).toBe(true);
+
+    toggle.click();
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(body.hidden).toBe(false);
+
+    const plain = mount({ collapsible: false });
+    await settled(search!);
+    expect(plain.querySelector('.xps-facet-list__toggle')).toBeNull();
+    expect((plain.querySelector('.xps-facet-list__title') as HTMLElement).textContent).toBe(
+      'Content type'
+    );
+    expect((plain.querySelector('.xps-facet-list__body') as HTMLElement).hidden).toBe(false);
+  });
+
   it('filters client-side when searchable, and keeps focus in the search input', async () => {
     const root = mount({ searchable: true });
     await settled(search!);
@@ -787,6 +819,36 @@ describe('categoryTree', () => {
     await settled(other);
     expect((empty.querySelector('.xps-category-tree') as HTMLElement).hidden).toBe(true);
   });
+
+  it('collapses from the title by default and keeps the state across a re-render', async () => {
+    const root = mount();
+    await settled(search!);
+    const toggle = root.querySelector('.xps-category-tree__toggle') as HTMLButtonElement;
+    const body = () => root.querySelector('.xps-category-tree__body') as HTMLElement;
+    expect(toggle.getAttribute('aria-controls')).toBe(body().id);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(body().hidden).toBe(false);
+
+    toggle.click();
+    expect(
+      (root.querySelector('.xps-category-tree__toggle') as HTMLElement).getAttribute('aria-expanded')
+    ).toBe('false');
+    expect(body().hidden).toBe(true);
+    expect(search?.state.filters.facets).toEqual([]);
+
+    // The tree is rebuilt on every response; the fold survives it.
+    search?.actions.setQuery('espresso').search();
+    await settled(search!);
+    expect(body().hidden).toBe(true);
+    expect(
+      (root.querySelector('.xps-category-tree__toggle') as HTMLElement).getAttribute('aria-expanded')
+    ).toBe('false');
+
+    const plain = mount({ collapsible: false });
+    await settled(search!);
+    expect(plain.querySelector('.xps-category-tree__toggle')).toBeNull();
+    expect(plain.querySelector('.xps-category-tree__title')?.textContent).toBe('Categories');
+  });
 });
 
 describe('pagination', () => {
@@ -893,8 +955,16 @@ describe('resultStats', () => {
     expect(classesOf(root)).toEqual(['xps', 'xps-result-stats']);
     const line = root.querySelector('.xps-result-stats__text') as HTMLElement;
     expect(line.tagName).toBe('SPAN');
-    expect(text(line)).toBe('46 results in 14 ms');
+    expect(text(line)).toBe('46 results (14 ms)');
+    expect(text(root.querySelector('.xps-result-stats__total'))).toBe('46');
     expect(text(root.querySelector('.xps-result-stats__time'))).toBe('14 ms');
+
+    // With a query the line names it, as the design does.
+    search.actions.setQuery('espresso');
+    await settled(search);
+    expect(text(root.querySelector('.xps-result-stats__text'))).toBe(
+      '46 results for “espresso” (14 ms)'
+    );
     // The count lives in a live region on `results` only (spec 5.6).
     expect(root.getAttribute('role')).toBeNull();
     expect(root.getAttribute('aria-live')).toBeNull();
@@ -915,9 +985,22 @@ describe('resultStats', () => {
     expect(text(line)).toBe(
       '<b>46</b> hits for "espresso & <cream>" in 14 ms - page 1 of 9'
     );
-    // Escaped, so neither the editor's template nor the visitor's query can inject markup.
-    expect(line.innerHTML).toContain('&lt;b&gt;46&lt;/b&gt;');
+    // Escaped, so neither the editor's template nor the visitor's query can inject markup — the
+    // only element the template produces is the <strong> around {total}.
+    expect(line.innerHTML).toContain(
+      '&lt;b&gt;<strong class="xps-result-stats__total">46</strong>&lt;/b&gt;'
+    );
     expect(line.querySelector('b')).toBeNull();
+    expect(line.querySelector('.xps-result-stats__total')?.textContent).toBe('46');
+  });
+
+  it('leaves a template without {total} as plain text', async () => {
+    const host = container('resultStats');
+    search = start([resultStats({ container: host, textTemplate: 'Found something in {tookMs} ms' })]);
+    await settled(search);
+
+    const line = host.querySelector('.xps-result-stats__text') as HTMLElement;
+    expect(line.innerHTML).toBe('Found something in 14 ms');
   });
 
   it('lets templates.text win over textTemplate', async () => {
@@ -963,6 +1046,11 @@ describe('sortSelect', () => {
     const select = root.querySelector('select') as HTMLSelectElement;
     expect(classesOf(label)).toEqual(['xps-select__label']);
     expect(classesOf(select)).toEqual(['xps-select__control']);
+    // A native <select> in the wrapper that carries the design's own chevron.
+    expect(classesOf(select.parentElement)).toEqual(['xps-select__field']);
+    const chevron = root.querySelector('.xps-select__chevron') as SVGElement;
+    expect(chevron.getAttribute('aria-hidden')).toBe('true');
+    expect(chevron.getAttribute('stroke')).toBe('currentColor');
     expect(label.htmlFor).toBe(select.id);
     expect(select.name).toBe('sort');
     expect([...select.options].map((option) => option.value)).toEqual(['relevance', 'date_desc']);
@@ -984,7 +1072,12 @@ describe('clearFilters', () => {
     const root = host.querySelector('.xps-clear-filters') as HTMLElement;
     const button = root.querySelector('button') as HTMLButtonElement;
     expect(classesOf(root)).toEqual(['xps', 'xps-clear-filters', 'xps-clear-filters--disabled']);
-    expect(classesOf(button)).toEqual(['xps-button', 'xps-clear-filters__button']);
+    expect(classesOf(button)).toEqual([
+      'xps-button',
+      'xps-button--link',
+      'xps-clear-filters__button',
+    ]);
+    expect(button.textContent).toBe('Clear all');
     expect(button.type).toBe('button');
     expect(button.disabled).toBe(true);
 
@@ -1026,6 +1119,22 @@ describe('activeFilters', () => {
     remove.click();
     expect(search.state.filters.facets).toEqual([]);
     await vi.waitFor(() => expect(root.querySelectorAll('.xps-chip').length).toBe(0));
+  });
+
+  it('keeps the chips on one scrolling row with scroll: true', async () => {
+    const host = container('chips-scroll');
+    search = start([activeFilters({ container: host, scroll: true })]);
+    const root = host.querySelector('.xps-active-filters') as HTMLElement;
+    expect(classesOf(root)).toContain('xps-active-filters--scroll');
+
+    search.actions.toggleFacet('contentType', 'Article').search();
+    await vi.waitFor(() => expect(root.querySelectorAll('.xps-chip').length).toBe(1));
+    // The modifier is on the root and survives a re-render of the list.
+    expect(classesOf(root)).toEqual([
+      'xps',
+      'xps-active-filters',
+      'xps-active-filters--scroll',
+    ]);
   });
 
   it('labels a numeric refinement with its operator', async () => {
@@ -1124,7 +1233,7 @@ describe('two instances on one page', () => {
     expect(second.state.query).toBe('espresso');
     expect(first.state.query).toBe('');
     expect((one.querySelector('input') as HTMLInputElement).value).toBe('');
-    expect(text(oneStats.querySelector('.xps-result-stats__text'))).toBe('46 results in 14 ms');
+    expect(text(oneStats.querySelector('.xps-result-stats__text'))).toBe('46 results (14 ms)');
     expect(second.results?.total).toBe(7);
   });
 });
@@ -1208,6 +1317,7 @@ describe('rangeFilter', () => {
     );
     expect(inputs[0]?.id).toMatch(/^xps-range-price(-\d+)?-range-min$/);
     expect(text(root.querySelector('.xps-range-filter__values'))).toBe('0 to 500');
+    expect(root.querySelector('.xps-range-filter__unit')).toBeNull();
     // Every control has a real, associated label (spec 5.6).
     for (const input of inputs) {
       expect(root.querySelector('label[for="' + input.id + '"]')).not.toBeNull();
@@ -1222,7 +1332,8 @@ describe('rangeFilter', () => {
     numberMax.value = '300';
     numberMax.dispatchEvent(new Event('input', { bubbles: true }));
     expect(root.querySelector<HTMLInputElement>('.xps-range-filter__range--max')?.value).toBe('300');
-    expect(text(root.querySelector('.xps-range-filter__values'))).toBe('0 to 300');
+    // The values line states the bounds of the control, not the pending selection.
+    expect(text(root.querySelector('.xps-range-filter__values'))).toBe('0 to 500');
     expect(calls.length).toBe(1); // dragging does not search
 
     numberMax.dispatchEvent(new Event('change', { bubbles: true }));
@@ -1230,6 +1341,14 @@ describe('rangeFilter', () => {
     expect((calls[1]?.body as unknown as SearchRequest).filters?.numeric).toEqual([
       { attribute: 'price', operator: 'lte', value: 300 },
     ]);
+  });
+
+  it('puts the unit at the end of the input row', async () => {
+    const host = mount({ min: 0, max: 500, unit: 'USD' });
+    await settled(search!);
+    const row = host.querySelector('.xps-range-filter__inputs') as HTMLElement;
+    expect(row.lastElementChild?.className).toBe('xps-range-filter__unit');
+    expect(row.lastElementChild?.textContent).toBe('USD');
   });
 
   it('keeps neither end past the other, and clamps to the bounds', async () => {

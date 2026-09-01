@@ -30,6 +30,27 @@
   </ul>
 </div>
 
+<!-- scroll: true — the chips stay on one row that scrolls sideways instead of wrapping,
+     with the clear-all link beside it (the "Category: Grinders ×  Clear all" row) -->
+<div class="xps-toolbar">
+  <div class="xps xps-active-filters xps-active-filters--scroll">
+    <h3 class="xps-active-filters__title xps-sr-only" id="xps-search-3-active-filters-title">Active filters</h3>
+    <ul class="xps-active-filters__list" aria-labelledby="xps-search-3-active-filters-title">
+      <li class="xps-active-filters__item">
+        <span class="xps-chip">
+          <span class="xps-chip__label"><span class="xps-chip__attribute">Category</span> Grinders</span>
+          <button class="xps-chip__remove" type="button" aria-label="Remove filter Category: Grinders">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </span>
+      </li>
+    </ul>
+  </div>
+  <div class="xps xps-clear-filters">
+    <button class="xps-button xps-button--link xps-clear-filters__button" type="button">Clear all</button>
+  </div>
+</div>
+
 <!-- nothing filtered: the widget renders an empty list rather than disappearing, so layout is stable -->
 <div class="xps xps-active-filters xps-active-filters--empty">
   <h3 class="xps-active-filters__title xps-sr-only" id="xps-search-2-active-filters-title">Active filters</h3>

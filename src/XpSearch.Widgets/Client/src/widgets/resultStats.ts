@@ -4,7 +4,14 @@
  * count, so a page carrying both widgets announces a change once (spec 5.6).
  */
 import { withResultStats, type ResultStatsRenderState } from '../behaviors/resultStats';
-import { helpers, html, render, type Renderable, type TemplateHelpers } from '../templates/html';
+import {
+  escapeHtml,
+  helpers,
+  html,
+  render,
+  type Renderable,
+  type TemplateHelpers,
+} from '../templates/html';
 import type { Widget } from '../types';
 import { createRoot, resolveContainer } from './dom';
 
@@ -17,7 +24,8 @@ export type ResultStatsWidgetParams = {
    * A plain-text alternative to `templates.text`, for callers that can only supply a string - the
    * Page Builder stats widget's "Text template" property. Placeholders: `{total}`, `{tookMs}`,
    * `{query}`, `{page}`, `{totalPages}`. The template and every substituted value are escaped, so
-   * markup typed into it is shown, not rendered. `templates.text` wins when both are given.
+   * markup typed into it is shown, not rendered; `{total}` is emphasised with a
+   * `<strong class="xps-result-stats__total">`. `templates.text` wins when both are given.
    */
   textTemplate?: string;
   /** Shown before the first response. */
@@ -26,21 +34,35 @@ export type ResultStatsWidgetParams = {
 
 const PLACEHOLDER = /\{(total|tookMs|query|page|totalPages)\}/g;
 
+/**
+ * The template and every substituted value are escaped; the only markup that survives is the
+ * `<strong>` this puts around `{total}`, so the count reads as the emphasised number of the
+ * design. A template without `{total}` produces plain text, as before.
+ */
 const fromTextTemplate = (
   template: string,
   data: ResultStatsRenderState,
   tools: TemplateHelpers
-): string =>
-  template.replace(PLACEHOLDER, (_match, key: string) =>
-    key === 'query'
-      ? data.query
-      : tools.formatNumber(data[key as 'total' | 'tookMs' | 'page' | 'totalPages'])
+): Renderable =>
+  html.raw(
+    escapeHtml(template).replace(PLACEHOLDER, (_match, key: string) =>
+      key === 'total'
+        ? `<strong class="xps-result-stats__total">${escapeHtml(tools.formatNumber(data.total))}</strong>`
+        : escapeHtml(
+            key === 'query'
+              ? data.query
+              : tools.formatNumber(data[key as 'tookMs' | 'page' | 'totalPages'])
+          )
+    )
   );
 
+/** "14 results for “espresso” (8 ms)", or without the query part when nothing has been typed. */
 const defaultText = (data: ResultStatsRenderState, tools: TemplateHelpers): Renderable =>
-  html`${tools.formatNumber(data.total)} results in <span class="xps-result-stats__time">${tools.formatNumber(
-    data.tookMs
-  )}&nbsp;ms</span>`;
+  html`<strong class="xps-result-stats__total">${tools.formatNumber(
+    data.total
+  )}</strong> results${
+    data.query ? html` for “${data.query}”` : ''
+  } (<span class="xps-result-stats__time">${tools.formatNumber(data.tookMs)}&nbsp;ms</span>)`;
 
 export function resultStats(params: ResultStatsWidgetParams): Widget {
   const container = resolveContainer(params.container, 'resultStats');

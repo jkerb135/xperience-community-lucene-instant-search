@@ -1,5 +1,8 @@
 @use '../variables' as v;
 
+// The collapsible title row is the shared block in _facet-list.scss.
+@use 'facet-list';
+
 /* --------------------------------------------------------------------------
  * categoryTree
  * ------------------------------------------------------------------------ */

@@ -5,11 +5,24 @@
 
 .xps-facet-list__title,
 .xps-category-tree__title,
-.xps-range-filter__title {
+.xps-range-filter__title,
+.xps-sidebar__header {
   font-size: 1rem;
   font-weight: 600;
   padding-bottom: calc(var(--xps-space) / 3);
   border-bottom: 2px solid var(--xps-color-text);
+}
+
+/* The sidebar heading sits in the same rule as a group title, so its own <h2> only has to stop
+   being a browser headline. */
+.xps-sidebar__title {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.xps-facet-list__chevron,
+.xps-category-tree__chevron {
+  color: var(--xps-color-muted);
 }
 
 .xps-facet-list__item--selected .xps-facet-list__value {

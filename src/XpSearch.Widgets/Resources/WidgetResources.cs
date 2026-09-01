@@ -54,6 +54,8 @@ internal static class WidgetResources
 
     internal static string Preview_To => Get(nameof(Preview_To));
 
+    internal static string Preview_ClearAll => Get(nameof(Preview_ClearAll));
+
     private static string Get(string name) =>
         Manager.GetString(name, CultureInfo.CurrentUICulture) ?? name;
 }

@@ -50,6 +50,16 @@ internal static class EditorPreview
         return glyph ? tag.Add(El("span", text: text).Decorative()) : tag.Add(El("span", text: text));
     }
 
+    /// <summary>Builds the decorative chevron the live disclosure buttons draw.</summary>
+    internal static TagBuilder Chevron(string cssClass) =>
+        El("svg", cssClass)
+            .Attr("viewBox", "0 0 24 24")
+            .Attr("fill", "none")
+            .Attr("stroke", "currentColor")
+            .Attr("stroke-width", "1.5")
+            .Decorative()
+            .Add(El("path").Attr("d", "m6 9 6 6 6-6"));
+
     /// <summary>Builds a placeholder bar standing in for text the live widget loads.</summary>
     internal static TagBuilder Skeleton(string modifier) =>
         El("span", $"xps-skeleton xps-skeleton--{modifier}").Decorative();

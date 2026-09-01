@@ -22,15 +22,18 @@ namespace XpSearch.Widgets.Components.Widgets.XpSearch;
 /// <summary>Editor properties of the result stats widget (spec §7.3).</summary>
 public sealed class ResultStatsWidgetProperties : XpSearchMountWidgetProperties
 {
+    /// <summary>The wording a freshly placed widget shows, matching the shipped design.</summary>
+    public const string DefaultTextTemplate = "{total} results for “{query}” ({tookMs} ms)";
+
     /// <summary>
-    /// Gets or sets the wording of the result line. Empty keeps the built-in text
-    /// ("46 results in 14 ms").
+    /// Gets or sets the wording of the result line. The default is the design's own wording;
+    /// empty falls back to the JavaScript's built-in text.
     /// </summary>
     [TextInputComponent(
         Label = "Text template",
-        ExplanationText = "Placeholders: {total}, {tookMs}, {query}, {page}, {totalPages}. Leave empty for the built-in text. Markup is shown, not rendered.",
+        ExplanationText = "Placeholders: {total}, {tookMs}, {query}, {page}, {totalPages}. The count is emphasised. Markup is shown, not rendered.",
         Order = OrderFirstWidgetProperty)]
-    public string TextTemplate { get; set; } = string.Empty;
+    public string TextTemplate { get; set; } = DefaultTextTemplate;
 
     /// <summary>Gets or sets the text shown before the first search runs.</summary>
     [TextInputComponent(Label = "Text before the first search", Order = OrderFirstWidgetProperty + 10)]

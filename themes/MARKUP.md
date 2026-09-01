@@ -66,7 +66,10 @@ to know to inherit accessible defaults.
 | `xps-cluster` | Horizontal flex that wraps, `gap: var(--xps-space)`. |
 | `xps-button` | Button box: inline-flex, `2.25rem` minimum height, symmetric padding. Shell adds no colour; the default theme gives it a surface, border and radius. |
 | `xps-button--primary` | Accent-filled button (default theme only). |
-| `xps-select` | Labelled-select box: flex row, `gap` half `--xps-space`. Children: `xps-select__label` (a real `<label for>`; add `xps-sr-only` to hide it) and `xps-select__control` (the native `<select>`, styled like every other form control by the default theme). Modifier `xps-select--disabled` pairs with the `disabled` attribute on the control (rule 5). The only themed `<select>` in the product — `sortSelect` renders this same block, and a custom widget that needs a drop-down should too. |
+| `xps-button--link` | Muted-link button (default theme only): no box, underlines on hover, still a real `<button>` at full hit size. What `clearFilters` renders. |
+| `xps-select` | Labelled-select box: flex row, `gap` half `--xps-space`. Children: `xps-select__label` (a real `<label for>`; add `xps-sr-only` to hide it) and `xps-select__control` (the native `<select>`, styled like every other form control by the default theme). Wrap the control in `xps-select__field` with an `xps-select__chevron` `<svg>` beside it for the design's own arrow — that wrapper, and only that wrapper, drops the platform arrow, so a bare `xps-select` keeps it. Modifier `xps-select--disabled` pairs with the `disabled` attribute on the control (rule 5). The only themed `<select>` in the product — `sortSelect` renders this same block, and a custom widget that needs a drop-down should too. |
+| `xps-toolbar` | The row above the results: stats left, sort right, wrapping onto two rows when the column is narrow. Colourless; it holds widget mounts and is not a widget. |
+| `xps-sidebar__header` | The filter column's heading row: `xps-sidebar__title` (any heading element) and a trailing "Clear all". Carries the same rule under it as a facet-group title. |
 | `xps-chip` | Removable-token box. Children: `xps-chip__label`, optional `xps-chip__attribute` (the facet name inside the label), `xps-chip__remove` (a `<button>` with an `aria-label` naming what is removed). |
 | `xps-skeleton` | Loading placeholder: `currentColor` at low opacity with a pulse animation, suppressed under `prefers-reduced-motion`. Modifiers `--title`, `--text`, `--block`. |
 | `xps-highlight` | The class on the `<mark>` element produced by the `highlight` template helper. |
@@ -188,7 +191,11 @@ Fixture: `fixtures/facet-list.html`. Root `<div class="xps xps-facet-list">`.
 |---|---|---|
 | `xps-facet-list` | `<div>` | |
 | `xps-facet-list--searchable` | root modifier | `searchable: true`; the search sub-block is rendered. |
-| `xps-facet-list__title` | `<h3 id>` | The attribute's display name; `<ul>` references it via `aria-labelledby`. |
+| `xps-facet-list__title` | `<h3 id>` | The attribute's display name; `<ul>` references it via `aria-labelledby`. Holds the toggle button unless `collapsible: false`. |
+| `xps-facet-list__toggle` | `<button aria-expanded aria-controls>` | The disclosure. Default (`collapsible: true`); absent when the group is always open. |
+| `xps-facet-list__toggle-label` | `<span>` | The title text inside the button. |
+| `xps-facet-list__chevron` | `<svg aria-hidden="true" focusable="false">` | `currentColor` chevron; points right while `aria-expanded="false"`. |
+| `xps-facet-list__body` | `<div id>` | Everything below the title. Toggled with `hidden`, never removed; the toggle's `aria-controls` points at it. Always rendered, collapsible or not. |
 | `xps-facet-list__search` | `<div>` | Holds an `xps-sr-only` label and the input. |
 | `xps-facet-list__search-input` | `<input type="search">` | Facet value search. |
 | `xps-facet-list__list` | `<ul aria-labelledby>` | |
@@ -234,21 +241,29 @@ name ("First page", "Page 4"), so the accessible name never reads as "«".
 ## resultStats
 
 Fixture: `fixtures/result-stats.html`. Root `<div class="xps xps-result-stats">` containing
-`xps-result-stats__text` (`<span>`) and, inside it, `xps-result-stats__time` (`<span>`) for the timing.
+`xps-result-stats__text` (`<span>`) and, inside it, `xps-result-stats__total`
+(`<strong>`, the count) and `xps-result-stats__time` (`<span>`, the timing).
 `xps-result-stats--empty` is the no-query-yet state. Not a live region — see `results`.
+
+The `<strong>` is the only markup a `textTemplate` produces: the template text and every
+substituted value are escaped, and `{total}` is wrapped. A template without `{total}` renders as
+plain escaped text.
 
 ## sortSelect
 
 Fixture: `fixtures/sort-select.html`. Root `<div class="xps xps-sort-select xps-select">`: the widget
 adds only its identity class and renders the shared **`xps-select`** block described under
 Utilities — `xps-select__label` (`<label for>`, add `xps-sr-only` to hide it) and
-`xps-select__control` (a native `<select name="sort">`, one `<option>` per `items` entry, `selected`
-on the current sort). `xps-sort-select` itself carries no styling; it is the hook a site can target.
+`xps-select__field` (`<span>`) holding `xps-select__control` (a native `<select name="sort">`, one
+`<option>` per `items` entry, `selected` on the current sort) plus `xps-select__chevron`
+(`<svg aria-hidden="true" focusable="false">`). `xps-sort-select` itself carries no styling; it is
+the hook a site can target.
 
 ## clearFilters
 
 Fixture: `fixtures/clear-filters.html`. Root `<div class="xps xps-clear-filters">` with
-`xps-clear-filters__button` (`<button type="button" class="xps-button">`).
+`xps-clear-filters__button` (`<button type="button" class="xps-button xps-button--link">` —
+the muted-link look of the design; drop the modifier in your own CSS for a boxed button).
 `xps-clear-filters--disabled` + the `disabled` attribute when there is nothing to clear —
 the button is never removed, so focus is not destroyed mid-interaction.
 
@@ -299,8 +314,9 @@ removed when it closes.
 | `xps-sheet__clear` | `<button type="button" class="xps-button">` | "Clear all" — pending, like every other selection in the sheet. |
 | `xps-sheet__apply` | `<button type="button" class="xps-button xps-button--primary">` | Applies the pending selection in one batch and closes. |
 
-`xps-active-filters--scroll` is an opt-in modifier on the `activeFilters` root: the chips row
-scrolls sideways instead of wrapping. The widget never sets it; the page does.
+`xps-active-filters--scroll` keeps the chips on one row that scrolls sideways instead of wrapping.
+The widget sets it from `scroll: true` (`Scroll sideways` in the Page Builder); a page composing
+the markup by hand can also put it on the root itself.
 
 The slide-up animation on `xps-sheet__panel` is dropped under `prefers-reduced-motion: reduce`.
 
@@ -320,7 +336,8 @@ and announced by screen readers with no extra code.
 | `xps-range-filter__input-label` | `<label for>` | Visible "From" / "To". |
 | `xps-range-filter__input` | `<input type="number" inputmode="numeric">` | |
 | `xps-range-filter__separator` | `<span aria-hidden="true">` | |
-| `xps-range-filter__values` | `<p id>` | Human-readable current range. |
+| `xps-range-filter__unit` | `<span>` | The `unit` option ("USD"), last on the input row. Omitted when unset. |
+| `xps-range-filter__values` | `<p id>` | The bounds of the control ("0 to 500"), what the sliders are `aria-describedby`; carries the "no range in these results" sentence when disabled. |
 | `xps-range-filter--disabled` | root modifier | No refinable range; all four inputs are `disabled`. |
 
 ## categoryTree
@@ -330,6 +347,8 @@ Fixture: `fixtures/category-tree.html`. Root
 
 | Class | Element | Notes |
 |---|---|---|
+| `xps-category-tree__toggle` | `<button aria-expanded aria-controls>` | The disclosure inside `xps-category-tree__title`, with `xps-category-tree__toggle-label` and `xps-category-tree__chevron` inside it. Default (`collapsible: true`); absent when the tree is always open. |
+| `xps-category-tree__body` | `<div id>` | Wraps the level-0 list. Toggled with `hidden`; always rendered. |
 | `xps-category-tree__list` | `<ul>` | One depth modifier per level: `xps-category-tree__list--lvl0`, `xps-category-tree__list--lvl1`, `xps-category-tree__list--lvl2`, and so on for deeper trees. A child list nests inside its parent `<li>`. |
 | `xps-category-tree__item` | `<li>` | |
 | `xps-category-tree__item--selected` | modifier | On every node of the open path; the link gets `aria-current="true"`. |

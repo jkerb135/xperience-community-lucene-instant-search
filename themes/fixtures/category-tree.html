@@ -4,7 +4,13 @@
      value selects the whole subtree (contract: FacetValue.path). -->
 
 <nav class="xps xps-category-tree" aria-label="Categories">
-  <h3 class="xps-category-tree__title">Categories</h3>
+  <h3 class="xps-category-tree__title">
+    <button class="xps-category-tree__toggle" type="button" aria-expanded="true" aria-controls="xps-search-1-category-body">
+      <span class="xps-category-tree__toggle-label">Categories</span>
+      <svg class="xps-category-tree__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"></path></svg>
+    </button>
+  </h3>
+  <div class="xps-category-tree__body" id="xps-search-1-category-body">
   <ul class="xps-category-tree__list xps-category-tree__list--lvl0">
     <li class="xps-category-tree__item xps-category-tree__item--parent xps-category-tree__item--selected">
       <a class="xps-category-tree__link" href="?category=coffee" aria-current="true">
@@ -53,4 +59,20 @@
       </span>
     </li>
   </ul>
+  </div>
+</nav>
+
+<!-- collapsible: false — a tree that is always open -->
+<nav class="xps xps-category-tree" aria-label="Departments">
+  <h3 class="xps-category-tree__title">Departments</h3>
+  <div class="xps-category-tree__body" id="xps-search-2-category-body">
+    <ul class="xps-category-tree__list xps-category-tree__list--lvl0">
+      <li class="xps-category-tree__item">
+        <a class="xps-category-tree__link" href="?category=tea">
+          <span class="xps-category-tree__value">Tea</span>
+          <span class="xps-category-tree__count">9</span>
+        </a>
+      </li>
+    </ul>
+  </div>
 </nav>

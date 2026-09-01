@@ -10,6 +10,41 @@
   gap: v.$half;
 }
 
+/* The collapsible group title (shared with categoryTree): the whole heading row is the button,
+   the chevron sits at its end and points right while the group is folded away. */
+.xps-facet-list__toggle,
+.xps-category-tree__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: v.$half;
+  width: 100%;
+  padding: 0;
+  background: none;
+  border: 0;
+  font: inherit;
+  text-align: start;
+}
+
+.xps-facet-list__chevron,
+.xps-category-tree__chevron {
+  flex: 0 0 auto;
+  width: 1rem;
+  height: 1rem;
+}
+
+.xps-facet-list__toggle[aria-expanded="false"] .xps-facet-list__chevron,
+.xps-category-tree__toggle[aria-expanded="false"] .xps-category-tree__chevron {
+  transform: rotate(-90deg);
+}
+
+.xps-facet-list__body,
+.xps-category-tree__body {
+  display: flex;
+  flex-direction: column;
+  gap: v.$half;
+}
+
 .xps-facet-list__search-input {
   width: 100%;
   min-height: v.$control-min-height;

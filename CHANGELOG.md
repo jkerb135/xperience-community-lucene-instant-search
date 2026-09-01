@@ -12,6 +12,35 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Added (widgets):** `XpSearch.ActiveFilters` and `XpSearch.ClearFilters`, the Page Builder
+  counterparts of the two chips/clear widgets that until now could only be mounted by hand. Active
+  filters takes *Screen-reader heading* and *Keep the chips on one scrolling row* (`title`,
+  `scroll`); Clear filters takes *Button text* (`label`). Both render the usual `.xps-mount` and a
+  static editor preview. `activeFilters` gained the `scroll` param behind that checkbox, so the
+  widget itself can set `xps-active-filters--scroll` instead of the page having to.
+
+- **Changed (widgets, themes):** the shipped defaults now *are* the design. `facetList` and
+  `categoryTree` are **collapsible by default** — the title is a `<button aria-expanded>` with a
+  chevron controlling a new `__body` element (`collapsible: false`, or the *Title folds the group*
+  checkbox, opts out); the fold is per-render view state and never touches the URL or the search.
+  `clearFilters` reads **"Clear all"** and renders `xps-button xps-button--link`, the new muted-link
+  button of the default theme. `resultStats` emphasises the count with
+  `<strong class="xps-result-stats__total">` — in the built-in text, which now reads
+  `46 results for “espresso” (14 ms)`, and around `{total}` in a `textTemplate`; the Page Builder
+  widget's **Text template** property is pre-filled with `{total} results for “{query}” ({tookMs} ms)`.
+  `rangeFilter` gained a `unit` option (Page Builder: *Unit*) on the one input row, and its
+  `__values` line now states the control's bounds rather than the pending selection.
+
+- **Added (themes):** composition helpers and the mockup polish that goes with them —
+  `.xps-toolbar` (stats left, sort right, wrapping) and `.xps-sidebar__header` /
+  `.xps-sidebar__title` in shell, `.xps-button--link` in the default theme; the range slider becomes
+  a 2px rail with round accent handles, the sort select keeps its native `<select>` but drops the
+  platform arrow for an `xps-select__chevron` inside a new `xps-select__field` wrapper (a bare
+  `xps-select` still gets the platform arrow), and `.xps-result__snippet` is clamped to three lines.
+  New guide section [Composing the results page](docs/guides/widget-reference.md), a walkthrough of
+  the whole default with zero overrides, backed by the runnable
+  `src/XpSearch.Widgets/Client/demo/results-page.html` the e2e suite boots against the mock server.
+
 - **Added (widgets):** the search box matches the mockup's single field — a decorative magnifier
   (`xps-search-box__icon`, always rendered) sits inside the input at the start, and the loading
   indicator and the reset button sit inside it at the end, so the clear control reads as part of

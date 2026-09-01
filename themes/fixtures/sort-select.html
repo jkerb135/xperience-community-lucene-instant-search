@@ -1,19 +1,26 @@
-<!-- sortBy — the shared xps-select block with a visible label -->
+<!-- sortBy — the shared xps-select block with a visible label. The native <select> keeps its
+     semantics; only the platform arrow is replaced by the widget's own chevron. -->
 
 <div class="xps xps-sort-select xps-select">
   <label class="xps-select__label" for="xps-search-1-sort-select-select">Sort by</label>
-  <select class="xps-select__control" id="xps-search-1-sort-select-select" name="sort">
-    <option value="relevance" selected>Relevance</option>
-    <option value="date_desc">Newest first</option>
-    <option value="date_asc">Oldest first</option>
-  </select>
+  <span class="xps-select__field">
+    <select class="xps-select__control" id="xps-search-1-sort-select-select" name="sort">
+      <option value="relevance" selected>Relevance</option>
+      <option value="date_desc">Newest first</option>
+      <option value="date_asc">Oldest first</option>
+    </select>
+    <svg class="xps-select__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"></path></svg>
+  </span>
 </div>
 
 <!-- label hidden from sighted users but still associated -->
 <div class="xps xps-sort-select xps-select">
   <label class="xps-select__label xps-sr-only" for="xps-search-2-sort-select-select">Sort by</label>
-  <select class="xps-select__control" id="xps-search-2-sort-select-select" name="sort">
-    <option value="relevance">Relevance</option>
-    <option value="date_desc" selected>Newest first</option>
-  </select>
+  <span class="xps-select__field">
+    <select class="xps-select__control" id="xps-search-2-sort-select-select" name="sort">
+      <option value="relevance">Relevance</option>
+      <option value="date_desc" selected>Newest first</option>
+    </select>
+    <svg class="xps-select__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"></path></svg>
+  </span>
 </div>
