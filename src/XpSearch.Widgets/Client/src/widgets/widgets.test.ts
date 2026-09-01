@@ -2053,6 +2053,17 @@ describe('suggestions', () => {
         'latte',
         'espresso grinder',
       ]);
+
+      // The keyboard path: the combobox preventDefaults Enter, so the form's submit event never
+      // fires for a real keystroke — recording must happen on the combobox's own submit route.
+      await type(host, 'mocha');
+      key(input, 'Enter');
+      expect(JSON.parse(localStorage.getItem('xps-recent:site-content')!)).toEqual([
+        'mocha',
+        'latte',
+        'espresso grinder',
+      ]);
+      expect(host.querySelector<HTMLElement>('.xps-suggestions__panel')?.hidden).toBe(true);
     });
 
     it('searches for a recent when it is picked, and remembers it again', async () => {

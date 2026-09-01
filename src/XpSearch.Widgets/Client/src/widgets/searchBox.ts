@@ -187,8 +187,13 @@ export function searchBox(params: SearchBoxWidgetParams): Widget {
         recents.bind(input, panel);
       }
       // Enter with no active option goes through the search box's own submit, which is the
-      // only path that follows a redirect rule.
-      bindCombobox({ input, panel, id }, () => suggest, () => submit(input?.value ?? ''));
+      // only path that follows a redirect rule. The combobox preventDefaults Enter, so the form's
+      // submit event never fires here — this path must record and close the popup itself.
+      bindCombobox({ input, panel, id }, () => suggest, () => {
+        recents?.record(input?.value ?? '');
+        suggest?.close();
+        submit(input?.value ?? '');
+      });
     }
     // Picking a recent runs it the way picking a query suggestion does: the field takes the text,
     // the pending `/suggest` call is dropped, and the box searches for it (never a redirect —
