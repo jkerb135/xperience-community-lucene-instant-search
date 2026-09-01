@@ -48,8 +48,7 @@ public sealed class ExperimentAssignmentResolver : IExperimentAssignmentResolver
     private const string ItemsKeyPrefix = "xpsearch.experiment|";
 
     private readonly IRunningExperimentSource experiments;
-    private readonly ICookieAccessor cookies;
-    private readonly ICurrentCookieLevelProvider cookieLevelProvider;
+    private readonly IVisitorBucketProvider buckets;
     private readonly IHttpContextAccessor httpContextAccessor;
     private readonly ILogger<ExperimentAssignmentResolver> logger;
 
@@ -73,8 +72,7 @@ public sealed class ExperimentAssignmentResolver : IExperimentAssignmentResolver
         ArgumentNullException.ThrowIfNull(logger);
 
         this.experiments = experiments;
-        this.cookies = cookies;
-        this.cookieLevelProvider = cookieLevelProvider;
+        buckets = new VisitorBucketProvider(cookies, cookieLevelProvider, httpContextAccessor);
         this.httpContextAccessor = httpContextAccessor;
         this.logger = logger;
     }
@@ -88,7 +86,7 @@ public sealed class ExperimentAssignmentResolver : IExperimentAssignmentResolver
     /// Appending a cookie after the response body has started throws, and the pipeline does run while
     /// a server-rendered widget is streaming (DX-2).
     /// </remarks>
-    public static bool CanAssignCookie(HttpContext? context) => context is not null && !context.Response.HasStarted;
+    public static bool CanAssignCookie(HttpContext? context) => VisitorBucketProvider.CanAssignCookie(context);
 
     /// <inheritdoc />
     public async Task<ExperimentAssignment> GetAssignmentAsync(string indexName, CancellationToken cancellationToken)
@@ -103,7 +101,7 @@ public sealed class ExperimentAssignmentResolver : IExperimentAssignmentResolver
             return already;
         }
 
-        var resolved = await ResolveAsync(indexName, request, cancellationToken).ConfigureAwait(false);
+        var resolved = await ResolveAsync(indexName, cancellationToken).ConfigureAwait(false);
 
         if (request is not null)
         {
@@ -113,7 +111,7 @@ public sealed class ExperimentAssignmentResolver : IExperimentAssignmentResolver
         return resolved;
     }
 
-    private async Task<ExperimentAssignment> ResolveAsync(string indexName, HttpContext? request, CancellationToken cancellationToken)
+    private async Task<ExperimentAssignment> ResolveAsync(string indexName, CancellationToken cancellationToken)
     {
         try
         {
@@ -127,7 +125,7 @@ public sealed class ExperimentAssignmentResolver : IExperimentAssignmentResolver
                 return ExperimentAssignment.None;
             }
 
-            if (BucketId(request) is not { Length: > 0 } bucketId)
+            if (buckets.GetBucketId() is not { Length: > 0 } bucketId)
             {
                 logger.LogDebug("No bucket cookie could be read or assigned; bucketing this request into variant A.");
 
@@ -144,34 +142,5 @@ public sealed class ExperimentAssignmentResolver : IExperimentAssignmentResolver
 
             return ExperimentAssignment.None;
         }
-    }
-
-    /// <summary>Reads the visitor's bucket id, assigning one when it can be stored.</summary>
-    private string? BucketId(HttpContext? request)
-    {
-        if (cookies.Get(ExperimentBucketing.CookieName) is { Length: > 0 } existing)
-        {
-            return existing;
-        }
-
-        if (!CanAssignCookie(request)
-            || cookieLevelProvider.GetCurrentCookieLevel() < Kentico.Web.Mvc.CookieLevel.Essential.Level)
-        {
-            return null;
-        }
-
-        string assigned = ExperimentBucketing.NewBucketId();
-
-        cookies.Set(
-            ExperimentBucketing.CookieName,
-            assigned,
-            new CookieOptions
-            {
-                Expires = DateTimeOffset.UtcNow.Add(ExperimentBucketing.CookieLifetime),
-                HttpOnly = true,
-                SameSite = SameSiteMode.Lax
-            });
-
-        return assigned;
     }
 }

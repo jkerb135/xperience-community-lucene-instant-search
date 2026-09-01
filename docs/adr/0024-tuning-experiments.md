@@ -66,3 +66,14 @@ is worse than a known lean towards A. Recorded in KNOWN-LIMITATIONS.
   explicitly rules out, and leaves anonymous traffic unbucketable.
 - **Separate draft tables** — doubles every read path and every edit page, and turns promotion into a
   copy that has to preserve identities.
+
+## Addendum, 2026-09-01 (PS-1)
+
+The read-or-assign logic of the `xpsearch_bucket` cookie moved out of `ExperimentAssignmentResolver`
+into `VisitorBucketProvider` (`XpSearch.Core/Experiments`), which the resolver now delegates to. PS-1's
+"search A/B bucket" personalization condition needs the same cookie with the same consent and
+response-started semantics, and two copies of that gate would drift. `ExperimentBucketing.Bucket` grew
+a string-seed overload for the condition's split name; the Guid overload is now expressed in terms of
+it (`guid.ToString("N")`), so experiment bucketing is unchanged bit for bit. Nothing else about this
+ADR changes: the experiment resolver's constructor, its memoization and its bucketed-into-A fallback
+are as described above.

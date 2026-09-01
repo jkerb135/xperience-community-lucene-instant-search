@@ -1032,3 +1032,27 @@ and how to lift it.
   searches until someone edits the group, and a query whose commas mattered loses that structure.
 - **Upgrade path:** offer direction on the approve action (two commands, or a small edit page before
   the write) once host use shows editors actually want it.
+
+## A first-paint visitor is in neither bucket, in `SearchBucket.IsInBucket` (via `VisitorBucketProvider`)
+
+- **Simplified:** the "search A/B bucket" personalization condition is false whenever no bucket id can
+  be read or assigned - a visitor below the Essential cookie level, or a widget rendered after the
+  response started streaming. It does not fall back to a throwaway id.
+- **Ceiling:** a brand new visitor whose cookie could not be written mid-response sees the *original*
+  variant on that first paint, so a page A/B split leans very slightly towards the original on first
+  visits; from the next request on the visitor is bucketed and stays put. XP-1's search experiments
+  make the same trade the other way (they bucket such a request into A, because a search still has to
+  be answered from some tuning).
+- **Upgrade path:** assign the bucket cookie in middleware before anything renders, which removes the
+  case entirely for both callers.
+
+## Only the newest 100 searches are considered, in `RecentSearchProvider.MaxSearches`
+
+- **Simplified:** the "searched for" condition reads the contact's 100 most recent search activities
+  once per request and applies each condition's day window in memory, rather than issuing one query
+  per configured window.
+- **Ceiling:** a contact who ran more than 100 searches inside the configured window is only matched
+  against the newest 100 of them, so a very heavy searcher can stop matching an old term earlier than
+  the day count promises. Every extra condition on the page is free, which is the trade.
+- **Upgrade path:** query per distinct day window (memoized per window on `HttpContext.Items`), or push
+  the term match into SQL with a `LIKE`, once a host reports a false negative.

@@ -72,7 +72,15 @@ public static class ExperimentBucketing
     /// <param name="splitPercent">Percentage of traffic that belongs in B.</param>
     /// <returns>The variant, the same one for the same arguments on any server at any time.</returns>
     public static SearchVariant Variant(string bucketId, Guid experimentGuid, int splitPercent) =>
-        Bucket(bucketId, experimentGuid) < splitPercent ? SearchVariant.B : SearchVariant.A;
+        Variant(bucketId, experimentGuid.ToString("N"), splitPercent);
+
+    /// <summary>Buckets one visitor into a named split (PS-1's personalization condition).</summary>
+    /// <param name="bucketId">The visitor's bucket id, from their cookie.</param>
+    /// <param name="seed">Name of the split, so conditions sharing a name bucket a visitor the same way.</param>
+    /// <param name="splitPercent">Percentage of traffic that belongs in B.</param>
+    /// <returns>The variant, the same one for the same arguments on any server at any time.</returns>
+    public static SearchVariant Variant(string bucketId, string seed, int splitPercent) =>
+        Bucket(bucketId, seed) < splitPercent ? SearchVariant.B : SearchVariant.A;
 
     /// <summary>The visitor's position on the 0-99 line for one experiment.</summary>
     /// <param name="bucketId">The visitor's bucket id.</param>
@@ -82,9 +90,15 @@ public static class ExperimentBucketing
     /// SHA-256 rather than <see cref="string.GetHashCode()"/>: string hashing is randomized per
     /// process, which would rebucket every visitor on every restart and on every other server.
     /// </remarks>
-    public static int Bucket(string bucketId, Guid experimentGuid)
+    public static int Bucket(string bucketId, Guid experimentGuid) => Bucket(bucketId, experimentGuid.ToString("N"));
+
+    /// <summary>The visitor's position on the 0-99 line for one named split.</summary>
+    /// <param name="bucketId">The visitor's bucket id.</param>
+    /// <param name="seed">Name of the split.</param>
+    /// <returns>A number between 0 and 99.</returns>
+    public static int Bucket(string bucketId, string seed)
     {
-        byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes($"{bucketId}:{experimentGuid:N}"));
+        byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes($"{bucketId}:{seed}"));
 
         return (int)(BitConverter.ToUInt32(hash, 0) % 100);
     }

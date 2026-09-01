@@ -86,9 +86,13 @@ public static class XpSearchServiceCollectionExtensions
         services.AddHttpContextAccessor();
         services.TryAddSingleton<IContactGroupResolver, ContactGroupResolver>();
 
+        // Page Builder personalization conditions (PS-1). Same gates, read once per request.
+        services.TryAddSingleton<IRecentSearchProvider, RecentSearchProvider>();
+
         // Experiments (XP-1). Core knows how to bucket a visitor but not which experiments exist:
         // AddXpSearchAdmin() replaces the source with the database-backed one.
         services.TryAddSingleton<IRunningExperimentSource, NoRunningExperimentSource>();
+        services.TryAddSingleton<IVisitorBucketProvider, VisitorBucketProvider>();
         services.TryAddSingleton<IExperimentAssignmentResolver, ExperimentAssignmentResolver>();
         services.AddXpSearchBucketCookie();
 

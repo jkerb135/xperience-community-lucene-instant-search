@@ -106,8 +106,19 @@ If you promoted variant B, the live tuning **is** variant B now: open **Rules**,
 **Field weights** or **Stopwords** in the index sidebar and you will find the rows you edited in the
 draft. To carry on testing, create a new experiment — it clones the new live tuning in turn.
 
+### This is a search-tuning A/B, not a page A/B
+
+An experiment tests what the search **returns** on one index, and measures itself. If what you want to
+test is what a **page says** — a banner, a headline, a call to action — reach for the
+**Search - A/B bucket** personalization condition instead: it splits visitors into two sticky buckets
+with the same cookie, on any widget on any page, and you read the outcome in Analytics rather than in
+a built-in report. See [Search-driven personalization](search-personalization.md). The two are
+independent (each split is hashed with its own name), so running both at once is fine.
+
 ### See also
 
+- [Search-driven personalization](search-personalization.md) — personalizing any widget by what a
+  visitor searched for, and page-level A/B splits.
 - [Relevance tuning](relevance-tuning.md) — the rules, synonyms, stopwords and field weights an
   experiment tests.
 - [Analytics](analytics.md) — the same metrics for all traffic, and where the query log comes from.
