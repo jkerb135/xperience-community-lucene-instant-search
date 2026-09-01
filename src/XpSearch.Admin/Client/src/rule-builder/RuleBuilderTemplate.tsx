@@ -24,7 +24,8 @@ import { usePageCommand } from '@kentico/xperience-admin-base';
 
 import { muted } from '../theme';
 import { ConditionPanel } from './ConditionPanel';
-import { ActionCard } from './ActionCard';
+import { ActionPanel } from './ActionPanel';
+import { ActionRow } from './ActionRow';
 import {
   conflicts,
   actionLabels,
@@ -32,6 +33,7 @@ import {
   emptyAction,
   isEmpty,
   merge,
+  move,
   newFragment,
   split,
 } from './model';
@@ -42,7 +44,8 @@ import styles from './RuleBuilderTemplate.module.scss';
 /*
  * Client template of the if/then rule builder (ADR-0022), built to the owner's approved design
  * canvas: 5a the editor, 5b the add-action menu, 5c the five new editors, 5d validation,
- * 5e narrow at 1024, 5f the condition side panel. Registered as
+ * 5e narrow at 1024, 5f the condition side panel, 5g the action side panel, 5h the pickers.
+ * Registered as
  * "@xperience-community/xperience-search/RuleBuilder"; the back end is
  * XpSearch.Admin.UIPages.RuleBuilder.RuleBuilderPage.
  */
@@ -52,6 +55,8 @@ interface RuleBuilderProps {
   readonly rule: Rule;
   readonly contactGroups: ContactGroup[];
   readonly languages: string[];
+  /** The facetable attributes of the index, which the attribute pickers offer (design canvas 5h). */
+  readonly attributes: string[];
   readonly isNew: boolean;
   /** Whether to show the "converted from the previous format" note of canvas 5d. */
   readonly migrated: boolean;
@@ -70,7 +75,14 @@ const actionField = (index: number): string => `action:${index}`;
 const messagesFor = (errors: RuleError[], field: string): string[] =>
   errors.filter((error) => error.field === field).map((error) => error.message);
 
-export const RuleBuilderTemplate = ({ indexName, rule, contactGroups, languages, isNew, migrated, error }: RuleBuilderProps) => {
+/** Whether an action is still exactly as the add menu created it, so discarding can drop it. */
+const isBlank = (action: Action): boolean => {
+  const blank = emptyAction(action.type);
+
+  return (Object.keys(blank) as (keyof Action)[]).every((key) => action[key] === blank[key]);
+};
+
+export const RuleBuilderTemplate = ({ indexName, rule, contactGroups, languages, attributes, isNew, migrated, error }: RuleBuilderProps) => {
   const [name, setName] = useState(rule.name);
   const [enabled, setEnabled] = useState(rule.enabled);
   const [priority, setPriority] = useState(rule.priority);
@@ -79,6 +91,7 @@ export const RuleBuilderTemplate = ({ indexName, rule, contactGroups, languages,
   const [fragments, setFragments] = useState<Fragment[]>(split(rule.conditions));
   const [actions, setActions] = useState<Action[]>(rule.actions);
   const [editing, setEditing] = useState<number | undefined>(undefined);
+  const [editingAction, setEditingAction] = useState<number | undefined>(undefined);
   const [errors, setErrors] = useState<RuleError[]>([]);
   const [saving, setSaving] = useState(false);
   const [noticeDismissed, setNoticeDismissed] = useState(false);
@@ -125,10 +138,22 @@ export const RuleBuilderTemplate = ({ indexName, rule, contactGroups, languages,
     setEditing(fragments.length);
   };
 
-  const addAction = (type: ActionType) => setActions((current) => [...current, emptyAction(type)]);
+  // Choosing a type from the menu opens the panel on a blank action of it (design canvas 5g).
+  const addAction = (type: ActionType) => {
+    setActions((current) => [...current, emptyAction(type)]);
+    setEditingAction(actions.length);
+  };
 
-  const changeAction = (at: number, values: Partial<Action>) =>
-    setActions((current) => current.map((action, i) => (i === at ? { ...action, ...values } : action)));
+  const applyAction = (updated: Action) => {
+    setActions((current) => current.map((action, i) => (i === editingAction ? updated : action)));
+    setEditingAction(undefined);
+  };
+
+  // Discarding a brand new action leaves nothing behind: it was never filled in.
+  const discardAction = () => {
+    setActions((current) => current.filter((action, i) => i !== editingAction || !isBlank(action)));
+    setEditingAction(undefined);
+  };
 
   const pageErrors = messagesFor(errors, 'page');
   const nameErrors = messagesFor(errors, 'name');
@@ -342,11 +367,14 @@ export const RuleBuilderTemplate = ({ indexName, rule, contactGroups, languages,
           </div>
           <div className={styles.flowStack}>
             {actions.map((action, index) => (
-              <ActionCard
-                key={`${action.type}-${index}`}
+              <ActionRow
+                key={index}
                 action={action}
+                index={index}
+                count={actions.length}
                 errors={messagesFor(errors, actionField(index))}
-                onChange={(values) => changeAction(index, values)}
+                onEdit={() => setEditingAction(index)}
+                onMove={(by) => setActions((current) => move(current, index, by))}
                 onRemove={() => setActions((current) => current.filter((_, i) => i !== index))}
               />
             ))}
@@ -381,10 +409,20 @@ export const RuleBuilderTemplate = ({ indexName, rule, contactGroups, languages,
         <ConditionPanel
           editing={editing === undefined ? undefined : fragments[editing]}
           index={editing ?? 0}
+          attributes={attributes}
           contactGroups={contactGroups}
           languages={languages}
           onApply={applyFragment}
           onDiscard={() => setEditing(undefined)}
+        />
+
+        <ActionPanel
+          editing={editingAction === undefined ? undefined : actions[editingAction]}
+          index={editingAction ?? 0}
+          attributes={attributes}
+          errors={editingAction === undefined ? [] : messagesFor(errors, actionField(editingAction))}
+          onApply={applyAction}
+          onDiscard={discardAction}
         />
       </div>
     </SidePanelManager>

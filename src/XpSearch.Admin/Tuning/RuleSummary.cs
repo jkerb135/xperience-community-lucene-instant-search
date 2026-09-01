@@ -69,7 +69,7 @@ public static class RuleSummary
             RuleAction.Hide hide => $"Hide {hide.TargetId}",
             RuleAction.Boost boost =>
                 $"Boost {(string.IsNullOrWhiteSpace(boost.TargetId) ? boost.FilterExpression : boost.TargetId)} ×{boost.Multiplier.ToString("0.##", CultureInfo.InvariantCulture)}",
-            RuleAction.Bury bury => $"Bury {bury.TargetId}",
+            RuleAction.Bury bury => $"Bury {(string.IsNullOrWhiteSpace(bury.TargetId) ? bury.FilterExpression : bury.TargetId)}",
             RuleAction.FilterResults filter => $"Filter results to {filter.FilterExpression}",
             RuleAction.RemoveWord remove => $"Remove the word “{remove.Word}”",
             RuleAction.ReplaceWord replace => $"Replace “{replace.Word}” with “{replace.Replacement}”",

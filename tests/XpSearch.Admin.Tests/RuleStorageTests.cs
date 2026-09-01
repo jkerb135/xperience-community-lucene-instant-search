@@ -534,6 +534,10 @@ internal sealed class RuleSummaryTests
             Assert.That(RuleSummary.Describe(new RuleAction.Hide("doc-1")), Is.EqualTo("Hide doc-1"));
             Assert.That(RuleSummary.Describe(new RuleAction.Boost("doc-1", string.Empty, 2)), Is.EqualTo("Boost doc-1 ×2"));
             Assert.That(RuleSummary.Describe(new RuleAction.Boost(string.Empty, "Category:coffee", 1.5)), Is.EqualTo("Boost Category:coffee ×1.5"));
+            Assert.That(
+                RuleSummary.Describe(new RuleAction.Bury(string.Empty, "Category:tea")),
+                Is.EqualTo("Bury Category:tea"),
+                "a bury by expression reads as the expression, like a boost by one does");
             Assert.That(RuleSummary.Describe(new RuleAction.RemoveWord("cheap")), Is.EqualTo("Remove the word “cheap”"));
             Assert.That(RuleSummary.Describe(new RuleAction.CustomData("{}")), Is.EqualTo("Return custom data"));
             Assert.That(RuleSummary.Describe((IReadOnlyList<RuleAction>)[]), Is.EqualTo("Nothing"));

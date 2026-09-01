@@ -51,10 +51,22 @@ export interface Conditions {
   language: string;
 }
 
+/** Which action types name one indexed item, and so get the item picker of design canvas 5h. */
+export const itemActionTypes: readonly ActionType[] = ['pin', 'hide', 'boost', 'bury'];
+
+/** Which action types are edited as `attribute is value` rows. Boost is both, by either field. */
+export const attributeActionTypes: readonly ActionType[] = ['filterResults', 'boost', 'bury'];
+
 /** One flat shape with every field any action needs; `type` says which of them are read. */
 export interface Action {
   type: ActionType;
   targetId: string;
+  /**
+   * What `targetId` points at, filled in by the server when the rule is loaded. `null` means the
+   * index no longer holds the id, which the summary row warns about rather than hiding.
+   */
+  targetTitle?: string | null;
+  targetUrl?: string | null;
   position: number;
   filterExpression: string;
   multiplier: number;
@@ -128,6 +140,8 @@ export const newFragment = (): Fragment => ({
 export const emptyAction = (type: ActionType): Action => ({
   type,
   targetId: '',
+  targetTitle: null,
+  targetUrl: null,
   position: 1,
   filterExpression: '',
   multiplier: 2,
@@ -216,4 +230,127 @@ export const isEmpty = (fragments: Fragment[]): boolean => {
   return (
     !conditions.queryEnabled && conditions.filters.length === 0 && conditions.contactGroup === '' && conditions.language === ''
   );
+};
+
+/**
+ * Moves an action one place up or down. The order is behaviour - rewrites chain and custom data
+ * merges in order - so this is the whole point of the up/down buttons of design canvas 5g.
+ */
+export const move = (actions: Action[], at: number, by: 1 | -1): Action[] => {
+  const to = at + by;
+
+  if (to < 0 || to >= actions.length) {
+    return actions;
+  }
+
+  const moved = [...actions];
+
+  [moved[at], moved[to]] = [moved[to], moved[at]];
+
+  return moved;
+};
+
+/**
+ * What the panel's Apply refuses to close on (design canvas 5d). It twins
+ * XpSearch.Admin.Tuning.RuleValidation, which is the check that actually guards the save; this one
+ * only saves the marketer a round trip, so the wording is deliberately the same.
+ */
+export const wrongWith = (action: Action): string[] => {
+  const messages: string[] = [];
+  const blank = (value: string) => value.trim() === '';
+
+  switch (action.type) {
+    case 'pin':
+      if (blank(action.targetId)) {
+        messages.push('Choose the item to pin.');
+      }
+
+      if (action.position < 1) {
+        messages.push('Position counts from 1, the top of the first page.');
+      }
+
+      break;
+
+    case 'hide':
+      if (blank(action.targetId)) {
+        messages.push('Choose the item to hide.');
+      }
+
+      break;
+
+    case 'bury':
+      if (blank(action.targetId)) {
+        messages.push('Choose the item to bury.');
+      }
+
+      break;
+
+    case 'boost':
+      if (blank(action.targetId) && blank(action.filterExpression)) {
+        messages.push('Choose an item to boost, or an attribute:value expression to boost by.');
+      }
+
+      if (action.multiplier <= 0) {
+        messages.push('A multiplier of 0 or less would switch the rule off — use a number above 0.');
+      }
+
+      break;
+
+    case 'filterResults':
+      if (blank(action.filterExpression)) {
+        messages.push('Enter the attribute:value pairs to keep.');
+      }
+
+      break;
+
+    case 'removeWord':
+      if (blank(action.word)) {
+        messages.push('Enter the word to remove from the query.');
+      }
+
+      break;
+
+    case 'replaceWord':
+      if (blank(action.word) || blank(action.replacement)) {
+        messages.push('Enter both the word to replace and what to put in its place.');
+      }
+
+      break;
+
+    case 'replaceQuery':
+      if (blank(action.query)) {
+        messages.push('Enter the query to search for instead.');
+      }
+
+      break;
+
+    case 'redirect':
+      if (blank(action.url)) {
+        messages.push('Enter where the visitor should be sent.');
+      }
+
+      break;
+
+    case 'customData':
+      if (!isJsonObject(action.json)) {
+        messages.push('Not valid JSON — custom data has to be a JSON object, for example {"banner": "…"}.');
+      }
+
+      break;
+
+    default:
+      break;
+  }
+
+  return messages;
+};
+
+const isJsonObject = (json: string): boolean => {
+  try {
+    const parsed: unknown = JSON.parse(json);
+
+    return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed);
+  } catch {
+    return false;
+  }
 };
