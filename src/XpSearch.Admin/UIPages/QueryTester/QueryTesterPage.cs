@@ -7,9 +7,11 @@ using Kentico.Xperience.Lucene.Core.Indexing;
 
 using XpSearch.Admin.Tuning;
 using XpSearch.Admin.UIPages;
+using XpSearch.Admin.UIPages.Experiments;
 using XpSearch.Admin.UIPages.QueryTester;
 using XpSearch.Core.Abstractions;
 using XpSearch.Core.Contract;
+using XpSearch.Core.Tuning;
 
 [assembly: UIPage(
     parentType: typeof(IndexTuningSection),
@@ -32,6 +34,12 @@ public class QueryTesterClientProperties : TemplateClientProperties
 
     /// <summary>Gets or sets the contact groups the tester can simulate, by display name (ADR-0021).</summary>
     public IEnumerable<ContactGroupOption> ContactGroups { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets the name of the index's draft or running experiment, so the Variant select can
+    /// offer its variant B (XP-1). Empty when the index has no experiment to try.
+    /// </summary>
+    public string ExperimentName { get; set; } = string.Empty;
 }
 
 /// <summary>
@@ -53,27 +61,32 @@ public class QueryTesterPage : Page<QueryTesterClientProperties>
     private readonly IQueryTesterSearch search;
     private readonly IPageLinkGenerator pageLinkGenerator;
     private readonly IContactGroupCatalog contactGroups;
+    private readonly IExperimentCatalog experiments;
 
     /// <summary>Initializes a new instance of the <see cref="QueryTesterPage"/> class.</summary>
     /// <param name="storageService">Reads the stored index configuration, to resolve the index in the URL.</param>
     /// <param name="search">Runs the two sides of the comparison.</param>
     /// <param name="pageLinkGenerator">Generates the URL the error callout's "Open status" action navigates to.</param>
     /// <param name="contactGroups">Supplies the contact groups the simulation drop-down offers.</param>
+    /// <param name="experiments">Supplies the index's unfinished experiment, whose variant B can be tried (XP-1).</param>
     public QueryTesterPage(
         ILuceneConfigurationStorageService storageService,
         IQueryTesterSearch search,
         IPageLinkGenerator pageLinkGenerator,
-        IContactGroupCatalog contactGroups)
+        IContactGroupCatalog contactGroups,
+        IExperimentCatalog experiments)
     {
         ArgumentNullException.ThrowIfNull(storageService);
         ArgumentNullException.ThrowIfNull(search);
         ArgumentNullException.ThrowIfNull(pageLinkGenerator);
         ArgumentNullException.ThrowIfNull(contactGroups);
+        ArgumentNullException.ThrowIfNull(experiments);
 
         this.storageService = storageService;
         this.search = search;
         this.pageLinkGenerator = pageLinkGenerator;
         this.contactGroups = contactGroups;
+        this.experiments = experiments;
     }
 
     /// <summary>Gets or sets the identifier of the index the page is scoped to, taken from the URL.</summary>
@@ -94,6 +107,10 @@ public class QueryTesterPage : Page<QueryTesterClientProperties>
         properties.Languages = [.. index?.LanguageNames ?? []];
 
         properties.ContactGroups = await contactGroups.GetAllAsync(CancellationToken.None).ConfigureAwait(false);
+
+        var experiment = await experiments.GetUnfinishedAsync(properties.SelectedIndexName, CancellationToken.None).ConfigureAwait(false);
+
+        properties.ExperimentName = experiment?.DisplayName ?? string.Empty;
 
         return properties;
     }
@@ -125,8 +142,15 @@ public class QueryTesterPage : Page<QueryTesterClientProperties>
         {
             string contactGroup = request.ContactGroup ?? string.Empty;
 
-            var withRules = await search.ExecuteAsync(Build(request, indexName), applyTuning: true, contactGroup, cancellationToken).ConfigureAwait(false);
-            var withoutRules = await search.ExecuteAsync(Build(request, indexName), applyTuning: false, contactGroup, cancellationToken).ConfigureAwait(false);
+            // Which experiment the variant belongs to is the server's answer, never the client's: the
+            // page offers variant B only for the index's own unfinished experiment.
+            var variant = request.VariantB
+                ? ExperimentScope.Variant(
+                    (await experiments.GetUnfinishedAsync(indexName, cancellationToken).ConfigureAwait(false))?.Id ?? 0)
+                : TuningVariant.Live;
+
+            var withRules = await search.ExecuteAsync(Build(request, indexName), applyTuning: true, contactGroup, variant, cancellationToken).ConfigureAwait(false);
+            var withoutRules = await search.ExecuteAsync(Build(request, indexName), applyTuning: false, contactGroup, variant, cancellationToken).ConfigureAwait(false);
 
             return ResponseFrom(QueryTesterDiff.Compare(withRules, withoutRules));
         }

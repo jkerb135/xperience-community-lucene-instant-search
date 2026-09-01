@@ -24,6 +24,7 @@ The sidebar has one entry per kind of tuning:
 | **Field weights** | `…/{id}/weights` | How much a match in one field counts. |
 | **Query tester** | `…/{id}/query-tester` | The same query with and without your tuning. |
 | **Analytics** | `…/{id}/analytics` | What visitors searched for, clicked, and did not find. |
+| **Experiments** | `…/{id}/experiments` | A/B tests of this tuning against a draft copy of it — see [Experiments](experiments.md). |
 | **Status** | `…/{id}/status` | Document counts, last write, and the rebuild button. |
 
 Everything you see on these pages applies to that one index. You never pick an index on a form; the

@@ -13,6 +13,7 @@ using XpSearch.Admin.Forms;
 using XpSearch.Admin.Persistence;
 using XpSearch.Admin.Tuning;
 using XpSearch.Admin.UIPages;
+using XpSearch.Admin.UIPages.Experiments;
 using XpSearch.Core;
 using XpSearch.Core.Tuning;
 
@@ -44,6 +45,39 @@ using XpSearch.Core.Tuning;
     parentType: typeof(FieldWeightEditSection),
     slug: "edit",
     uiPageType: typeof(FieldWeightEdit),
+    name: "Field weight",
+    templateName: TemplateNames.EDIT,
+    order: 100)]
+
+// The same pages again, inside an experiment: same classes, same templates, variant B's rows (XP-1).
+[assembly: UIPage(
+    parentType: typeof(ExperimentSection),
+    slug: "weights",
+    uiPageType: typeof(VariantFieldWeightListing),
+    name: "Field weights",
+    templateName: TemplateNames.LISTING,
+    order: 500)]
+
+[assembly: UIPage(
+    parentType: typeof(VariantFieldWeightListing),
+    slug: "create",
+    uiPageType: typeof(VariantFieldWeightCreate),
+    name: "New field weight",
+    templateName: TemplateNames.EDIT,
+    order: 100)]
+
+[assembly: UIPage(
+    parentType: typeof(VariantFieldWeightListing),
+    slug: PageParameterConstants.PARAMETERIZED_SLUG,
+    uiPageType: typeof(VariantFieldWeightEditSection),
+    name: "Edit",
+    templateName: TemplateNames.SECTION_LAYOUT,
+    order: 200)]
+
+[assembly: UIPage(
+    parentType: typeof(VariantFieldWeightEditSection),
+    slug: "edit",
+    uiPageType: typeof(VariantFieldWeightEdit),
     name: "Field weight",
     templateName: TemplateNames.EDIT,
     order: 100)]
@@ -101,22 +135,24 @@ public class FieldWeightModel : IIndexScopedModel
     }
 }
 
-/// <summary>Lists the field weights, per index (spec §8.1).</summary>
-public class FieldWeightListing : ListingPage
+/// <summary>
+/// Lists the field weights of one index and one tuning variant (spec §8.1, XP-1). The live listing and
+/// an experiment's variant-B listing differ only in the variant they read and where their actions point.
+/// </summary>
+public abstract class FieldWeightListingBase : ListingPage
 {
     private readonly ILuceneConfigurationStorageService storageService;
-    private readonly IInfoProvider<XpSearchFieldWeightInfo> provider;
     private string? indexName;
 
-    /// <summary>Initializes a new instance of the <see cref="FieldWeightListing"/> class.</summary>
+    /// <summary>Initializes a new instance of the <see cref="FieldWeightListingBase"/> class.</summary>
     /// <param name="storageService">Reads the stored index configuration, to resolve the index in the URL.</param>
     /// <param name="provider">Provider of field weight objects, to check what a delete would remove.</param>
-    public FieldWeightListing(
+    protected FieldWeightListingBase(
         ILuceneConfigurationStorageService storageService,
         IInfoProvider<XpSearchFieldWeightInfo> provider)
     {
         this.storageService = storageService;
-        this.provider = provider;
+        Provider = provider;
     }
 
     /// <summary>Gets or sets the identifier of the index the listing is scoped to, taken from the URL.</summary>
@@ -126,52 +162,256 @@ public class FieldWeightListing : ListingPage
     /// <inheritdoc />
     protected override string ObjectType => XpSearchFieldWeightInfo.OBJECT_TYPE;
 
-    /// <summary>Gets the code name of the index in the URL, or an empty string when it is not registered.</summary>
-    private string IndexName => indexName ??= IndexScope.Resolve(storageService, IndexIdentifier);
+    /// <summary>Gets the provider of field weight objects.</summary>
+    protected IInfoProvider<XpSearchFieldWeightInfo> Provider { get; }
 
-    /// <summary>
-    /// Deletes one weight. The command carries only a row id, so the listing's index filter does not
-    /// reach it: a row of another index is refused rather than deleted (ADR-0017).
-    /// </summary>
-    /// <param name="id">The identifier of the row to delete.</param>
-    /// <returns>The row action result.</returns>
-    [PageCommand(Permission = SystemPermissions.DELETE)]
-    public override Task<ICommandResponse<RowActionResult>> Delete(int id) =>
-        IndexScope.Matches(provider.Get(id)?.WeightIndexName, IndexName)
-            ? base.Delete(id)
-            : Task.FromResult(ResponseFrom(new RowActionResult(false)).AddErrorMessage(IndexScope.CrossIndexDeleteRefusal));
+    /// <summary>Gets the code name of the index in the URL, or an empty string when it is not registered.</summary>
+    protected string IndexName => indexName ??= IndexScope.Resolve(storageService, IndexIdentifier);
+
+    /// <summary>Gets the variant whose rows the listing shows. Live listings show the rows with no experiment.</summary>
+    protected virtual TuningVariant Variant => TuningVariant.Live;
+
+    /// <summary>Adds the header, row and table actions, which point at this variant's own editors.</summary>
+    protected abstract void ConfigureActions();
 
     /// <inheritdoc />
     public override Task ConfigurePage()
     {
-        string indexName = IndexName;
+        string index = IndexName;
+        var variant = Variant;
 
         PageConfiguration.ColumnConfigurations
             .AddColumn(nameof(XpSearchFieldWeightInfo.WeightFieldName), "Field", searchable: true)
             .AddColumn(nameof(XpSearchFieldWeightInfo.WeightValue), "Weight");
 
-        PageConfiguration.HeaderActions.AddLink<FieldWeightCreate>("New field weight", parameters: IndexScope.Route(IndexIdentifier));
-        PageConfiguration.AddEditRowAction<FieldWeightEdit>(parameters: IndexScope.Route(IndexIdentifier));
-        PageConfiguration.TableActions.AddDeleteAction(nameof(Delete), "Delete");
+        ConfigureActions();
+
         PageConfiguration.QueryModifiers.AddModifier((query, _) =>
             query
-                .WhereEquals(nameof(XpSearchFieldWeightInfo.WeightIndexName), indexName)
-                .Where(VariantScope.Condition(nameof(XpSearchFieldWeightInfo.WeightExperimentID), TuningVariant.Live)));
+                .WhereEquals(nameof(XpSearchFieldWeightInfo.WeightIndexName), index)
+                .Where(VariantScope.Condition(nameof(XpSearchFieldWeightInfo.WeightExperimentID), variant)));
 
         return base.ConfigurePage();
     }
+
+    /// <summary>
+    /// Refuses a delete the listing's own filters would never have offered. The command carries only a
+    /// row id, so neither the index filter nor the variant filter reaches it (ADR-0017, XP-1).
+    /// </summary>
+    /// <param name="id">The identifier of the row to delete.</param>
+    /// <returns>The row action result.</returns>
+    protected Task<ICommandResponse<RowActionResult>> DeleteScoped(int id)
+    {
+        var row = Provider.Get(id);
+
+        if (!IndexScope.Matches(row?.WeightIndexName, IndexName))
+        {
+            return Task.FromResult(ResponseFrom(new RowActionResult(false)).AddErrorMessage(IndexScope.CrossIndexDeleteRefusal));
+        }
+
+        return (row?.WeightExperimentID ?? 0) == Variant.ExperimentId
+            ? base.Delete(id)
+            : Task.FromResult(ResponseFrom(new RowActionResult(false)).AddErrorMessage(ExperimentScope.CrossVariantDeleteRefusal));
+    }
 }
 
-/// <summary>Carries the edited weight's identifier in the URL.</summary>
+/// <summary>Lists the live field weights of one index (spec §8.1).</summary>
+public class FieldWeightListing : FieldWeightListingBase
+{
+    /// <summary>Initializes a new instance of the <see cref="FieldWeightListing"/> class.</summary>
+    /// <param name="storageService">Reads the stored index configuration, to resolve the index in the URL.</param>
+    /// <param name="provider">Provider of field weight objects, to check what a delete would remove.</param>
+    public FieldWeightListing(
+        ILuceneConfigurationStorageService storageService,
+        IInfoProvider<XpSearchFieldWeightInfo> provider)
+        : base(storageService, provider)
+    {
+    }
+
+    /// <summary>Deletes one live weight.</summary>
+    /// <param name="id">The identifier of the row to delete.</param>
+    /// <returns>The row action result.</returns>
+    [PageCommand(Permission = SystemPermissions.DELETE)]
+    public override Task<ICommandResponse<RowActionResult>> Delete(int id) => DeleteScoped(id);
+
+    /// <inheritdoc />
+    protected override void ConfigureActions()
+    {
+        PageConfiguration.HeaderActions.AddLink<FieldWeightCreate>("New field weight", parameters: IndexScope.Route(IndexIdentifier));
+        PageConfiguration.AddEditRowAction<FieldWeightEdit>(parameters: IndexScope.Route(IndexIdentifier));
+        PageConfiguration.TableActions.AddDeleteAction(nameof(Delete), "Delete");
+    }
+}
+
+/// <summary>Lists the field weights of an experiment's variant B (XP-1).</summary>
+public class VariantFieldWeightListing : FieldWeightListingBase
+{
+    private readonly IExperimentCatalog experiments;
+
+    /// <summary>Initializes a new instance of the <see cref="VariantFieldWeightListing"/> class.</summary>
+    /// <param name="storageService">Reads the stored index configuration, to resolve the index in the URL.</param>
+    /// <param name="provider">Provider of field weight objects, to check what a delete would remove.</param>
+    /// <param name="experiments">Reads the experiment, for the banner and the draft check.</param>
+    public VariantFieldWeightListing(
+        ILuceneConfigurationStorageService storageService,
+        IInfoProvider<XpSearchFieldWeightInfo> provider,
+        IExperimentCatalog experiments)
+        : base(storageService, provider) =>
+        this.experiments = experiments;
+
+    /// <summary>Gets or sets the identifier of the experiment the listing is scoped to, taken from the URL.</summary>
+    [PageParameter(typeof(IntPageModelBinder), typeof(ExperimentSection))]
+    public int ExperimentIdentifier { get; set; }
+
+    /// <inheritdoc />
+    protected override TuningVariant Variant => ExperimentScope.Variant(ExperimentIdentifier);
+
+    /// <summary>
+    /// Deletes one variant-B weight. Declared here rather than inherited: a page command has to be a
+    /// plain method on the final page class (see docs/internal/agent-primer.md).
+    /// </summary>
+    /// <param name="id">The identifier of the row to delete.</param>
+    /// <returns>The row action result.</returns>
+    [PageCommand(Permission = SystemPermissions.DELETE)]
+    public Task<ICommandResponse<RowActionResult>> DeleteRow(int id) => DeleteScoped(id);
+
+    /// <inheritdoc />
+    protected override void ConfigureActions()
+    {
+        var experiment = ExperimentScope.Resolve(experiments, ExperimentIdentifier, IndexName);
+
+        PageConfiguration.Callouts = [ExperimentScope.Banner(experiment)];
+
+        // A started experiment's variant B is what half the visitors are being served: it is read-only.
+        if (!ExperimentScope.IsDraft(experiment))
+        {
+            return;
+        }
+
+        PageConfiguration.HeaderActions.AddLink<VariantFieldWeightCreate>(
+            "New field weight",
+            parameters: ExperimentScope.Route(IndexIdentifier, ExperimentIdentifier));
+        PageConfiguration.AddEditRowAction<VariantFieldWeightEdit>(parameters: ExperimentScope.Route(IndexIdentifier, ExperimentIdentifier));
+        PageConfiguration.TableActions.AddDeleteAction(nameof(DeleteRow), "Delete");
+    }
+}
+
+/// <summary>Carries the edited live weight's identifier in the URL.</summary>
 public class FieldWeightEditSection : EditSectionPage<XpSearchFieldWeightInfo>
 {
 }
 
-/// <summary>Edits one field weight.</summary>
-public class FieldWeightEdit : IndexScopedEditPage<FieldWeightModel>
+/// <summary>Carries the edited variant-B weight's identifier in the URL (XP-1).</summary>
+public class VariantFieldWeightEditSection : EditSectionPage<XpSearchFieldWeightInfo>
 {
-    private readonly IInfoProvider<XpSearchFieldWeightInfo> provider;
+}
 
+/// <summary>
+/// Edits or creates one field weight, in the live tuning or in an experiment's variant B (XP-1). The
+/// variant is the only difference between the four pages built on this.
+/// </summary>
+public abstract class FieldWeightEditPageBase : IndexScopedEditPage<FieldWeightModel>
+{
+    /// <summary>Initializes a new instance of the <see cref="FieldWeightEditPageBase"/> class.</summary>
+    /// <param name="formItemCollectionProvider">Builds the form components.</param>
+    /// <param name="formDataBinder">Binds the submitted values.</param>
+    /// <param name="storageService">Reads the stored index configuration.</param>
+    /// <param name="pageLinkGenerator">Generates admin URLs.</param>
+    /// <param name="provider">Provider of field weight objects.</param>
+    protected FieldWeightEditPageBase(
+        IFormItemCollectionProvider formItemCollectionProvider,
+        IFormDataBinder formDataBinder,
+        ILuceneConfigurationStorageService storageService,
+        IPageLinkGenerator pageLinkGenerator,
+        IInfoProvider<XpSearchFieldWeightInfo> provider)
+        : base(formItemCollectionProvider, formDataBinder, storageService, pageLinkGenerator) =>
+        Provider = provider;
+
+    /// <summary>Gets the provider of field weight objects.</summary>
+    protected IInfoProvider<XpSearchFieldWeightInfo> Provider { get; }
+
+    /// <summary>Gets the identifier of the edited row, or zero when the page creates one.</summary>
+    protected virtual int EditedId => 0;
+
+    /// <summary>Gets the experiment the written row belongs to, or <see langword="null"/> for the live tuning.</summary>
+    protected virtual int? ExperimentId => null;
+
+    /// <summary>Gets a value indicating whether the page may still write. A started experiment's B is frozen.</summary>
+    protected virtual bool CanWrite => true;
+
+    /// <summary>Gets the stored row being edited, or <see langword="null"/> when the page creates one.</summary>
+    protected XpSearchFieldWeightInfo? EditedRow => EditedId > 0 ? Provider.Get(EditedId) : null;
+
+    /// <inheritdoc />
+    protected override string? EditedIndexName => EditedId > 0 ? EditedRow?.WeightIndexName : IndexName;
+
+    /// <inheritdoc />
+    protected override FieldWeightModel CreateModel() =>
+        EditedRow is { } row ? FieldWeightModel.From(row) : new FieldWeightModel();
+
+    /// <inheritdoc />
+    protected override async Task<ICollection<IFormItem>> GetFormItems()
+    {
+        var items = await base.GetFormItems();
+
+        if (EditedId == 0)
+        {
+            return items;
+        }
+
+        // The stored field may no longer be in the index's schema; the configurator keeps it selectable
+        // so an edit does not silently move the weight to another field.
+        foreach (var dropDown in items.OfType<DropDownComponent>()
+            .Where(component => string.Equals(component.Name, nameof(FieldWeightModel.FieldName), StringComparison.OrdinalIgnoreCase)))
+        {
+            dropDown.Properties.Options = WeightFieldConfigurator.WithStoredValue(dropDown.Properties.Options, Model.FieldName);
+        }
+
+        return items;
+    }
+
+    /// <inheritdoc />
+    protected override Task<ICommandResponse> ProcessFormData(FieldWeightModel model, ICollection<IFormItem> formItems)
+    {
+        if (!CanWrite)
+        {
+            return Refuse(ExperimentScope.FrozenRefusal);
+        }
+
+        return EditedId > 0 && (EditedRow?.WeightExperimentID ?? 0) != (ExperimentId ?? 0)
+            ? Refuse(ExperimentScope.CrossVariantRefusal)
+            : base.ProcessFormData(model, formItems);
+    }
+
+    /// <inheritdoc />
+    protected override Task<string> PersistAsync(FieldWeightModel submitted, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(submitted);
+
+        var row = EditedRow;
+        bool creating = row is null;
+
+        row ??= new XpSearchFieldWeightInfo { WeightGuid = Guid.NewGuid() };
+
+        submitted.ApplyTo(row);
+        row.WeightExperimentID = ExperimentId;
+
+        Provider.Set(row);
+
+        return Task.FromResult($"Weight for '{submitted.FieldName}' {(creating ? "created" : "saved")}.");
+    }
+
+    /// <summary>Answers a submit that must not be written.</summary>
+    /// <param name="message">Why it was not written.</param>
+    /// <returns>The validation failure.</returns>
+    protected Task<ICommandResponse> Refuse(string message) =>
+        Task.FromResult<ICommandResponse>(
+            ResponseFrom(new FormSubmissionResult(FormSubmissionStatus.ValidationFailure)).AddErrorMessage(message));
+}
+
+/// <summary>Edits one live field weight.</summary>
+public class FieldWeightEdit : FieldWeightEditPageBase
+{
     /// <summary>Initializes a new instance of the <see cref="FieldWeightEdit"/> class.</summary>
     /// <param name="formItemCollectionProvider">Builds the form components.</param>
     /// <param name="formDataBinder">Binds the submitted values.</param>
@@ -184,50 +424,21 @@ public class FieldWeightEdit : IndexScopedEditPage<FieldWeightModel>
         ILuceneConfigurationStorageService storageService,
         IPageLinkGenerator pageLinkGenerator,
         IInfoProvider<XpSearchFieldWeightInfo> provider)
-        : base(formItemCollectionProvider, formDataBinder, storageService, pageLinkGenerator) =>
-        this.provider = provider;
+        : base(formItemCollectionProvider, formDataBinder, storageService, pageLinkGenerator, provider)
+    {
+    }
 
     /// <summary>Gets or sets the identifier of the edited weight, taken from the URL.</summary>
     [PageParameter(typeof(IntPageModelBinder), typeof(FieldWeightEditSection))]
     public int ObjectId { get; set; }
 
     /// <inheritdoc />
-    protected override string? EditedIndexName => provider.Get(ObjectId)?.WeightIndexName;
-
-    /// <inheritdoc />
-    protected override FieldWeightModel CreateModel() =>
-        provider.Get(ObjectId) is { } row ? FieldWeightModel.From(row) : new FieldWeightModel();
-
-    /// <inheritdoc />
-    protected override async Task<ICollection<IFormItem>> GetFormItems()
-    {
-        var items = await base.GetFormItems();
-
-        foreach (var dropDown in items.OfType<DropDownComponent>()
-            .Where(component => string.Equals(component.Name, nameof(FieldWeightModel.FieldName), StringComparison.OrdinalIgnoreCase)))
-        {
-            dropDown.Properties.Options = WeightFieldConfigurator.WithStoredValue(dropDown.Properties.Options, Model.FieldName);
-        }
-
-        return items;
-    }
-
-    /// <inheritdoc />
-    protected override Task<string> PersistAsync(FieldWeightModel submitted, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(submitted);
-
-        provider.Set(submitted.ApplyTo(provider.Get(ObjectId) ?? new XpSearchFieldWeightInfo()));
-
-        return Task.FromResult($"Weight for '{submitted.FieldName}' saved.");
-    }
+    protected override int EditedId => ObjectId;
 }
 
-/// <summary>Creates a field weight.</summary>
-public class FieldWeightCreate : IndexScopedEditPage<FieldWeightModel>
+/// <summary>Creates a live field weight.</summary>
+public class FieldWeightCreate : FieldWeightEditPageBase
 {
-    private readonly IInfoProvider<XpSearchFieldWeightInfo> provider;
-
     /// <summary>Initializes a new instance of the <see cref="FieldWeightCreate"/> class.</summary>
     /// <param name="formItemCollectionProvider">Builds the form components.</param>
     /// <param name="formDataBinder">Binds the submitted values.</param>
@@ -240,25 +451,114 @@ public class FieldWeightCreate : IndexScopedEditPage<FieldWeightModel>
         ILuceneConfigurationStorageService storageService,
         IPageLinkGenerator pageLinkGenerator,
         IInfoProvider<XpSearchFieldWeightInfo> provider)
-        : base(formItemCollectionProvider, formDataBinder, storageService, pageLinkGenerator) =>
-        this.provider = provider;
+        : base(formItemCollectionProvider, formDataBinder, storageService, pageLinkGenerator, provider)
+    {
+    }
 
     /// <inheritdoc />
     protected override Type? RedirectTo => typeof(FieldWeightListing);
+}
+
+/// <summary>
+/// The variant-B field weight pages (XP-1): the experiment in the URL, the banner, and the refusal to
+/// write once the experiment has started.
+/// </summary>
+public abstract class VariantFieldWeightPage : FieldWeightEditPageBase
+{
+    private readonly IExperimentCatalog experiments;
+
+    /// <summary>Initializes a new instance of the <see cref="VariantFieldWeightPage"/> class.</summary>
+    /// <param name="formItemCollectionProvider">Builds the form components.</param>
+    /// <param name="formDataBinder">Binds the submitted values.</param>
+    /// <param name="storageService">Reads the stored index configuration.</param>
+    /// <param name="pageLinkGenerator">Generates admin URLs.</param>
+    /// <param name="provider">Provider of field weight objects.</param>
+    /// <param name="experiments">Reads the experiment, for the banner and the draft check.</param>
+    protected VariantFieldWeightPage(
+        IFormItemCollectionProvider formItemCollectionProvider,
+        IFormDataBinder formDataBinder,
+        ILuceneConfigurationStorageService storageService,
+        IPageLinkGenerator pageLinkGenerator,
+        IInfoProvider<XpSearchFieldWeightInfo> provider,
+        IExperimentCatalog experiments)
+        : base(formItemCollectionProvider, formDataBinder, storageService, pageLinkGenerator, provider) =>
+        this.experiments = experiments;
+
+    /// <summary>Gets or sets the identifier of the experiment, taken from the URL.</summary>
+    [PageParameter(typeof(IntPageModelBinder), typeof(ExperimentSection))]
+    public int ExperimentIdentifier { get; set; }
 
     /// <inheritdoc />
-    protected override FieldWeightModel CreateModel() => new();
+    protected override int? ExperimentId => ExperimentIdentifier;
 
     /// <inheritdoc />
-    protected override Task<string> PersistAsync(FieldWeightModel submitted, CancellationToken cancellationToken)
+    protected override bool CanWrite => ExperimentScope.IsDraft(Experiment);
+
+    /// <inheritdoc />
+    protected override PageParameterValues? RedirectParameters => ExperimentScope.Route(IndexIdentifier, ExperimentIdentifier);
+
+    /// <summary>Gets the experiment in the URL, or <see langword="null"/> when it is not this index's.</summary>
+    protected ExperimentSummary? Experiment => ExperimentScope.Resolve(experiments, ExperimentIdentifier, IndexName);
+
+    /// <inheritdoc />
+    public override Task ConfigurePage()
     {
-        ArgumentNullException.ThrowIfNull(submitted);
+        PageConfiguration.Callouts = [ExperimentScope.Banner(Experiment)];
 
-        var row = submitted.ApplyTo(new XpSearchFieldWeightInfo());
-        row.WeightGuid = Guid.NewGuid();
-
-        provider.Set(row);
-
-        return Task.FromResult($"Weight for '{submitted.FieldName}' created.");
+        return base.ConfigurePage();
     }
+}
+
+/// <summary>Edits one field weight of an experiment's variant B (XP-1).</summary>
+public class VariantFieldWeightEdit : VariantFieldWeightPage
+{
+    /// <summary>Initializes a new instance of the <see cref="VariantFieldWeightEdit"/> class.</summary>
+    /// <param name="formItemCollectionProvider">Builds the form components.</param>
+    /// <param name="formDataBinder">Binds the submitted values.</param>
+    /// <param name="storageService">Reads the stored index configuration.</param>
+    /// <param name="pageLinkGenerator">Generates admin URLs.</param>
+    /// <param name="provider">Provider of field weight objects.</param>
+    /// <param name="experiments">Reads the experiment, for the banner and the draft check.</param>
+    public VariantFieldWeightEdit(
+        IFormItemCollectionProvider formItemCollectionProvider,
+        IFormDataBinder formDataBinder,
+        ILuceneConfigurationStorageService storageService,
+        IPageLinkGenerator pageLinkGenerator,
+        IInfoProvider<XpSearchFieldWeightInfo> provider,
+        IExperimentCatalog experiments)
+        : base(formItemCollectionProvider, formDataBinder, storageService, pageLinkGenerator, provider, experiments)
+    {
+    }
+
+    /// <summary>Gets or sets the identifier of the edited weight, taken from the URL.</summary>
+    [PageParameter(typeof(IntPageModelBinder), typeof(VariantFieldWeightEditSection))]
+    public int ObjectId { get; set; }
+
+    /// <inheritdoc />
+    protected override int EditedId => ObjectId;
+}
+
+/// <summary>Creates a field weight in an experiment's variant B (XP-1).</summary>
+public class VariantFieldWeightCreate : VariantFieldWeightPage
+{
+    /// <summary>Initializes a new instance of the <see cref="VariantFieldWeightCreate"/> class.</summary>
+    /// <param name="formItemCollectionProvider">Builds the form components.</param>
+    /// <param name="formDataBinder">Binds the submitted values.</param>
+    /// <param name="storageService">Reads the stored index configuration.</param>
+    /// <param name="pageLinkGenerator">Generates admin URLs.</param>
+    /// <param name="provider">Provider of field weight objects.</param>
+    /// <param name="experiments">Reads the experiment, for the banner and the draft check.</param>
+    public VariantFieldWeightCreate(
+        IFormItemCollectionProvider formItemCollectionProvider,
+        IFormDataBinder formDataBinder,
+        ILuceneConfigurationStorageService storageService,
+        IPageLinkGenerator pageLinkGenerator,
+        IInfoProvider<XpSearchFieldWeightInfo> provider,
+        IExperimentCatalog experiments)
+        : base(formItemCollectionProvider, formDataBinder, storageService, pageLinkGenerator, provider, experiments)
+    {
+    }
+
+    /// <inheritdoc />
+    protected override Type? RedirectTo => typeof(VariantFieldWeightListing);
 }

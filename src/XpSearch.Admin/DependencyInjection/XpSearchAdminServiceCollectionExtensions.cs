@@ -38,6 +38,7 @@ public static class XpSearchAdminServiceCollectionExtensions
         // Experiments (XP-1). Core registered the "no index is experimenting" source; this package is
         // the one that knows where experiments are stored.
         services.TryAddSingleton<IExperimentService, ExperimentService>();
+        services.TryAddSingleton<IExperimentCatalog, ExperimentCatalog>();
         services.Replace(ServiceDescriptor.Singleton<IRunningExperimentSource, InfoRunningExperimentSource>());
 
         return services;

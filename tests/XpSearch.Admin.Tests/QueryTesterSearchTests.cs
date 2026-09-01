@@ -52,7 +52,7 @@ internal sealed class QueryTesterSearchTests
         var recorder = new RecordingStage();
         var search = Build(recorder);
 
-        await search.ExecuteAsync(Request(), applyTuning, string.Empty, CancellationToken.None);
+        await search.ExecuteAsync(Request(), applyTuning, string.Empty, TuningVariant.Live, CancellationToken.None);
 
         Expect.Multiple(() =>
         {
@@ -69,7 +69,7 @@ internal sealed class QueryTesterSearchTests
         var recorder = new RecordingStage();
         recorder.OnExecute = context => context.QueryExplanations.Add("field weight: title x2");
 
-        var result = await Build(recorder).ExecuteAsync(Request(), applyTuning: true, string.Empty, CancellationToken.None);
+        var result = await Build(recorder).ExecuteAsync(Request(), applyTuning: true, string.Empty, TuningVariant.Live, CancellationToken.None);
 
         Assert.That(
             result.QueryExplanations,

@@ -51,6 +51,8 @@ interface QueryTesterProps {
   readonly languages: string[];
   /** The contact groups a run can be simulated as, so a group-scoped rule can be seen firing. */
   readonly contactGroups: ContactGroup[];
+  /** Name of the index's draft or running experiment, whose variant B can be tried. Empty when there is none. */
+  readonly experimentName: string;
 }
 
 type ResultChange = 'Unchanged' | 'MovedUp' | 'MovedDown' | 'Injected' | 'Removed';
@@ -85,6 +87,8 @@ interface RunData {
   readonly pageSize: number;
   /** Code name of the contact group to simulate; empty runs as the signed-in admin's own contact. */
   readonly contactGroup?: string;
+  /** True to answer from the experiment's variant-B tuning instead of the live one. */
+  readonly variantB?: boolean;
 }
 
 const Commands = {
@@ -95,6 +99,8 @@ const Commands = {
 const pageSizes = [10, 25, 50];
 const anyLanguage = '';
 const realVisitor = '';
+const liveTuning = 'live';
+const variantB = 'b';
 
 const changes: Record<ResultChange, { readonly label: string; readonly icon: IconName; readonly color: Colors }> = {
   Unchanged: { label: 'Unchanged', icon: 'xp-minus', color: Colors.BackgroundTagGrey },
@@ -217,11 +223,12 @@ const Explanations = ({ lines, open }: { readonly lines: string[]; readonly open
   </Card>
 );
 
-export const QueryTesterTemplate = ({ selectedIndexName, languages, contactGroups }: QueryTesterProps) => {
+export const QueryTesterTemplate = ({ selectedIndexName, languages, contactGroups, experimentName }: QueryTesterProps) => {
   const [query, setQuery] = useState('');
   const [language, setLanguage] = useState(anyLanguage);
   const [pageSize, setPageSize] = useState(pageSizes[0]);
   const [contactGroup, setContactGroup] = useState(realVisitor);
+  const [variant, setVariant] = useState(liveTuning);
   const [ran, setRan] = useState('');
   const [result, setResult] = useState<RunResult | undefined>(undefined);
   const [running, setRunning] = useState(false);
@@ -241,7 +248,7 @@ export const QueryTesterTemplate = ({ selectedIndexName, languages, contactGroup
     setLanguage(nextLanguage);
     setRan(query);
     setRunning(true);
-    void run({ query, language: nextLanguage, pageSize, contactGroup });
+    void run({ query, language: nextLanguage, pageSize, contactGroup, variantB: variant === variantB });
   };
 
   const empty = query.trim() === '';
@@ -261,6 +268,7 @@ export const QueryTesterTemplate = ({ selectedIndexName, languages, contactGroup
         <Headline size={HeadlineSize.L}>Query tester</Headline>
         <p style={muted}>
           Index <strong>{selectedIndexName}</strong>
+          {variant === variantB ? ` · variant B of ${experimentName}` : ''}
           {subtitle}
         </p>
       </div>
@@ -310,6 +318,14 @@ export const QueryTesterTemplate = ({ selectedIndexName, languages, contactGroup
                 ))}
               </Select>
             </Column>
+            {experimentName === '' ? null : (
+              <Column>
+                <Select label="Variant" value={variant} onChange={(value) => setVariant(value ?? liveTuning)}>
+                  <MenuItem primaryLabel="Live tuning (A)" value={liveTuning} />
+                  <MenuItem primaryLabel={`Variant B of ${experimentName}`} value={variantB} />
+                </Select>
+              </Column>
+            )}
             <Column>
               <Button
                 label="Run"

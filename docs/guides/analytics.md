@@ -168,6 +168,11 @@ installed on first start:
 | `LogLanguage` | requested language |
 | `LogClickedPosition` | one-based position of the clicked result, `0` when nothing was clicked |
 | `LogProcessingTimeMs` | server-side processing time |
+| `LogExperimentID` | the experiment that answered the search, `NULL` when none was running |
+| `LogVariant` | `A` or `B` — the variant the visitor was bucketed into, empty when no experiment ran |
+
+The last two are what an [experiment's](experiments.md) report splits on: it is this same report, over
+the rows of one experiment and one variant, so the two can never disagree.
 
 Rows are written by `XpSearchQueryLogQueueWorker`, a `ThreadQueueWorker`, so a search response never
 waits for the database.

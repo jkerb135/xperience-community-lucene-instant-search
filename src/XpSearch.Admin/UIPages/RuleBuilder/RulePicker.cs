@@ -3,6 +3,7 @@ using XpSearch.Core.Abstractions;
 using XpSearch.Core.Contract;
 using XpSearch.Core.Facets;
 using XpSearch.Core.Search;
+using XpSearch.Core.Tuning;
 
 namespace XpSearch.Admin.UIPages.RuleBuilder;
 
@@ -172,6 +173,7 @@ public sealed class RulePicker : IRulePicker
                 },
                 applyTuning: false,
                 contactGroup: string.Empty,
+                variant: TuningVariant.Live,
                 cancellationToken)
             .ConfigureAwait(false);
 
@@ -236,6 +238,7 @@ public sealed class RulePicker : IRulePicker
                 },
                 applyTuning: false,
                 contactGroup: string.Empty,
+                variant: TuningVariant.Live,
                 cancellationToken)
             .ConfigureAwait(false);
 

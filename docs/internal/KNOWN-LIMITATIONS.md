@@ -930,3 +930,18 @@ and how to lift it.
   on the next attempt), but a search in between sees a mixture of both tunings.
 - **Upgrade path:** wrap each operation in a `CMS.DataEngine.CMSTransactionScope` and replace the
   row-by-row loops with bulk `UPDATE`/`DELETE` over the object query once the row counts justify it.
+
+## The comparison report reads the range twice, in `ExperimentDetailPage.ReportAsync`
+
+- **Simplified:** each variant's side is a separate `ISearchAnalyticsService.GetReportAsync` call with
+  the experiment and variant on the query, and the service filters the range's rows in memory after
+  `IQueryLogStore.ReadAsync` has read them. So one page load reads every query log row of the
+  experiment's whole window twice, and builds every top-N list it does not show. The alternative -
+  a variant-aware store read, or one read split in memory by the page - would either widen
+  `IQueryLogStore` or restate the metric definitions the Analytics page already owns, and drifting
+  definitions are the one thing an A/B report must not have.
+- **Ceiling:** a long experiment on a busy index (months, millions of logged searches) makes the
+  Overview page slow and memory-hungry, the same ceiling the analytics dashboard already has for wide
+  ranges, doubled. There is no paging or aggregation in SQL.
+- **Upgrade path:** push the experiment and variant filter into `IQueryLogStore.ReadAsync`, then into a
+  `GROUP BY` that returns the four totals rather than the rows - the report only ever shows totals.

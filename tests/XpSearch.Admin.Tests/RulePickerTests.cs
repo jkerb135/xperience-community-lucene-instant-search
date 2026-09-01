@@ -19,6 +19,7 @@ using XpSearch.Core.Analytics;
 using XpSearch.Core.Contract;
 using XpSearch.Core.Pipeline;
 using XpSearch.Core.Search;
+using XpSearch.Core.Tuning;
 
 namespace XpSearch.Admin.Tests;
 
@@ -41,7 +42,7 @@ internal sealed class RulePickerTests
     {
         search = Substitute.For<IQueryTesterSearch>();
         search
-            .ExecuteAsync(Arg.Any<SearchRequest>(), Arg.Any<bool>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .ExecuteAsync(Arg.Any<SearchRequest>(), Arg.Any<bool>(), Arg.Any<string>(), Arg.Any<TuningVariant>(), Arg.Any<CancellationToken>())
             .Returns(_ => Task.FromResult(new QueryTesterSideResult(Empty(), [])));
 
         lookup = Substitute.For<IIndexDocumentLookup>();
@@ -67,7 +68,7 @@ internal sealed class RulePickerTests
     public async Task SearchAsync_RunsOnePageOfUntunedResultsAndReadsTheTitleAndUrl()
     {
         search
-            .ExecuteAsync(Arg.Any<SearchRequest>(), Arg.Any<bool>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .ExecuteAsync(Arg.Any<SearchRequest>(), Arg.Any<bool>(), Arg.Any<string>(), Arg.Any<TuningVariant>(), Arg.Any<CancellationToken>())
             .Returns(_ => Task.FromResult(new QueryTesterSideResult(
                 new SearchResponse
                 {
@@ -100,7 +101,7 @@ internal sealed class RulePickerTests
     public async Task ValuesAsync_AsksForOneFacetAndNoResults()
     {
         search
-            .ExecuteAsync(Arg.Any<SearchRequest>(), Arg.Any<bool>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .ExecuteAsync(Arg.Any<SearchRequest>(), Arg.Any<bool>(), Arg.Any<string>(), Arg.Any<TuningVariant>(), Arg.Any<CancellationToken>())
             .Returns(_ =>
             {
                 var response = Empty();
