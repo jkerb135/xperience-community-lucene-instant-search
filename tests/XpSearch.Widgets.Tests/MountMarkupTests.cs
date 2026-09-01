@@ -145,7 +145,7 @@ internal sealed class MountMarkupTests
             Index = Index,
             ResultsPerPage = 12,
             ResultTemplate = "MyCompany.ProductCard",
-            Fields = "title\r\nurl\n summary "
+            FieldNames = ["title", " url ", "summary"]
         });
 
         var instance = Rendered.Json(markup, "data-xps-instance-config");
@@ -160,6 +160,42 @@ internal sealed class MountMarkupTests
                 instance.GetProperty("fields").EnumerateArray().Select(field => field.GetString()),
                 Is.EqualTo(new[] { "title", "url", "summary" }));
         });
+    }
+
+    [Test]
+    public void Results_still_reads_the_fields_a_widget_saved_before_the_selector_existed()
+    {
+        var component = new ResultsWidgetViewComponent(renderer, editor, catalog);
+
+        // The stored shape of the retired text area: one field name per line.
+        string markup = Render(component, new ResultsWidgetProperties
+        {
+            Index = Index,
+            Fields = "title\r\nurl\n summary "
+        });
+
+        var instance = Rendered.Json(markup, "data-xps-instance-config");
+        Assert.That(
+            instance.GetProperty("fields").EnumerateArray().Select(field => field.GetString()),
+            Is.EqualTo(new[] { "title", "url", "summary" }));
+    }
+
+    [Test]
+    public void Results_prefers_the_selected_fields_over_the_old_stored_ones()
+    {
+        var component = new ResultsWidgetViewComponent(renderer, editor, catalog);
+
+        string markup = Render(component, new ResultsWidgetProperties
+        {
+            Index = Index,
+            Fields = "title\r\nurl",
+            FieldNames = ["heading"]
+        });
+
+        var instance = Rendered.Json(markup, "data-xps-instance-config");
+        Assert.That(
+            instance.GetProperty("fields").EnumerateArray().Select(field => field.GetString()),
+            Is.EqualTo(new[] { "heading" }));
     }
 
     [Test]

@@ -39,7 +39,7 @@ cd src/XpSearch.Admin/Client && npm ci && npm run build
 cd src/XpSearch.Widgets/Client && npm run contract:gen && npm run contract:check
 ```
 
-Suite sizes (2026-09-01, after PS-1): Core 260, Admin 186, Ingestion 47, Widgets 84, JS 191 — if your
+Suite sizes (2026-09-01, after PB-6): Core 262, Admin 186, Ingestion 47, Widgets 90, JS 195 — if your
 run shows fewer, you ran the wrong project.
 
 ## Patterns to copy (don't invent parallel ones)

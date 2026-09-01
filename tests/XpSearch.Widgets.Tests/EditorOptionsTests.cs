@@ -5,6 +5,7 @@ using Kentico.Xperience.Admin.Base.FormAnnotations;
 using NUnit.Framework;
 
 using XpSearch.Core;
+using XpSearch.Core.Abstractions;
 using XpSearch.Core.Options;
 using XpSearch.Widgets.Components.Widgets.XpSearch;
 using XpSearch.Widgets.Mounting;
@@ -73,6 +74,71 @@ internal sealed class EditorOptionsTests
         var items = (await provider.GetOptionItems()).ToList();
 
         Assert.That(items.Select(item => item.Text), Is.EqualTo(new[] { "Compact row", "Product card" }));
+    }
+
+    [Test]
+    public async Task The_field_selector_offers_the_stored_fields_of_every_index_once()
+    {
+        var provider = new IndexFieldSelectorDataProvider(
+            new FakeIndexCatalog("products", "site-content"),
+            new StubServices(new StubSchemas(
+                new IndexSchema("products", [Field("title"), Field("price"), Field("sku", retrievable: false)]),
+                new IndexSchema("site-content", [Field("title"), Field("summary")]))));
+
+        var all = await provider.GetItemsAsync(string.Empty, 0, CancellationToken.None);
+        var searched = await provider.GetItemsAsync("TIT", 0, CancellationToken.None);
+        var selected = await provider.GetSelectedItemsAsync(["retired-field"], CancellationToken.None);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(
+                all.Items.Select(item => item.Value),
+                Is.EqualTo(new[] { "title", "price", "summary" }),
+                "the union of the retrievable fields, each once");
+            Assert.That(all.NextPageAvailable, Is.False);
+            Assert.That(searched.Items.Select(item => item.Value), Is.EqualTo(new[] { "title" }));
+            // A value an older widget stored has to survive the round trip, schema or no schema.
+            Assert.That(selected.Single().Value, Is.EqualTo("retired-field"));
+        });
+    }
+
+    [Test]
+    public async Task The_field_selector_is_empty_without_a_schema_provider()
+    {
+        var provider = new IndexFieldSelectorDataProvider(new FakeIndexCatalog("products"), new StubServices(null));
+
+        var items = await provider.GetItemsAsync(string.Empty, 0, CancellationToken.None);
+
+        Assert.That(items.Items, Is.Empty);
+    }
+
+    private static SchemaField Field(string name, bool retrievable = true) =>
+        new(name, SearchFieldKind.Text, Searchable: true, Facetable: false, Sortable: false, Retrievable: retrievable);
+
+    private sealed class StubServices : IServiceProvider
+    {
+        private readonly IIndexSchemaProvider? schemas;
+
+        public StubServices(IIndexSchemaProvider? schemas) => this.schemas = schemas;
+
+        public object? GetService(Type serviceType) => serviceType == typeof(IIndexSchemaProvider) ? schemas : null;
+    }
+
+    private sealed class StubSchemas : IIndexSchemaProvider
+    {
+        private readonly IndexSchema[] schemas;
+
+        public StubSchemas(params IndexSchema[] schemas) => this.schemas = schemas;
+
+        public Task<IndexSchema> GetSchemaAsync(string indexName, CancellationToken cancellationToken)
+        {
+            var schema = schemas.FirstOrDefault(candidate =>
+                string.Equals(candidate.IndexName, indexName, StringComparison.OrdinalIgnoreCase));
+
+            return schema is null
+                ? Task.FromException<IndexSchema>(new IndexNotFoundException(indexName))
+                : Task.FromResult(schema);
+        }
     }
 
     [Test]

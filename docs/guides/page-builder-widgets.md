@@ -75,7 +75,7 @@ Then, per widget:
 | Widget | Properties |
 |---|---|
 | Search box | Placeholder · Show reset button · Focus on page load · Sync search state to the URL — see [Shareable result URLs](#shareable-result-urls) |
-| Results | Results per page · Result template · Fields to show (one attribute name per line — `title`, `url`, `contentType`, `language` or any field of your content types) · Title attribute · Link attribute · Snippet attributes — see [Pointing a card at other attributes](#pointing-a-card-at-other-attributes) |
+| Results | Results per page · Result template · Fields to show (a selector over the index fields — `title`, `url`, `contentType`, `language` or any stored field of your content types) · Title attribute · Link attribute · Snippet attributes — see [Pointing a card at other attributes](#pointing-a-card-at-other-attributes) |
 | Facet list | Attribute · Label · Operator (any / all of the selected values) · Values shown · Show a "show more" button |
 | Category tree | Attribute · Label · Nodes per level. Pick a **taxonomy** attribute: the tree comes from the tag hierarchy, and a flat attribute renders as one level. Selection is one value at a time, because a parent's count already includes its children |
 | Pagination | Style (numbered pages / load more button) — "load more" emits a `loadMore` mount instead of a `pagination` one, so place one or the other, never both |
@@ -98,6 +98,22 @@ The range filter's **Attribute** property works the same way, but lists the inde
 fields instead — the ones a `filters.numeric` comparison can be built from. An index with no numeric
 or date field leaves the drop-down hidden, which is the sign that a range filter has nothing to filter
 on there.
+
+#### The Results widget's field selectors are filled from the index too
+
+**Fields to show**, **Title attribute** and **Link attribute** are selectors, not text fields: they
+offer the stored (retrievable) fields of the registered indexes, so an editor picks a field name
+instead of remembering one. *Fields to show* takes several, the other two take one each and leave
+their default (`title`, `url`) in place while empty.
+
+They differ from the facet **Attribute** drop-down in one way: a selector's option list cannot depend
+on the index chosen in the same dialog, so with more than one index registered it lists the fields of
+all of them. Picking a field that the selected index does not have simply returns nothing for that
+field — the same outcome as typing it did before.
+
+A Results widget saved before these selectors existed keeps working: its typed field list is still
+read and still reaches the search. It shows up as an empty selector in the dialog, and the moment you
+pick anything there, the selection replaces the old list.
 
 #### Pointing a card at other attributes
 
@@ -263,6 +279,12 @@ therefore needs no JavaScript: a shared result URL — `?q=espresso&page=2&tags=
 results in the HTML, and a visitor without JavaScript still sees them. The search runs through the same
 pipeline as `/api/xpsearch/query`, so rules, personalization and analytics apply. If it fails, the
 warning goes to the event log and the mount is left empty; a broken search never breaks the page.
+
+**One page load is one search in the analytics.** The widget hands the client the `queryId` of the
+search it rendered (`initialQueryId` in `data-xps-instance-config`) and the page size that search
+actually used, so the hydration query repeats the same search under the same id: the query log gets
+one row per page load, not two, and a click is attributed to it. Only the first query after hydration
+carries the id; everything the visitor does afterwards is a search of its own.
 
 **The client takes over on its first render.** The server block is replaced the moment the bundle
 hydrates the widget, and every later render — a new query, a facet, page 2 — is the JavaScript client's.

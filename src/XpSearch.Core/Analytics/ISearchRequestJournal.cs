@@ -18,7 +18,10 @@ namespace XpSearch.Core.Analytics;
 /// </remarks>
 public interface ISearchRequestJournal
 {
-    /// <summary>Records one answered search. Never throws.</summary>
+    /// <summary>
+    /// Records one answered search. Never throws. A <paramref name="queryId"/> that was already
+    /// recorded is the same search reaching the journal twice and is not recorded again.
+    /// </summary>
     /// <param name="queryId">The correlation id returned to the caller.</param>
     /// <param name="queryText">The normalized query text.</param>
     /// <param name="indexName">Code name of the index that was searched.</param>
@@ -95,6 +98,15 @@ public sealed class SearchRequestJournal : ISearchRequestJournal
     {
         try
         {
+            // The same queryId reaching the journal twice is one search answered twice: the results
+            // widget's server-rendered first paint and the hydration query that carries its id back
+            // (spec §5.8). Recording it again would double the query volume of every such page load
+            // and halve its click-through rate, so the repeat is dropped.
+            if (!string.IsNullOrEmpty(queryId) && queryContexts.Get(queryId) is not null)
+            {
+                return;
+            }
+
             activityLogger.LogSearch(queryText, total);
 
             if (!string.IsNullOrEmpty(queryId))

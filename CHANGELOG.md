@@ -23,6 +23,20 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
   the facet and range-filter attribute properties of the widgets, and the rule builder's attribute
   picker — list the fields alphabetically (case-insensitive) instead of in index-discovery order.
 
+- **Changed (widgets):** the Results widget's **Fields to show**, **Title attribute** and **Link
+  attribute** are selectors filled from the index schema instead of free-text fields — an editor picks
+  stored field names rather than remembering them. *Snippet attributes* stays a text area, because the
+  order of its values is what decides which one wins. Widgets saved before this keep rendering
+  unchanged: the old newline-separated field list is still read when the new selector is empty.
+
+- **Fixed (widgets, core):** a page whose Results widget renders its first paint on the server no
+  longer counts as two searches. The widget emits the `queryId` of the search it rendered as
+  `initialQueryId` in `data-xps-instance-config`, the client sends it with its first query only, and
+  the journal ignores a `queryId` it has already recorded — one query log row and one search activity
+  per page load, with clicks attributed to it. The widget also emits the page size that search
+  actually used, so the hydration query asks for the same page the visitor is already looking at
+  instead of falling back to a different default (HW-11 saw a 6-card first paint replaced by 12).
+
 - **Fixed (core, admin):** the `XpSearch.PopularitySignal` scheduled task failed with *Cannot insert
   the value NULL into column 'PopularityIndexEnabled'* the first time it ran for an index. A Kentico
   Info object only writes the fields that were set, so the settings row it creates now sets the
