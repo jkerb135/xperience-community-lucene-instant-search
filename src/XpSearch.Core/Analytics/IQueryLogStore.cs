@@ -10,6 +10,8 @@ namespace XpSearch.Core.Analytics;
 /// <param name="Language">Language the search asked for, or an empty string.</param>
 /// <param name="ProcessingTimeMs">Server-side processing time of the search, in milliseconds.</param>
 /// <param name="ClickedPosition">One-based position of the clicked result, or <see langword="null"/>.</param>
+/// <param name="ExperimentId">Identifier of the experiment that answered the search, or <see langword="null"/> (XP-1).</param>
+/// <param name="Variant">Variant the visitor was bucketed into, or <see langword="null"/> when no experiment ran.</param>
 public sealed record QueryLogEntry(
     string QueryId,
     string IndexName,
@@ -19,7 +21,9 @@ public sealed record QueryLogEntry(
     string ChannelName,
     string Language,
     int ProcessingTimeMs,
-    int? ClickedPosition = null);
+    int? ClickedPosition = null,
+    int? ExperimentId = null,
+    string? Variant = null);
 
 /// <summary>
 /// Reads and writes the aggregate query log. Nothing here is personal data, so it works the same for

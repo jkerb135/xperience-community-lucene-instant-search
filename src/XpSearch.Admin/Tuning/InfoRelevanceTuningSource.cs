@@ -76,16 +76,18 @@ public sealed class InfoRelevanceTuningSource : IRelevanceTuningSource
     /// <summary>Builds the cache key parts of one index's tuning entry.</summary>
     /// <param name="indexName">Code name of the index.</param>
     /// <param name="part">Which kind of tuning data is being cached.</param>
+    /// <param name="variant">Which variant's rows the entry holds; the live one by default.</param>
     /// <returns>The parts, which the cache joins with <c>|</c>.</returns>
-    public static string[] CacheKeyParts(string indexName, string part) =>
-        ["xpsearch", "tuning", part, indexName ?? string.Empty];
+    public static string[] CacheKeyParts(string indexName, string part, TuningVariant variant = default) =>
+        ["xpsearch", "tuning", part, indexName ?? string.Empty, variant.CacheKeyPart];
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<TuningRule>> GetRulesAsync(string indexName, CancellationToken cancellationToken) =>
-        LoadAsync(indexName, "rules", cancellationToken, async token =>
+    public Task<IReadOnlyList<TuningRule>> GetRulesAsync(string indexName, CancellationToken cancellationToken, TuningVariant variant = default) =>
+        LoadAsync(indexName, "rules", variant, cancellationToken, async token =>
         {
             var rows = await rules.Get()
                 .WhereEquals(nameof(XpSearchRuleInfo.RuleIndexName), indexName)
+                .Where(VariantScope.Condition(nameof(XpSearchRuleInfo.RuleExperimentID), variant))
                 .GetEnumerableTypedResultAsync(cancellationToken: token)
                 .ConfigureAwait(false);
 
@@ -93,12 +95,13 @@ public sealed class InfoRelevanceTuningSource : IRelevanceTuningSource
         });
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<TuningSynonym>> GetSynonymsAsync(string indexName, CancellationToken cancellationToken) =>
-        LoadAsync(indexName, "synonyms", cancellationToken, async token =>
+    public Task<IReadOnlyList<TuningSynonym>> GetSynonymsAsync(string indexName, CancellationToken cancellationToken, TuningVariant variant = default) =>
+        LoadAsync(indexName, "synonyms", variant, cancellationToken, async token =>
         {
             var rows = await synonyms.Get()
                 .WhereEquals(nameof(XpSearchSynonymInfo.SynonymIndexName), indexName)
                 .WhereTrue(nameof(XpSearchSynonymInfo.SynonymEnabled))
+                .Where(VariantScope.Condition(nameof(XpSearchSynonymInfo.SynonymExperimentID), variant))
                 .GetEnumerableTypedResultAsync(cancellationToken: token)
                 .ConfigureAwait(false);
 
@@ -114,11 +117,12 @@ public sealed class InfoRelevanceTuningSource : IRelevanceTuningSource
         });
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<string>> GetStopwordsAsync(string indexName, CancellationToken cancellationToken) =>
-        LoadAsync(indexName, "stopwords", cancellationToken, async token =>
+    public Task<IReadOnlyList<string>> GetStopwordsAsync(string indexName, CancellationToken cancellationToken, TuningVariant variant = default) =>
+        LoadAsync(indexName, "stopwords", variant, cancellationToken, async token =>
         {
             var rows = await stopwords.Get()
                 .WhereEquals(nameof(XpSearchStopwordListInfo.StopwordListIndexName), indexName)
+                .Where(VariantScope.Condition(nameof(XpSearchStopwordListInfo.StopwordListExperimentID), variant))
                 .TopN(1)
                 .GetEnumerableTypedResultAsync(cancellationToken: token)
                 .ConfigureAwait(false);
@@ -127,11 +131,12 @@ public sealed class InfoRelevanceTuningSource : IRelevanceTuningSource
         });
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<FieldWeight>> GetFieldWeightsAsync(string indexName, CancellationToken cancellationToken) =>
-        LoadAsync(indexName, "weights", cancellationToken, async token =>
+    public Task<IReadOnlyList<FieldWeight>> GetFieldWeightsAsync(string indexName, CancellationToken cancellationToken, TuningVariant variant = default) =>
+        LoadAsync(indexName, "weights", variant, cancellationToken, async token =>
         {
             var rows = await weights.Get()
                 .WhereEquals(nameof(XpSearchFieldWeightInfo.WeightIndexName), indexName)
+                .Where(VariantScope.Condition(nameof(XpSearchFieldWeightInfo.WeightExperimentID), variant))
                 .GetEnumerableTypedResultAsync(cancellationToken: token)
                 .ConfigureAwait(false);
 
@@ -192,6 +197,7 @@ public sealed class InfoRelevanceTuningSource : IRelevanceTuningSource
     private Task<TResult> LoadAsync<TResult>(
         string indexName,
         string part,
+        TuningVariant variant,
         CancellationToken cancellationToken,
         Func<CancellationToken, Task<TResult>> load) =>
         cache.LoadAsync(
@@ -206,5 +212,5 @@ public sealed class InfoRelevanceTuningSource : IRelevanceTuningSource
 
                 return await load(cancellationToken).ConfigureAwait(false);
             },
-            new CacheSettings(CacheMinutes, CacheKeyParts(indexName, part)));
+            new CacheSettings(CacheMinutes, CacheKeyParts(indexName, part, variant)));
 }

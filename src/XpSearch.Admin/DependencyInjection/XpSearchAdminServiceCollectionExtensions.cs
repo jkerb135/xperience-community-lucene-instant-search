@@ -4,6 +4,7 @@ using XpSearch.Admin.Persistence;
 using XpSearch.Admin.Tuning;
 using XpSearch.Admin.UIPages.QueryTester;
 using XpSearch.Admin.UIPages.RuleBuilder;
+using XpSearch.Core.Experiments;
 using XpSearch.Core.Tuning;
 
 namespace Microsoft.Extensions.DependencyInjection;
@@ -33,6 +34,11 @@ public static class XpSearchAdminServiceCollectionExtensions
         services.TryAddSingleton<IRulePicker, RulePicker>();
         services.TryAddSingleton<IContactGroupCatalog, ContactGroupCatalog>();
         services.Replace(ServiceDescriptor.Singleton<IRelevanceTuningSource, InfoRelevanceTuningSource>());
+
+        // Experiments (XP-1). Core registered the "no index is experimenting" source; this package is
+        // the one that knows where experiments are stored.
+        services.TryAddSingleton<IExperimentService, ExperimentService>();
+        services.Replace(ServiceDescriptor.Singleton<IRunningExperimentSource, InfoRunningExperimentSource>());
 
         return services;
     }

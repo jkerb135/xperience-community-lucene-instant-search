@@ -113,6 +113,17 @@ public class XpSearchSynonymInfo : AbstractInfo<XpSearchSynonymInfo, IInfoProvid
         set => SetValue(nameof(SynonymEnabled), value);
     }
 
+    /// <summary>
+    /// Gets or sets the experiment this synonym group is the variant-B draft of, or
+    /// <see langword="null"/> when it is live (XP-1). Every live read filters on it being null.
+    /// </summary>
+    [DatabaseField]
+    public virtual int? SynonymExperimentID
+    {
+        get => GetValue(nameof(SynonymExperimentID)) as int?;
+        set => SetValue(nameof(SynonymExperimentID), value);
+    }
+
     /// <inheritdoc />
     protected override void DeleteObject() => Provider.Delete(this);
 

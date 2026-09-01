@@ -2,6 +2,8 @@ using CMS.Websites.Routing;
 
 using Microsoft.Extensions.Logging;
 
+using XpSearch.Core.Experiments;
+
 namespace XpSearch.Core.Analytics;
 
 /// <summary>
@@ -23,7 +25,19 @@ public interface ISearchRequestJournal
     /// <param name="total">How many documents matched.</param>
     /// <param name="elapsed">How long answering the request took.</param>
     /// <param name="language">Language of the request, or empty.</param>
-    void Record(string queryId, string queryText, string indexName, int total, TimeSpan elapsed, string language);
+    /// <param name="experiment">
+    /// The running experiment and variant that answered the request (XP-1), or <see langword="null"/>.
+    /// Stamping the query log splits every metric it already carries by variant; the activity is
+    /// deliberately left alone.
+    /// </param>
+    void Record(
+        string queryId,
+        string queryText,
+        string indexName,
+        int total,
+        TimeSpan elapsed,
+        string language,
+        ExperimentAssignment? experiment = null);
 }
 
 /// <summary>
@@ -70,7 +84,14 @@ public sealed class SearchRequestJournal : ISearchRequestJournal
     }
 
     /// <inheritdoc />
-    public void Record(string queryId, string queryText, string indexName, int total, TimeSpan elapsed, string language)
+    public void Record(
+        string queryId,
+        string queryText,
+        string indexName,
+        int total,
+        TimeSpan elapsed,
+        string language,
+        ExperimentAssignment? experiment = null)
     {
         try
         {
@@ -89,7 +110,10 @@ public sealed class SearchRequestJournal : ISearchRequestJournal
                 DateTime.UtcNow,
                 ChannelName(),
                 language ?? string.Empty,
-                (int)elapsed.TotalMilliseconds)));
+                (int)elapsed.TotalMilliseconds,
+                null,
+                experiment is { IsActive: true } ? experiment.ExperimentId : null,
+                experiment is { IsActive: true } ? experiment.Variant.ToString() : null)));
         }
         catch (Exception exception)
         {

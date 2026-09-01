@@ -58,6 +58,7 @@ public sealed class XpSearchTuningModuleInstaller
         Add(form, nameof(XpSearchRuleInfo.RuleValidFrom), FieldDataType.DateTime, allowEmpty: true);
         Add(form, nameof(XpSearchRuleInfo.RuleValidTo), FieldDataType.DateTime, allowEmpty: true);
         Add(form, nameof(XpSearchRuleInfo.RulePriority), FieldDataType.Integer);
+        Add(form, nameof(XpSearchRuleInfo.RuleExperimentID), FieldDataType.Integer, allowEmpty: true);
 
         return form;
     }
@@ -74,6 +75,7 @@ public sealed class XpSearchTuningModuleInstaller
         Add(form, nameof(XpSearchSynonymInfo.SynonymInput), FieldDataType.LongText);
         Add(form, nameof(XpSearchSynonymInfo.SynonymOutput), FieldDataType.LongText, allowEmpty: true);
         Add(form, nameof(XpSearchSynonymInfo.SynonymEnabled), FieldDataType.Boolean);
+        Add(form, nameof(XpSearchSynonymInfo.SynonymExperimentID), FieldDataType.Integer, allowEmpty: true);
 
         return form;
     }
@@ -88,6 +90,7 @@ public sealed class XpSearchTuningModuleInstaller
         Add(form, nameof(XpSearchFieldWeightInfo.WeightIndexName), FieldDataType.Text, size: 100);
         Add(form, nameof(XpSearchFieldWeightInfo.WeightFieldName), FieldDataType.Text, size: 200);
         Add(form, nameof(XpSearchFieldWeightInfo.WeightValue), FieldDataType.Decimal, size: 18, precision: 4);
+        Add(form, nameof(XpSearchFieldWeightInfo.WeightExperimentID), FieldDataType.Integer, allowEmpty: true);
 
         return form;
     }
@@ -101,6 +104,25 @@ public sealed class XpSearchTuningModuleInstaller
         Add(form, nameof(XpSearchStopwordListInfo.StopwordListGuid), FieldDataType.Guid);
         Add(form, nameof(XpSearchStopwordListInfo.StopwordListIndexName), FieldDataType.Text, size: 100);
         Add(form, nameof(XpSearchStopwordListInfo.StopwordListWords), FieldDataType.LongText, allowEmpty: true);
+        Add(form, nameof(XpSearchStopwordListInfo.StopwordListExperimentID), FieldDataType.Integer, allowEmpty: true);
+
+        return form;
+    }
+
+    /// <summary>The form definition of <see cref="XpSearchExperimentInfo"/> (XP-1).</summary>
+    /// <returns>The fields, on top of the primary key the basic definition creates.</returns>
+    public static FormInfo ExperimentForm()
+    {
+        var form = FormHelper.GetBasicFormDefinition(nameof(XpSearchExperimentInfo.ExperimentID));
+
+        Add(form, nameof(XpSearchExperimentInfo.ExperimentGuid), FieldDataType.Guid);
+        Add(form, nameof(XpSearchExperimentInfo.ExperimentIndexName), FieldDataType.Text, size: 100);
+        Add(form, nameof(XpSearchExperimentInfo.ExperimentDisplayName), FieldDataType.Text, size: 200);
+        Add(form, nameof(XpSearchExperimentInfo.ExperimentSplitPercent), FieldDataType.Integer);
+        Add(form, nameof(XpSearchExperimentInfo.ExperimentState), FieldDataType.Integer);
+        Add(form, nameof(XpSearchExperimentInfo.ExperimentStarted), FieldDataType.DateTime, allowEmpty: true);
+        Add(form, nameof(XpSearchExperimentInfo.ExperimentEnded), FieldDataType.DateTime, allowEmpty: true);
+        Add(form, nameof(XpSearchExperimentInfo.ExperimentConcludedOutcome), FieldDataType.Integer);
 
         return form;
     }
@@ -126,6 +148,7 @@ public sealed class XpSearchTuningModuleInstaller
         InstallClass(resource, XpSearchSynonymInfo.TYPEINFO, "XpSearch synonym", SynonymForm());
         InstallClass(resource, XpSearchFieldWeightInfo.TYPEINFO, "XpSearch field weight", FieldWeightForm());
         InstallClass(resource, XpSearchStopwordListInfo.TYPEINFO, "XpSearch stopword list", StopwordListForm());
+        InstallClass(resource, XpSearchExperimentInfo.TYPEINFO, "XpSearch experiment", ExperimentForm());
 
         // The rule class now has both shapes' columns on an upgraded installation, so this is the
         // first moment the conversion can run - and the last before a page reads a rule.

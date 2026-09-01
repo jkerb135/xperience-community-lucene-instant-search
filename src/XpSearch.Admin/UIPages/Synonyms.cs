@@ -10,7 +10,9 @@ using Kentico.Xperience.Lucene.Admin;
 using Kentico.Xperience.Lucene.Core.Indexing;
 
 using XpSearch.Admin.Persistence;
+using XpSearch.Admin.Tuning;
 using XpSearch.Admin.UIPages;
+using XpSearch.Core.Tuning;
 
 [assembly: UIPage(
     parentType: typeof(IndexTuningSection),
@@ -169,7 +171,9 @@ public class SynonymListing : ListingPage
         PageConfiguration.AddEditRowAction<SynonymEdit>(parameters: IndexScope.Route(IndexIdentifier));
         PageConfiguration.TableActions.AddDeleteAction(nameof(Delete), "Delete");
         PageConfiguration.QueryModifiers.AddModifier((query, _) =>
-            query.WhereEquals(nameof(XpSearchSynonymInfo.SynonymIndexName), indexName));
+            query
+                .WhereEquals(nameof(XpSearchSynonymInfo.SynonymIndexName), indexName)
+                .Where(VariantScope.Condition(nameof(XpSearchSynonymInfo.SynonymExperimentID), TuningVariant.Live)));
 
         return base.ConfigurePage();
     }

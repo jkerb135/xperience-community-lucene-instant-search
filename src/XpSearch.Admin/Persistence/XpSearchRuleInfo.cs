@@ -157,6 +157,17 @@ public class XpSearchRuleInfo : AbstractInfo<XpSearchRuleInfo, IInfoProvider<XpS
         set => SetValue(nameof(RulePriority), value);
     }
 
+    /// <summary>
+    /// Gets or sets the experiment this rule is the variant-B draft of, or <see langword="null"/>
+    /// when it is live (XP-1). Every live read filters on it being null.
+    /// </summary>
+    [DatabaseField]
+    public virtual int? RuleExperimentID
+    {
+        get => GetValue(nameof(RuleExperimentID)) as int?;
+        set => SetValue(nameof(RuleExperimentID), value);
+    }
+
     /// <inheritdoc />
     protected override void DeleteObject() => Provider.Delete(this);
 

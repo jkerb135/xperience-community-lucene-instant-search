@@ -7,6 +7,7 @@ using Lucene.Net.Search;
 
 using XpSearch.Core.Abstractions;
 using XpSearch.Core.Contract;
+using XpSearch.Core.Experiments;
 using XpSearch.Core.Personalization;
 using XpSearch.Core.Tuning;
 
@@ -126,6 +127,13 @@ public sealed class SearchContext
     /// consent to tracking, or no HTTP context - which leaves only the unscoped rules applying.
     /// </summary>
     public IReadOnlySet<string> ContactGroups { get; set; } = ContactGroupSets.None;
+
+    /// <summary>
+    /// Gets or sets the experiment that applies to this request and the variant the visitor was
+    /// bucketed into, resolved by <c>ResolveExperimentStage</c> (XP-1). The tuning stages read
+    /// <see cref="ExperimentAssignment.Tuning"/>; the default means "no experiment, live tuning".
+    /// </summary>
+    public ExperimentAssignment Experiment { get; set; } = ExperimentAssignment.None;
 
     /// <summary>
     /// Gets or sets the synonym-expanded query: one slot per query position, each holding the

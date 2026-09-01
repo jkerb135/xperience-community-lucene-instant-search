@@ -10,6 +10,7 @@ using XpSearch.Core.Analytics;
 using XpSearch.Core.Caching;
 using XpSearch.Core.ContactGroups;
 using XpSearch.Core.Endpoints;
+using XpSearch.Core.Experiments;
 using XpSearch.Core.Facets;
 using XpSearch.Core.Highlighting;
 using XpSearch.Core.Indexing;
@@ -84,6 +85,12 @@ public static class XpSearchServiceCollectionExtensions
         services.AddHttpContextAccessor();
         services.TryAddSingleton<IContactGroupResolver, ContactGroupResolver>();
 
+        // Experiments (XP-1). Core knows how to bucket a visitor but not which experiments exist:
+        // AddXpSearchAdmin() replaces the source with the database-backed one.
+        services.TryAddSingleton<IRunningExperimentSource, NoRunningExperimentSource>();
+        services.TryAddSingleton<IExperimentAssignmentResolver, ExperimentAssignmentResolver>();
+        services.AddXpSearchBucketCookie();
+
         // Analytics (spec §9). The activity logger is consent-gated; the query log is not.
         services.TryAddSingleton<ISearchActivityLogger, SearchActivityLogger>();
         services.TryAddSingleton<IQueryContextMap, QueryContextMap>();
@@ -98,6 +105,7 @@ public static class XpSearchServiceCollectionExtensions
 
         services.AddXpSearchStage<NormalizeRequestStage>();
         services.AddXpSearchStage<ResolveContactGroupsStage>();
+        services.AddXpSearchStage<ResolveExperimentStage>();
         services.AddXpSearchStage<QueryRewriteStage>();
         services.AddXpSearchStage<SynonymExpansionStage>();
         services.AddXpSearchStage<StopwordRemovalStage>();
@@ -117,6 +125,7 @@ public static class XpSearchServiceCollectionExtensions
             provider.GetRequiredService<ISearchCache>(),
             provider.GetRequiredService<Options.IOptions<XpSearchOptions>>(),
             provider.GetRequiredService<IContactGroupResolver>(),
+            provider.GetRequiredService<IExperimentAssignmentResolver>(),
             provider.GetRequiredService<ISearchRequestJournal>()));
 
         services.DecorateLuceneClient<CacheEvictingLuceneClient>(
@@ -124,6 +133,28 @@ public static class XpSearchServiceCollectionExtensions
                 inner,
                 provider.GetRequiredService<ISearchCache>(),
                 provider.GetRequiredService<ILuceneIndexAccessor>()));
+
+        return services;
+    }
+
+    /// <summary>
+    /// Registers the experiment bucket cookie at the <c>Essential</c> cookie level, which is what lets
+    /// an experiment bucket a visitor who has not consented to tracking
+    /// (https://docs.kentico.com/documentation/developers-and-admins/data-protection/cookies).
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The same collection, for chaining.</returns>
+    /// <remarks>
+    /// An unregistered cookie would be treated as a <c>Visitor</c> level one, which is exactly the
+    /// consent gate the amendment says an experiment must not be behind. Called by
+    /// <see cref="AddXpSearch(IServiceCollection)"/>; public so it can be asserted on.
+    /// </remarks>
+    public static IServiceCollection AddXpSearchBucketCookie(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.Configure<Kentico.Web.Mvc.CookieLevelOptions>(cookies =>
+            cookies.CookieConfigurations[ExperimentBucketing.CookieName] = Kentico.Web.Mvc.CookieLevel.Essential);
 
         return services;
     }

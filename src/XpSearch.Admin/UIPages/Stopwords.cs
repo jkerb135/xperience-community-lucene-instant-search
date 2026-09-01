@@ -10,7 +10,9 @@ using Kentico.Xperience.Lucene.Admin;
 using Kentico.Xperience.Lucene.Core.Indexing;
 
 using XpSearch.Admin.Persistence;
+using XpSearch.Admin.Tuning;
 using XpSearch.Admin.UIPages;
+using XpSearch.Core.Tuning;
 
 [assembly: UIPage(
     parentType: typeof(IndexTuningSection),
@@ -133,7 +135,9 @@ public class StopwordListing : ListingPage
         PageConfiguration.AddEditRowAction<StopwordEdit>(parameters: IndexScope.Route(IndexIdentifier));
         PageConfiguration.TableActions.AddDeleteAction(nameof(Delete), "Delete");
         PageConfiguration.QueryModifiers.AddModifier((query, _) =>
-            query.WhereEquals(nameof(XpSearchStopwordListInfo.StopwordListIndexName), indexName));
+            query
+                .WhereEquals(nameof(XpSearchStopwordListInfo.StopwordListIndexName), indexName)
+                .Where(VariantScope.Condition(nameof(XpSearchStopwordListInfo.StopwordListExperimentID), TuningVariant.Live)));
 
         return base.ConfigurePage();
     }

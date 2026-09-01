@@ -46,6 +46,11 @@ public sealed class XpSearchAnalyticsModuleInstaller
         Add(form, nameof(XpSearchQueryLogInfo.LogClickedPosition), FieldDataType.Integer, allowEmpty: true);
         Add(form, nameof(XpSearchQueryLogInfo.LogProcessingTimeMs), FieldDataType.Integer);
 
+        // XP-1. Nullable, so an upgraded installation keeps its existing rows: CombineWithForm adds
+        // the columns to the installed class, and a nullable column needs no backfill.
+        Add(form, nameof(XpSearchQueryLogInfo.LogExperimentID), FieldDataType.Integer, allowEmpty: true);
+        Add(form, nameof(XpSearchQueryLogInfo.LogVariant), FieldDataType.Text, size: 1, allowEmpty: true);
+
         return form;
     }
 

@@ -31,6 +31,7 @@ internal sealed class ModuleInstallerTests
                 nameof(XpSearchRuleInfo.RuleValidFrom),
                 nameof(XpSearchRuleInfo.RuleValidTo),
                 nameof(XpSearchRuleInfo.RulePriority),
+                nameof(XpSearchRuleInfo.RuleExperimentID),
             ]);
 
     [Test]
@@ -45,6 +46,7 @@ internal sealed class ModuleInstallerTests
                 nameof(XpSearchSynonymInfo.SynonymInput),
                 nameof(XpSearchSynonymInfo.SynonymOutput),
                 nameof(XpSearchSynonymInfo.SynonymEnabled),
+                nameof(XpSearchSynonymInfo.SynonymExperimentID),
             ]);
 
     [Test]
@@ -57,6 +59,7 @@ internal sealed class ModuleInstallerTests
                 nameof(XpSearchFieldWeightInfo.WeightIndexName),
                 nameof(XpSearchFieldWeightInfo.WeightFieldName),
                 nameof(XpSearchFieldWeightInfo.WeightValue),
+                nameof(XpSearchFieldWeightInfo.WeightExperimentID),
             ]);
 
     [Test]
@@ -68,7 +71,51 @@ internal sealed class ModuleInstallerTests
                 nameof(XpSearchStopwordListInfo.StopwordListGuid),
                 nameof(XpSearchStopwordListInfo.StopwordListIndexName),
                 nameof(XpSearchStopwordListInfo.StopwordListWords),
+                nameof(XpSearchStopwordListInfo.StopwordListExperimentID),
             ]);
+
+    [Test]
+    public void ExperimentClassHasTheColumnsTheAmendmentNames() =>
+        AssertColumns(
+            XpSearchTuningModuleInstaller.ExperimentForm(),
+            [
+                nameof(XpSearchExperimentInfo.ExperimentID),
+                nameof(XpSearchExperimentInfo.ExperimentGuid),
+                nameof(XpSearchExperimentInfo.ExperimentIndexName),
+                nameof(XpSearchExperimentInfo.ExperimentDisplayName),
+                nameof(XpSearchExperimentInfo.ExperimentSplitPercent),
+                nameof(XpSearchExperimentInfo.ExperimentState),
+                nameof(XpSearchExperimentInfo.ExperimentStarted),
+                nameof(XpSearchExperimentInfo.ExperimentEnded),
+                nameof(XpSearchExperimentInfo.ExperimentConcludedOutcome),
+            ]);
+
+    /// <summary>
+    /// The experiment reference of a tuning row must be optional on every one of the four classes: a
+    /// live row has none, and an upgraded installation has rows that predate the column entirely.
+    /// </summary>
+    [Test]
+    public void TheExperimentColumnsAreNullableOnEveryTuningClass()
+    {
+        (FormInfo Form, string Column)[] classes =
+        [
+            (XpSearchTuningModuleInstaller.RuleForm(), nameof(XpSearchRuleInfo.RuleExperimentID)),
+            (XpSearchTuningModuleInstaller.SynonymForm(), nameof(XpSearchSynonymInfo.SynonymExperimentID)),
+            (XpSearchTuningModuleInstaller.FieldWeightForm(), nameof(XpSearchFieldWeightInfo.WeightExperimentID)),
+            (XpSearchTuningModuleInstaller.StopwordListForm(), nameof(XpSearchStopwordListInfo.StopwordListExperimentID)),
+        ];
+
+        Expect.Multiple(() =>
+        {
+            foreach (var (form, column) in classes)
+            {
+                var field = form.GetFields(true, true).Single(field => field.Name == column);
+
+                Assert.That(field.AllowEmpty, Is.True, column);
+                Assert.That(field.DataType, Is.EqualTo(FieldDataType.Integer), column);
+            }
+        });
+    }
 
     [Test]
     public void TheScheduleColumnsAreOptionalAndTheRequiredOnesAreNot()

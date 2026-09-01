@@ -12,8 +12,9 @@ contradicts it, fix the file in your commit.
 - `src/XpSearch.Admin` — admin UI; React client at `src/XpSearch.Admin/Client` (webpack,
   `@kentico/xperience-admin-*` packages).
 - `src/XpSearch.Ingestion` — external-document push API.
-- Tests: `tests/XpSearch.{Core,Admin,Ingestion,Widgets}.Tests` (NUnit), plus `tests/a11y`,
-  `tests/performance`, `tests/XpSearch.Integration.Tests`.
+- Tests: `tests/XpSearch.{Core,Admin,Ingestion,Widgets}.Tests` (NUnit), plus `tests/XpSearch.FacetSpike`.
+  (There is no `tests/a11y`, `tests/performance` or `XpSearch.Integration.Tests` project — checked
+  2026-09-01; the a11y and performance checks live in the widgets JS client.)
 - Docs: guides in `docs/guides/` (wiki-ready, verified samples), ADRs in `docs/adr/`,
   spec + amendments in `docs/spec/`, shortcuts in `docs/internal/KNOWN-LIMITATIONS.md`,
   unit specs in `docs/internal/units/`.
@@ -36,7 +37,7 @@ cd src/XpSearch.Admin/Client && npm ci && npm run build
 cd src/XpSearch.Widgets/Client && npm run contract:gen && npm run contract:check
 ```
 
-Suite sizes (2026-08-31): Core 205, Admin 121, Ingestion 47, Widgets 78, JS 191 — if your run
+Suite sizes (2026-09-01): Core 220, Admin 130, Ingestion 47, Widgets 78, JS 191 — if your run
 shows fewer, you ran the wrong project.
 
 ## Patterns to copy (don't invent parallel ones)
