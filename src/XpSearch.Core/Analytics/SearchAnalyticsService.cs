@@ -28,7 +28,7 @@ public sealed class SearchAnalyticsService : ISearchAnalyticsService
         ArgumentNullException.ThrowIfNull(query);
 
         int limit = Math.Max(1, query.Limit);
-        var rows = await store.ReadAsync(query.IndexName, query.FromUtc, query.ToUtc, cancellationToken).ConfigureAwait(false);
+        var rows = Scoped(await store.ReadAsync(query.IndexName, query.FromUtc, query.ToUtc, cancellationToken).ConfigureAwait(false), query);
         var byQuery = rows
             .Where(row => !string.IsNullOrEmpty(row.QueryText))
             .GroupBy(row => row.QueryText, StringComparer.Ordinal)
@@ -64,6 +64,26 @@ public sealed class SearchAnalyticsService : ISearchAnalyticsService
             TotalSearches: rows.Count,
             ZeroResultSearches: rows.Count(row => row.ResultCount == 0),
             Clicks: clicked.Count);
+    }
+
+    /// <summary>
+    /// Narrows the range's rows to one experiment's, and to one of its variants (XP-1), so the same
+    /// report code produces the A and the B side of a comparison.
+    /// </summary>
+    private static IReadOnlyList<QueryLogEntry> Scoped(IReadOnlyList<QueryLogEntry> rows, SearchAnalyticsQuery query)
+    {
+        if (query.ExperimentId is not { } experimentId)
+        {
+            return rows;
+        }
+
+        return
+        [
+            .. rows.Where(row =>
+                row.ExperimentId == experimentId
+                && (string.IsNullOrEmpty(query.Variant)
+                    || string.Equals(row.Variant, query.Variant, StringComparison.OrdinalIgnoreCase)))
+        ];
     }
 
     private static QueryClickThrough ToClickThrough(IGrouping<string, QueryLogEntry> group)

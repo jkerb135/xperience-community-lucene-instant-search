@@ -8,10 +8,12 @@ using NSubstitute;
 
 using NUnit.Framework;
 
+using XpSearch.Admin.Persistence;
 using XpSearch.Admin.Tuning;
 using XpSearch.Admin.UIPages;
 using XpSearch.Admin.UIPages.QueryTester;
 using XpSearch.Core.Contract;
+using XpSearch.Core.Tuning;
 
 namespace XpSearch.Admin.Tests;
 
@@ -23,6 +25,7 @@ internal sealed class QueryTesterPageTests
 
     private IQueryTesterSearch search = null!;
     private IContactGroupCatalog contactGroups = null!;
+    private IExperimentCatalog experiments = null!;
     private IPageLinkGenerator links = null!;
     private QueryTesterPage page = null!;
 
@@ -31,7 +34,7 @@ internal sealed class QueryTesterPageTests
     {
         search = Substitute.For<IQueryTesterSearch>();
         search
-            .ExecuteAsync(Arg.Any<SearchRequest>(), Arg.Any<bool>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .ExecuteAsync(Arg.Any<SearchRequest>(), Arg.Any<bool>(), Arg.Any<string>(), Arg.Any<TuningVariant>(), Arg.Any<CancellationToken>())
             .Returns(call => Task.FromResult(new QueryTesterSideResult(Empty(), [])));
 
         contactGroups = Substitute.For<IContactGroupCatalog>();
@@ -39,13 +42,66 @@ internal sealed class QueryTesterPageTests
             .GetAllAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult<IReadOnlyList<ContactGroupOption>>([new ContactGroupOption("grinder-shoppers", "Grinder shoppers")]));
 
+        experiments = Substitute.For<IExperimentCatalog>();
+        experiments
+            .GetUnfinishedAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult<ExperimentSummary?>(new ExperimentSummary(11, "articles", "Boost recent", 50, ExperimentState.Draft, ExperimentOutcome.None, null, null)));
+
         links = Substitute.For<IPageLinkGenerator>();
         links.GetPath<IndexStatusPage>(Arg.Any<PageParameterValues>()).Returns("/admin/lucene/indexes/edit/7/status");
 
-        page = new QueryTesterPage(Storage.Holding(IndexIdentifier, "articles", "en", "es"), search, links, contactGroups)
+        page = new QueryTesterPage(Storage.Holding(IndexIdentifier, "articles", "en", "es"), search, links, contactGroups, experiments)
         {
             IndexIdentifier = IndexIdentifier
         };
+    }
+
+    /// <summary>
+    /// The variant a run answers from is resolved on the server from the index's own experiment: the
+    /// client says "variant B", never which experiment (XP-1).
+    /// </summary>
+    [Test]
+    public async Task Run_AnswersFromTheIndexsOwnExperimentWhenVariantBIsAskedFor()
+    {
+        await page.Run(new QueryTesterRequest { Query = "espresso", VariantB = true }, CancellationToken.None);
+
+        var variants = search
+            .ReceivedCalls()
+            .Select(call => (TuningVariant)call.GetArguments()[3]!)
+            .ToList();
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(variants, Has.Count.EqualTo(2), "both sides of the comparison run against the same variant");
+            Assert.That(variants, Is.All.EqualTo(new TuningVariant(11)));
+        });
+    }
+
+    [Test]
+    public async Task Run_AnswersFromTheLiveTuningByDefault()
+    {
+        await page.Run(new QueryTesterRequest { Query = "espresso" }, CancellationToken.None);
+
+        Assert.That(
+            search.ReceivedCalls().Select(call => (TuningVariant)call.GetArguments()[3]!),
+            Is.All.EqualTo(TuningVariant.Live));
+    }
+
+    /// <summary>An index with no unfinished experiment has no variant B to offer, so the select is absent.</summary>
+    [Test]
+    public async Task ConfigureTemplateProperties_OffersTheVariantOnlyWhileAnExperimentExists()
+    {
+        var withExperiment = await page.ConfigureTemplateProperties(new QueryTesterClientProperties());
+
+        experiments.GetUnfinishedAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(Task.FromResult<ExperimentSummary?>(null));
+
+        var without = await page.ConfigureTemplateProperties(new QueryTesterClientProperties());
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(withExperiment.ExperimentName, Is.EqualTo("Boost recent"));
+            Assert.That(without.ExperimentName, Is.Empty);
+        });
     }
 
     [Test]
@@ -87,7 +143,7 @@ internal sealed class QueryTesterPageTests
     [Test]
     public async Task Run_ReportsAMissingIndexWithoutSearching()
     {
-        var unregistered = new QueryTesterPage(Storage.Holding(IndexIdentifier, "articles"), search, links, contactGroups) { IndexIdentifier = 999 };
+        var unregistered = new QueryTesterPage(Storage.Holding(IndexIdentifier, "articles"), search, links, contactGroups, experiments) { IndexIdentifier = 999 };
 
         var response = await unregistered.Run(new QueryTesterRequest(), CancellationToken.None);
 
@@ -102,7 +158,7 @@ internal sealed class QueryTesterPageTests
     public async Task Run_TurnsAValidationFailureIntoAMessage()
     {
         search
-            .ExecuteAsync(Arg.Any<SearchRequest>(), Arg.Any<bool>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .ExecuteAsync(Arg.Any<SearchRequest>(), Arg.Any<bool>(), Arg.Any<string>(), Arg.Any<TuningVariant>(), Arg.Any<CancellationToken>())
             .Returns<Task<QueryTesterSideResult>>(_ => throw new XpSearch.Core.Abstractions.SearchValidationException("query", "Too long."));
 
         var response = await page.Run(new QueryTesterRequest(), CancellationToken.None);

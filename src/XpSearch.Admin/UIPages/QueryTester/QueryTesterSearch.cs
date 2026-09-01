@@ -1,5 +1,6 @@
 using XpSearch.Core.Abstractions;
 using XpSearch.Core.Analytics;
+using XpSearch.Core.Experiments;
 using XpSearch.Core.Contract;
 using XpSearch.Core.Personalization;
 using XpSearch.Core.Pipeline;
@@ -32,9 +33,18 @@ public interface IQueryTesterSearch
     /// Code name of the contact group to simulate, so an admin can see a group-scoped rule fire
     /// without being a member. Empty runs as the admin's own contact would.
     /// </param>
+    /// <param name="variant">
+    /// The tuning variant to answer from (XP-1): the live tuning, or an experiment's variant B, so a
+    /// draft can be tried before any visitor sees it.
+    /// </param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The response and the query-level explanations.</returns>
-    Task<QueryTesterSideResult> ExecuteAsync(SearchRequest request, bool applyTuning, string contactGroup, CancellationToken cancellationToken);
+    Task<QueryTesterSideResult> ExecuteAsync(
+        SearchRequest request,
+        bool applyTuning,
+        string contactGroup,
+        TuningVariant variant,
+        CancellationToken cancellationToken);
 }
 
 /// <summary>
@@ -94,6 +104,7 @@ public sealed class QueryTesterSearch : IQueryTesterSearch
         SearchRequest request,
         bool applyTuning,
         string contactGroup,
+        TuningVariant variant,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -101,12 +112,20 @@ public sealed class QueryTesterSearch : IQueryTesterSearch
         var capture = new CaptureExplanationsStage();
         bool simulate = !string.IsNullOrWhiteSpace(contactGroup);
 
+        // Bucketing depends on the admin's own cookie, which says nothing about the variant being
+        // tested, so the assignment is dictated instead of resolved.
         var sideStages = new List<ISearchStage>(
             stages.Where(stage => (applyTuning || stage is not (SynonymExpansionStage or QueryRewriteStage))
-                && !(simulate && stage is ResolveContactGroupsStage)))
+                && !(simulate && stage is ResolveContactGroupsStage)
+                && !(!variant.IsLive && stage is ResolveExperimentStage)))
         {
             capture
         };
+
+        if (!variant.IsLive)
+        {
+            sideStages.Add(new AssignVariantStage(variant.ExperimentId));
+        }
 
         if (simulate)
         {
@@ -146,6 +165,29 @@ public sealed class QueryTesterSearch : IQueryTesterSearch
             ArgumentNullException.ThrowIfNull(context);
 
             context.ContactGroups = group;
+
+            return Task.CompletedTask;
+        }
+    }
+
+    /// <summary>
+    /// Puts one experiment's variant B on the context instead of bucketing the admin's own cookie
+    /// (XP-1), so the tester can run the draft tuning of a running or not yet started experiment. It
+    /// replaces <see cref="ResolveExperimentStage"/> and runs in its slot, before any tuning stage.
+    /// </summary>
+    private sealed class AssignVariantStage : ISearchStage
+    {
+        private readonly ExperimentAssignment assignment;
+
+        internal AssignVariantStage(int experimentId) => assignment = new ExperimentAssignment(experimentId, SearchVariant.B);
+
+        public int Order => SearchStageOrder.ResolveExperiment;
+
+        public Task ExecuteAsync(SearchContext context, CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(context);
+
+            context.Experiment = assignment;
 
             return Task.CompletedTask;
         }

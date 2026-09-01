@@ -5,7 +5,21 @@ namespace XpSearch.Core.Analytics;
 /// <param name="FromUtc">Start of the range, inclusive.</param>
 /// <param name="ToUtc">End of the range, inclusive.</param>
 /// <param name="Limit">How many rows each top-N list holds. Defaults to 20.</param>
-public sealed record SearchAnalyticsQuery(string IndexName, DateTime FromUtc, DateTime ToUtc, int Limit = 20);
+/// <param name="ExperimentId">
+/// Identifier of an experiment to report on, or <see langword="null"/> for every search in the range
+/// (XP-1). With it set, only the searches that experiment answered are counted.
+/// </param>
+/// <param name="Variant">
+/// The variant to report on - <c>A</c> or <c>B</c> - when <paramref name="ExperimentId"/> is set.
+/// Empty or <see langword="null"/> covers both variants.
+/// </param>
+public sealed record SearchAnalyticsQuery(
+    string IndexName,
+    DateTime FromUtc,
+    DateTime ToUtc,
+    int Limit = 20,
+    int? ExperimentId = null,
+    string? Variant = null);
 
 /// <summary>How often a query was searched for.</summary>
 /// <param name="Query">The normalized query text.</param>

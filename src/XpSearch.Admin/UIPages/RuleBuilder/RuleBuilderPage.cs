@@ -9,7 +9,9 @@ using Kentico.Xperience.Lucene.Core.Indexing;
 using XpSearch.Admin.Persistence;
 using XpSearch.Admin.Tuning;
 using XpSearch.Admin.UIPages;
+using XpSearch.Admin.UIPages.Experiments;
 using XpSearch.Core.Abstractions;
+using XpSearch.Core.Tuning;
 
 namespace XpSearch.Admin.UIPages.RuleBuilder;
 
@@ -68,6 +70,18 @@ public abstract class RuleBuilderPage : Page<RuleBuilderClientProperties>
     /// <summary>Gets the identifier of the edited rule, or zero on a create page.</summary>
     protected virtual int EditedRuleId => 0;
 
+    /// <summary>Gets the tuning variant the page reads and writes. Variant-B pages override it (XP-1).</summary>
+    protected virtual TuningVariant Variant => TuningVariant.Live;
+
+    /// <summary>Gets a value indicating whether the page may still write. A started experiment's variant B may not.</summary>
+    protected virtual bool CanWrite => true;
+
+    /// <summary>Gets the banner headline a variant-B builder shows, or an empty string on a live page.</summary>
+    protected virtual string VariantBanner => string.Empty;
+
+    /// <summary>Gets what that banner says, or an empty string on a live page.</summary>
+    protected virtual string VariantBannerContent => string.Empty;
+
     /// <summary>Gets the code name of the index in the URL, or an empty string when it is not registered.</summary>
     protected string IndexName => IndexScope.Resolve(storageService, IndexIdentifier);
 
@@ -90,6 +104,9 @@ public abstract class RuleBuilderPage : Page<RuleBuilderClientProperties>
 
         properties.IsNew = row is null;
         properties.Migrated = row?.RuleMigrated ?? false;
+        properties.ReadOnly = !CanWrite;
+        properties.VariantBanner = VariantBanner;
+        properties.VariantBannerContent = VariantBannerContent;
 
         if (row is null)
         {
@@ -98,6 +115,10 @@ public abstract class RuleBuilderPage : Page<RuleBuilderClientProperties>
         else if (!IndexScope.Matches(row.RuleIndexName, properties.IndexName))
         {
             properties.Error = "This rule belongs to a different search index.";
+        }
+        else if ((row.RuleExperimentID ?? 0) != Variant.ExperimentId)
+        {
+            properties.Error = "This rule belongs to a different tuning variant.";
         }
         else
         {
@@ -212,12 +233,24 @@ public abstract class RuleBuilderPage : Page<RuleBuilderClientProperties>
             return Refuse(RuleSaveResult.Failed("This index is not registered."));
         }
 
+        if (!CanWrite)
+        {
+            return Refuse(RuleSaveResult.Failed(ExperimentScope.FrozenRefusal));
+        }
+
         var row = EditedRow;
 
         // A rule reached through another index's URL is refused rather than silently re-homed.
         if (row is not null && !IndexScope.Matches(row.RuleIndexName, indexName))
         {
             return Refuse(RuleSaveResult.Failed("This rule belongs to a different search index and was not saved."));
+        }
+
+        // The same for the other tuning variant: saving a draft rule through the live builder would
+        // promote it into the live tuning (XP-1).
+        if (row is not null && (row.RuleExperimentID ?? 0) != Variant.ExperimentId)
+        {
+            return Refuse(RuleSaveResult.Failed(ExperimentScope.CrossVariantRefusal));
         }
 
         (var conditions, var actions) = submitted.ToModel();
@@ -234,6 +267,7 @@ public abstract class RuleBuilderPage : Page<RuleBuilderClientProperties>
         row ??= new XpSearchRuleInfo { RuleGuid = Guid.NewGuid() };
 
         row.RuleIndexName = indexName;
+        row.RuleExperimentID = Variant.IsLive ? null : Variant.ExperimentId;
         row.RuleName = submitted.Name.Trim();
         row.RuleEnabled = submitted.Enabled;
         row.RulePriority = submitted.Priority;
@@ -263,7 +297,10 @@ public abstract class RuleBuilderPage : Page<RuleBuilderClientProperties>
     [PageCommand(Permission = SystemPermissions.DELETE)]
     public Task<INavigateResponse> Delete()
     {
-        if (EditedRow is { } row && IndexScope.Matches(row.RuleIndexName, IndexName))
+        if (CanWrite
+            && EditedRow is { } row
+            && IndexScope.Matches(row.RuleIndexName, IndexName)
+            && (row.RuleExperimentID ?? 0) == Variant.ExperimentId)
         {
             provider.Delete(row);
         }
@@ -320,5 +357,10 @@ public abstract class RuleBuilderPage : Page<RuleBuilderClientProperties>
 
     private ICommandResponse Refuse(RuleSaveResult result) => ResponseFrom(result);
 
-    private string ListingPath() => pageLinkGenerator.GetPath<RuleListing>(IndexScope.Route(IndexIdentifier));
+    /// <summary>The listing Cancel, Save and Delete go back to: this variant's own (XP-1).</summary>
+    /// <returns>The path.</returns>
+    protected virtual string ListingPath() => pageLinkGenerator.GetPath<RuleListing>(IndexScope.Route(IndexIdentifier));
+
+    /// <summary>Generates the URL of another admin page.</summary>
+    protected IPageLinkGenerator PageLinks => pageLinkGenerator;
 }

@@ -63,6 +63,11 @@ interface RuleBuilderProps {
   /** Whether to show the "converted from the previous format" note of canvas 5d. */
   readonly migrated: boolean;
   readonly error: string;
+  /** "Variant B draft — <experiment>" when the rule belongs to an experiment's draft; empty when it is live. */
+  readonly variantBanner: string;
+  readonly variantBannerContent: string;
+  /** Whether the rule can no longer be saved, because its experiment has started. */
+  readonly readOnly: boolean;
 }
 
 const Commands = {
@@ -84,7 +89,19 @@ const isBlank = (action: Action): boolean => {
   return (Object.keys(blank) as (keyof Action)[]).every((key) => action[key] === blank[key]);
 };
 
-export const RuleBuilderTemplate = ({ indexName, rule, contactGroups, languages, attributes, isNew, migrated, error }: RuleBuilderProps) => {
+export const RuleBuilderTemplate = ({
+  indexName,
+  rule,
+  contactGroups,
+  languages,
+  attributes,
+  isNew,
+  migrated,
+  error,
+  variantBanner,
+  variantBannerContent,
+  readOnly,
+}: RuleBuilderProps) => {
   const [name, setName] = useState(rule.name);
   const [enabled, setEnabled] = useState(rule.enabled);
   const [priority, setPriority] = useState(rule.priority);
@@ -132,7 +149,7 @@ export const RuleBuilderTemplate = ({ indexName, rule, contactGroups, languages,
   const { execute: remove } = usePageCommand<void, void>(Commands.Delete);
 
   const local = conflicts(fragments);
-  const blocked = isEmpty(fragments) || local.length > 0;
+  const blocked = readOnly || isEmpty(fragments) || local.length > 0;
 
   const submit = () => {
     setSaving(true);
@@ -278,10 +295,11 @@ export const RuleBuilderTemplate = ({ indexName, rule, contactGroups, languages,
             <Headline size={HeadlineSize.L}>{isNew ? 'New rule' : name || 'Rule'}</Headline>
             <p style={muted}>
               Index <strong>{indexName}</strong>
+              {variantBanner === '' ? '' : ` · ${variantBanner}`}
             </p>
           </div>
           <div className={styles.headerActions}>
-            {isNew ? null : (
+            {isNew || readOnly ? null : (
               <Button
                 label="Delete"
                 destructive
@@ -301,6 +319,18 @@ export const RuleBuilderTemplate = ({ indexName, rule, contactGroups, languages,
             <Button label="Save rule" color={ButtonColor.Primary} inProgress={saving} disabled={blocked} onClick={submit} />
           </div>
         </div>
+
+        {variantBanner === '' ? null : (
+          <Callout
+            type={readOnly ? CalloutType.FriendlyWarning : CalloutType.QuickTip}
+            placement={CalloutPlacementType.OnDesk}
+            subheadline={readOnly ? 'Friendly warning' : 'Quick tip'}
+            headline={variantBanner}
+            maxWidth="100%"
+          >
+            {variantBannerContent}
+          </Callout>
+        )}
 
         {migrated && !noticeDismissed ? (
           <Callout

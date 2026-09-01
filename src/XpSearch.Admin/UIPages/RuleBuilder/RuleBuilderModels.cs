@@ -398,4 +398,16 @@ public class RuleBuilderClientProperties : TemplateClientProperties
 
     /// <summary>Gets or sets why the page has nothing to edit, or an empty string.</summary>
     public string Error { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the "Variant B draft — &lt;experiment&gt;" headline the builder shows above the rule,
+    /// or an empty string when the rule is a live one (XP-1).
+    /// </summary>
+    public string VariantBanner { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets what the variant banner says below its headline.</summary>
+    public string VariantBannerContent { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets a value indicating whether the rule can still be saved (XP-1: a started experiment's B cannot).</summary>
+    public bool ReadOnly { get; set; }
 }

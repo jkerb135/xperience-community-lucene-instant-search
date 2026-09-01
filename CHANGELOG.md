@@ -31,7 +31,21 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
   variant — which splits every existing metric (CTR, zero-result rate, clicked position, volume) by
   variant. The JSON contract and `SearchResponse` are unchanged; the JS client knows nothing about it.
   Concluding an experiment either promotes variant B to live or discards it, and applies without a
-  restart. The administration for all of this arrives in the next unit; there is no UI yet.
+  restart.
+
+- **Added (admin):** the **Experiments** page of that A/B testing, in the index tuning sidebar after
+  *Analytics*. Create an experiment (name + traffic split), edit its variant B in the **same** Rules,
+  Synonyms, Field weights and Stopwords editors the live tuning uses — reached inside the experiment,
+  with a *Variant B draft — <experiment>* banner on every page — then start it and read the live
+  comparison: searches, zero-result rate, click-through rate and average clicked position per variant,
+  with the sample sizes shown next to them. The report states observed rates only: **no p-values, no
+  winner badge, no significance claim**, because two rates over a few hundred searches usually differ
+  by chance. Ending the experiment is **Promote B to live** or **Discard B**, each behind a
+  confirmation that spells out what happens to the tuning rows; both apply immediately. A started
+  experiment's variant B is read-only, and a save or delete aimed at the other variant's rows is
+  refused. The **Query tester** grows a **Variant** select while the index has an unfinished
+  experiment, so variant B can be tried before any visitor is bucketed. See the new
+  [Experiments guide](docs/guides/experiments.md).
 
 - **Added (widgets):** the **Search - Results** widget renders the visitor's first page of results on
   the server, inside its own mount element. A shared result URL (`?q=espresso&page=2&tags=coffee`) now

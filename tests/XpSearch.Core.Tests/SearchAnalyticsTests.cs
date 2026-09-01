@@ -156,6 +156,40 @@ internal sealed class SearchAnalyticsTests
         });
     }
 
+    /// <summary>
+    /// An experiment's report is the same report over one variant's rows (XP-1): same definitions, so
+    /// the two sides cannot drift apart or from the dashboard.
+    /// </summary>
+    [Test]
+    public async Task Report_SplitsOneExperimentsSearchesByVariantAndIgnoresEverythingElse()
+    {
+        Add("mugs", Day, results: 5, ms: 10, clicked: 1, experimentId: 4, variant: "A");
+        Add("mugs", Day, results: 0, ms: 10, experimentId: 4, variant: "A");
+        Add("mugs", Day, results: 5, ms: 10, clicked: 2, experimentId: 4, variant: "B");
+        Add("mugs", Day, results: 5, ms: 10, experimentId: 4, variant: "B");
+        Add("mugs", Day, results: 5, ms: 10, clicked: 1, experimentId: 9, variant: "B");
+
+        var a = await Variant(4, "A");
+        var b = await Variant(4, "B");
+        var other = await Variant(9, "B");
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(a.TotalSearches, Is.EqualTo(2), "the nine rows without an experiment are not this experiment's");
+            Assert.That(a.ZeroResultSearches, Is.EqualTo(1));
+            Assert.That(a.Clicks, Is.EqualTo(1));
+            Assert.That(b.TotalSearches, Is.EqualTo(2));
+            Assert.That(b.ZeroResultSearches, Is.Zero);
+            Assert.That(b.AverageClickedPosition, Is.EqualTo(2));
+            Assert.That(other.TotalSearches, Is.EqualTo(1), "another experiment's rows never join this one's numbers");
+        });
+    }
+
+    private Task<SearchAnalyticsReport> Variant(int experimentId, string variant) =>
+        new SearchAnalyticsService(store).GetReportAsync(
+            new SearchAnalyticsQuery(TestCorpus.IndexName, Day.Date, Day.Date.AddDays(3), 10, experimentId, variant),
+            CancellationToken.None);
+
     private Task<SearchAnalyticsReport> Report() =>
         new SearchAnalyticsService(store).GetReportAsync(
             new SearchAnalyticsQuery(TestCorpus.IndexName, Day.Date, Day.Date.AddDays(3), Limit: 10),
@@ -165,7 +199,7 @@ internal sealed class SearchAnalyticsTests
         new QuerySuggestionService(store, Microsoft.Extensions.Options.Options.Create(new XpSearchOptions()), () => Day.AddDays(3))
             .SuggestAsync(TestCorpus.IndexName, prefix, limit, CancellationToken.None);
 
-    private void Add(string query, DateTime timestamp, int results, int ms, int? clicked = null) =>
+    private void Add(string query, DateTime timestamp, int results, int ms, int? clicked = null, int? experimentId = null, string? variant = null) =>
         store.Rows.Add(new QueryLogEntry(
             $"q-{store.Rows.Count}",
             TestCorpus.IndexName,
@@ -175,5 +209,7 @@ internal sealed class SearchAnalyticsTests
             "Store",
             "en",
             ms,
-            clicked));
+            clicked,
+            experimentId,
+            variant));
 }

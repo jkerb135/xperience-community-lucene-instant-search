@@ -22,6 +22,12 @@ public sealed class QueryTesterRequest
     /// admin's own contact would (ADR-0021).
     /// </summary>
     public string ContactGroup { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether to answer from the variant-B tuning of the index's
+    /// unfinished experiment rather than from the live tuning (XP-1).
+    /// </summary>
+    public bool VariantB { get; set; }
 }
 
 /// <summary>How a result moved when the relevance tuning was applied (spec §8.4).</summary>

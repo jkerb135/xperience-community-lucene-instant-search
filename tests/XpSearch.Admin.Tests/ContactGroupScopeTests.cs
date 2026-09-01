@@ -89,7 +89,7 @@ internal sealed class ContactGroupScopeTests
         var resolver = new FakeResolver();
         var recorder = new RecordingStage();
 
-        await Build(resolver, recorder).ExecuteAsync(Request(), applyTuning: true, Group, CancellationToken.None);
+        await Build(resolver, recorder).ExecuteAsync(Request(), applyTuning: true, Group, TuningVariant.Live, CancellationToken.None);
 
         Expect.Multiple(() =>
         {
@@ -105,7 +105,7 @@ internal sealed class ContactGroupScopeTests
         var resolver = new FakeResolver();
         var recorder = new RecordingStage();
 
-        await Build(resolver, recorder).ExecuteAsync(Request(), applyTuning: true, string.Empty, CancellationToken.None);
+        await Build(resolver, recorder).ExecuteAsync(Request(), applyTuning: true, string.Empty, TuningVariant.Live, CancellationToken.None);
 
         Expect.Multiple(() =>
         {
