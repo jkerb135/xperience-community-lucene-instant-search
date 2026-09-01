@@ -31,6 +31,34 @@ and how to lift it.
   which costs one extra count per empty search) or an opt-in `probeUnfiltered` request flag. Then
   `hasRefinements` grows a sibling `unfilteredTotal?: number` and the template appends the count.
 
+## The sheet's countless Apply button (`filterSort` in `Client/src/widgets/filterSort.ts`)
+
+- **Simplified:** the primary button reads "Show results", not "Show N results". The approved mockup
+  previews the count the pending selection would return.
+- **Ceiling:** the preview needs a count-probe query per pending tick, and **every** request the
+  query endpoint answers is journaled: `CachedSearchPipeline.ExecuteAsync` calls
+  `ISearchRequestJournal.Record` on both the cached and the uncached path, unconditionally, and the
+  contract's `SearchRequest` has no flag to opt out (the journal's only skip is a `queryId` it has
+  already recorded). Probing would therefore log a search activity and a query-log row per tick,
+  inflating query volume and deflating click-through for every visitor who opens the sheet. The
+  widget ships without the probe rather than pollute analytics.
+- **Upgrade path:** a coordinated contract change — a `probe` (or `dontJournal`) boolean on
+  `SearchRequest` that `CachedSearchPipeline` honours by skipping `Record`, plus a rate limit so it
+  cannot be used to run unlogged queries. Then the widget debounces (~250ms) a smallest-page-size
+  probe through the public `SearchClient`, discards a result that arrives after Apply, and falls
+  back to the countless label on failure.
+
+## `filterSort` registers no routable attribute (`Client/src/widgets/filterSort.ts`)
+
+- **Simplified:** a widget declares at most one routable attribute (`Widget.$$routable` is a single
+  `{ attribute, kind }`), and the sheet composes N of them, so it declares none. Its attributes are
+  only read out of the URL when another widget on the page owns them.
+- **Ceiling:** a page whose *only* filter UI is the sheet does not hydrate its facets from the URL,
+  so a shared or bookmarked link loses those refinements. The documented recipe keeps the desktop
+  `facetList` widgets mounted, which owns them, so this bites only a sheet-only page.
+- **Upgrade path:** widen `$$routable` to accept an array and have `SearchInstance.addWidgets`
+  register each entry — a small, source-compatible change to `types.ts` and `instance.ts`.
+
 ## "Did you mean" and "Popular searches" in the results empty state
 
 - **Simplified:** neither is rendered. The approved mockup shows both as future slots.

@@ -6,6 +6,7 @@ export const WIDGET_ENTRIES = {
   'active-filters': 'activeFilters',
   'category-tree': 'categoryTree',
   'facet-list': 'facetList',
+  'filter-sort': 'filterSort',
   'load-more': 'loadMore',
   pagination: 'pagination',
   'range-filter': 'rangeFilter',

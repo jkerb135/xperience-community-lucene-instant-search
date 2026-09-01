@@ -10,6 +10,7 @@ import { results } from './results';
 import { pagination } from './pagination';
 import { categoryTree } from './categoryTree';
 import { facetList } from './facetList';
+import { filterSort } from './filterSort';
 import { searchBox } from './searchBox';
 import { sortSelect } from './sortSelect';
 import { resultStats } from './resultStats';
@@ -31,6 +32,8 @@ export { categoryTree } from './categoryTree';
 export type { CategoryTreeWidgetParams } from './categoryTree';
 export { facetList } from './facetList';
 export type { FacetListWidgetParams } from './facetList';
+export { filterSort } from './filterSort';
+export type { FilterSortFacet, FilterSortWidgetParams } from './filterSort';
 export { searchBox } from './searchBox';
 export type { SearchBoxWidgetParams } from './searchBox';
 export { sortSelect } from './sortSelect';
@@ -63,6 +66,7 @@ export const DEFAULT_WIDGETS: Readonly<Record<string, MountWidgetFactory>> = {
   searchBox: fromMount(searchBox),
   results: fromMount(results),
   facetList: fromMount(facetList),
+  filterSort: fromMount(filterSort),
   categoryTree: fromMount(categoryTree),
   pagination: fromMount(pagination),
   resultStats: fromMount(resultStats),

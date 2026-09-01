@@ -1,0 +1,156 @@
+@use '../variables' as v;
+
+/* --------------------------------------------------------------------------
+ * filterSort — the mobile toolbar trigger and the bottom sheet it opens.
+ * The sheet is fixed to the viewport bottom; the page below it is scroll-locked
+ * by the widget, and the sheet body contains its own scrolling.
+ * ------------------------------------------------------------------------ */
+
+.xps-filter-sort {
+  display: flex;
+  align-items: center;
+  gap: v.$half;
+}
+
+/* The sidebar/sheet swap: above the breakpoint the trigger is gone and the page shows its
+   facet widgets instead. Hiding the sidebar below it is the page's half of the deal. */
+@media (min-width: 1024px) {
+  .xps-filter-sort {
+    display: none;
+  }
+}
+
+.xps-filter-sort__icon {
+  width: 1em;
+  height: 1em;
+  flex: 0 0 auto;
+}
+
+.xps-filter-sort__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5em;
+  padding: 0 v.$quarter;
+}
+
+/* An active-filters row that scrolls sideways instead of wrapping — the page opts in by adding
+   the modifier to the activeFilters root. */
+.xps-active-filters--scroll .xps-active-filters__list {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.xps-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.xps-sheet__backdrop {
+  position: absolute;
+  inset: 0;
+}
+
+.xps-sheet__panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: 92vh;
+  animation: xps-sheet-up 180ms ease-out;
+}
+
+.xps-sheet__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: v.$half;
+  padding: var(--xps-space);
+}
+
+.xps-sheet__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  line-height: 1;
+}
+
+.xps-sheet__body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 var(--xps-space);
+}
+
+.xps-sheet__section {
+  display: flex;
+  flex-direction: column;
+  gap: v.$half;
+  padding: var(--xps-space) 0;
+}
+
+.xps-sheet__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: v.$half;
+}
+
+.xps-sheet__pill {
+  min-height: v.$control-min-height;
+  padding: v.$quarter var(--xps-space);
+}
+
+.xps-sheet__values {
+  display: flex;
+  flex-direction: column;
+  gap: v.$half;
+}
+
+.xps-sheet__value-label {
+  display: flex;
+  align-items: center;
+  gap: v.$half;
+  min-height: v.$control-min-height;
+  cursor: pointer;
+}
+
+.xps-sheet__value-text {
+  min-width: 0;
+}
+
+.xps-sheet__value-count {
+  margin-inline-start: auto;
+}
+
+.xps-sheet__footer {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  gap: v.$half;
+  padding: var(--xps-space);
+}
+
+.xps-sheet__apply {
+  flex: 1 1 auto;
+}
+
+@keyframes xps-sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+/* Reduced motion: the sheet still appears, it just does not travel. */
+@media (prefers-reduced-motion: reduce) {
+  .xps-sheet__panel {
+    animation: none;
+  }
+}

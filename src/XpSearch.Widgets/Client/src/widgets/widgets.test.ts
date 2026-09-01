@@ -22,6 +22,7 @@ import {
   results,
   pagination,
   facetList,
+  filterSort,
   searchBox,
   sortSelect,
   suggestions,
@@ -1598,5 +1599,189 @@ describe('the samples in docs/guides/widget-reference.md', () => {
 
     host.querySelector<HTMLButtonElement>('.xps-results__clear')!.click();
     await vi.waitFor(() => expect(search?.state.filters.facets).toEqual([]));
+  });
+});
+
+describe('filterSort', () => {
+  const SORT = [
+    { label: 'Most relevant', value: 'relevance' },
+    { label: 'Newest first', value: 'date_desc' },
+  ];
+
+  const mount = async (params: Record<string, unknown> = {}): Promise<HTMLElement> => {
+    const host = container('filter-sort');
+    search = start([
+      filterSort({
+        container: host,
+        facets: [{ attribute: 'contentType', label: 'Content type' }],
+        sortOptions: SORT,
+        ...params,
+      }),
+    ]);
+    await settled(search);
+    return host;
+  };
+
+  const trigger = (host: HTMLElement): HTMLButtonElement =>
+    host.querySelector<HTMLButtonElement>('.xps-filter-sort__trigger')!;
+  const sheet = (): HTMLElement | null => document.querySelector('.xps-sheet');
+  const box = (value: string): HTMLInputElement =>
+    document.querySelector<HTMLInputElement>(`.xps-sheet__checkbox[value="${value}"]`)!;
+  const check = (value: string): void => {
+    const input = box(value);
+    input.checked = !input.checked;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  };
+  const press = (key: string): void => {
+    sheet()?.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+  };
+
+  it('renders the trigger contract markup and hides the badge at zero', async () => {
+    const host = await mount();
+    const root = host.firstElementChild!;
+    expect(classesOf(root)).toEqual(['xps', 'xps-filter-sort']);
+
+    const button = trigger(host);
+    expect(classesOf(button)).toEqual(['xps-button', 'xps-filter-sort__trigger']);
+    expect(button.type).toBe('button');
+    expect(button.getAttribute('aria-haspopup')).toBe('dialog');
+    expect(button.getAttribute('aria-expanded')).toBe('false');
+    expect(button.querySelector('.xps-filter-sort__icon')?.getAttribute('aria-hidden')).toBe('true');
+    expect(button.querySelector('.xps-filter-sort__label')?.textContent).toBe('Filter & Sort');
+    expect(button.querySelector<HTMLElement>('.xps-filter-sort__badge')?.hidden).toBe(true);
+    expect(sheet()).toBeNull();
+  });
+
+  it('counts the active refinements of its attributes and a non-default sort in the badge', async () => {
+    const host = await mount();
+    search!.actions.toggleFacet('contentType', 'Article').toggleFacet('language', 'en').search();
+    await vi.waitFor(() =>
+      expect(host.querySelector<HTMLElement>('.xps-filter-sort__badge')?.hidden).toBe(false)
+    );
+    // `language` is not one of its groups, so it does not count.
+    expect(host.querySelector('.xps-filter-sort__badge')?.textContent).toBe('1');
+
+    search!.actions.setSort('date_desc').search();
+    await vi.waitFor(() =>
+      expect(host.querySelector('.xps-filter-sort__badge')?.textContent).toBe('2')
+    );
+  });
+
+  it('opens a labelled modal sheet, moves focus into it and locks the page scroll', async () => {
+    const host = await mount();
+    trigger(host).click();
+
+    const panel = document.querySelector('.xps-sheet__panel')!;
+    expect(panel.getAttribute('role')).toBe('dialog');
+    expect(panel.getAttribute('aria-modal')).toBe('true');
+    expect(panel.getAttribute('aria-labelledby')).toBe(
+      document.querySelector('.xps-sheet__title')!.id
+    );
+    expect(trigger(host).getAttribute('aria-expanded')).toBe('true');
+    expect(document.activeElement).toBe(document.querySelector('.xps-sheet__close'));
+    expect(document.body.style.overflow).toBe('hidden');
+
+    // The sort section plus one section per configured facet group, with the facet counts.
+    expect([...document.querySelectorAll('.xps-sheet__section-title')].map((h) => h.textContent))
+      .toEqual(['Sort by', 'Content type']);
+    expect([...document.querySelectorAll('.xps-sheet__pill')].map((p) => p.getAttribute('aria-pressed')))
+      .toEqual(['true', 'false']);
+    expect([...document.querySelectorAll('.xps-sheet__value-count')].map((c) => c.textContent))
+      .toEqual(['24', '11', '0']);
+    expect(document.querySelector('.xps-sheet__apply')?.textContent).toBe('Show results');
+  });
+
+  it('keeps every selection pending until Apply, then replays them in one search', async () => {
+    const host = await mount();
+    trigger(host).click();
+    const before = calls.length;
+
+    check('Article');
+    check('Product');
+    check('Product'); // toggled back: it cancels out
+    document.querySelector<HTMLButtonElement>('[data-xps-sort="date_desc"]')!.click();
+
+    // Nothing refined and nothing searched while the sheet is open.
+    expect(calls.length).toBe(before);
+    expect(search!.state.filters.facets).toEqual([]);
+    expect(search!.state.sort).toBe('relevance');
+    expect(document.querySelector('[data-xps-sort="date_desc"]')?.getAttribute('aria-pressed')).toBe(
+      'true'
+    );
+
+    document.querySelector<HTMLButtonElement>('.xps-sheet__apply')!.click();
+    expect(sheet()).toBeNull();
+    expect(document.activeElement).toBe(trigger(host));
+    expect(document.body.style.overflow).toBe('');
+    expect(search!.state.sort).toBe('date_desc');
+    expect(search!.state.filters.facets.map((facet) => [facet.attribute, [...facet.values]])).toEqual([
+      ['contentType', ['Article']],
+    ]);
+    await vi.waitFor(() => expect(calls.length).toBe(before + 1));
+  });
+
+  it('pends "Clear all" and applies it as a removal of every configured attribute', async () => {
+    const host = await mount();
+    search!.actions.toggleFacet('contentType', 'Article').search();
+    await vi.waitFor(() => expect(search!.state.filters.facets.length).toBe(1));
+
+    trigger(host).click();
+    expect(box('Article').checked).toBe(true);
+
+    document.querySelector<HTMLButtonElement>('.xps-sheet__clear')!.click();
+    expect(box('Article').checked).toBe(false);
+    expect(search!.state.filters.facets.length).toBe(1); // still pending
+
+    document.querySelector<HTMLButtonElement>('.xps-sheet__apply')!.click();
+    expect(search!.state.filters.facets).toEqual([]);
+  });
+
+  it('discards the pending selection on Escape and on the backdrop', async () => {
+    const host = await mount();
+    for (const dismiss of [
+      () => press('Escape'),
+      () => document.querySelector<HTMLElement>('.xps-sheet__backdrop')!.click(),
+    ]) {
+      trigger(host).click();
+      check('Article');
+      dismiss();
+      expect(sheet()).toBeNull();
+      expect(search!.state.filters.facets).toEqual([]);
+      expect(document.activeElement).toBe(trigger(host));
+    }
+    // Re-opening starts from the committed state, not from what was discarded.
+    trigger(host).click();
+    expect(box('Article').checked).toBe(false);
+  });
+
+  it('traps Tab inside the sheet', async () => {
+    const host = await mount();
+    trigger(host).click();
+    const panel = document.querySelector('.xps-sheet__panel')!;
+    const stops = [...panel.querySelectorAll<HTMLElement>('a[href], button, input')];
+    const first = stops[0]!;
+    const last = stops[stops.length - 1]!;
+
+    last.focus();
+    panel.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+    expect(document.activeElement).toBe(first);
+
+    first.focus();
+    panel.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true })
+    );
+    expect(document.activeElement).toBe(last);
+  });
+
+  it('asks the server to count every configured attribute and cleans up on dispose', async () => {
+    const host = await mount();
+    expect(calls[calls.length - 1]?.body['facets']).toEqual(['contentType']);
+
+    trigger(host).click();
+    expect(sheet()).not.toBeNull();
+    search!.dispose();
+    expect(sheet()).toBeNull();
+    expect(document.body.style.overflow).toBe('');
+    expect(host.innerHTML).toBe('');
   });
 });

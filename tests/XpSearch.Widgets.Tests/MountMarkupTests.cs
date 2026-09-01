@@ -432,6 +432,70 @@ internal sealed class MountMarkupTests
     }
 
     [Test]
+    public void FilterSort_emits_its_facet_groups_and_the_valid_sort_options()
+    {
+        var component = new FilterSortWidgetViewComponent(renderer, editor, catalog, SearchOptions());
+
+        string markup = Render(component, new FilterSortWidgetProperties
+        {
+            Index = Index,
+            Facets = "contentType;Content type\r\ntags",
+            SortOptions = "relevance;Most relevant\r\nnonsense;Nope",
+            ApplyLabel = "Show them"
+        });
+
+        var config = Rendered.Json(markup, "data-xps-config");
+        var facets = config.GetProperty("facets").EnumerateArray().ToList();
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(Rendered.Attribute(markup, "data-xps-widget"), Is.EqualTo("filterSort"));
+            Assert.That(facets.Select(facet => facet.GetProperty("attribute").GetString()),
+                Is.EqualTo(new[] { "contentType", "tags" }));
+            // A line without a label falls back to the attribute name.
+            Assert.That(facets.Select(facet => facet.GetProperty("label").GetString()),
+                Is.EqualTo(new[] { "Content type", "tags" }));
+            Assert.That(
+                config.GetProperty("sortOptions").EnumerateArray().Select(option => option.GetProperty("value").GetString()),
+                Is.EqualTo(new[] { "relevance" }));
+            Assert.That(config.GetProperty("applyLabel").GetString(), Is.EqualTo("Show them"));
+            // Untouched fields stay out so the JavaScript defaults win.
+            Assert.That(config.TryGetProperty("label", out _), Is.False);
+        });
+
+        TestContext.Out.WriteLine(markup);
+    }
+
+    [Test]
+    public void FilterSort_without_facet_groups_tells_the_editor_and_renders_no_mount()
+    {
+        var component = new FilterSortWidgetViewComponent(
+            renderer, new FakeEditorContext(XpSearchEditorMode.Edit), catalog, SearchOptions());
+
+        var model = component.BuildModel(new FilterSortWidgetProperties { Index = Index });
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(model.Mount, Is.Null);
+            Assert.That(model.EditorMessage, Does.Contain("facet group").IgnoreCase);
+        });
+    }
+
+    [Test]
+    public void FilterSort_omits_the_sort_section_when_no_option_is_valid()
+    {
+        var component = new FilterSortWidgetViewComponent(renderer, editor, catalog, SearchOptions());
+
+        string markup = Render(component, new FilterSortWidgetProperties
+        {
+            Index = Index,
+            Facets = "contentType;Content type"
+        });
+
+        Assert.That(Rendered.Json(markup, "data-xps-config").TryGetProperty("sortOptions", out _), Is.False);
+    }
+
+    [Test]
     public void Suggestions_emits_the_reserved_widget_name_with_the_contract_option_names()
     {
         var component = new SuggestionsWidgetViewComponent(renderer, editor, catalog);
