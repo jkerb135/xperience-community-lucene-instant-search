@@ -67,6 +67,7 @@ internal sealed class AssemblyDiscoveryTests
             XpSearchWidgetConstants.SearchBoxIdentifier,
             XpSearchWidgetConstants.ResultsIdentifier,
             XpSearchWidgetConstants.FacetListIdentifier,
+            XpSearchWidgetConstants.FilterSortIdentifier,
             XpSearchWidgetConstants.CategoryTreeIdentifier,
             XpSearchWidgetConstants.PaginationIdentifier,
             XpSearchWidgetConstants.ResultStatsIdentifier,

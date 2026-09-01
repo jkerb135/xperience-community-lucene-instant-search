@@ -26,6 +26,9 @@ public static class XpSearchWidgetConstants
     /// <summary>Widget identifier of the facet list widget.</summary>
     public const string FacetListIdentifier = "XpSearch.FacetList";
 
+    /// <summary>Widget identifier of the filter and sort sheet widget.</summary>
+    public const string FilterSortIdentifier = "XpSearch.FilterSort";
+
     /// <summary>Widget identifier of the category tree widget.</summary>
     public const string CategoryTreeIdentifier = "XpSearch.CategoryTree";
 

@@ -7,9 +7,10 @@ shared parent and no order requirement.
 
 > **Status:** the core and the default widgets ship today: state, transport, the widget lifecycle,
 > the [behaviours](custom-widgets.md), routing, the event bus, the `.xps-mount` bootstrap, and the
-> thirteen renderers documented in the [widget reference](widget-reference.md) — `searchBox`,
+> fourteen renderers documented in the [widget reference](widget-reference.md) — `searchBox`,
 > `results`, `facetList`, `categoryTree`, `pagination`, `resultStats`, `sortSelect`,
-> `clearFilters`, `activeFilters`, `toggleFilter`, `rangeFilter`, `loadMore`, `suggestions`.
+> `clearFilters`, `activeFilters`, `toggleFilter`, `rangeFilter`, `loadMore`, `suggestions`,
+> `filterSort`.
 
 > **Installing it:** the recommended setup is npm plus your own bundler — see
 > [JavaScript bundler setup](javascript-bundler-setup.md) for install, subpath imports, SCSS and

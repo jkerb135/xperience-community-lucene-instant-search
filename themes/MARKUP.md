@@ -254,6 +254,44 @@ Fixture: `fixtures/active-filters.html`. Root `<div class="xps xps-active-filter
 The chip's remove button must carry a full `aria-label` naming the attribute and value
 ("Remove filter Content type: Article") — "×" alone is not a name.
 
+## filterSort
+
+Fixture: `fixtures/filter-sort.html`. Root `<div class="xps xps-filter-sort">` in the mount; the
+sheet is a second root, `<div class="xps xps-sheet">`, appended to `document.body` while open and
+removed when it closes.
+
+| Class | Element | Notes |
+|---|---|---|
+| `xps-filter-sort__trigger` | `<button type="button" class="xps-button">` | `aria-haspopup="dialog"`, `aria-expanded` mirrors the sheet. |
+| `xps-filter-sort__icon` | `<svg aria-hidden="true" focusable="false">` | Funnel glyph, `currentColor`, no external asset. |
+| `xps-filter-sort__label` | `<span>` | The trigger's visible text. |
+| `xps-filter-sort__badge` | `<span>` | Number of active refinements on the configured attributes plus a non-default sort; `hidden` at zero. |
+| `xps-sheet__backdrop` | `<div>` | Dims the page; clicking it discards the pending selection and closes. |
+| `xps-sheet__panel` | `<div role="dialog" aria-modal="true" aria-labelledby>` | Labelled by the title. Focus moves to the close button on open, is trapped while open, and returns to the trigger on close. |
+| `xps-sheet__header` | `<header>` | |
+| `xps-sheet__title` | `<h2 id>` | The dialog's accessible name. |
+| `xps-sheet__close` | `<button type="button" aria-label>` | The glyph is `aria-hidden="true"`. |
+| `xps-sheet__body` | `<div>` | The scrolling region; scroll is contained and the page behind is locked. |
+| `xps-sheet__section` | `<section>` | One per facet group, plus the sort section when sort options are configured. Hairline rule between sections. |
+| `xps-sheet__section-title` | `<h3>` (`id` on the sort section) | |
+| `xps-sheet__pills` | `<div role="group" aria-labelledby>` | The "Sort by" choice row. |
+| `xps-sheet__pill` | `<button type="button" aria-pressed>` | Carries `data-xps-sort` with the sort key. |
+| `xps-sheet__pill--selected` | modifier | Pairs with `aria-pressed="true"`. Exactly one at a time. |
+| `xps-sheet__values` | `<ul>` | |
+| `xps-sheet__value` | `<li>` | |
+| `xps-sheet__value-label` | `<label>` | Wraps the input, so the whole row is the target; no `for` needed. |
+| `xps-sheet__checkbox` | `<input type="checkbox">` | A real checkbox. Checking it changes the **pending** selection only — nothing refines until Apply. |
+| `xps-sheet__value-text` | `<span>` | |
+| `xps-sheet__value-count` | `<span>` | Facet count. |
+| `xps-sheet__footer` | `<footer>` | Sticky at the bottom of the panel. |
+| `xps-sheet__clear` | `<button type="button" class="xps-button">` | "Clear all" — pending, like every other selection in the sheet. |
+| `xps-sheet__apply` | `<button type="button" class="xps-button xps-button--primary">` | Applies the pending selection in one batch and closes. |
+
+`xps-active-filters--scroll` is an opt-in modifier on the `activeFilters` root: the chips row
+scrolls sideways instead of wrapping. The widget never sets it; the page does.
+
+The slide-up animation on `xps-sheet__panel` is dropped under `prefers-reduced-motion: reduce`.
+
 ## rangeFilter
 
 Fixture: `fixtures/range-filter.html`. Root `<div class="xps xps-range-filter">`.

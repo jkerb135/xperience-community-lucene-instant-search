@@ -108,6 +108,7 @@ export const FIRST_PARTY_WIDGET_TYPES: readonly string[] = [
   'searchBox',
   'results',
   'facetList',
+  'filterSort',
   'pagination',
   'resultStats',
   'sortSelect',

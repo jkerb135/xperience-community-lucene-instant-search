@@ -499,6 +499,83 @@
       </div>
     </section>
 
+    <section class="fx fx--filter-sort">
+      <h2>filter-sort</h2>
+      <!-- filterSort — the mobile toolbar (trigger + badge, scrolling chips row) and the open sheet -->
+      
+      <div class="xps xps-filter-sort">
+        <button class="xps-button xps-filter-sort__trigger" type="button" aria-haspopup="dialog" aria-expanded="false">
+          <svg class="xps-filter-sort__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M1 3h14l-5.5 6v4l-3 1.5V9z" fill="currentColor"/></svg>
+          <span class="xps-filter-sort__label">Filter &amp; Sort</span>
+          <span class="xps-filter-sort__badge">2</span>
+        </button>
+      </div>
+      
+      <!-- the chips row under the toolbar: activeFilters with the opt-in horizontal-scroll modifier -->
+      <div class="xps xps-active-filters xps-active-filters--scroll">
+        <h3 class="xps-active-filters__title xps-sr-only" id="xps-search-1-active-filters-title">Active filters</h3>
+        <ul class="xps-active-filters__list" aria-labelledby="xps-search-1-active-filters-title">
+          <li class="xps-active-filters__item"><span class="xps-chip"><span class="xps-chip__label"><span class="xps-chip__attribute">Content type</span> Article</span><button class="xps-chip__remove" type="button" aria-label="Remove filter Content type: Article"><span aria-hidden="true">&times;</span></button></span></li>
+          <li class="xps-active-filters__item"><span class="xps-chip"><span class="xps-chip__label"><span class="xps-chip__attribute">Tags</span> espresso</span><button class="xps-chip__remove" type="button" aria-label="Remove filter Tags: espresso"><span aria-hidden="true">&times;</span></button></span></li>
+        </ul>
+      </div>
+      
+      <!-- the sheet, open: sort pills, one section per facet group, sticky footer -->
+      <div class="xps xps-sheet">
+        <div class="xps-sheet__backdrop"></div>
+        <div class="xps-sheet__panel" role="dialog" aria-modal="true" aria-labelledby="xps-search-1-filter-sort-title">
+          <header class="xps-sheet__header">
+            <h2 class="xps-sheet__title" id="xps-search-1-filter-sort-title">Filter &amp; Sort</h2>
+            <button class="xps-sheet__close" type="button" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          </header>
+          <div class="xps-sheet__body">
+            <section class="xps-sheet__section">
+              <h3 class="xps-sheet__section-title" id="xps-search-1-filter-sort-sort">Sort by</h3>
+              <div class="xps-sheet__pills" role="group" aria-labelledby="xps-search-1-filter-sort-sort">
+                <button class="xps-sheet__pill xps-sheet__pill--selected" type="button" aria-pressed="true" data-xps-sort="relevance">Most relevant</button>
+                <button class="xps-sheet__pill" type="button" aria-pressed="false" data-xps-sort="newest">Newest first</button>
+              </div>
+            </section>
+            <section class="xps-sheet__section">
+              <h3 class="xps-sheet__section-title">Content type</h3>
+              <ul class="xps-sheet__values">
+                <li class="xps-sheet__value">
+                  <label class="xps-sheet__value-label">
+                    <input class="xps-sheet__checkbox" type="checkbox" name="contentType" value="Article" checked>
+                    <span class="xps-sheet__value-text">Article</span>
+                    <span class="xps-sheet__value-count">24</span>
+                  </label>
+                </li>
+                <li class="xps-sheet__value">
+                  <label class="xps-sheet__value-label">
+                    <input class="xps-sheet__checkbox" type="checkbox" name="contentType" value="Product">
+                    <span class="xps-sheet__value-text">Product</span>
+                    <span class="xps-sheet__value-count">11</span>
+                  </label>
+                </li>
+              </ul>
+            </section>
+            <section class="xps-sheet__section">
+              <h3 class="xps-sheet__section-title">Tags</h3>
+              <ul class="xps-sheet__values">
+                <li class="xps-sheet__value">
+                  <label class="xps-sheet__value-label">
+                    <input class="xps-sheet__checkbox" type="checkbox" name="tags" value="espresso" checked>
+                    <span class="xps-sheet__value-text">espresso</span>
+                    <span class="xps-sheet__value-count">18</span>
+                  </label>
+                </li>
+              </ul>
+            </section>
+          </div>
+          <footer class="xps-sheet__footer">
+            <button class="xps-button xps-sheet__clear" type="button">Clear all</button>
+            <button class="xps-button xps-button--primary xps-sheet__apply" type="button">Show results</button>
+          </footer>
+        </div>
+      </div>
+    </section>
+
     <section class="fx fx--pagination">
       <h2>pagination</h2>
       <!-- pagination — states: first/prev disabled on page 1, current page, ellipsis padding, last page -->      

@@ -47,6 +47,7 @@ live-site code takes a dependency on `Kentico.Xperience.Admin` either way.
 | Search - Sort selector | `XpSearch.SortSelect` | `sortSelect` |
 | Search - Suggestions | `XpSearch.Suggestions` | `suggestions` |
 | Search - Range filter | `XpSearch.RangeFilter` | `rangeFilter` |
+| Search - Filter & sort sheet | `XpSearch.FilterSort` | `filterSort` |
 
 Every widget renders exactly this, and nothing else:
 
@@ -82,6 +83,7 @@ Then, per widget:
 | Result stats | Text template (`{total}`, `{tookMs}`, `{query}`, `{page}`, `{totalPages}`) · Text before the first search |
 | Sort selector | Sort options (one `key;Label` per line) · Label · Hide the label visually |
 | Range filter | Attribute (numeric or date) · Label · Minimum · Maximum · Step · "From" label · "To" label — see [The range filter's bounds are hand-configured](#the-range-filters-bounds-are-hand-configured) |
+| Filter & sort sheet | Facet groups (one `attribute;Label` per line, in the order they appear in the sheet) · Sort options (one `key;Label` per line, exactly as the sort selector takes them — leave empty for no "Sort by" section) · Label · Apply button text. The mobile counterpart of the facet sidebar: the mount renders only a toolbar button, and the sheet it opens is built in the browser. Place it alongside the facet list widgets, not instead of them — see [Mobile filtering](widget-reference.md#mobile-filtering) |
 | Suggestions | Mode (matching documents / popular queries) · Maximum items. Whether an index answers with documents or with query suggestions is server-side configuration; the property records the editor's intent and does not change the request |
 
 A blank text property is left out of `data-xps-config` entirely, so the JavaScript widget's own default
@@ -262,6 +264,9 @@ live:
 The preview reflects the widget's own properties — the search box's placeholder, the facet's label and
 attribute, the results widget's page size and template, the pagination style, the sort options — so
 configuring a widget visibly changes what the builder shows.
+
+The filter & sort sheet previews its toolbar button only. The sheet is interaction-only — there is
+nothing to show until a visitor opens it.
 
 Why not the real thing: the Page Builder re-renders widget markup over AJAX on every add, move and
 configure, so client-side hydration there is unreliable by construction, and no search should run from

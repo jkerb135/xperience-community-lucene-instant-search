@@ -79,6 +79,9 @@
   <data name="Hint_RangeBounds" xml:space="preserve">
     <value>Enter a Minimum and a Maximum for the range, with the maximum greater than the minimum.</value>
   </data>
+  <data name="Hint_FilterSortFacets" xml:space="preserve">
+    <value>Enter at least one facet group, one per line, in the form attribute;Label.</value>
+  </data>
   <data name="Hint_SortOptions" xml:space="preserve">
     <value>Enter at least one valid sort option, one per line, in the form key;Label.</value>
   </data>

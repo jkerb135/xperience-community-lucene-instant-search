@@ -248,6 +248,94 @@
 }
 
 /* --------------------------------------------------------------------------
+ * filterSort — accent badge, choice-pill sort row, hairline section rules,
+ * dimmed backdrop, primary apply button.
+ * ------------------------------------------------------------------------ */
+.xps-filter-sort__badge {
+  background-color: var(--xps-color-accent);
+  color: var(--xps-color-surface);
+  border-radius: 999px;
+  font-size: 0.75em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The page behind is dimmed, not tinted: the text colour at 40% works on any host background. */
+.xps-sheet__backdrop {
+  background-color: color-mix(in srgb, var(--xps-color-text) 40%, transparent);
+}
+
+.xps-sheet__panel {
+  background-color: var(--xps-color-surface);
+  color: var(--xps-color-text);
+  border-radius: calc(var(--xps-radius) * 2) calc(var(--xps-radius) * 2) 0 0;
+}
+
+.xps-sheet__header {
+  border-bottom: 1px solid var(--xps-color-border);
+}
+
+.xps-sheet__title {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.xps-sheet__close {
+  background-color: transparent;
+  border: 0;
+  border-radius: 999px;
+  color: var(--xps-color-muted);
+}
+.xps-sheet__close:hover {
+  color: var(--xps-color-text);
+  background-color: color-mix(in srgb, var(--xps-color-accent) 15%, transparent);
+}
+
+/* Hairline between sections, none above the first one. */
+.xps-sheet__section + .xps-sheet__section {
+  border-top: 1px solid var(--xps-color-border);
+}
+
+.xps-sheet__section-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--xps-color-muted);
+}
+
+.xps-sheet__pill {
+  background-color: var(--xps-color-surface);
+  color: var(--xps-color-text);
+  border: 1px solid var(--xps-color-border);
+  border-radius: 999px;
+}
+.xps-sheet__pill:hover {
+  border-color: color-mix(in srgb, var(--xps-color-accent) 40%, var(--xps-color-border));
+}
+
+.xps-sheet__pill--selected {
+  background-color: var(--xps-color-accent);
+  border-color: var(--xps-color-accent);
+  color: var(--xps-color-surface);
+}
+
+.xps-sheet__value-count {
+  color: var(--xps-color-muted);
+  font-size: 0.875em;
+  font-variant-numeric: tabular-nums;
+}
+
+.xps-sheet__footer {
+  background-color: var(--xps-color-surface);
+  border-top: 1px solid var(--xps-color-border);
+}
+
+.xps-sheet__clear {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--xps-color-accent);
+}
+
+/* --------------------------------------------------------------------------
  * pagination (the muted rule is shared with resultStats)
  * ------------------------------------------------------------------------ */
 /* Plain text, not boxes: the hit target is shell.css's 2.25rem minimum, the box was never it. */

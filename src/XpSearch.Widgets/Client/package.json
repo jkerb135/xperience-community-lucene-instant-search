@@ -39,6 +39,11 @@
       "import": "./dist/widgets/facet-list.mjs",
       "default": "./dist/widgets/facet-list.mjs"
     },
+    "./widgets/filter-sort": {
+      "types": "./dist/types/widgets/filterSort.d.ts",
+      "import": "./dist/widgets/filter-sort.mjs",
+      "default": "./dist/widgets/filter-sort.mjs"
+    },
     "./widgets/load-more": {
       "types": "./dist/types/widgets/loadMore.d.ts",
       "import": "./dist/widgets/load-more.mjs",

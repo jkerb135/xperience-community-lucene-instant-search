@@ -26,6 +26,7 @@ import {
   results,
   pagination,
   facetList,
+  filterSort,
   searchBox,
   sortSelect,
   suggestions,
@@ -53,7 +54,7 @@ function page(): SearchInstance {
     <h1>Search</h1>
     <div id="box"></div><div id="sort"></div><div id="resultStats"></div>
     <div id="facet"></div><div id="tree"></div><div id="toggle"></div><div id="chips"></div><div id="clear"></div>
-    <div id="range"></div><div id="suggest"></div>
+    <div id="range"></div><div id="suggest"></div><div id="sheet"></div>
     <div id="results"></div><div id="pages"></div><div id="more"></div>
   </main>`;
 
@@ -91,6 +92,14 @@ function page(): SearchInstance {
     clearFilters({ container: '#clear' }),
     rangeFilter({ container: '#range', attribute: 'price', label: 'Price', min: 5, max: 60, step: 5 }),
     suggestions({ container: '#suggest', debounceMs: 0 }),
+    filterSort({
+      container: '#sheet',
+      facets: [{ attribute: 'contentType', label: 'Content type' }],
+      sortOptions: [
+        { label: 'Relevance', value: 'relevance' },
+        { label: 'Newest first', value: 'date_desc' },
+      ],
+    }),
     results({ container: '#results' }),
     pagination({ container: '#pages', padding: 2 }),
     loadMore({ container: '#more' }),
@@ -107,7 +116,17 @@ const violations = async (): Promise<string[]> => {
 };
 
 describe('accessibility (axe-core)', () => {
-  it('reports no violations for the thirteen widgets with results', async () => {
+  it('reports no violations with the filter & sort sheet open', async () => {
+    const search = page();
+    await vi.waitFor(() => expect(search.results).not.toBeNull(), { timeout: 3000 });
+
+    document.querySelector<HTMLButtonElement>('.xps-filter-sort__trigger')!.click();
+    expect(document.querySelector('.xps-sheet__panel')).not.toBeNull();
+    expect(await violations()).toEqual([]);
+    search.dispose();
+  }, 20_000);
+
+  it('reports no violations for the fourteen widgets with results', async () => {
     const search = page();
     search.actions.setQuery('espresso').search();
     await vi.waitFor(() => expect(search.results?.total).toBeGreaterThan(0), { timeout: 3000 });

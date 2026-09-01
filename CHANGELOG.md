@@ -12,6 +12,18 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Added (widgets):** `filterSort`, the mobile Filter & Sort bottom sheet, and the
+  `XpSearch.FilterSort` Page Builder widget that mounts it. A toolbar button with a badge counting
+  the active refinements opens a `role="dialog"` sheet holding one section per configured facet
+  group plus a "Sort by" pill row — composed from the same facet-list and sort behaviours the
+  `facetList` and `sortSelect` widgets use. Selections inside the sheet are pending: **Apply**
+  replays them through the public actions in one chain and runs a single search, while the
+  backdrop, `Esc` and the close button discard them. Focus moves into the sheet, is trapped, and
+  returns to the trigger; the page behind is scroll-locked and the slide-up respects
+  `prefers-reduced-motion`. New styles `themes/src/scss/{shell,default}/_filter-sort.scss` and the
+  `styles/widgets/filter-sort.css` bundle, new subpath `./widgets/filter-sort`, plus an opt-in
+  `xps-active-filters--scroll` modifier for the chips row under the toolbar.
+
 - **Changed (themes):** the default theme ships a Kentico-violet palette instead of the placeholder
   blue — `--xps-color-accent` `#af00fa` (5.00:1 on white), `--xps-color-text` `#1f2430`,
   `--xps-color-muted` `#5c6370`, `--xps-color-border` `#e3e5ea`, and a re-derived dark-mode block

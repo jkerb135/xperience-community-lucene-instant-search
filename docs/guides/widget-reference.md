@@ -1,6 +1,6 @@
 ## Widget reference
 
-The thirteen widgets that ship with `@xperience-community/xperience-search`, the templating helpers they hand to your
+The fourteen widgets that ship with `@xperience-community/xperience-search`, the templating helpers they hand to your
 templates, and the markup each one emits. Every widget is a behaviour plus a default renderer — the
 same public API a [custom widget](custom-widgets.md) uses — so anything a built-in can do, yours can
 too.
@@ -413,6 +413,101 @@ renders the shared `xps-select` block, so it is the same `xps-select__label` (`<
 `xps-select__control` (a native `<select name="sort">`) a custom widget renders. The select is built
 once and only its `value` is patched, so changing the sort does not destroy the element you are
 using.
+
+## `filterSort`
+
+The mobile Filter & Sort sheet: one toolbar button that opens a modal bottom sheet holding the
+facet groups and the sort order. It is a composition — the same facet-list and sort behaviours the
+`facetList` and `sortSelect` widgets use — so the values, counts and labels are exactly theirs.
+
+```js
+filterSort({
+  container: '#search-filter-sort',
+  facets: [
+    { attribute: 'contentType', label: 'Content type' },
+    { attribute: 'tags', label: 'Tags', limit: 20 },
+  ],
+  sortOptions: [
+    { label: 'Most relevant', value: 'relevance' },
+    { label: 'Newest first', value: 'newest' },
+  ],
+});
+```
+
+| Option | Default | What it does |
+|---|---|---|
+| `container` | — | Selector or element. Required. |
+| `facets` | — | `{ attribute, label?, limit? }[]`, one section per entry, in order. Required; the widget asks the server to count every one of them. |
+| `sortOptions` | — | Same `{ label, value }[]` `sortSelect` takes. Omit for no "Sort by" section. |
+| `label` | `'Filter & Sort'` | Trigger text and sheet heading. |
+| `applyLabel` | `'Show results'` | The footer's primary button. |
+| `clearLabel` | `'Clear all'` | The footer's secondary button. |
+| `closeLabel` | `'Close'` | Accessible name of the header's close button. |
+
+**Nothing refines while the sheet is open.** Ticking a value, or pressing "Clear all", changes a
+*pending* selection; **Apply** replays the whole pending set through the public actions in one chain
+and runs exactly one search. Closing by the backdrop, `Esc` or the X discards it. The button reads
+"Show results" without a count — see the note under [Mobile filtering](#mobile-filtering).
+
+The trigger's badge counts the active refinements on the configured attributes plus a non-default
+sort, and is `hidden` at zero.
+
+Accessibility: the sheet is a `role="dialog" aria-modal="true"` panel labelled by its heading. Focus
+moves to the close button on open, is trapped inside the panel, and returns to the trigger on close;
+`Esc` closes; the page behind is scroll-locked; the slide-up transition is dropped under
+`prefers-reduced-motion`. Values are real checkboxes and the sort options are real buttons with
+`aria-pressed`.
+
+Markup: `themes/MARKUP.md`, blocks `xps-filter-sort` (in the mount) and `xps-sheet` (appended to
+`document.body` while open).
+
+### Mobile filtering
+
+The recipe the default theme is drawn for: below 1024px replace the facet sidebar with the trigger
+and a scrolling chips row; above it, the sidebar is back and the trigger hides itself
+(`shell.css` does that half).
+
+```html
+<div id="search-filter-sort"></div>
+<div id="search-chips" class="xps-active-filters--scroll"></div>
+<aside class="search-sidebar">
+  <div id="facet-content-type"></div>
+  <div id="facet-tags"></div>
+</aside>
+```
+
+```css
+/* the page's half of the swap: the sidebar is desktop-only */
+@media (max-width: 1023px) {
+  .search-sidebar { display: none; }
+}
+```
+
+```js
+search.addWidgets([
+  filterSort({
+    container: '#search-filter-sort',
+    facets: [
+      { attribute: 'contentType', label: 'Content type' },
+      { attribute: 'tags', label: 'Tags' },
+    ],
+    sortOptions: [{ label: 'Most relevant', value: 'relevance' }],
+  }),
+  activeFilters({ container: '#search-chips' }),
+  facetList({ container: '#facet-content-type', attribute: 'contentType', label: 'Content type' }),
+  facetList({ container: '#facet-tags', attribute: 'tags', label: 'Tags' }),
+]);
+```
+
+Keep the sidebar's `facetList` widgets mounted: they are what puts those attributes in the URL
+(a widget added to an instance declares one routable attribute, and the sheet is a composite).
+Below the results, `loadMore` usually replaces `pagination` on the same breakpoint — that is page
+composition, not something this widget does.
+
+The apply button deliberately carries no result count. A live preview would mean a second query per
+tick, and every query the server answers is journaled as a search (there is no "do not journal"
+flag in the JSON contract), so previewing would inflate the search analytics of every visitor who
+opens the sheet.
 
 ## `clearFilters`
 

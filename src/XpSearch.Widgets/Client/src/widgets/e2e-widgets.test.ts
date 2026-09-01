@@ -16,6 +16,7 @@ import {
   results,
   pagination,
   facetList,
+  filterSort,
   searchBox,
   sortSelect,
   suggestions,
@@ -149,6 +150,60 @@ describe('the demo widget set against the mock server', () => {
 
     search.dispose();
     expect(document.querySelector('#results')?.innerHTML).toBe('');
+  }, 20_000);
+
+  it('opens the filter & sort sheet, pends a selection and applies it in one search', async () => {
+    document.body.innerHTML = '<div id="sheet"></div><div id="results"></div>';
+
+    const search = createSearch({
+      index: 'site-content',
+      endpoint: `${server.url}${QUERY_ROUTE}`,
+      debounceMs: 5,
+      initialState: { pageSize: 5 },
+    });
+    search.addWidgets([
+      filterSort({
+        container: '#sheet',
+        facets: [{ attribute: 'contentType', label: 'Content type' }],
+        sortOptions: [
+          { label: 'Relevance', value: 'relevance' },
+          { label: 'Price, low to high', value: 'price_asc' },
+        ],
+      }),
+      results({ container: '#results' }),
+    ]);
+    search.start();
+
+    const trigger = () => document.querySelector<HTMLButtonElement>('.xps-filter-sort__trigger')!;
+    await settled(search, () => (search.results?.total ?? 0) > 0);
+    const before = search.results?.total ?? 0;
+
+    trigger().click();
+    const first = document.querySelector<HTMLInputElement>('.xps-sheet__checkbox')!;
+    const value = first.value;
+    first.checked = true;
+    first.dispatchEvent(new Event('change', { bubbles: true }));
+    document.querySelector<HTMLButtonElement>('[data-xps-sort="price_asc"]')!.click();
+
+    // Pending: the server has not been asked anything yet.
+    expect(search.state.filters.facets).toEqual([]);
+    expect(search.state.sort).toBe('relevance');
+
+    document.querySelector<HTMLButtonElement>('.xps-sheet__apply')!.click();
+    expect(document.querySelector('.xps-sheet')).toBeNull();
+    await settled(search, () => (search.results?.total ?? 0) < before);
+    expect(search.state.sort).toBe('price_asc');
+    for (const item of document.querySelectorAll('.xps-results__item')) {
+      expect(item.querySelector('.xps-result__meta-item')?.textContent).toBe(value);
+    }
+
+    // Re-opening shows the applied selection as the committed state, and the badge counts it.
+    expect(document.querySelector('.xps-filter-sort__badge')?.textContent).toBe('2');
+    trigger().click();
+    expect(document.querySelector<HTMLInputElement>(`.xps-sheet__checkbox[value="${value}"]`)?.checked).toBe(
+      true
+    );
+    search.dispose();
   }, 20_000);
 
   it('accumulates pages and autocompletes over the same transport', async () => {

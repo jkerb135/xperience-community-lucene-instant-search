@@ -28,6 +28,8 @@ internal static class WidgetResources
 
     internal static string Hint_RangeBounds => Get(nameof(Hint_RangeBounds));
 
+    internal static string Hint_FilterSortFacets => Get(nameof(Hint_FilterSortFacets));
+
     internal static string Hint_SortOptions => Get(nameof(Hint_SortOptions));
 
     internal static string Preview_Badge => Get(nameof(Preview_Badge));

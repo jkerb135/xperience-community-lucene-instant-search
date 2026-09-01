@@ -46,6 +46,12 @@ h1 {
   margin-bottom: 24rem;
 }
 
+/* the sheet is fixed to the viewport; pin it into its own section so it does not cover the page */
+.fx--filter-sort .xps-sheet {
+  position: relative;
+  height: 30rem;
+}
+
 /* the fixtures use a transparent 1px gif for the image slot; tint it so the slot is visible */
 .fx .xps-result__image {
   background: #dcdcdc;
