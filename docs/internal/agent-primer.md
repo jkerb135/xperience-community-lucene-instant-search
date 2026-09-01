@@ -57,6 +57,10 @@ run shows fewer, you ran the wrong project.
   re-annotated overrides is SUSPECT on the host — declare commands as plain methods on the final
   page class.
 - Scheduled/background work: follow the analytics retention task registration.
+- Creating an Info object (`new XpSearch…Info { … }`): set EVERY field its installer form declares
+  without `allowEmpty`, including booleans and the GUID. Kentico serializes only the fields that were
+  SET - a property default never reaches the INSERT, so an omitted field is a NOT NULL crash on the
+  host (RK-2). `tests/XpSearch.Core.Tests/InfoCreationSiteTests.cs` checks this for `XpSearch.Core`.
 
 ## Conventions
 

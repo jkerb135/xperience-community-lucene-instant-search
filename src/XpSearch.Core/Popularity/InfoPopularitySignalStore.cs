@@ -89,7 +89,12 @@ public sealed class InfoPopularitySignalStore : IPopularitySignalStore
         await ReplaceSuggestionsAsync(indexName, aggregate, computedUtc, cancellationToken).ConfigureAwait(false);
 
         var settings = await SettingsAsync(indexName, cancellationToken).ConfigureAwait(false)
-            ?? new XpSearchPopularityIndexInfo { PopularityIndexGuid = Guid.NewGuid(), PopularityIndexName = indexName };
+            ?? new XpSearchPopularityIndexInfo
+            {
+                PopularityIndexGuid = Guid.NewGuid(),
+                PopularityIndexName = indexName,
+                PopularityIndexEnabled = false
+            };
 
         settings.PopularityIndexComputed = computedUtc;
         indexes.Set(settings);

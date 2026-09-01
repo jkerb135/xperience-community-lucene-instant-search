@@ -8,6 +8,12 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Fixed (core, admin):** the `XpSearch.PopularitySignal` scheduled task failed with *Cannot insert
+  the value NULL into column 'PopularityIndexEnabled'* the first time it ran for an index. A Kentico
+  Info object only writes the fields that were set, so the settings row it creates now sets the
+  opt-in explicitly (off). The same omission is fixed at two more creation sites: approving a
+  popularity suggestion left `RuleMigrated` unset, and a query log row left `LogGuid` unset.
+
 - **Added (widgets):** two **Page Builder personalization condition types**, so a marketer can
   personalize *any* widget by search behaviour. **Search - searched for** shows a variant to visitors
   whose logged search text contained a term within the last N days (default 30) — consent-gated like

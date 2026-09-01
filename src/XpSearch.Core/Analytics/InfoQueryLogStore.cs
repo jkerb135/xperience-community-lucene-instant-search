@@ -31,6 +31,7 @@ public sealed class InfoQueryLogStore : IQueryLogStore
 
         provider.Set(new XpSearchQueryLogInfo
         {
+            LogGuid = Guid.NewGuid(),
             LogQueryID = entry.QueryId,
             LogIndexName = entry.IndexName,
             LogQueryText = entry.QueryText,
