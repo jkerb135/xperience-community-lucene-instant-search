@@ -216,11 +216,23 @@ every keystroke.
 POST /api/xpsearch/suggest
 { "index": "ProductIndex", "query": "cof", "limit": 5 }
 
-{ "suggestions": [{ "text": "coffee" }, { "text": "coffee grinder" }] }
+{ "suggestions": [{ "text": "coffee", "group": "query" }, { "text": "coffee grinder", "group": "query" }] }
 ```
 
-A query suggestion carries `text` only — there is no document behind it. Leave the mode at
-`SuggestMode.Documents` (the default) for a dropdown that shows actual results.
+A query suggestion carries `text` and `group` only — there is no document behind it. Leave the mode
+at `SuggestMode.Documents` (the default) for a dropdown that shows actual results, or set
+`SuggestMode.Mixed` for one panel that shows both, queries first — see
+[the suggest endpoint](search-api.md#post-apixpsearchsuggest).
+
+The same popularity count is what a dead end offers as `popularSearches`: with
+`Indexes["ProductIndex"].PopularSearchesOnNoResults = 5`, a search that found nothing comes back
+with the five most-searched queries of that index (an empty prefix, so every logged query counts).
+It is off by default, because it shows anonymous visitors what other visitors searched for.
+
+Neither feature can offer a visitor *their own* recent searches: the query log has no visitor
+correlator, by design. The shipped autocomplete widgets keep recent searches in the visitor's own
+browser instead — nothing about them reaches the server. See
+[the widget reference](widget-reference.md#suggestions).
 
 ### The dashboard
 

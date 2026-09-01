@@ -137,6 +137,9 @@ let search: SearchInstance | undefined;
 beforeEach(() => {
   calls.length = 0;
   document.body.innerHTML = '';
+  // Recent searches (SG-1) persist across renders on purpose, so one test's submitted query would
+  // otherwise show up in the next one's panel.
+  localStorage.clear();
 });
 afterEach(() => {
   for (const instance of started.splice(0)) instance.dispose();
@@ -485,6 +488,75 @@ describe('results', () => {
     expect(root.querySelector('.xps-results__empty')?.textContent).toContain('No results for');
     expect(root.querySelector('.xps-results__clear')).toBeNull();
     expect(root.querySelector('.xps-results__status')?.textContent).toBe('No results for “xyzzy”');
+  });
+
+  /**
+   * SG-1: the two ways out of a dead end. Both come off the response, both render only when the
+   * server offered them, and both run their query through the same delegated handler.
+   */
+  it('offers the verified correction and the popular searches the response carried', async () => {
+    const root = mount({}, {
+      ...NOTHING,
+      didYouMean: 'espresso',
+      popularSearches: ['espresso', 'latte art'],
+    });
+    search?.actions.setQuery('esspresso').search();
+    await settled(search!);
+
+    const correction = root.querySelector('.xps-results__correction') as HTMLButtonElement;
+    expect(root.querySelector('.xps-results__did-you-mean')?.textContent).toBe(
+      'Did you mean espresso?'
+    );
+    expect(correction.type).toBe('button');
+    expect(correction.dataset['xpsRecover']).toBe('espresso');
+    expect(root.querySelectorAll('.xps-results__popular-item')).toHaveLength(2);
+
+    correction.click();
+    await vi.waitFor(() => expect(calls[calls.length - 1]?.body['query']).toBe('espresso'));
+    expect(search?.state.query).toBe('espresso');
+  });
+
+  it('runs a popular search when its chip is clicked', async () => {
+    const root = mount({}, { ...NOTHING, popularSearches: ['espresso', 'latte art'] });
+    search?.actions.setQuery('xyzzy').search();
+    await settled(search!);
+
+    expect(root.querySelector('.xps-results__did-you-mean')).toBeNull();
+    const chips = [...root.querySelectorAll<HTMLButtonElement>('.xps-results__popular-button')];
+    expect(chips.map((chip) => chip.textContent)).toEqual(['espresso', 'latte art']);
+    expect(classesOf(chips[1])).toEqual(['xps-button', 'xps-chip', 'xps-results__popular-button']);
+
+    chips[1]?.click();
+    await vi.waitFor(() => expect(search?.state.query).toBe('latte art'));
+  });
+
+  it('renders no recovery at all when the response carried none', async () => {
+    const root = mount({}, NOTHING);
+    search?.actions.setQuery('xyzzy').search();
+    await settled(search!);
+
+    expect(root.querySelector('.xps-results__did-you-mean')).toBeNull();
+    expect(root.querySelector('.xps-results__popular')).toBeNull();
+  });
+
+  it('hands the recovery members to a custom empty template', async () => {
+    const seen: Array<Record<string, unknown>> = [];
+    const root = mount(
+      {
+        templates: {
+          empty: (data: Record<string, unknown>) => {
+            seen.push(data);
+            return html`<p class="custom">${String(data['didYouMean'])}</p>`;
+          },
+        },
+      },
+      { ...NOTHING, didYouMean: 'espresso', popularSearches: ['latte art'] }
+    );
+    search?.actions.setQuery('esspresso').search();
+    await settled(search!);
+
+    expect(root.querySelector('.custom')?.textContent).toBe('espresso');
+    expect(seen[seen.length - 1]?.['popularSearches']).toEqual(['latte art']);
   });
 
   it('offers to clear the filters when the empty state is a refined one', async () => {
@@ -1857,6 +1929,165 @@ describe('suggestions', () => {
     await vi.waitFor(() => expect(input.value).toBe(''));
     expect(host.querySelector<HTMLElement>('.xps-suggestions__panel')?.hidden).toBe(true);
   });
+
+  /**
+   * SG-1: recents are composed into the panel at the widget layer — the behaviour's transport and
+   * state machine are untouched — so every one of these is a panel-level assertion.
+   */
+  describe('recent searches', () => {
+    const seed = (...queries: string[]): void =>
+      localStorage.setItem('xps-recent:site-content', JSON.stringify(queries));
+
+    const focus = async (host: HTMLElement): Promise<HTMLInputElement> => {
+      const input = host.querySelector<HTMLInputElement>('.xps-suggestions__input')!;
+      input.dispatchEvent(new FocusEvent('focus', { bubbles: false }));
+      return input;
+    };
+
+    it('opens on the recents alone when an empty field is focused', async () => {
+      seed('espresso machine', 'grinder');
+      const host = mount();
+      await settled(search!);
+      await focus(host);
+
+      const groups = [...host.querySelectorAll('.xps-suggestions__group')];
+      expect(groups).toHaveLength(1);
+      expect(text(groups[0]?.querySelector('.xps-suggestions__group-title'))).toBe(
+        'Recent searches'
+      );
+      expect([...host.querySelectorAll('[role="option"]')].map((o) => text(o))).toEqual([
+        'espresso machine',
+        'grinder',
+      ]);
+      expect(host.querySelector<HTMLElement>('.xps-suggestions__panel')?.hidden).toBe(false);
+      // Nothing was asked of the server: the list came out of the browser.
+      expect(calls.filter((call) => call.url.endsWith(SUGGEST_ROUTE))).toHaveLength(0);
+    });
+
+    it('stays closed on focus with the feature off', async () => {
+      seed('espresso machine');
+      const host = mount({ recentSearches: false });
+      await settled(search!);
+      await focus(host);
+
+      expect(host.querySelector<HTMLElement>('.xps-suggestions__panel')?.hidden).toBe(true);
+    });
+
+    it('stays closed on focus when nothing was ever searched', async () => {
+      const host = mount();
+      await settled(search!);
+      await focus(host);
+
+      expect(host.querySelector<HTMLElement>('.xps-suggestions__panel')?.hidden).toBe(true);
+    });
+
+    it(`is the first group, prefix-filtered, above the server own`, async () => {
+      seed('espresso machine', 'grinder');
+      const host = mount();
+      await settled(search!);
+      await focus(host);
+      const input = await type(host, 'esp');
+      await vi.waitFor(() =>
+        expect(host.querySelectorAll('.xps-suggestions__group')).toHaveLength(3)
+      );
+
+      const groups = [...host.querySelectorAll('.xps-suggestions__group')];
+      expect(
+        groups.map((group) => text(group.querySelector('.xps-suggestions__group-title')))
+      ).toEqual(['Recent searches', 'Suggestions', 'Pages']);
+      // "grinder" does not start with "esp", so it is not offered.
+      expect(text(groups[0])).toContain('espresso machine');
+      expect(text(groups[0])).not.toContain('grinder');
+      // Ids stay in visual order, recents included.
+      const prefix = input.id.replace(/-input$/, '');
+      expect([...host.querySelectorAll('[role="option"]')].map((option) => option.id)).toEqual([
+        prefix + '-option-0',
+        prefix + '-option-1',
+        prefix + '-option-2',
+        prefix + '-option-3',
+      ]);
+    });
+
+    it('walks the whole merged list with the arrow keys', async () => {
+      seed('espresso beans');
+      const host = mount();
+      await settled(search!);
+      await focus(host);
+      const input = await type(host, 'esp');
+      await vi.waitFor(() => expect(host.querySelectorAll('[role="option"]')).toHaveLength(4));
+
+      // Down into the recents group first, then on into the server's own suggestions.
+      key(input, 'ArrowDown');
+      const active = (): Element | null => host.querySelector('.xps-suggestions__option--active');
+      expect(text(active())).toBe('espresso beans');
+      expect(active()?.closest('.xps-suggestions__group')?.getAttribute('aria-labelledby')).toContain(
+        'group-recent'
+      );
+      key(input, 'ArrowDown');
+      expect(text(active())).toBe('espresso machine');
+      key(input, 'ArrowUp');
+      expect(text(active())).toBe('espresso beans');
+      expect(input.getAttribute('aria-activedescendant')).toBe(active()?.id);
+    });
+
+    it('records a submitted query and a picked query suggestion, but not a picked page', async () => {
+      const host = mount();
+      await settled(search!);
+      const input = await type(host, 'esp');
+
+      // The document suggestion navigates to a page; nobody searched for its title.
+      const options = [...host.querySelectorAll<HTMLElement>('[role="option"]')];
+      options[2]?.click();
+      expect(localStorage.getItem('xps-recent:site-content')).toBeNull();
+
+      await type(host, 'esp');
+      [...host.querySelectorAll<HTMLElement>('[role="option"]')][1]?.click();
+      expect(JSON.parse(localStorage.getItem('xps-recent:site-content')!)).toEqual([
+        'espresso grinder',
+      ]);
+
+      input.value = 'latte';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      host.querySelector('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      expect(JSON.parse(localStorage.getItem('xps-recent:site-content')!)).toEqual([
+        'latte',
+        'espresso grinder',
+      ]);
+    });
+
+    it('searches for a recent when it is picked, and remembers it again', async () => {
+      seed('grinder');
+      const host = mount();
+      await settled(search!);
+      await focus(host);
+
+      const before = calls.length;
+      host.querySelector<HTMLElement>('[role="option"]')?.click();
+      await vi.waitFor(() => expect(calls.length).toBeGreaterThan(before));
+      expect(search?.state.query).toBe('grinder');
+      expect(host.querySelector<HTMLInputElement>('.xps-suggestions__input')?.value).toBe('grinder');
+      expect(host.querySelector<HTMLElement>('.xps-suggestions__panel')?.hidden).toBe(true);
+      expect(JSON.parse(localStorage.getItem('xps-recent:site-content')!)).toEqual(['grinder']);
+    });
+
+    it(`empties the store from the group Clear control`, async () => {
+      seed('espresso machine', 'grinder');
+      const host = mount();
+      await settled(search!);
+      await focus(host);
+
+      const clear = host.querySelector<HTMLButtonElement>('.xps-suggestions__group-clear')!;
+      expect(clear.type).toBe('button');
+      expect(clear.getAttribute('aria-label')).toBe('Clear recent searches');
+      // Outside the element the group is named by, so the name stays "Recent searches".
+      expect(clear.closest('.xps-suggestions__group-title')).toBeNull();
+
+      clear.click();
+      expect(localStorage.getItem('xps-recent:site-content')).toBeNull();
+      expect(host.querySelector('.xps-suggestions__group')).toBeNull();
+      expect(host.querySelector<HTMLElement>('.xps-suggestions__panel')?.hidden).toBe(true);
+    });
+  });
 });
 
 describe('searchBox with integrated suggestions', () => {
@@ -1962,6 +2193,39 @@ describe('searchBox with integrated suggestions', () => {
     await vi.waitFor(() => expect(search!.state.query).toBe('espresso machine'));
     expect(input.value).toBe('espresso machine');
     expect(host.querySelector<HTMLElement>('.xps-suggestions__panel')?.hidden).toBe(true);
+  });
+
+  /** SG-1: the same shared module drives both consumers, so the box gets the same third group. */
+  it('shows and records recent searches, and drops them with the opt-out', async () => {
+    localStorage.setItem('xps-recent:site-content', JSON.stringify(['grinder']));
+    const host = mount();
+    await settled(search!);
+    const input = host.querySelector<HTMLInputElement>('input')!;
+    input.dispatchEvent(new FocusEvent('focus'));
+
+    expect(text(host.querySelector('.xps-suggestions__group-title'))).toBe('Recent searches');
+    expect(host.querySelector('.xps-suggestions__group-clear')).not.toBeNull();
+    expect(host.querySelector<HTMLElement>('.xps-suggestions__panel')?.hidden).toBe(false);
+
+    // A submitted query is remembered, most recent first.
+    input.value = 'latte';
+    host.querySelector('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    await vi.waitFor(() => expect(search?.state.query).toBe('latte'));
+    expect(JSON.parse(localStorage.getItem('xps-recent:site-content')!)).toEqual([
+      'latte',
+      'grinder',
+    ]);
+
+    const off = startSuggesting(
+      (element) =>
+        searchBox({
+          container: element,
+          suggestions: { debounceMs: 0, recentSearches: false },
+        }),
+      'search-no-recents'
+    );
+    off.querySelector<HTMLInputElement>('input')?.dispatchEvent(new FocusEvent('focus'));
+    expect(off.querySelector<HTMLElement>('.xps-suggestions__panel')?.hidden).toBe(true);
   });
 
   it('still follows a redirect rule when Enter submits with no active option', async () => {

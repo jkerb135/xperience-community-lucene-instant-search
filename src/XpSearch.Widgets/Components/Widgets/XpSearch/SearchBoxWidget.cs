@@ -52,6 +52,15 @@ public sealed class SearchBoxWidgetProperties : XpSearchMountWidgetProperties
     [VisibleIfTrue(nameof(EnableSuggestions))]
     public int SuggestionLimit { get; set; } = 5;
 
+    /// <summary>Gets or sets whether the panel offers this visitor's own recent searches.</summary>
+    [CheckBoxComponent(
+        Label = "Offer recent searches",
+        ExplanationText = "Shows what this visitor searched for before as the first group of the panel, and opens it when they "
+            + "focus the empty field. The list is kept in their own browser and never sent to the server.",
+        Order = OrderFirstWidgetProperty + 28)]
+    [VisibleIfTrue(nameof(EnableSuggestions))]
+    public bool RecentSearches { get; set; } = true;
+
     /// <summary>Gets or sets whether the search keeps its state in the page URL (spec §5.5).</summary>
     [CheckBoxComponent(
         Label = "Sync search state to the URL",
@@ -92,12 +101,24 @@ public sealed class SearchBoxWidgetViewComponent : XpSearchMountWidgetViewCompon
         // The JavaScript reads one nested group: present means on, absent means off.
         config.Remove("enableSuggestions");
         config.Remove("suggestionLimit");
+        config.Remove("recentSearches");
 
         if (properties.EnableSuggestions)
         {
-            config["suggestions"] = properties.SuggestionLimit > 0
-                ? new Dictionary<string, object?> { ["limit"] = properties.SuggestionLimit }
-                : new Dictionary<string, object?>();
+            var suggestions = new Dictionary<string, object?>();
+
+            if (properties.SuggestionLimit > 0)
+            {
+                suggestions["limit"] = properties.SuggestionLimit;
+            }
+
+            // Recents are on by default in the JavaScript, so only the opt-out has to be said.
+            if (!properties.RecentSearches)
+            {
+                suggestions["recentSearches"] = false;
+            }
+
+            config["suggestions"] = suggestions;
         }
     }
 

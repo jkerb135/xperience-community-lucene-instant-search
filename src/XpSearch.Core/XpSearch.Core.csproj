@@ -12,6 +12,9 @@
     <PackageReference Include="Kentico.Xperience.Lucene.Core" />
     <PackageReference Include="Lucene.Net.Highlighter" />
     <PackageReference Include="Lucene.Net.QueryParser" />
+    <!-- DirectSpellChecker for did-you-mean (SG-1): it reads the live index terms, so no sidecar
+         spell index and no index-maintenance machinery. -->
+    <PackageReference Include="Lucene.Net.Suggest" />
   </ItemGroup>
 
   <ItemGroup>

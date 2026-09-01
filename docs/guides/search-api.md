@@ -143,6 +143,48 @@ And the response:
 `total` is the number of matching documents across all pages, `totalPages` the page count, `tookMs` the
 server-side time excluding the network.
 
+#### No-results recovery
+
+A response with `total: 0` may carry two more members, both optional and both absent otherwise:
+
+```json
+{
+  "results": [], "total": 0,
+  "didYouMean": "espresso",
+  "popularSearches": ["espresso", "latte art", "grinder"]
+}
+```
+
+- **`didYouMean`** — a corrected spelling of the query. The server spells each term the index does
+  not know against the same fields the query searched, using the live index terms, and then **runs
+  the corrected query** before offering it: the member is present only when that search found
+  something, so a correction is never a second dead end. On per index by default:
+
+  ```csharp
+  services.AddXpSearch(o => o.Indexes["ProductIndex"].DidYouMean = false);
+  ```
+
+  The verification search is sent with `probe: true`, so it is answered like any other search but
+  never journaled — it adds no query-log row, no search activity and no popularity signal. At most
+  one verification runs per request, and the enriched response is what the 60-second response cache
+  stores, so a dead end is corrected once per query per TTL.
+
+  With [typo tolerance](relevance-tuning.md#typo-tolerance) on for the index, a misspelling usually finds results by itself and never
+  reaches zero hits; did-you-mean is the fallback for the ones it misses. The two need no
+  coordination.
+
+- **`popularSearches`** — the index's most-searched queries, most popular first, from the same query
+  log `/suggest` reads. **Off by default**, because it shows anonymous visitors what other visitors
+  searched for; turn it on per index with the number of queries to offer:
+
+  ```csharp
+  services.AddXpSearch(o => o.Indexes["ProductIndex"].PopularSearchesOnNoResults = 5);
+  ```
+
+Neither member is ever present on a `probe: true` response — a probe is a count, and its caller
+renders nothing. The shipped `results` widget renders both in its empty state; see
+[widget reference](widget-reference.md#results).
+
 #### `redirect` is present on every response
 
 `redirect` is `null` unless a relevance rule with the **Redirect** action matched the query, in which
@@ -290,9 +332,10 @@ from `curl` when a result is ranked in a way nobody can explain.
 ```json
 {
   "suggestions": [
-    { "text": "espresso" },
+    { "text": "espresso", "group": "query" },
     {
       "text": "Espresso machine",
+      "group": "document",
       "url": "/products/espresso-machine",
       "result": { "id": "web-page-7-en", "attributes": { "title": "Espresso machine" } }
     }
@@ -300,10 +343,22 @@ from `curl` when a result is ranked in a way nobody can explain.
 }
 ```
 
-`index` and `query` are required; `limit` defaults to 5. A suggestion always has `text`; `url` and
-`result` are present only for indexes configured to suggest documents. Whether an index answers with query
-suggestions or with matching documents is per-index server configuration, not a request field, so the same
-client code works for both.
+`index` and `query` are required; `limit` defaults to 5. A suggestion always has `text` and a
+`group` saying where it came from; `url` and `result` are present only for document suggestions.
+Whether an index answers with query suggestions, with matching documents or with both is per-index
+server configuration, not a request field, so the same client code works for all three:
+
+```csharp
+services.AddXpSearch(o => o.Indexes["ProductIndex"].SuggestMode = SuggestMode.Mixed);
+```
+
+`SuggestMode.Mixed` answers with one list that carries both, queries first. The split is
+deterministic: the queries take half of `limit` (at least one whenever there is one), the documents
+fill the rest, and whatever one source leaves unused goes to the other, so a `limit` of 5 with two
+popular queries and plenty of documents returns two queries and three documents. `group` is emitted
+in every mode, so a client can group a mixed response without inferring the source from `result`.
+(The shipped widgets add their own client-side recent searches under `group: "recent"`; the server
+never sends that value.)
 
 For document suggestions, `text` is the result's `title` — which for Xperience content is the content
 item's *name*, often a slug with a generated suffix (`CoffeePlunger-p2e57tss`). `/suggest` has no

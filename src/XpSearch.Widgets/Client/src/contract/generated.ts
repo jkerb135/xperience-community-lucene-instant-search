@@ -258,6 +258,12 @@ export interface HighlightOptions {
  */
 export interface SearchResponse {
     /**
+     * Optional. A corrected spelling of the query that the server verified returns results.
+     * Present only when total is 0, did-you-mean is enabled for the index, and a verified
+     * correction was found; absent otherwise, and never present on a probe response.
+     */
+    didYouMean?: string;
+    /**
      * Facet values keyed by attribute name. Only attributes listed in SearchRequest.facets
      * appear, and only values with a non-zero count in the current result set. Each list is
      * ordered by count descending, then by value ascending.
@@ -271,6 +277,12 @@ export interface SearchResponse {
      * Page size that was applied, after server-side clamping.
      */
     pageSize: number;
+    /**
+     * Optional. The index's most-searched queries, most popular first, offered as a way out of
+     * a dead end. Present only when total is 0 and the host opted in per index; absent
+     * otherwise, and never present on a probe response.
+     */
+    popularSearches?: string[];
     /**
      * Correlation id for this search. Echoes SearchRequest.queryId when supplied, otherwise
      * server-generated. Send it back on click and conversion events.
@@ -461,6 +473,14 @@ export interface SuggestResponse {
  */
 export interface Suggestion {
     /**
+     * Which source this entry came from, so a client can group a mixed response without
+     * inferring it from `result`. The server emits "query" for a logged popular query and
+     * "document" for a matching document, in every suggest mode. It never emits "recent": that
+     * value exists for the client-side recent-search entries the shipped widgets prepend to the
+     * panel, which are read from the visitor's browser and never leave it.
+     */
+    group?: Group;
+    /**
      * The document behind this suggestion, present only for indexes that suggest documents.
      */
     result?: Result;
@@ -474,3 +494,12 @@ export interface Suggestion {
      */
     url?: string;
 }
+
+/**
+ * Which source this entry came from, so a client can group a mixed response without
+ * inferring it from `result`. The server emits "query" for a logged popular query and
+ * "document" for a matching document, in every suggest mode. It never emits "recent": that
+ * value exists for the client-side recent-search entries the shipped widgets prepend to the
+ * panel, which are read from the visitor's browser and never leave it.
+ */
+export type Group = "query" | "document" | "recent";

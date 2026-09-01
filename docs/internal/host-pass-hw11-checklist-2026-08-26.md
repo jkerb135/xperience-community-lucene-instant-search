@@ -295,12 +295,12 @@ when their plan ships; the others verify what should already work.
     on the host). The count appears ~250ms after the empty state; with nothing behind the filters
     either, the countless "Clear filters" is the correct answer, not a bug.
 85. **No-results recovery: did-you-mean.** Misspelled query with no hits shows "Did you mean
-    <correction>?" which runs the corrected query on click. **KNOWN FAIL today** — no
-    suggester/contract support (folded into plan 04-04 SG-1).
+    <correction>?" which runs the corrected query on click. **Walkable since SG-1** (needs a bundle
+    rebuild on the host) — walked in detail as §S item 97.
 86. **No-results recovery: popular searches.** The no-results state offers popular-search
     chips drawn from the analytics query log, rendered only when the host enables it.
-    **KNOWN FAIL today** — no public endpoint for the query-log popularity data
-    (plan 04-04 SG-1).
+    **Walkable since SG-1**, once the host sets `PopularSearchesOnNoResults` on the demo index —
+    walked in detail as §S item 98.
 
 ## R. FZ-1 typo tolerance (added 2026-09-01)
 
@@ -326,3 +326,41 @@ when their plan ships; the others verify what should already work.
     has been typed.
 94. Experiment boundary: with an experiment running, A- and B-bucketed browsers both see typo
     tolerance, and the experiment's variant-B Synonyms page has no toggle.
+
+## S. SG-1 mixed suggestions, recent searches, no-results recovery (added 2026-09-01)
+
+Needs a bundle rebuild on the host (npm package + `Search/client`), and for items 96/98 two config
+lines on the demo index: `o.Indexes["DancingGoatSample"].SuggestMode = SuggestMode.Mixed;` and
+`o.Indexes["DancingGoatSample"].PopularSearchesOnNoResults = 5;`. Did-you-mean needs no
+configuration — it is on by default, which is what item 97 checks.
+
+95. **Recents are remembered and offered.** With the header/search-page autocomplete: search
+    `espresso`, then `latte`, then clear the field and focus it — the panel opens on a **Recent
+    searches** group alone, newest first, with no request to `/api/xpsearch/suggest` (check the
+    network tab: the panel opens with no call). Type `esp` and the group narrows to the matching
+    entries and now sits **above** the server's own groups. Picking one runs that search. Reload the
+    page: the list survives. Check `localStorage` — one `xps-recent:DancingGoatSample` key, at most
+    five entries — and confirm **no** request body ever carries them.
+96. **Mixed suggestions.** With `SuggestMode.Mixed` on the demo index and a query log that has
+    entries, typing `esp` shows two server groups — *Suggestions* (logged queries) then *Pages*
+    (documents) — in one panel, never more than `limit` entries in total, queries first. Picking a
+    query searches; picking a page navigates.
+97. **Did-you-mean, unconfigured.** With typo tolerance **off** (turn it off if item 89 left it on),
+    search a misspelling with no hits — e.g. `esspresso`. The empty state reads "Did you mean
+    **espresso**?"; clicking the correction runs it and returns results. A misspelling the index
+    cannot correct (`zzqwertyuiop`) shows the plain empty state, never a broken link or an empty
+    "Did you mean ?".
+98. **Popular searches.** Set `PopularSearchesOnNoResults = 5` on the demo index and restart. The
+    same no-hit search now also shows a **Popular searches** chip row; clicking a chip runs that
+    query. Remove the setting and the row disappears — it is opt-in. (Both recovery blocks are
+    client-side: the server-rendered first paint still shows the plain empty state until the widgets
+    hydrate.)
+99. **Analytics honesty.** After walking 97 and 98, open **Edit index → Analytics** for the same
+    range: the query log holds exactly **one** row per search you ran — the misspelling itself — and
+    no row for the correction the server verified behind the scenes. Nothing in the report, the
+    suggestion miner or the popularity signal knows about the verification search.
+100. **The Page Builder switches.** Both the Search box (with *Suggest as the visitor types* on) and
+    the Suggestions widget show an **Offer recent searches** checkbox, on by default. Clear it on one
+    widget, save, reload: focusing its empty field opens nothing, and the panel shows only the
+    server's groups. Tick it again and the previously stored list comes back (clearing the checkbox
+    hides the group; it does not wipe the browser's list — the panel's own **Clear** control does).

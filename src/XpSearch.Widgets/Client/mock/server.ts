@@ -20,6 +20,7 @@ import type {
   SearchResponse,
   SuggestRequest,
   SuggestResponse,
+  Suggestion,
 } from '../src/contract/generated.ts';
 
 interface Doc {
@@ -287,8 +288,47 @@ export function query(request: SearchRequest): SearchResponse {
     ...(request.query?.toLowerCase().includes('espresso')
       ? { ruleData: { banner: 'espresso-week', layout: 'grid' } }
       : {}),
+    // No-results recovery (SG-1): only for a dead end, and never for a probe.
+    ...(scored.length === 0 && request.probe !== true ? recovery(request.query ?? '') : {}),
     queryId: request.queryId ?? randomUUID(),
   };
+}
+
+/** The most-searched queries the mock pretends its query log holds. */
+const POPULAR = ['espresso', 'latte art', 'grinder'];
+
+/**
+ * Stands in for the server's did-you-mean and popular-search enrichment: a query one edit away from
+ * a corpus title corrects to it, and the popular searches are a fixed list.
+ */
+function recovery(query: string): { didYouMean?: string; popularSearches?: string[] } {
+  const words = new Set(CORPUS.flatMap((doc) => doc.title.toLowerCase().split(' ')));
+  const corrected = query
+    .split(' ')
+    .map((word) => [...words].find((known) => editDistance(word.toLowerCase(), known) === 1) ?? word)
+    .join(' ');
+  return {
+    ...(corrected.toLowerCase() === query.toLowerCase() ? {} : { didYouMean: corrected }),
+    popularSearches: POPULAR,
+  };
+}
+
+/** Levenshtein, capped at what a one-edit correction needs. */
+function editDistance(left: string, right: string): number {
+  if (Math.abs(left.length - right.length) > 1) return 2;
+  let row = [...Array.from({ length: right.length + 1 }, (_, at) => at)];
+  for (let i = 1; i <= left.length; i++) {
+    const next = [i];
+    for (let j = 1; j <= right.length; j++) {
+      next[j] = Math.min(
+        (row[j] ?? 0) + 1,
+        (next[j - 1] ?? 0) + 1,
+        (row[j - 1] ?? 0) + (left[i - 1] === right[j - 1] ? 0 : 1)
+      );
+    }
+    row = next;
+  }
+  return row[right.length] ?? 2;
 }
 
 export function suggest(request: SuggestRequest): SuggestResponse {
@@ -296,19 +336,25 @@ export function suggest(request: SuggestRequest): SuggestResponse {
   const limit = request.limit ?? 5;
   if (prefix === '') return { suggestions: [] };
   const seen = new Set<string>();
-  const suggestions = CORPUS.filter((doc) => doc.title.toLowerCase().startsWith(prefix))
+  // Mixed mode (SG-1): the popular queries lead with half the limit, the documents fill the rest,
+  // and every entry says which source it came from.
+  const queries: Suggestion[] = POPULAR.filter((text) => text.startsWith(prefix))
+    .slice(0, Math.max(1, Math.floor(limit / 2)))
+    .map((text) => ({ text, group: 'query' }));
+  const documents: Suggestion[] = CORPUS.filter((doc) => doc.title.toLowerCase().startsWith(prefix))
     .filter((doc) => {
       if (seen.has(doc.title)) return false;
       seen.add(doc.title);
       return true;
     })
-    .slice(0, limit)
+    .slice(0, limit - queries.length)
     .map((doc) => ({
       text: doc.title,
+      group: 'document',
       url: doc.url,
       result: { id: doc.id, attributes: { title: doc.title, url: doc.url } },
     }));
-  return { suggestions };
+  return { suggestions: [...queries, ...documents] };
 }
 
 function readBody(req: IncomingMessage): Promise<unknown> {

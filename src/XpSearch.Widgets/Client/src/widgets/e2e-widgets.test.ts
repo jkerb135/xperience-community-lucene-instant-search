@@ -255,7 +255,11 @@ describe('the demo widget set against the mock server', () => {
     // Typing searched in place, so the accumulated list was rebuilt for the new query.
     await settled(search, () => items() > 0 && items() <= 5);
 
-    (document.querySelector('[role="option"]') as HTMLElement).click();
+    // The mock answers in mixed mode (SG-1), so the panel is grouped: the popular queries first,
+    // then the pages. The page is the one that navigates.
+    expect(document.querySelectorAll('.xps-suggestions__group')).toHaveLength(2);
+    const pages = document.querySelectorAll('.xps-suggestions__group')[1] as HTMLElement;
+    (pages.querySelector('[role="option"]') as HTMLElement).click();
     expect(assign).toHaveBeenCalledWith(expect.stringContaining('/docs/espresso-basics'));
 
     search.dispose();

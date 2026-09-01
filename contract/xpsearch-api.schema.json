@@ -310,6 +310,18 @@
           "type": "object",
           "additionalProperties": true,
           "description": "Optional. Editor-authored data attached by matching Search-tuning rules (the Return-custom-data action), shallow-merged in rule order. Absent when no matching rule returns data."
+        },
+        "didYouMean": {
+          "type": "string",
+          "description": "Optional. A corrected spelling of the query that the server verified returns results. Present only when total is 0, did-you-mean is enabled for the index, and a verified correction was found; absent otherwise, and never present on a probe response."
+        },
+        "popularSearches": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "One previously logged query."
+          },
+          "description": "Optional. The index's most-searched queries, most popular first, offered as a way out of a dead end. Present only when total is 0 and the host opted in per index; absent otherwise, and never present on a probe response."
         }
       }
     },
@@ -496,6 +508,11 @@
         "result": {
           "$ref": "#/$defs/Result",
           "description": "The document behind this suggestion, present only for indexes that suggest documents."
+        },
+        "group": {
+          "type": "string",
+          "enum": ["query", "document", "recent"],
+          "description": "Which source this entry came from, so a client can group a mixed response without inferring it from `result`. The server emits \"query\" for a logged popular query and \"document\" for a matching document, in every suggest mode. It never emits \"recent\": that value exists for the client-side recent-search entries the shipped widgets prepend to the panel, which are read from the visitor's browser and never leave it."
         }
       }
     },

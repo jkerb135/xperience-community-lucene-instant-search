@@ -83,12 +83,69 @@ public sealed class DocumentSuggestService : ISuggestService
 
         if (indexOptions.SuggestMode == SuggestMode.QuerySuggestions)
         {
-            var queries = await querySuggestions.SuggestAsync(request.Index, prefix, limit, cancellationToken).ConfigureAwait(false);
-
-            // A query suggestion has no document behind it, so it carries text only.
-            return new SuggestResponse { Suggestions = [.. queries.Select(text => new Suggestion { Text = text })] };
+            return new SuggestResponse
+            {
+                Suggestions = [.. await SuggestQueriesAsync(request.Index, prefix, limit, cancellationToken).ConfigureAwait(false)]
+            };
         }
 
+        if (indexOptions.SuggestMode == SuggestMode.Mixed)
+        {
+            var queries = await SuggestQueriesAsync(request.Index, prefix, limit, cancellationToken).ConfigureAwait(false);
+            var documents = await SuggestDocumentsAsync(request, indexOptions, prefix, limit, cancellationToken).ConfigureAwait(false);
+
+            return new SuggestResponse { Suggestions = [.. Mix(queries, documents, limit)] };
+        }
+
+        return new SuggestResponse
+        {
+            Suggestions = [.. await SuggestDocumentsAsync(request, indexOptions, prefix, limit, cancellationToken).ConfigureAwait(false)]
+        };
+    }
+
+    /// <summary>
+    /// Interleaves the two sources into one response of at most <paramref name="limit"/> entries:
+    /// queries lead with half of it (at least one whenever there is one), documents fill the rest, and
+    /// whatever one source leaves unused is given back to the other.
+    /// </summary>
+    /// <param name="queries">The query suggestions, most searched first.</param>
+    /// <param name="documents">The document suggestions, best match first.</param>
+    /// <param name="limit">The most suggestions the response may carry.</param>
+    /// <returns>The mixed suggestions, queries first.</returns>
+    internal static IEnumerable<Suggestion> Mix(
+        IReadOnlyList<Suggestion> queries,
+        IReadOnlyList<Suggestion> documents,
+        int limit)
+    {
+        int queryTake = Math.Min(queries.Count, Math.Max(1, limit / 2));
+        int documentTake = Math.Min(documents.Count, limit - queryTake);
+
+        // Whatever the documents did not use goes back to the queries, and vice versa through the
+        // line above: neither source is padded beyond what it actually returned.
+        queryTake = Math.Min(queries.Count, limit - documentTake);
+
+        return queries.Take(queryTake).Concat(documents.Take(documentTake));
+    }
+
+    /// <summary>A query suggestion has no document behind it, so it carries text only.</summary>
+    private async Task<IReadOnlyList<Suggestion>> SuggestQueriesAsync(
+        string index,
+        string prefix,
+        int limit,
+        CancellationToken cancellationToken)
+    {
+        var queries = await querySuggestions.SuggestAsync(index, prefix, limit, cancellationToken).ConfigureAwait(false);
+
+        return [.. queries.Select(text => new Suggestion { Text = text, Group = Group.Query })];
+    }
+
+    private async Task<IReadOnlyList<Suggestion>> SuggestDocumentsAsync(
+        SuggestRequest request,
+        XpSearchIndexOptions indexOptions,
+        string prefix,
+        int limit,
+        CancellationToken cancellationToken)
+    {
         var schema = await schemaProvider.GetSchemaAsync(request.Index, cancellationToken).ConfigureAwait(false);
         var suggestField = schema.Find(indexOptions.SuggestField)
             ?? throw new SearchValidationException(
@@ -115,6 +172,7 @@ public sealed class DocumentSuggestService : ISuggestService
                 suggested.Add(new Suggestion
                 {
                     Text = text,
+                    Group = Group.Document,
                     Url = WebUrl.ToRootRelative(document.Get(BaseDocumentProperties.URL)),
                     Result = new Result
                     {
@@ -131,7 +189,7 @@ public sealed class DocumentSuggestService : ISuggestService
             return suggested;
         });
 
-        return new SuggestResponse { Suggestions = [.. suggestions] };
+        return suggestions;
     }
 
     private static SuggestResponse Empty() => new() { Suggestions = [] };

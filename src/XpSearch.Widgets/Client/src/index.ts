@@ -72,6 +72,7 @@ export {
 export type {
   EventRequest,
   EventType,
+  Group,
   HighlightOptions,
   RankingInfo,
   SearchRedirect,

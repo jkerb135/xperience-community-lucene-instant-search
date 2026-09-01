@@ -17,6 +17,12 @@
   letter-spacing: 0.04em;
 }
 
+.xps-suggestions__group-clear {
+  font-size: 0.75em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .xps-suggestions__option--active,
 .xps-suggestions__option:hover {
   background-color: color-mix(in srgb, var(--xps-color-accent) 10%, transparent);

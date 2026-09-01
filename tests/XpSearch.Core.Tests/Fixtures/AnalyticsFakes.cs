@@ -72,6 +72,13 @@ internal sealed class FakeQuerySuggestionSource : IQuerySuggestionSource
 {
     internal List<string> Suggestions { get; } = [];
 
-    public Task<IReadOnlyList<string>> SuggestAsync(string indexName, string prefix, int limit, CancellationToken cancellationToken) =>
-        Task.FromResult<IReadOnlyList<string>>([.. Suggestions.Take(limit)]);
+    /// <summary>Every prefix it was asked for, in order - the empty one is "popular searches" (SG-1).</summary>
+    internal List<string> Prefixes { get; } = [];
+
+    public Task<IReadOnlyList<string>> SuggestAsync(string indexName, string prefix, int limit, CancellationToken cancellationToken)
+    {
+        Prefixes.Add(prefix);
+
+        return Task.FromResult<IReadOnlyList<string>>([.. Suggestions.Take(limit)]);
+    }
 }

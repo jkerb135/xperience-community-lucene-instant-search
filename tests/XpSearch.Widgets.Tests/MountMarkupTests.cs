@@ -102,7 +102,24 @@ internal sealed class MountMarkupTests
             var with = Rendered.Json(on, "data-xps-config");
             Assert.That(with.GetProperty("suggestions").GetProperty("limit").GetInt32(), Is.EqualTo(8));
             Assert.That(with.TryGetProperty("enableSuggestions", out _), Is.False);
+            // Recent searches are on by default in the JavaScript, so only the opt-out is emitted.
+            Assert.That(with.GetProperty("suggestions").TryGetProperty("recentSearches", out _), Is.False);
+            Assert.That(with.TryGetProperty("recentSearches", out _), Is.False);
         });
+
+        string dropped = Render(
+            SearchBox(),
+            new SearchBoxWidgetProperties
+            {
+                Index = Index,
+                EnableSuggestions = true,
+                SuggestionLimit = 8,
+                RecentSearches = false
+            });
+
+        Assert.That(
+            Rendered.Json(dropped, "data-xps-config").GetProperty("suggestions").GetProperty("recentSearches").GetBoolean(),
+            Is.False);
 
         TestContext.Out.WriteLine(on);
     }
@@ -614,7 +631,16 @@ internal sealed class MountMarkupTests
             Assert.That(Rendered.Attribute(markup, "data-xps-widget"), Is.EqualTo("suggestions"));
             Assert.That(config.GetProperty("mode").GetString(), Is.EqualTo("documents"));
             Assert.That(config.GetProperty("limit").GetInt32(), Is.EqualTo(8));
+            Assert.That(config.GetProperty("recentSearches").GetBoolean(), Is.True);
         });
+
+        string off = Render(
+            component,
+            new SuggestionsWidgetProperties { Index = Index, MaxItems = 8, RecentSearches = false });
+
+        Assert.That(
+            Rendered.Json(off, "data-xps-config").GetProperty("recentSearches").GetBoolean(),
+            Is.False);
     }
 
     [Test]

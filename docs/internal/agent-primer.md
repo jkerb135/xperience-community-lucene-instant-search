@@ -40,7 +40,7 @@ cd src/XpSearch.Admin/Client && npm ci && npm run build
 cd src/XpSearch.Widgets/Client && npm run contract:gen && npm run contract:check
 ```
 
-Suite sizes (2026-09-01, after ES-1): Core 314, Admin 190, Ingestion 47, Widgets 78, JS 248 — if
+Suite sizes (2026-09-01, after SG-1): Core 334, Admin 190, Ingestion 47, Widgets 78, JS 272 — if
 your run shows fewer, you ran the wrong project. There is no solution file in the repo root; run each
 test project by path. The Admin C# suite needs `src/XpSearch.Admin/Client` built first, like the
 Widgets one.
@@ -67,7 +67,13 @@ Widgets one.
 - Autocomplete popup: `Client/src/widgets/suggestionsPanel.ts` renders it for BOTH the standalone
   `suggestions` widget and `searchBox`'s `suggestions` param group; a change there has to keep
   `themes/fixtures/{suggestions,search-box}.html` true, and `widgets.test.ts` compares the two
-  consumers' panels directly.
+  consumers' panels directly. Recent searches (SG-1) live beside it in `recentSearches.ts` and are
+  composed into the render state at the WIDGET layer (`recents.wrap(options, pick)`), never inside
+  `behaviors/suggestions.ts` — that behaviour's transport and state machine stay untouched.
+- Enriching a response after the pipeline but inside the cache: decorate `ISearchPipeline` between
+  `CachedSearchPipeline` and `SearchPipeline`, like `Recovery/RecoverySearchPipeline` (SG-1). A
+  decorator there can also re-enter the inner pipeline (did-you-mean verifies its correction) without
+  recursion, and its enrichment lands in the cached entry.
 - Pipeline stage: implement + register like `ResolveContactGroupsStage` (order constants matter;
   anything affecting results must join the response cache key).
 - Per-index opt-in setting (popularity RK-1, typo tolerance FZ-1): Info class in Core + form in

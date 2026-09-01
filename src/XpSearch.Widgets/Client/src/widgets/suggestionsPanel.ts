@@ -13,6 +13,7 @@ import { escapeHtml, html, render, toHtml, type Renderable } from '../templates/
 import type { Suggestion } from '../types';
 import { setAttr } from './dom';
 import { markMatch } from './facetList';
+import { groupOf } from './recentSearches';
 
 /**
  * Decoration only, and hidden from assistive tech: the combobox pattern already conveys the
@@ -98,9 +99,16 @@ export function bindCombobox(
   input.addEventListener('blur', () => state()?.close());
 }
 
+/** The three sources the panel can show, in the order the artboard stacks them. */
+const GROUPS = [
+  { key: 'recent', id: 'recent', label: 'Recent searches' },
+  { key: 'query', id: 'suggestions', label: 'Suggestions' },
+  { key: 'document', id: 'pages', label: 'Pages' },
+] as const;
+
 export interface PanelOptions {
-  /** Group headings, used only when a response mixes query suggestions with documents. */
-  groupLabels?: { suggestions?: string; documents?: string };
+  /** Group headings, used whenever the panel shows more than one source (or any recent search). */
+  groupLabels?: { suggestions?: string; documents?: string; recent?: string };
   /**
    * Render the footer even without a "see all" link, for its keyboard hints. A consumer that
    * searches in place — the search box — has no results page to link to but still shows them.
@@ -123,13 +131,16 @@ export function renderPanel(
   input.setAttribute('aria-expanded', String(isOpen));
   panel.hidden = !isOpen;
 
-  // Grouped only when a response actually mixes the two sources: with one source the wrapper
-  // would be a group of one, which is noise to a screen reader (MARKUP.md, "suggestions").
+  // Grouped only when the panel actually shows more than one source: with one source the wrapper
+  // would be a group of one, which is noise to a screen reader (MARKUP.md, "suggestions"). The
+  // recents are the exception — their group carries the Clear control, so it is always labelled.
   const all: Option[] = api.suggestions.map((suggestion, at) => ({ suggestion, at }));
-  const queries = all.filter((option) => option.suggestion.result === undefined);
-  const documents = all.filter((option) => option.suggestion.result !== undefined);
-  const grouped = queries.length > 0 && documents.length > 0;
-  const ordered = grouped ? [...queries, ...documents] : all;
+  const present = GROUPS.map((group) => ({
+    ...group,
+    options: all.filter((option) => groupOf(option.suggestion) === group.key),
+  })).filter((group) => group.options.length > 0);
+  const grouped = present.length > 1 || present[0]?.key === 'recent';
+  const ordered = grouped ? present.flatMap((group) => group.options) : all;
 
   /** Ids are the *visual* position; `data-xps-suggestion` is the behaviour's own index. */
   const optionHtml = (option: Option, visual: number, tag: 'li' | 'div'): Renderable => {
@@ -148,17 +159,19 @@ export function renderPanel(
   };
 
   let visual = 0;
-  const group = (key: string, label: string, options_: Option[]): Renderable =>
-    html`<li class="xps-suggestions__group" role="group" aria-labelledby="${id(`group-${key}`)}">
-      <div class="xps-suggestions__group-title" id="${id(`group-${key}`)}">${label}</div>
-      ${options_.map((option) => optionHtml(option, visual++, 'div'))}
-    </li>`;
+  const label = (key: (typeof GROUPS)[number]['key'], fallback: string): string =>
+    (key === 'recent' ? groupLabels?.recent : key === 'query' ? groupLabels?.suggestions : groupLabels?.documents) ??
+    fallback;
 
   const body = grouped
-    ? [
-        group('suggestions', groupLabels?.suggestions ?? 'Suggestions', queries),
-        group('pages', groupLabels?.documents ?? 'Pages', documents),
-      ]
+    ? present.map(
+        (group) => html`<li class="xps-suggestions__group" role="group" aria-labelledby="${id(`group-${group.id}`)}">
+      ${group.key === 'recent'
+        ? html`<div class="xps-suggestions__group-header"><div class="xps-suggestions__group-title" id="${id(`group-${group.id}`)}">${label(group.key, group.label)}</div><button class="xps-button xps-button--link xps-suggestions__group-clear" type="button" data-xps-recent-clear aria-label="Clear recent searches">Clear</button></div>`
+        : html`<div class="xps-suggestions__group-title" id="${id(`group-${group.id}`)}">${label(group.key, group.label)}</div>`}
+      ${group.options.map((option) => optionHtml(option, visual++, 'div'))}
+    </li>`
+      )
     : ordered.map((option) => optionHtml(option, visual++, 'li'));
 
   render(

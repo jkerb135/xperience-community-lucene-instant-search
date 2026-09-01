@@ -6,8 +6,9 @@
  */
 import { withSuggestions, type SuggestionsRenderState } from '../behaviors/suggestions';
 import { html, render } from '../templates/html';
-import type { Widget } from '../types';
+import type { RenderOptions, Widget } from '../types';
 import { createRoot, resolveContainer, widgetId } from './dom';
+import { createRecents, recentsStorage, type Recents } from './recentSearches';
 import { bindCombobox, renderPanel } from './suggestionsPanel';
 
 export type SuggestionsWidgetParams = {
@@ -31,15 +32,23 @@ export type SuggestionsWidgetParams = {
    * Accepted so the Page Builder mount can pass it through, and otherwise unused: which of the
    * two an index answers with is server-side configuration, not a request field (contract §4.4).
    */
-  mode?: 'documents' | 'querySuggestions';
+  mode?: 'documents' | 'querySuggestions' | 'mixed';
   placeholder?: string;
   /** Text of the always-rendered `<label>`. */
   label?: string;
   /** Show the label to sighted users. It is `xps-sr-only` by default. */
   showLabel?: boolean;
-  /** Group headings, used only when a response mixes query suggestions with documents. */
-  groupLabels?: { suggestions?: string; documents?: string };
+  /** Group headings, used whenever the panel shows more than one source. */
+  groupLabels?: { suggestions?: string; documents?: string; recent?: string };
+  /**
+   * Defaults to `true`. Remember what this visitor searched for and offer it back as the panel's
+   * first group. The list lives in their browser's `localStorage` and is never sent anywhere.
+   */
+  recentSearches?: boolean;
 };
+
+/** What `withSuggestions` hands the renderer: the behaviour's state plus the base render options. */
+type SuggestionsRenderOptions = SuggestionsRenderState & RenderOptions<SuggestionsWidgetParams>;
 
 export function suggestions(params: SuggestionsWidgetParams): Widget {
   const container = resolveContainer(params.container, 'suggestions');
@@ -48,26 +57,29 @@ export function suggestions(params: SuggestionsWidgetParams): Widget {
   let input: HTMLInputElement | undefined;
   let panel: HTMLElement | undefined;
   let reset: HTMLElement | undefined;
-  /** The current render state. Listeners are bound once and must never see an older one. */
+  /** The current render state, recents composed in. Listeners are bound once and must never see an older one. */
   let api: SuggestionsRenderState | undefined;
+  let recents: Recents | undefined;
+  /** Re-runs the last render, for a change only the recents know about (focus, Clear, arrow keys). */
+  let repaint: () => void = () => {};
 
-  const widget = withSuggestions<SuggestionsWidgetParams>(
-    (options, isFirstRender) => {
-      const {
-        placeholder = 'Search…',
-        label = 'Search this site',
-        showLabel = false,
-        resultsUrl,
-        groupLabels,
-      } = options.params;
-      api = options;
+  const draw = (options: SuggestionsRenderOptions, isFirstRender: boolean): void => {
+    const {
+      placeholder = 'Search…',
+      label = 'Search this site',
+      showLabel = false,
+      resultsUrl,
+      groupLabels,
+      recentSearches,
+    } = options.params;
+    repaint = () => draw(options, false);
 
-      if (isFirstRender) {
-        root = createRoot(container, 'div', 'xps xps-suggestions');
-        render(
-          html`<form class="xps-suggestions__form" role="search"${
-            resultsUrl === undefined ? '' : html` action="${resultsUrl}" method="get"`
-          } novalidate>
+    if (isFirstRender) {
+      root = createRoot(container, 'div', 'xps xps-suggestions');
+      render(
+        html`<form class="xps-suggestions__form" role="search"${
+          resultsUrl === undefined ? '' : html` action="${resultsUrl}" method="get"`
+        } novalidate>
     <label class="xps-suggestions__label${showLabel ? '' : ' xps-sr-only'}" for="${id('input')}">${label}</label>
     <div class="xps-suggestions__field">
       <input class="xps-suggestions__input" id="${id('input')}" type="text" name="q" value="" role="combobox" aria-expanded="false" aria-controls="${id('listbox')}" aria-autocomplete="list" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="${placeholder}">
@@ -75,39 +87,61 @@ export function suggestions(params: SuggestionsWidgetParams): Widget {
     </div>
   </form>
   <div class="xps-suggestions__panel" hidden></div>`,
-          root
-        );
-        input = root.querySelector<HTMLInputElement>('.xps-suggestions__input') ?? undefined;
-        panel = root.querySelector<HTMLElement>('.xps-suggestions__panel') ?? undefined;
-        reset = root.querySelector<HTMLElement>('.xps-suggestions__reset') ?? undefined;
+        root
+      );
+      input = root.querySelector<HTMLInputElement>('.xps-suggestions__input') ?? undefined;
+      panel = root.querySelector<HTMLElement>('.xps-suggestions__panel') ?? undefined;
+      reset = root.querySelector<HTMLElement>('.xps-suggestions__reset') ?? undefined;
 
-        if (input && panel) bindCombobox({ input, panel, id }, () => api);
-        input?.addEventListener('input', () => api?.setQuery(input?.value ?? ''));
-        root.addEventListener('submit', (event) => {
-          event.preventDefault();
-          if (!api) return;
-          if (api.activeIndex >= 0) api.select(api.activeIndex);
-          else api.submit();
+      if (recentSearches !== false && input && panel) {
+        recents = createRecents({
+          index: options.search.index,
+          storage: recentsStorage(options.params.windowRef),
+          repaint: () => repaint(),
         });
-        root.addEventListener('reset', (event) => {
-          // The native reset restores the *initial* value, not an empty one.
-          event.preventDefault();
-          if (input) input.value = '';
-          api?.clear();
-          input?.focus();
-        });
+        recents.bind(input, panel);
       }
-      if (!root || !input || !panel || !reset) return;
+      if (input && panel) bindCombobox({ input, panel, id }, () => api);
+      input?.addEventListener('input', () => api?.setQuery(input?.value ?? ''));
+      root.addEventListener('submit', (event) => {
+        event.preventDefault();
+        if (!api) return;
+        if (api.activeIndex >= 0) api.select(api.activeIndex);
+        else api.submit();
+      });
+      root.addEventListener('reset', (event) => {
+        // The native reset restores the *initial* value, not an empty one.
+        event.preventDefault();
+        if (input) input.value = '';
+        api?.clear();
+        input?.focus();
+      });
+    }
+    // Picking a recent runs it exactly the way picking a query suggestion does: the field takes
+    // the text, the pending `/suggest` call is dropped, and the instance searches for it.
+    const view = recents
+      ? recents.wrap(options, (text) => {
+          api?.setQuery(text);
+          api?.close();
+          options.actions.setQuery(text).search();
+        })
+      : options;
+    api = view;
 
-      const { query, isOpen } = options;
-      root.classList.toggle('xps-suggestions--open', isOpen);
-      // Only assign when it differs: assigning moves the caret to the end.
-      if (input.value !== query) input.value = query;
-      reset.hidden = query === '';
+    if (!root || !input || !panel || !reset) return;
 
-      // No `hints`: this widget shows the footer only when it has a "see all" link to put in it.
-      renderPanel({ input, panel, id }, options, { ...(groupLabels === undefined ? {} : { groupLabels }) });
-    },
+    const { query } = options;
+    root.classList.toggle('xps-suggestions--open', view.isOpen);
+    // Only assign when it differs: assigning moves the caret to the end.
+    if (input.value !== query) input.value = query;
+    reset.hidden = query === '';
+
+    // No `hints`: this widget shows the footer only when it has a "see all" link to put in it.
+    renderPanel({ input, panel, id }, view, { ...(groupLabels === undefined ? {} : { groupLabels }) });
+  };
+
+  const widget = withSuggestions<SuggestionsWidgetParams>(
+    (options, isFirstRender) => draw(options, isFirstRender),
     () => {
       // Drops a debounced call that has not fired yet and makes an in-flight answer stale.
       api?.close();

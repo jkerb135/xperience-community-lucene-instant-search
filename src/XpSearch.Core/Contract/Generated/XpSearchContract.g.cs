@@ -339,6 +339,15 @@ namespace XpSearch.Core.Contract
     public partial class SearchResponse
     {
         /// <summary>
+        /// Optional. A corrected spelling of the query that the server verified returns results.
+        /// Present only when total is 0, did-you-mean is enabled for the index, and a verified
+        /// correction was found; absent otherwise, and never present on a probe response.
+        /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonPropertyName("didYouMean")]
+        public string? DidYouMean { get; set; }
+
+        /// <summary>
         /// Facet values keyed by attribute name. Only attributes listed in SearchRequest.facets
         /// appear, and only values with a non-zero count in the current result set. Each list is
         /// ordered by count descending, then by value ascending.
@@ -358,6 +367,15 @@ namespace XpSearch.Core.Contract
         /// </summary>
         [JsonPropertyName("pageSize")]
         public long PageSize { get; set; }
+
+        /// <summary>
+        /// Optional. The index's most-searched queries, most popular first, offered as a way out of
+        /// a dead end. Present only when total is 0 and the host opted in per index; absent
+        /// otherwise, and never present on a probe response.
+        /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonPropertyName("popularSearches")]
+        public string[]? PopularSearches { get; set; }
 
         /// <summary>
         /// Correlation id for this search. Echoes SearchRequest.queryId when supplied, otherwise
@@ -612,6 +630,17 @@ namespace XpSearch.Core.Contract
     public partial class Suggestion
     {
         /// <summary>
+        /// Which source this entry came from, so a client can group a mixed response without
+        /// inferring it from `result`. The server emits "query" for a logged popular query and
+        /// "document" for a matching document, in every suggest mode. It never emits "recent": that
+        /// value exists for the client-side recent-search entries the shipped widgets prepend to the
+        /// panel, which are read from the visitor's browser and never leave it.
+        /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonPropertyName("group")]
+        public Group? Group { get; set; }
+
+        /// <summary>
         /// The document behind this suggestion, present only for indexes that suggest documents.
         /// </summary>
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -666,6 +695,18 @@ namespace XpSearch.Core.Contract
     public enum NumericOperator { Eq, Gt, Gte, Lt, Lte, Ne };
 #pragma warning restore CS1591
 
+    /// <summary>
+    /// Which source this entry came from, so a client can group a mixed response without
+    /// inferring it from `result`. The server emits "query" for a logged popular query and
+    /// "document" for a matching document, in every suggest mode. It never emits "recent": that
+    /// value exists for the client-side recent-search entries the shipped widgets prepend to the
+    /// panel, which are read from the visitor's browser and never leave it.
+    /// </summary>
+#pragma warning disable CS1591 // no way to document an individual enum member from JSON Schema
+    [JsonConverter(typeof(GroupConverter))]
+    public enum Group { Document, Query, Recent };
+#pragma warning restore CS1591
+
     internal static class Converter
     {
         public static readonly JsonSerializerOptions Settings = new(JsonSerializerDefaults.General)
@@ -675,6 +716,7 @@ namespace XpSearch.Core.Contract
                 EventTypeConverter.Singleton,
                 FacetOperatorConverter.Singleton,
                 NumericOperatorConverter.Singleton,
+                GroupConverter.Singleton,
                 new DateOnlyConverter(),
                 new TimeOnlyConverter(),
                 IsoDateTimeOffsetConverter.Singleton
@@ -802,6 +844,45 @@ namespace XpSearch.Core.Contract
         }
 
         public static readonly NumericOperatorConverter Singleton = new NumericOperatorConverter();
+    }
+
+    internal class GroupConverter : JsonConverter<Group>
+    {
+        public override bool CanConvert(Type t) => t == typeof(Group);
+
+        public override Group Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            var value = reader.GetString();
+            switch (value)
+            {
+                case "document":
+                    return Group.Document;
+                case "query":
+                    return Group.Query;
+                case "recent":
+                    return Group.Recent;
+            }
+            throw new JsonException("Cannot unmarshal type Group");
+        }
+
+        public override void Write(Utf8JsonWriter writer, Group value, JsonSerializerOptions options)
+        {
+            switch (value)
+            {
+                case Group.Document:
+                    JsonSerializer.Serialize(writer, "document", options);
+                    return;
+                case Group.Query:
+                    JsonSerializer.Serialize(writer, "query", options);
+                    return;
+                case Group.Recent:
+                    JsonSerializer.Serialize(writer, "recent", options);
+                    return;
+            }
+            throw new JsonException("Cannot marshal type Group");
+        }
+
+        public static readonly GroupConverter Singleton = new GroupConverter();
     }
     
     internal class DateOnlyConverter : JsonConverter<DateOnly>

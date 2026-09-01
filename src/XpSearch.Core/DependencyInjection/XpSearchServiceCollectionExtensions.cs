@@ -20,6 +20,7 @@ using XpSearch.Core.Personalization;
 using XpSearch.Core.Pipeline;
 using XpSearch.Core.Pipeline.Stages;
 using XpSearch.Core.Popularity;
+using XpSearch.Core.Recovery;
 using XpSearch.Core.Rendering;
 using XpSearch.Core.Search;
 using XpSearch.Core.Tuning;
@@ -145,8 +146,16 @@ public static class XpSearchServiceCollectionExtensions
         services.AddXpSearchStage<ProjectResponseStage>();
 
         services.TryAddSingleton<SearchPipeline>();
-        services.TryAddSingleton<ISearchPipeline>(provider => new CachedSearchPipeline(
+        // No-results recovery (SG-1) sits inside the cache and outside the stages: its enrichment
+        // belongs to the cached entry, and its verification search must not re-enter itself.
+        services.TryAddSingleton(provider => new RecoverySearchPipeline(
             provider.GetRequiredService<SearchPipeline>(),
+            provider.GetRequiredService<Options.IOptions<XpSearchOptions>>(),
+            provider.GetRequiredService<IQuerySuggestionSource>(),
+            provider.GetRequiredService<ILuceneIndexAccessor>(),
+            provider.GetRequiredService<IIndexSchemaProvider>()));
+        services.TryAddSingleton<ISearchPipeline>(provider => new CachedSearchPipeline(
+            provider.GetRequiredService<RecoverySearchPipeline>(),
             provider.GetRequiredService<ISearchCache>(),
             provider.GetRequiredService<Options.IOptions<XpSearchOptions>>(),
             provider.GetRequiredService<IContactGroupResolver>(),

@@ -123,3 +123,56 @@
     <p class="xps-suggestions__empty" role="status">No suggestions for “xyzzy”.</p>
   </div>
 </div>
+
+<!-- recent searches (client-side, localStorage): focusing an empty field opens the panel on them
+     alone. Their group is always labelled, even as the only one, because the label row carries the
+     Clear control. With text in the field they are the first group, above Suggestions and Pages. -->
+<div class="xps xps-suggestions xps-suggestions--open">
+  <form class="xps-suggestions__form" role="search" action="/search" method="get" novalidate>
+    <label class="xps-suggestions__label xps-sr-only" for="xps-search-4-suggestions-input">Search this site</label>
+    <div class="xps-suggestions__field">
+      <input class="xps-suggestions__input"
+             id="xps-search-4-suggestions-input"
+             type="text"
+             name="q"
+             value=""
+             role="combobox"
+             aria-expanded="true"
+             aria-controls="xps-search-4-suggestions-listbox"
+             aria-autocomplete="list"
+             autocomplete="off"
+             placeholder="Search…">
+      <button class="xps-button xps-suggestions__reset" type="reset" aria-label="Clear the search query" hidden>
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+  </form>
+  <div class="xps-suggestions__panel">
+    <ul class="xps-suggestions__list"
+        id="xps-search-4-suggestions-listbox"
+        role="listbox"
+        aria-label="Search suggestions">
+      <li class="xps-suggestions__group" role="group" aria-labelledby="xps-search-4-suggestions-group-recent">
+        <div class="xps-suggestions__group-header">
+          <div class="xps-suggestions__group-title" id="xps-search-4-suggestions-group-recent">Recent searches</div>
+          <button class="xps-button xps-button--link xps-suggestions__group-clear" type="button" data-xps-recent-clear aria-label="Clear recent searches">Clear</button>
+        </div>
+        <div class="xps-suggestions__option"
+             role="option"
+             id="xps-search-4-suggestions-option-0"
+             aria-selected="false">
+          <span class="xps-suggestions__option-title">espresso machine</span>
+        </div>
+        <div class="xps-suggestions__option"
+             role="option"
+             id="xps-search-4-suggestions-option-1"
+             aria-selected="false">
+          <span class="xps-suggestions__option-title">milk frother</span>
+        </div>
+      </li>
+    </ul>
+    <div class="xps-suggestions__footer">
+      <span class="xps-suggestions__hints" aria-hidden="true"><kbd class="xps-suggestions__key">↑</kbd><kbd class="xps-suggestions__key">↓</kbd> navigate <kbd class="xps-suggestions__key">↵</kbd> select <kbd class="xps-suggestions__key">esc</kbd> close</span>
+    </div>
+  </div>
+</div>

@@ -43,16 +43,6 @@ and how to lift it.
 - **Upgrade path:** widen `$$routable` to accept an array and have `SearchInstance.addWidgets`
   register each entry — a small, source-compatible change to `types.ts` and `instance.ts`.
 
-## "Did you mean" and "Popular searches" in the results empty state
-
-- **Simplified:** neither is rendered. The approved mockup shows both as future slots.
-- **Ceiling:** the empty state offers only "clear the filters" or "try fewer words"; a misspelled
-  query gets no recovery path at all.
-- **Upgrade path:** "Did you mean" needs a Lucene suggester in Core plus a `didYouMean` field on
-  `SearchResponse` (contract addition, own unit). "Popular searches" needs a public read endpoint
-  over the analytics store, which today is admin-only; until then a host can render its own list
-  next to the widget.
-
 ## Collapsed facet groups in `facetList`/`categoryTree` (`Client/src/widgets/{facetList,categoryTree}.ts`)
 
 - **Simplified:** the fold is a closure variable plus `hidden` on the `__body` element. It is not
@@ -1220,3 +1210,31 @@ and how to lift it.
   `forced-colors: active` and `:dir(rtl)` rules included.
 - **Upgrade path:** raise the min input's `z-index` when it holds the higher value if a host reports
   a stuck thumb, and add a real-browser/visual-regression run for the rendering.
+
+## Did-you-mean corrects term by term, in `RecoverySearchPipeline.Correct` (`XpSearch.Core/Recovery/RecoverySearchPipeline.cs`)
+
+- **Simplified:** each query term the index does not know is replaced by `DirectSpellChecker`'s single
+  best suggestion, chosen across the searchable fields by document frequency (ties broken
+  alphabetically, so the same query always corrects the same way). Terms are corrected independently
+  of each other, and the whole corrected string is then verified with one probe search.
+- **Ceiling:** a correction that only makes sense as a phrase ("expresso machnie" where the right
+  fix for one word depends on the other) is not found, and only the first candidate per term is ever
+  tried — if the verification search finds nothing, no second combination is attempted and no
+  correction is offered. Cost is one `DocFreq` plus one `SuggestSimilar` per term per searchable
+  field, on zero-hit searches only, and the enriched response is cached for the response TTL.
+- **Upgrade path:** collect the top N candidates per term and score the combinations against the
+  index (Lucene's `WordBreakSpellChecker` and a phrase scorer), still verifying the winner.
+
+## Recent searches match by prefix and live in one browser, in `createRecents` (`src/XpSearch.Widgets/Client/src/widgets/recentSearches.ts`)
+
+- **Simplified:** the store is a JSON array in `localStorage` under `xps-recent:<index>`, capped at
+  five, filtered with a case-insensitive `startsWith` against the current input. The widget layer
+  composes it into the suggestions render state; the behaviour's transport and state machine are
+  untouched.
+- **Ceiling:** the list does not follow the visitor across browsers or devices, a middle-of-the-word
+  match ("machine" for a stored "espresso machine") is not offered, and the entries carry no
+  timestamp, so nothing expires — they leave only with the Clear control or the browser's own data
+  clearing. Two tabs of the same site can overwrite each other's newest entry (last write wins).
+- **Upgrade path:** store `{ text, at }` objects and add an age cut-off; listen for the `storage`
+  event to keep tabs in sync. A cross-device list would need per-visitor server storage, which the
+  anonymous query log deliberately does not have.

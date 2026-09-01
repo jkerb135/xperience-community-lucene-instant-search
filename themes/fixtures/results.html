@@ -64,6 +64,27 @@
   </div>
 </div>
 
+<!-- empty, with recovery: the server verified that the correction finds something (didYouMean) and
+     the host opted the index into popular searches. Both are buttons that run their query, both
+     render only when the response carried them. -->
+<div class="xps xps-results xps-results--empty">
+  <p class="xps-results__status xps-sr-only" role="status">No results for “esspresso”</p>
+  <div class="xps-results__empty">
+    <svg class="xps-results__empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"></circle><path d="M8 11h6"></path><path d="m20 20-4.35-4.35"></path></svg>
+    <p>No results for <strong>esspresso</strong>.</p>
+    <p class="xps-results__did-you-mean">Did you mean <button class="xps-button xps-button--link xps-results__correction" type="button" data-xps-recover="espresso"><strong>espresso</strong></button>?</p>
+    <p>Try fewer words, or clear some filters.</p>
+    <div class="xps-results__popular">
+      <p class="xps-results__popular-title">Popular searches</p>
+      <ul class="xps-results__popular-list">
+        <li class="xps-results__popular-item"><button class="xps-button xps-chip xps-results__popular-button" type="button" data-xps-recover="espresso">espresso</button></li>
+        <li class="xps-results__popular-item"><button class="xps-button xps-chip xps-results__popular-button" type="button" data-xps-recover="latte art">latte art</button></li>
+        <li class="xps-results__popular-item"><button class="xps-button xps-chip xps-results__popular-button" type="button" data-xps-recover="grinder">grinder</button></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
 <!-- empty, with refinements applied: the unfiltered count comes from a probe, so both the copy and
      the button say what clearing would bring back. Without that count both drop to the countless
      form: no "There are …" line, and a plain "Clear filters" button. -->

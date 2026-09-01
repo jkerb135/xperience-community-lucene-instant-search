@@ -24,6 +24,22 @@
   gap: v.$half;
 }
 
+/* The two ways out of a dead end: the correction reads as one sentence, the popular searches
+   as a row of chips that wraps. */
+.xps-results__correction {
+  min-height: 0;
+  padding-block: 0;
+}
+
+.xps-results__popular-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: v.$half;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
 .xps-result {
   display: flex;
   align-items: flex-start;

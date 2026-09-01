@@ -37,6 +37,20 @@
   padding: v.$half var(--xps-space);
 }
 
+/* The recents group heading: its Clear control sits at the far end of the same row. */
+.xps-suggestions__group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: v.$half;
+  padding-inline-end: var(--xps-space);
+}
+
+.xps-suggestions__group-clear {
+  min-height: 0;
+  padding-block: 0;
+}
+
 .xps-suggestions__option {
   display: flex;
   flex-direction: column;
