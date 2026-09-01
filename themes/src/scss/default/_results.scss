@@ -51,6 +51,20 @@
   color: var(--xps-color-muted);
 }
 
+/* No-results recovery: the correction is a link-button inside a sentence, the popular searches
+   are the same chips the active filters use, made clickable. */
+.xps-results__popular-title {
+  color: var(--xps-color-muted);
+  font-size: 0.75em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.xps-results__popular-button:hover {
+  border-color: var(--xps-color-accent);
+}
+
 /* A refinement dims the stale list instead of blanking it — skeletons stay first-search-only. */
 .xps-results--loading .xps-results__list {
   opacity: 0.55;

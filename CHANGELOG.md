@@ -12,6 +12,34 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Added (contract, core, widgets, themes):** three additive contract members and the three
+  recovery features they carry (SG-1). `Suggestion.group` says where an autocomplete entry came from
+  (`"query"`, `"document"`, or `"recent"` for the client-side entries the widgets add themselves —
+  the server never sends that one); `SearchResponse.didYouMean` and `SearchResponse.popularSearches`
+  are the two ways out of a dead end. All three are omitted when they do not apply, so an existing
+  caller sends and reads exactly what it did and the contract version is unchanged.
+  **`SuggestMode.Mixed`** answers `/suggest` with query suggestions *and* documents in one list,
+  queries first: they take half of `limit` (at least one), documents fill the rest, and either
+  source's unused share goes to the other. `group` is emitted in every mode, so the shipped panel
+  groups a mixed response without inferring the source from `result`. **Did-you-mean**
+  (`Indexes[...].DidYouMean`, **on** by default) spells a zero-hit query against the live index terms
+  of the same fields the query searched, then *runs the correction* before offering it — the member
+  is present only when that verification found something. The verification search carries
+  `probe: true`, so it is never journaled: one dead end still leaves exactly one query-log row.
+  **Popular searches** (`Indexes[...].PopularSearchesOnNoResults`, a count, **off** by default
+  because it exposes the query log to anonymous visitors) fills `popularSearches` from the same
+  popularity count autocomplete uses. Both run only on `total == 0`, never on a probe, at most one
+  extra search per request, and the enriched response is what the 60-second cache stores. In the
+  widgets, the results empty state renders "Did you mean **espresso**?" and a row of popular-search
+  chips, each running its query (`templates.empty` receives `didYouMean` and `popularSearches`; any
+  element with `data-xps-recover` runs its query), and the autocomplete panel gains a third group:
+  **recent searches**, on by default in both consumers, kept in the visitor's own `localStorage`
+  (`xps-recent:<index>`, five entries, never sent anywhere), prefix-filtered, opened on focusing an
+  empty field, cleared from the group heading, and turned off with `recentSearches: false` or the new
+  **Offer recent searches** checkbox on both Page Builder widgets. Server-rendered empty states stay
+  the plain block, like ES-1's. New dependency: `Lucene.Net.Suggest` (`DirectSpellChecker` reads the
+  live index, so there is no spell index to build or maintain).
+
 - **Added (contract, core, widgets, themes):** `SearchRequest.probe`, an optional boolean, and the
   counted recovery states it unblocks (ES-1). A probe request is answered exactly like any other —
   same pipeline, same rules, same response cache, so a probe and the search it previews share a

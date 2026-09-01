@@ -11,8 +11,9 @@
 import { withSearchBox } from '../behaviors/searchBox';
 import { withSuggestions, type SuggestionsRenderState } from '../behaviors/suggestions';
 import { html, render } from '../templates/html';
-import type { Widget } from '../types';
+import type { RenderOptions, Widget } from '../types';
 import { createRoot, resolveContainer, widgetId } from './dom';
+import { createRecents, recentsStorage, type Recents } from './recentSearches';
 import { bindCombobox, renderPanel } from './suggestionsPanel';
 
 /**
@@ -32,8 +33,13 @@ export type SearchBoxSuggestionsParams = {
   limit?: number;
   /** `SuggestRequest.language`. Defaults to the instance's `language`. */
   language?: string;
-  /** Group headings, used only when a response mixes query suggestions with documents. */
-  groupLabels?: { suggestions?: string; documents?: string };
+  /** Group headings, used whenever the panel shows more than one source. */
+  groupLabels?: { suggestions?: string; documents?: string; recent?: string };
+  /**
+   * Defaults to `true`. Remember what this visitor searched for and offer it back as the panel's
+   * first group. The list lives in their browser's `localStorage` and is never sent anywhere.
+   */
+  recentSearches?: boolean;
 };
 
 export type SearchBoxWidgetParams = {
@@ -76,8 +82,11 @@ export function searchBox(params: SearchBoxWidgetParams): Widget {
   let apply: (query: string) => void = () => {};
   let submit: (query: string) => void = () => {};
   let clear: () => void = () => {};
-  /** The current suggestions render state. Listeners are bound once; they must not see an older one. */
+  /** The current suggestions render state, recents composed in. Listeners are bound once; they must not see an older one. */
   let suggest: SuggestionsRenderState | undefined;
+  let recents: Recents | undefined;
+  /** Re-runs the last popup render, for a change only the recents know about. */
+  let repaint: () => void = () => {};
 
   const box = withSearchBox<SearchBoxWidgetParams>(
     (options, isFirstRender) => {
@@ -128,6 +137,9 @@ export function searchBox(params: SearchBoxWidgetParams): Widget {
         });
         root.addEventListener('submit', (event) => {
           event.preventDefault();
+          // The search box's own submit bypasses the popup's, so this is where a submitted query
+          // is remembered. `close()` resets the popup, so record before it.
+          recents?.record(input?.value ?? '');
           suggest?.close();
           submit(input?.value ?? '');
         });
@@ -156,22 +168,50 @@ export function searchBox(params: SearchBoxWidgetParams): Widget {
   box.$$type = 'searchBox';
   if (!popup) return box;
 
-  const combobox = withSuggestions<Record<string, unknown>>(
-    (options, isFirstRender) => {
+  const drawPopup = (
+    options: SuggestionsRenderState & RenderOptions<Record<string, unknown>>,
+    isFirstRender: boolean
+  ): void => {
+    if (!root || !input || !panel) {
       suggest = options;
-      if (!root || !input || !panel) return;
-      if (isFirstRender) {
-        // Enter with no active option goes through the search box's own submit, which is the
-        // only path that follows a redirect rule.
-        bindCombobox({ input, panel, id }, () => suggest, () => submit(input?.value ?? ''));
+      return;
+    }
+    repaint = () => drawPopup(options, false);
+    if (isFirstRender) {
+      if (popup.recentSearches !== false) {
+        recents = createRecents({
+          index: options.search.index,
+          storage: recentsStorage(params.windowRef),
+          repaint: () => repaint(),
+        });
+        recents.bind(input, panel);
       }
-      root.classList.toggle('xps-suggestions--open', options.isOpen);
-      // Searching in place means no "see all" link, but the keyboard hints are still worth showing.
-      renderPanel({ input, panel, id }, options, {
-        ...(popup.groupLabels === undefined ? {} : { groupLabels: popup.groupLabels }),
-        hints: true,
-      });
-    },
+      // Enter with no active option goes through the search box's own submit, which is the
+      // only path that follows a redirect rule.
+      bindCombobox({ input, panel, id }, () => suggest, () => submit(input?.value ?? ''));
+    }
+    // Picking a recent runs it the way picking a query suggestion does: the field takes the text,
+    // the pending `/suggest` call is dropped, and the box searches for it (never a redirect —
+    // only a query the visitor submitted follows one).
+    const view = recents
+      ? recents.wrap(options, (text) => {
+          suggest?.setQuery(text);
+          suggest?.close();
+          apply(text);
+        })
+      : options;
+    suggest = view;
+
+    root.classList.toggle('xps-suggestions--open', view.isOpen);
+    // Searching in place means no "see all" link, but the keyboard hints are still worth showing.
+    renderPanel({ input, panel, id }, view, {
+      ...(popup.groupLabels === undefined ? {} : { groupLabels: popup.groupLabels }),
+      hints: true,
+    });
+  };
+
+  const combobox = withSuggestions<Record<string, unknown>>(
+    (options, isFirstRender) => drawPopup(options, isFirstRender),
     () => {
       // Drops a debounced call that has not fired yet and makes an in-flight answer stale.
       suggest?.close();

@@ -102,6 +102,9 @@ Request and response fields, client options, and the analytics events.
 | `SearchResponse.redirect.url` | `renderingContent.redirect.url` | Same meaning. |
 | `SearchResponse.redirect.rule` | no equivalent (their redirect carries no rule identity) | Display name of the rule that matched, for logging and for the query tester. |
 | `SearchResponse.ruleData` | `userData` | Renamed, and one object instead of an array: the data of every matching rule is shallow-merged in rule order, later rules winning a key, so a client reads ruleData.banner rather than searching a list. Absent when no rule returned data. |
+| `SearchResponse.didYouMean` | no equivalent (Algolia has no spelling correction) | A corrected spelling the server verified returns results, offered only when the search found nothing. Their nearest equivalent is typo tolerance, which ours has too, as a per-index toggle. |
+| `SearchResponse.popularSearches` | a separate Query Suggestions index | Ours comes off the same query log the suggest endpoint reads, on the same response, and only when the search found nothing and the host opted the index in. |
+| `SuggestResponse.suggestions[].group` | no equivalent (one index answers one kind) | Which source an entry came from, so one mixed response can be grouped without inferring it. The shipped widgets add their client-side recent searches under the same member; the server never sends that value. |
 | `SuggestRequest.query` | query against a query-suggestions index | Ours is one endpoint; whether it answers with documents or with popular queries is index configuration. |
 | `SuggestRequest.limit` | `hitsPerPage` | Renamed and capped server-side. |
 | `SuggestResponse.suggestions[].text` | the query attribute of a suggestion record | Same meaning. |

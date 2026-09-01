@@ -66,7 +66,7 @@ const csharpEdits = [
   // otherwise a real signal here, and every other emitted member carries its schema
   // description. JSON Schema has nowhere to describe an individual enum value, so these
   // members cannot be documented.
-  ...['EventType { Click, Conversion }', 'FacetOperator { And, Or }', 'NumericOperator { Eq, Gt, Gte, Lt, Lte, Ne }'].map(
+  ...['EventType { Click, Conversion }', 'FacetOperator { And, Or }', 'Group { Document, Query, Recent }', 'NumericOperator { Eq, Gt, Gte, Lt, Lte, Ne }'].map(
     (declaration) => ({
       why: 'attributes-only leaves the enum converter unattached',
       from: `    public enum ${declaration};`,
@@ -170,7 +170,7 @@ const typeScriptTarget = (schema, out) => ({
 // (`TypeEnum` in C#, `Type` in TypeScript).
 const queryTypes = [
   'EventRequest', 'EventType', 'FacetFilter', 'FacetOperator', 'FacetValue', 'Filters',
-  'HighlightOptions', 'NumericFilter', 'NumericOperator', 'RankingInfo', 'Result',
+  'Group', 'HighlightOptions', 'NumericFilter', 'NumericOperator', 'RankingInfo', 'Result',
   'SearchRedirect', 'SearchRequest', 'SearchResponse', 'SuggestRequest', 'SuggestResponse', 'Suggestion',
 ];
 

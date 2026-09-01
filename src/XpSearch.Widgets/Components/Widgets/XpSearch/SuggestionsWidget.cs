@@ -31,16 +31,27 @@ public sealed class SuggestionsWidgetProperties : XpSearchMountWidgetProperties
     /// <summary>The <see cref="Mode"/> value that suggests previously popular queries.</summary>
     public const string ModeQuerySuggestions = "querySuggestions";
 
+    /// <summary>The <see cref="Mode"/> value that suggests both, queries first (SG-1).</summary>
+    public const string ModeMixed = "mixed";
+
     /// <summary>Gets or sets what the suggestions are drawn from.</summary>
     [DropDownComponent(
         Label = "Mode",
-        Options = $"{ModeDocuments};Matching documents\r\n{ModeQuerySuggestions};Popular queries",
+        Options = $"{ModeDocuments};Matching documents\r\n{ModeQuerySuggestions};Popular queries\r\n{ModeMixed};Both, queries first",
         Order = OrderFirstWidgetProperty)]
     public string Mode { get; set; } = ModeDocuments;
 
     /// <summary>Gets or sets how many suggestions are offered.</summary>
     [NumberInputComponent(Label = "Maximum items", Order = OrderFirstWidgetProperty + 10)]
     public int MaxItems { get; set; } = 5;
+
+    /// <summary>Gets or sets whether the panel offers this visitor's own recent searches.</summary>
+    [CheckBoxComponent(
+        Label = "Offer recent searches",
+        ExplanationText = "Shows what this visitor searched for before as the first group of the panel, and opens it when they "
+            + "focus the empty field. The list is kept in their own browser and never sent to the server.",
+        Order = OrderFirstWidgetProperty + 20)]
+    public bool RecentSearches { get; set; } = true;
 }
 
 /// <summary>Renders the <c>suggestions</c> mount.</summary>
@@ -72,6 +83,7 @@ public sealed class SuggestionsWidgetViewComponent : XpSearchMountWidgetViewComp
         config["mode"] = string.IsNullOrWhiteSpace(properties.Mode) ? SuggestionsWidgetProperties.ModeDocuments : properties.Mode;
         // "limit" is what POST /api/xpsearch/suggest calls it.
         config["limit"] = properties.MaxItems;
+        config["recentSearches"] = properties.RecentSearches;
     }
 
     /// <inheritdoc />

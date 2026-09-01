@@ -18,6 +18,7 @@
     <PackageVersion Include="Lucene.Net.Facet" Version="4.8.0-beta00017" />
     <PackageVersion Include="Lucene.Net.Highlighter" Version="4.8.0-beta00017" />
     <PackageVersion Include="Lucene.Net.QueryParser" Version="4.8.0-beta00017" />
+    <PackageVersion Include="Lucene.Net.Suggest" Version="4.8.0-beta00017" />
   </ItemGroup>
 
   <ItemGroup Label="Testing">

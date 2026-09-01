@@ -34,7 +34,23 @@ export interface EmptyTemplateData {
    * honest answer to.
    */
   unfilteredCount?: number;
+  /**
+   * A corrected spelling of the query that the server verified returns results (`SearchResponse
+   * .didYouMean`). Absent unless the index has did-you-mean on and a correction was found.
+   */
+  didYouMean?: string;
+  /**
+   * The index's most-searched queries, most popular first (`SearchResponse.popularSearches`).
+   * Absent unless the host opted the index in.
+   */
+  popularSearches?: string[];
 }
+
+/**
+ * A template can make any element run a query by giving it this attribute: the widget's own click
+ * handler reads it, so a custom empty state gets the same recovery clicks the default one has.
+ */
+const RECOVER_ATTRIBUTE = 'data-xps-recover';
 
 export interface ResultsTemplates<TAttributes extends Record<string, unknown>> {
   item?: (result: Result<TAttributes>, helpers: TemplateHelpers) => Renderable;
@@ -141,8 +157,27 @@ const EMPTY_ICON =
 const resultCount = (total: number): string =>
   `${helpers.formatNumber(total)} result${total === 1 ? '' : 's'}`;
 
-const defaultEmpty = ({ query, hasRefinements, unfilteredCount }: EmptyTemplateData): Renderable => {
+/** The two ways out of a dead end the server offers (SG-1); both render only when it offered them. */
+const recovery = ({ didYouMean, popularSearches }: EmptyTemplateData): Renderable =>
+  html`${
+    didYouMean === undefined
+      ? ''
+      : html`<p class="xps-results__did-you-mean">Did you mean <button class="xps-button xps-button--link xps-results__correction" type="button" data-xps-recover="${didYouMean}"><strong>${didYouMean}</strong></button>?</p>`
+  }${
+    popularSearches === undefined || popularSearches.length === 0
+      ? ''
+      : html`<div class="xps-results__popular">
+      <p class="xps-results__popular-title">Popular searches</p>
+      <ul class="xps-results__popular-list">${popularSearches.map(
+        (search) => html`<li class="xps-results__popular-item"><button class="xps-button xps-chip xps-results__popular-button" type="button" data-xps-recover="${search}">${search}</button></li>`
+      )}</ul>
+    </div>`
+  }`;
+
+const defaultEmpty = (data: EmptyTemplateData): Renderable => {
+  const { query, hasRefinements, unfilteredCount } = data;
   const icon = html.raw(EMPTY_ICON);
+  const recover = recovery(data);
   if (hasRefinements) {
     const counted = unfilteredCount !== undefined && unfilteredCount > 0;
     const clear = html`<button class="xps-button xps-button--primary ${CLEAR_CLASS}" type="button">${
@@ -152,12 +187,12 @@ const defaultEmpty = ({ query, hasRefinements, unfilteredCount }: EmptyTemplateD
       ? html`<p>There are <strong>${resultCount(unfilteredCount)}</strong> without them.</p>`
       : '';
     return query === ''
-      ? html`${icon}<p>No results with these filters.</p>${without}${clear}`
-      : html`${icon}<p>No results for <strong>${query}</strong> with these filters.</p>${without}${clear}`;
+      ? html`${icon}<p>No results with these filters.</p>${without}${clear}${recover}`
+      : html`${icon}<p>No results for <strong>${query}</strong> with these filters.</p>${without}${clear}${recover}`;
   }
   return query === ''
-    ? html`${icon}<p>No results.</p><p>Try a different search term, or clear some filters.</p>`
-    : html`${icon}<p>No results for <strong>${query}</strong>.</p><p>Try fewer words, or clear some filters.</p>`;
+    ? html`${icon}<p>No results.</p>${recover}<p>Try a different search term, or clear some filters.</p>`
+    : html`${icon}<p>No results for <strong>${query}</strong>.</p>${recover}<p>Try fewer words, or clear some filters.</p>`;
 };
 
 const skeleton = (): Renderable =>
@@ -183,6 +218,8 @@ export function results<TAttributes extends Record<string, unknown> = Record<str
   let shown: Array<Result<TAttributes>> = [];
   let send: (result: Result<TAttributes>) => void = () => {};
   let clearRefinements: () => void = () => {};
+  /** Runs a query the empty state offered as a way out: the correction, or a popular search. */
+  let recover: (query: string) => void = () => {};
 
   // The unfiltered count of the filtered empty state. `probedQuery` is the query the count belongs
   // to, which is also the staleness test: the unfiltered total depends on the query and on nothing
@@ -229,6 +266,9 @@ export function results<TAttributes extends Record<string, unknown> = Record<str
     clearRefinements = () => {
       options.actions.clearFilters().search();
     };
+    recover = (query) => {
+      options.actions.setQuery(query).search();
+    };
 
     if (isFirstRender) {
       root = createRoot(container, 'div', 'xps xps-results');
@@ -243,6 +283,11 @@ export function results<TAttributes extends Record<string, unknown> = Record<str
         if (!(target instanceof Element)) return;
         if (target.closest(`.${CLEAR_CLASS}`)) {
           clearRefinements();
+          return;
+        }
+        const offer = target.closest<HTMLElement>(`[${RECOVER_ATTRIBUTE}]`);
+        if (offer) {
+          recover(offer.dataset['xpsRecover'] ?? '');
           return;
         }
         const item = target.closest('a')?.closest('.xps-results__item');
@@ -278,6 +323,10 @@ export function results<TAttributes extends Record<string, unknown> = Record<str
         ...(hasRefinements && probedQuery === query && probedCount !== undefined
           ? { unfilteredCount: probedCount }
           : {}),
+        ...(options.results?.didYouMean === undefined ? {} : { didYouMean: options.results.didYouMean }),
+        ...(options.results?.popularSearches === undefined
+          ? {}
+          : { popularSearches: options.results.popularSearches }),
       };
       body = html`<div class="xps-results__empty">${
         templates.empty ? templates.empty(data, helpers) : defaultEmpty(data)

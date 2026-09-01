@@ -280,6 +280,22 @@
   gap: calc(var(--xps-space) / 2);
 }
 
+/* The two ways out of a dead end: the correction reads as one sentence, the popular searches
+   as a row of chips that wraps. */
+.xps-results__correction {
+  min-height: 0;
+  padding-block: 0;
+}
+
+.xps-results__popular-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--xps-space) / 2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
 .xps-result {
   display: flex;
   align-items: flex-start;
@@ -710,6 +726,20 @@
 
 .xps-suggestions__group-title {
   padding: calc(var(--xps-space) / 2) var(--xps-space);
+}
+
+/* The recents group heading: its Clear control sits at the far end of the same row. */
+.xps-suggestions__group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--xps-space) / 2);
+  padding-inline-end: var(--xps-space);
+}
+
+.xps-suggestions__group-clear {
+  min-height: 0;
+  padding-block: 0;
 }
 
 .xps-suggestions__option {

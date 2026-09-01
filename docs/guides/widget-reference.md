@@ -141,7 +141,7 @@ searchBox({
 | `queryHook` | — | `(query, apply) => void`. Nothing reaches the state unless you call `apply`. |
 | `followRedirects` | `true` | Navigate to `response.redirect.url` when a [redirect rule](relevance-tuning.md#redirect-rules) matched. Only ever for a submitted query. |
 | `windowRef` | `window` | The window to navigate. Injectable for tests and SSR. |
-| `suggestions` | — | Set it (even to `{}`) to turn the input into an autocomplete combobox. Takes `debounceMs`, `minQueryLength`, `limit`, `language` and `groupLabels`, which mean exactly what they do on [`suggestions`](#suggestions). |
+| `suggestions` | — | Set it (even to `{}`) to turn the input into an autocomplete combobox. Takes `debounceMs`, `minQueryLength`, `limit`, `language`, `groupLabels` and `recentSearches`, which mean exactly what they do on [`suggestions`](#suggestions). |
 
 Markup (`themes/MARKUP.md` → *searchBox*): `<form class="xps xps-search-box" role="search" novalidate>`
 with `xps-search-box__label`, `__field`, `__icon` (a decorative magnifier, always rendered),
@@ -202,7 +202,7 @@ results({
 |---|---|---|
 | `container` | — | Selector or element. Required. |
 | `templates.item` | title link, path line, highlighted snippet and content-type label, plus an image (or a file-type glyph) when the result has one | `(result, helpers) => Renderable` |
-| `templates.empty` | an icon, "No results for …", and — when filters are applied — how many results there are without them plus a **Clear filters and show N results** button | `({ query, hasRefinements, unfilteredCount, clearRefinements }, helpers) => Renderable` |
+| `templates.empty` | an icon, "No results for …", the recovery the server offered, and — when filters are applied — how many results there are without them plus a **Clear filters and show N results** button | `({ query, hasRefinements, unfilteredCount, didYouMean, popularSearches, clearRefinements }, helpers) => Renderable` |
 | `templates.loading` | `loadingRows` skeleton rows | `(helpers) => Renderable` |
 | `transformItems` | — | `(results) => results`, applied before rendering. |
 | `loadingRows` | `3` | Skeleton rows in the default loading template. |
@@ -248,6 +248,37 @@ results({
   }
 });
 ```
+
+**The empty state also offers the way out the server found.** A search that returned nothing can come
+back with two extra members, and the default template renders each one only when it is there:
+
+- `didYouMean` — a corrected spelling the server **verified** returns results, rendered as
+  "Did you mean **espresso**?" Clicking the correction runs it. Enabled per index and on by default;
+  see [Did you mean and popular searches](search-api.md#no-results-recovery).
+- `popularSearches` — the index's most-searched queries, rendered as a row of chips that each run
+  their query. Off by default: it shows anonymous visitors what other visitors searched for, so the
+  host opts each index in.
+
+Both reach your own `templates.empty` as `didYouMean` and `popularSearches`, and both are
+`undefined` when the response carried none. A custom template runs a query by putting
+`data-xps-recover="<query>"` on any element — the widget delegates the click from its root, exactly
+as it does for `xps-results__clear`:
+
+```js
+results({
+  container: '#search-results',
+  templates: {
+    empty: ({ query, didYouMean }, { html }) =>
+      didYouMean === undefined
+        ? html`<p>Nothing matched “${query}”.</p>`
+        : html`<p>Nothing matched “${query}”. Try
+                 <button type="button" data-xps-recover="${didYouMean}">${didYouMean}</button>?</p>`
+  }
+});
+```
+
+The server-rendered first paint keeps the plain empty block: recovery is client-side by design, so
+it appears as soon as the widget hydrates.
 
 The widget delegates clicks on `xps-results__clear` to `clearRefinements`, so a template that only
 returns markup needs no handler of its own. `clearRefinements` is handed to the template as well,
@@ -743,8 +774,9 @@ suggestions({ container: '#search-suggest', resultsUrl: '/search', debounceMs: 1
 | `resultsUrl` | — | The full results page. See below. |
 | `placeholder` | `'Search…'` | |
 | `label` / `showLabel` | `'Search this site'` / `false` | The always-rendered `<label>`; hidden with `xps-sr-only` by default. |
-| `groupLabels` | `{ suggestions: 'Suggestions', documents: 'Pages' }` | Group headings, used only when a response mixes both sources. |
-| `mode` | `'documents'` | Accepted so the Page Builder mount can pass it through, and otherwise unused: whether an index answers with query suggestions or with matching documents is server-side configuration, not a request field. |
+| `groupLabels` | `{ recent: 'Recent searches', suggestions: 'Suggestions', documents: 'Pages' }` | Group headings, used whenever the panel shows more than one source. |
+| `recentSearches` | `true` | Offer this visitor's own recent searches as the panel's first group. See below. |
+| `mode` | `'documents'` | Accepted so the Page Builder mount can pass it through, and otherwise unused: whether an index answers with query suggestions, with matching documents or with both is server-side configuration, not a request field. |
 | `windowRef` | `window` | Injectable, for tests and SSR. |
 
 This widget renders **its own search field**. On a results page, where a `searchBox` already carries
@@ -763,11 +795,30 @@ keystroke, so a slow answer to `esp` can never overwrite the list for `espresso`
 leaves the search box working. Picking a suggestion that carries a `url` (a document) navigates to
 it; one without (a query suggestion) applies it with `setQuery` and searches.
 
+**Recent searches** are on by default, in this widget and in `searchBox`'s panel alike. What the
+visitor submits — a query they typed, or a query suggestion they picked — is remembered and offered
+back as the panel's first group, above the server's own suggestions, filtered by what is in the
+field. Focusing an empty field opens the panel on them alone. The group heading carries a **Clear**
+control that empties the list.
+
+The list is kept **in the visitor's own browser**, in `localStorage` under `xps-recent:<index>`, at
+most five entries, most recent first, deduplicated case-insensitively. It is never sent to the
+server and it is never mixed into the query log: the log the server suggests from is anonymous by
+design, with no visitor correlator, so the browser is the only honest source for "your" searches.
+A browser that refuses to hand over `localStorage` (a private window, a full quota) silently turns
+the feature off — the panel then behaves exactly as it does with `recentSearches: false`. Picking a
+document suggestion is not recorded: it is a link to a page, not a search anyone ran.
+
+Set `recentSearches: false` to turn it off, or relabel the group with
+`groupLabels: { recent: 'You searched for' }`.
+
 Markup: `<div class="xps xps-suggestions">` (plus `--open`) with `__form`, `__label`, `__field`,
 `__input`, `__reset`, `__panel`, `__list` (`role="listbox"`), `__option` (`role="option"`, plus
-`--active`), `__option-title`, `__option-meta`, `__empty`, `__footer` and `__see-all`. When one
-response carries both query suggestions and documents they are wrapped in two `__group` elements
-with a `__group-title` each; with a single source the options sit directly in the listbox.
+`--active`), `__option-title`, `__option-meta`, `__empty`, `__footer` and `__see-all`. When the panel
+shows more than one source the options are wrapped in a `__group` per source — recent searches,
+query suggestions, documents, in that order — each with a `__group-title`; with a single source the
+options sit directly in the listbox. The recents group is the exception: it is always wrapped and
+labelled, because its `__group-header` row also holds the `__group-clear` button.
 
 Accessibility: the WAI-ARIA APG
 [combobox-with-listbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/). DOM focus never

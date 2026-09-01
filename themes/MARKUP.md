@@ -158,6 +158,13 @@ Fixture: `fixtures/results.html`. Root `<div class="xps xps-results">`.
 | `xps-results__empty` | `<div>` | The `templates.empty` output. |
 | `xps-results__empty-icon` | `<svg aria-hidden="true" focusable="false">` | The magnifier-with-minus above the empty-state copy, in both variants. 24px grid, `currentColor`, no external asset. |
 | `xps-results__clear` | `<button type="button" class="xps-button xps-button--primary">` | Only in the empty state, and only while filters are applied: clears them. Reads "Clear filters and show N results" once an unfiltered probe has answered with a count, and "Clear filters" until then (and if it never does). Delegated from the results root, so re-rendering it is safe. |
+| `xps-results__did-you-mean` | `<p>` | Only in the empty state, and only when the response carried `didYouMean`: "Did you mean **<correction>**?" around the button below. |
+| `xps-results__correction` | `<button type="button" class="xps-button xps-button--link" data-xps-recover>` | The correction itself. Clicking runs it; `data-xps-recover` holds the query, and the results root delegates the click. |
+| `xps-results__popular` | `<div>` | Only in the empty state, and only when the response carried `popularSearches`. |
+| `xps-results__popular-title` | `<p>` | Labels the chips row. |
+| `xps-results__popular-list` | `<ul>` | Unstyled list of chips, wraps. |
+| `xps-results__popular-item` | `<li>` | One popular search. |
+| `xps-results__popular-button` | `<button type="button" class="xps-button xps-chip" data-xps-recover>` | Runs that query, through the same delegated `data-xps-recover` handler. |
 
 The default item template (`templates.item`) produces:
 
@@ -399,8 +406,10 @@ Implements the WAI-ARIA APG combobox-with-listbox pattern:
 | `xps-suggestions__reset` | `<button type="reset" class="xps-button">` | `aria-label`; `hidden` while empty. |
 | `xps-suggestions__panel` | `<div>` | Absolutely positioned; `hidden` when closed. |
 | `xps-suggestions__list` | `<ul role="listbox" id aria-label>` | Always present, even when empty, so `aria-controls` never dangles. |
-| `xps-suggestions__group` | `<li role="group" aria-labelledby>` | One per source (query suggestions, matching documents). Omit the group wrapper when there is only one ungrouped source and put `role="option"` on `<li>` directly. |
+| `xps-suggestions__group` | `<li role="group" aria-labelledby>` | One per source, in order: recent searches (client-side), query suggestions, matching documents. Omit the group wrapper when there is only one ungrouped source and put `role="option"` on `<li>` directly — except for the recents, whose group is always labelled because the label row carries the Clear control. |
 | `xps-suggestions__group-title` | `<div id>` | Labels the group. Not an option. |
+| `xps-suggestions__group-header` | `<div>` | Only the recents group: the title row, with the Clear control at its far end. Every other group renders the bare title. |
+| `xps-suggestions__group-clear` | `<button type="button" class="xps-button xps-button--link" data-xps-recent-clear>` | Empties this visitor's recent searches and closes the group. Outside the title element, so the group name stays "Recent searches". |
 | `xps-suggestions__option` | `<div role="option" id aria-selected>` | Ids follow `…-option-{index}` in visual order. |
 | `xps-suggestions__option--active` | modifier | The `aria-activedescendant` target; also `aria-selected="true"`. Exactly one at a time, or none. |
 | `xps-suggestions__option-title` | `<span>` | May contain `<mark class="xps-highlight">`. |

@@ -18,7 +18,13 @@ public enum SuggestMode
     /// Suggest previously logged popular queries. Requires the Phase 6 analytics store; until then
     /// the endpoint returns an empty list and logs a warning (spec §13.6).
     /// </summary>
-    QuerySuggestions
+    QuerySuggestions,
+
+    /// <summary>
+    /// Both at once, queries first: one response carrying the popular queries that start with the
+    /// prefix and the documents that match it, which the shipped panel renders as two groups.
+    /// </summary>
+    Mixed
 }
 
 /// <summary>
@@ -52,6 +58,26 @@ public sealed class XpSearchIndexOptions
     /// Defaults to <c>title</c>, the attribute every document carries its display name under.
     /// </summary>
     public string SuggestField { get; set; } = IndexSchemaProvider.TitleAttribute;
+
+    /// <summary>
+    /// Gets or sets whether a search of this index that found nothing offers a corrected spelling in
+    /// <c>didYouMean</c>. Defaults to <see langword="true"/>.
+    /// </summary>
+    /// <remarks>
+    /// The correction is spelled against the index's own terms and is only offered once the server
+    /// has verified it actually returns results, so it costs one extra search per dead end.
+    /// </remarks>
+    public bool DidYouMean { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets how many of the index's most-searched queries a search that found nothing offers
+    /// in <c>popularSearches</c>. Defaults to <c>0</c>, which turns the feature off.
+    /// </summary>
+    /// <remarks>
+    /// Opt-in on purpose: the queries come from the query log, so turning it on shows anonymous
+    /// visitors what other visitors searched for.
+    /// </remarks>
+    public int PopularSearchesOnNoResults { get; set; }
 }
 
 /// <summary>
