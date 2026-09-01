@@ -1,0 +1,30 @@
+{
+  "baseUrl": "http://localhost:27340",
+  "outDir": "../../docs/guides/images",
+  "viewport": { "width": 1440, "height": 900 },
+  "topCrop": 24,
+  "shots": [
+    { "name": "ingestion--api-keys", "url": "/admin/xpsearch-tuning/api-keys" },
+    { "name": "ingestion--api-key-create", "url": "/admin/xpsearch-tuning/api-keys/create" },
+    { "name": "ingestion--log", "url": "/admin/xpsearch-tuning/ingestion-log" },
+    { "name": "lucene--index-listing", "url": "/admin/lucene/indexes" },
+    { "name": "index--edit", "url": "/admin/lucene/indexes/edit/2" },
+    { "name": "tuning--settings", "url": "/admin/lucene/indexes/edit/2/settings" },
+    { "name": "tuning--status", "url": "/admin/lucene/indexes/edit/2/status" },
+    { "name": "tuning--analytics", "url": "/admin/lucene/indexes/edit/2/analytics" },
+    { "name": "tuning--query-tester", "url": "/admin/lucene/indexes/edit/2/query-tester", "steps": [{ "fillPlaceholder": ["e.g. espresso", "coffee"] }, { "clickButton": "Run" }, { "wait": 2500 }] },
+    { "name": "tuning--rules", "url": "/admin/lucene/indexes/edit/2/rules" },
+    { "name": "tuning--rule-builder", "url": "/admin/lucene/indexes/edit/2/rules", "steps": [{ "click": "Boost products for coffee searches" }, { "wait": 1000 }] },
+    { "name": "tuning--popularity-suggestions", "url": "/admin/lucene/indexes/edit/2/suggestions" },
+    { "name": "tuning--synonyms", "url": "/admin/lucene/indexes/edit/2/synonyms" },
+    { "name": "tuning--synonym-create", "url": "/admin/lucene/indexes/edit/2/synonyms/create" },
+    { "name": "tuning--synonym-suggestions", "url": "/admin/lucene/indexes/edit/2/synonym-suggestions" },
+    { "name": "tuning--stopwords", "url": "/admin/lucene/indexes/edit/2/stopwords" },
+    { "name": "tuning--stopword-create", "url": "/admin/lucene/indexes/edit/2/stopwords/create" },
+    { "name": "tuning--field-weights", "url": "/admin/lucene/indexes/edit/2/weights" },
+    { "name": "tuning--field-weight-create", "url": "/admin/lucene/indexes/edit/2/weights/create" },
+    { "name": "experiments--listing", "url": "/admin/lucene/indexes/edit/2/experiments" },
+    { "name": "experiments--create", "url": "/admin/lucene/indexes/edit/2/experiments/create" },
+    { "name": "experiments--detail", "url": "/admin/lucene/indexes/edit/2/experiments", "steps": [{ "click": "Dancing Goat Experiment" }] }
+  ]
+}

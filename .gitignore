@@ -23,3 +23,6 @@ src/XpSearch.Widgets/Client/mock/server.mjs
 # Built by samples/pack-and-build.mjs: the local NuGet + npm feed the sample restores from
 samples/.feed/
 samples/CustomWidget.Dropdown/package-lock.json
+
+# Screenshot pipeline signed-in browser profile (tools/screenshots/)
+tools/screenshots/.profile/
