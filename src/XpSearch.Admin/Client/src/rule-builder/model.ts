@@ -233,19 +233,19 @@ export const isEmpty = (fragments: Fragment[]): boolean => {
 };
 
 /**
- * Moves an action one place up or down. The order is behaviour - rewrites chain and custom data
- * merges in order - so this is the whole point of the up/down buttons of design canvas 5g.
+ * Moves an action to another position, taking it out and putting it back rather than swapping, so a
+ * drag across several rows leaves everything it passed in its own order. The order is behaviour -
+ * rewrites chain and custom data merges in order - so this is what the grip of design canvas 5g is
+ * for.
  */
-export const move = (actions: Action[], at: number, by: 1 | -1): Action[] => {
-  const to = at + by;
-
-  if (to < 0 || to >= actions.length) {
+export const move = (actions: Action[], from: number, to: number): Action[] => {
+  if (from < 0 || from >= actions.length || to < 0 || to >= actions.length || to === from) {
     return actions;
   }
 
   const moved = [...actions];
 
-  [moved[at], moved[to]] = [moved[to], moved[at]];
+  moved.splice(to, 0, ...moved.splice(from, 1));
 
   return moved;
 };

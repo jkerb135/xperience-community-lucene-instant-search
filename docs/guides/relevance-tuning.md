@@ -108,8 +108,20 @@ on screen:
 ```
 
 The order is not cosmetic. Query rewrites chain, and custom data merges in order, so the last rule to
-set a key wins it. **Move up** and **Move down** on a row change it; each button announces which
-action it moves and where it currently sits, so the change is followable without seeing the screen.
+set a key wins it. Change it by dragging a row's **grip** — the six dots at its left edge — and
+dropping it where the line shows it will land.
+
+The grip works without a mouse, because a drag is nothing a keyboard can do. Tab to it and:
+
+| Key | What happens |
+| --- | --- |
+| `Space` or `Enter` | Lifts the row ("*Pin an item* grabbed, position 1 of 3…"). Press again to drop it. |
+| `↑` / `↓` | Moves the lifted row one place ("*Pin an item* moved to position 2 of 3."). |
+| `Esc` | Puts it back where it was lifted from, and says so. |
+
+The list re-orders as you move, so the screen and the announcement always agree, and focus stays on
+the grip you are holding. Every step is spoken through a polite live region, because the rows
+themselves are silent when they swap.
 
 You do not edit an action on this screen either. **Edit** on a row opens its side panel; **Add
 action** opens the menu of the ten kinds listed below and then opens the panel on a blank one of that
@@ -575,7 +587,9 @@ opening the index's configuration form first.
 - **Value** offers the values the index holds right now. A value that no documents currently carry —
   a category you have prepared but not published into — is not in the list; use **Edit as text** to
   write it.
-- Actions are reordered with the **Move up** and **Move down** buttons; there is no drag handle.
+- Reordering actions by **dragging** the grip needs a mouse or a trackpad: it is built on the
+  browser's own drag events, which most touch browsers do not raise. On a tablet, use the keyboard
+  grab from an attached keyboard — there is no touch drag.
 - The item picker searches the index the rule belongs to. It cannot find something that was never
   indexed, which is the same reason a rule pointing at it would not have worked anyway.
 
