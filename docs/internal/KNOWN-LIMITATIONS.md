@@ -1212,3 +1212,17 @@ and how to lift it.
   otherwise).
 - **Upgrade path:** move it to a Roslyn analyzer over the whole solution, or drop it once a host-level
   integration test can create the objects for real.
+
+## Both range thumbs ride one rail, in `.xps-range-filter__track` (`themes/src/scss/{shell,default}/_range-filter.scss`)
+
+- **Simplified:** the two native range inputs are absolutely overlaid on the wrapper and only their
+  thumb pseudo-elements take pointer events; the selected segment is a `linear-gradient` on the
+  wrapper driven by the `--xps-range-from` / `--xps-range-to` percentages the widget writes each
+  render. No custom drag widget, so keyboard and screen-reader behaviour stays the platform's.
+- **Ceiling:** where the two thumbs overlap (a range collapsed to one value) the max input is later
+  in the DOM and wins the pointer, so that end has to be dragged out first — the number inputs and
+  the keyboard are unaffected. The look is only checked headlessly (the custom properties in jsdom,
+  the `pointer-events` split as CSS text in `widgets.test.ts`); nothing renders it, the
+  `forced-colors: active` and `:dir(rtl)` rules included.
+- **Upgrade path:** raise the min input's `z-index` when it holds the higher value if a host reports
+  a stuck thumb, and add a real-browser/visual-regression run for the rendering.

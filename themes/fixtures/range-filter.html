@@ -1,9 +1,12 @@
 <!-- rangeSlider — two native <input type="range"> plus two numeric inputs. No custom slider:
-     the native control is keyboard-operable and screen-reader-announced for free. -->
+     the native control is keyboard-operable and screen-reader-announced for free. The two are
+     overlaid on the one __track rail; --xps-range-from/--xps-range-to (the selection as
+     percentages of the bounds) are what the default theme fills between. -->
 
 <div class="xps xps-range-filter">
   <h3 class="xps-range-filter__title" id="xps-search-1-price-title">Price</h3>
-  <div class="xps-range-filter__track" role="group" aria-labelledby="xps-search-1-price-title">
+  <div class="xps-range-filter__track" role="group" aria-labelledby="xps-search-1-price-title"
+       style="--xps-range-from: 10%; --xps-range-to: 60%">
     <label class="xps-sr-only" for="xps-search-1-price-range-min">Minimum price</label>
     <input class="xps-range-filter__range xps-range-filter__range--min"
            id="xps-search-1-price-range-min"
@@ -29,7 +32,8 @@
 <!-- no refinable range in the current results -->
 <div class="xps xps-range-filter xps-range-filter--disabled">
   <h3 class="xps-range-filter__title" id="xps-search-2-price-title">Price</h3>
-  <div class="xps-range-filter__track" role="group" aria-labelledby="xps-search-2-price-title">
+  <div class="xps-range-filter__track" role="group" aria-labelledby="xps-search-2-price-title"
+       style="--xps-range-from: 0%; --xps-range-to: 0%">
     <label class="xps-sr-only" for="xps-search-2-price-range-min">Minimum price</label>
     <input class="xps-range-filter__range xps-range-filter__range--min" id="xps-search-2-price-range-min" type="range" min="0" max="0" value="0" disabled>
     <label class="xps-sr-only" for="xps-search-2-price-range-max">Maximum price</label>

@@ -2,7 +2,9 @@
  * `rangeFilter` — `withRange` plus the default renderer (spec 5.3).
  * Markup: `themes/fixtures/range-filter.html`. A11y (spec 5.6): two native
  * `<input type="range">` controls rather than a custom drag widget, so the control is
- * keyboard-operable and announced by a screen reader with no extra code.
+ * keyboard-operable and announced by a screen reader with no extra code. The theme overlays the
+ * two on one rail and fills the segment between `--xps-range-from` and `--xps-range-to`, the two
+ * percentages this widget sets on `.xps-range-filter__track` every render.
  *
  * The bounds are `params.min`/`max`: the JSON contract carries no numeric facet statistics, so
  * there is nowhere for a server-computed range to arrive (docs/internal/KNOWN-LIMITATIONS.md).
@@ -34,6 +36,8 @@ export function rangeFilter(params: RangeFilterWidgetParams): Widget {
   const container = resolveContainer(params.container, 'rangeFilter');
   let root: HTMLElement | undefined;
   let values: HTMLElement | undefined;
+  /** The wrapper both sliders are overlaid on; carries the fill segment's two percentages. */
+  let track: HTMLElement | undefined;
   /** [range-min, range-max, input-min, input-max], in that order. */
   let controls: HTMLInputElement[] = [];
   let apply: (bounds: [number, number]) => void = () => {};
@@ -71,6 +75,7 @@ export function rangeFilter(params: RangeFilterWidgetParams): Widget {
           ...root.querySelectorAll<HTMLInputElement>('.xps-range-filter__range, .xps-range-filter__input'),
         ];
         values = root.querySelector<HTMLElement>('.xps-range-filter__values') ?? undefined;
+        track = root.querySelector<HTMLElement>('.xps-range-filter__track') ?? undefined;
 
         // `input` mirrors the two halves of the control while dragging; `change` is the commit,
         // so a drag or a held arrow key produces one search, not one per pixel.
@@ -102,7 +107,7 @@ export function rangeFilter(params: RangeFilterWidgetParams): Widget {
         root.addEventListener('input', (event) => edit(event, false));
         root.addEventListener('change', (event) => edit(event, true));
       }
-      if (!root || !values || controls.length < 4) return;
+      if (!root || !values || !track || controls.length < 4) return;
 
       apply = options.apply;
       const [lower, upper] = options.start;
@@ -122,7 +127,15 @@ export function rangeFilter(params: RangeFilterWidgetParams): Widget {
       }
 
       paint = (): void => {
-        if (!values) return;
+        if (!values || !track) return;
+        // The two ends as percentages of the bounds: the theme fills the rail between them.
+        const span = Number(max) - Number(min);
+        const percent = (value: number): string => {
+          const at = span > 0 && Number.isFinite(value) ? ((value - Number(min)) / span) * 100 : 0;
+          return `${Math.min(Math.max(Math.round(at * 100) / 100, 0), 100)}%`;
+        };
+        track.style.setProperty('--xps-range-from', percent(Number(controls[0]?.value)));
+        track.style.setProperty('--xps-range-to', percent(Number(controls[1]?.value)));
         // The bounds of the control, not the current selection: the two number inputs already
         // show that, and this line is what the sliders are `aria-describedby`.
         const text = enabled
