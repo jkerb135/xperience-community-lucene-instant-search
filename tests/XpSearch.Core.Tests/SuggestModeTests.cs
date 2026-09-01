@@ -1,6 +1,9 @@
+using Microsoft.Extensions.Logging;
+
 using NUnit.Framework;
 
 using XpSearch.Core.Contract;
+using XpSearch.Core.Indexing;
 using XpSearch.Core.Options;
 using XpSearch.Core.Search;
 using XpSearch.Core.Tests.Fixtures;
@@ -18,6 +21,7 @@ internal sealed class SuggestModeTests
     private FakeQuerySuggestionSource queries = null!;
     private XpSearchOptions options = null!;
     private DocumentSuggestService service = null!;
+    private RecordingLogger logger = null!;
 
     [SetUp]
     public void Build()
@@ -25,11 +29,13 @@ internal sealed class SuggestModeTests
         index = new TestSearchIndex(TestCorpus.IndexName, TestCorpus.Documents);
         queries = new FakeQuerySuggestionSource();
         options = new XpSearchOptions();
+        logger = new RecordingLogger();
         service = new DocumentSuggestService(
             index,
             new StaticSchemaProvider(TestCorpus.Schema),
             queries,
-            Microsoft.Extensions.Options.Options.Create(options));
+            Microsoft.Extensions.Options.Options.Create(options),
+            logger);
     }
 
     [TearDown]
@@ -136,6 +142,55 @@ internal sealed class SuggestModeTests
         Assert.That(response.Suggestions, Is.Empty);
     }
 
+    /// <summary>
+    /// IX-1 gap 5: the default suggest field is the item display name, which on a real site is a
+    /// slug. Nothing can guess a better default, so serving from it is warned about - once.
+    /// </summary>
+    [Test]
+    public async Task Documents_WarnOnceThatTheSuggestFieldWasNeverConfigured()
+    {
+        await Suggest("espr", limit: 5);
+        await Suggest("espre", limit: 5);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(logger.Warnings, Has.Exactly(1).Contains(TestCorpus.IndexName), "one warning per index, not per request");
+            Assert.That(logger.Warnings.Single(), Does.Contain("SuggestField"));
+        });
+    }
+
+    [Test]
+    public async Task Mixed_WarnsAboutTheUnconfiguredSuggestFieldToo()
+    {
+        options.Indexes[TestCorpus.IndexName].SuggestMode = SuggestMode.Mixed;
+
+        await Suggest("espr", limit: 5);
+
+        Assert.That(logger.Warnings, Has.Exactly(1).Contains("SuggestField"));
+    }
+
+    [Test]
+    public async Task Documents_AreSilentWhenTheSuggestFieldIsConfigured()
+    {
+        // Setting it to the very same value still counts as configured: the setter is the signal.
+        options.Indexes[TestCorpus.IndexName].SuggestField = IndexSchemaProvider.TitleAttribute;
+
+        await Suggest("espr", limit: 5);
+
+        Assert.That(logger.Warnings, Is.Empty);
+    }
+
+    [Test]
+    public async Task QuerySuggestions_AreSilentBecauseNoDocumentIsSuggested()
+    {
+        options.Indexes[TestCorpus.IndexName].SuggestMode = SuggestMode.QuerySuggestions;
+        queries.Suggestions.Add("espresso machine");
+
+        await Suggest("espr", limit: 5);
+
+        Assert.That(logger.Warnings, Is.Empty);
+    }
+
     private Task<SuggestResponse> Suggest(string query, int limit) =>
         service.SuggestAsync(
             new SuggestRequest { Index = TestCorpus.IndexName, Query = query, Limit = limit },
@@ -143,4 +198,22 @@ internal sealed class SuggestModeTests
 
     private static Suggestion[] Suggestions(int count, Group group) =>
         [.. Enumerable.Range(0, count).Select(at => new Suggestion { Text = $"{group}-{at}", Group = group })];
+
+    private sealed class RecordingLogger : ILogger<DocumentSuggestService>
+    {
+        public List<string> Warnings { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state)
+            where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+            if (logLevel == LogLevel.Warning)
+            {
+                Warnings.Add(formatter(state, exception));
+            }
+        }
+    }
 }

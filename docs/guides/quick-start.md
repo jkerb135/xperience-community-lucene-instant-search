@@ -16,7 +16,9 @@ builder.Services.AddKenticoLucene(lucene => lucene
 builder.Services.AddXpSearch(options =>
 {
     options.CacheTtl = TimeSpan.FromSeconds(60);
-    options.Indexes["MySiteIndex"].SuggestField = "title";
+    // The attribute /suggest prefix-matches and shows. Do not leave it at its "title" default:
+    // that is the item name, which on a real site is a slug ("CoffeePlunger-p2e57tss").
+    options.Indexes["MySiteIndex"].SuggestField = "ProductFieldName";
 });
 
 var app = builder.Build();
@@ -218,9 +220,14 @@ curl -sS -X POST http://localhost:5000/api/xpsearch/suggest \
   -d '{ "index": "MySiteIndex", "query": "espr", "limit": 5 }'
 ```
 
-This prefix-matches the index's suggest field (`Title` by default) and returns the matching documents, so
-a dropdown can show real results. The other mode, suggesting previously typed queries, needs the search
-analytics store and is not available yet.
+This prefix-matches the index's suggest field and returns the matching documents, so a dropdown can show
+real results. The other mode, suggesting previously typed queries, needs the search analytics store and is
+not available yet.
+
+**Set `SuggestField` before you ship.** It defaults to `title`, which is the content item's *name* — on a
+real site a slug with a generated suffix (`CoffeePlunger-p2e57tss`). Point it at a human-readable
+attribute of your own (`ProductFieldName` on Dancing Goat, as in step 2 above); the library warns once per
+index when suggestions are served from the default.
 
 ### 8. Tune it
 

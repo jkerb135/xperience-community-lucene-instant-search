@@ -53,11 +53,29 @@ public sealed class XpSearchIndexOptions
     /// <summary>Gets or sets how <c>/suggest</c> answers for this index. Defaults to <see cref="SuggestMode.Documents"/>.</summary>
     public SuggestMode SuggestMode { get; set; } = SuggestMode.Documents;
 
+    private string suggestField = IndexSchemaProvider.TitleAttribute;
+
     /// <summary>
     /// Gets or sets the attribute document suggestions prefix-match and display.
     /// Defaults to <c>title</c>, the attribute every document carries its display name under.
     /// </summary>
-    public string SuggestField { get; set; } = IndexSchemaProvider.TitleAttribute;
+    /// <remarks>
+    /// On most Kentico sites the display name is the web page item name, which is a slug with a
+    /// generated suffix - set this to a human-readable field of your own.
+    /// </remarks>
+    public string SuggestField
+    {
+        get => suggestField;
+
+        set
+        {
+            suggestField = value;
+            SuggestFieldConfigured = true;
+        }
+    }
+
+    /// <summary>Gets a value indicating whether <see cref="SuggestField"/> was set rather than left at its default.</summary>
+    internal bool SuggestFieldConfigured { get; private set; }
 
     /// <summary>
     /// Gets or sets whether a search of this index that found nothing offers a corrected spelling in

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 
 using Kentico.Xperience.Lucene.Core;
@@ -5,6 +6,7 @@ using Kentico.Xperience.Lucene.Core;
 using Lucene.Net.Index;
 using Lucene.Net.Search;
 
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 using XpSearch.Core.Abstractions;
@@ -32,27 +34,35 @@ public sealed class DocumentSuggestService : ISuggestService
     private readonly IIndexSchemaProvider schemaProvider;
     private readonly IQuerySuggestionSource querySuggestions;
     private readonly XpSearchOptions options;
+    private readonly ILogger<DocumentSuggestService> logger;
+
+    // One warning per index, however many suggest requests it serves.
+    private readonly ConcurrentDictionary<string, bool> reportedDefaultSuggestFields = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>Initializes a new instance of the <see cref="DocumentSuggestService"/> class.</summary>
     /// <param name="accessor">The Lucene seam.</param>
     /// <param name="schemaProvider">Supplies the schema of the index being suggested from.</param>
     /// <param name="querySuggestions">Answers for an index configured for query suggestions.</param>
     /// <param name="options">The configured search options.</param>
+    /// <param name="logger">Logger.</param>
     public DocumentSuggestService(
         ILuceneIndexAccessor accessor,
         IIndexSchemaProvider schemaProvider,
         IQuerySuggestionSource querySuggestions,
-        IOptions<XpSearchOptions> options)
+        IOptions<XpSearchOptions> options,
+        ILogger<DocumentSuggestService> logger)
     {
         ArgumentNullException.ThrowIfNull(accessor);
         ArgumentNullException.ThrowIfNull(schemaProvider);
         ArgumentNullException.ThrowIfNull(querySuggestions);
         ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(logger);
 
         this.accessor = accessor;
         this.schemaProvider = schemaProvider;
         this.querySuggestions = querySuggestions;
         this.options = options.Value;
+        this.logger = logger;
     }
 
     /// <inheritdoc />
@@ -146,6 +156,8 @@ public sealed class DocumentSuggestService : ISuggestService
         int limit,
         CancellationToken cancellationToken)
     {
+        WarnAboutTheDefaultSuggestField(request.Index, indexOptions);
+
         var schema = await schemaProvider.GetSchemaAsync(request.Index, cancellationToken).ConfigureAwait(false);
         var suggestField = schema.Find(indexOptions.SuggestField)
             ?? throw new SearchValidationException(
@@ -190,6 +202,28 @@ public sealed class DocumentSuggestService : ISuggestService
         });
 
         return suggestions;
+    }
+
+    /// <summary>
+    /// Warns once per index that its document suggestions come from the default suggest field. The
+    /// default is the item display name, which on most Kentico sites is the web page item name - a
+    /// slug with a generated suffix, not something to show a visitor. No default can be guessed
+    /// better, so an honest warning is all this does.
+    /// </summary>
+    private void WarnAboutTheDefaultSuggestField(string index, XpSearchIndexOptions indexOptions)
+    {
+        if (indexOptions.SuggestFieldConfigured || !reportedDefaultSuggestFields.TryAdd(index, true))
+        {
+            return;
+        }
+
+        logger.LogWarning(
+            "Index {Index} serves document suggestions from the default suggest field {SuggestField}, which carries the item display name - " +
+            "on most Kentico sites a slug with a generated suffix (\"CoffeePlunger-p2e57tss\"). " +
+            "Set {Setting} to a human-readable attribute; see the /suggest section of the search API guide.",
+            index,
+            indexOptions.SuggestField,
+            $"Indexes[\"{index}\"].SuggestField");
     }
 
     private static SuggestResponse Empty() => new() { Suggestions = [] };

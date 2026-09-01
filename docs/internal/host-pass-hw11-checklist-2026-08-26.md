@@ -364,3 +364,22 @@ configuration — it is on by default, which is what item 97 checks.
     widget, save, reload: focusing its empty field opens nothing, and the panel shows only the
     server's groups. Tick it again and the previously stored list comes back (clearing the checkbox
     hides the group; it does not wipe the browser's list — the panel's own **Clear** control does).
+
+## T. IX-1 contributed fields + suggest-field honesty (added 2026-09-01)
+
+Prerequisite: the host replaces the `DancingGoatSearchFieldSource` decorator with `indexing.AddField`
+calls (see the IX-1 report), then rebuilds the demo index.
+
+101. **Contributed fields on the wire.** After the swap, `curl` `/api/xpsearch/query` for a product:
+    the image and path fields the decorator used to smuggle in are present in `result.attributes`
+    with the same names and values as before, and the results widget still renders thumbnails and
+    path lines (HW-14 parity). The admin **Rules** and **Results** attribute dropdowns list them too,
+    which the decorator never achieved.
+102. **The undeclared-field warning.** Temporarily write a field from `ContributeAsync` without its
+    `AddField` declaration and rebuild the index: the event log holds exactly **one** warning naming
+    the field, the content type and the `AddField` call to add — not one per indexed item. Restore
+    the declaration and rebuild: no warning.
+103. **The suggest-field warning.** With an index whose `SuggestField` is left unset, type into the
+    autocomplete: one warning per index appears in the event log naming `SuggestField`, and the
+    suggestions show the slug-ish item names it describes. Set `SuggestField` to `ProductFieldName`,
+    restart, and both the warning and the slugs are gone.

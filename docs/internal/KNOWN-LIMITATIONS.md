@@ -325,8 +325,8 @@ and how to lift it.
   `Configure` can change every flag and the boost, but `SchemaField.Name` is both the content type field the
   value is read from and the Lucene field it is written to, so changing it breaks the read. The guide says
   so instead of the code preventing it.
-- **Ceiling:** a project that wants a shorter attribute name on the wire has to add a second field in an
-  override of `ContributeAsync`, or rename in its own client code.
+- **Ceiling:** a project that wants a shorter attribute name on the wire has to declare a second field with
+  `AddField` and write it from an override of `ContributeAsync`, or rename in its own client code.
 - **Upgrade path:** add a source-field name to `SchemaField` that defaults to `Name`, read values by the
   source name in the strategy, and index and project by `Name`.
 ## `check.mjs` in `themes/scripts/check.mjs`

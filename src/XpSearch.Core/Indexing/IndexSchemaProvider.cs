@@ -26,7 +26,7 @@ public sealed class IndexSchemaProvider : IIndexSchemaProvider
     /// <param name="accessor">The Lucene seam, used to check that the index exists.</param>
     /// <param name="contentTypeSource">Lists the content types an index covers.</param>
     /// <param name="fieldSource">Detects the fields of a content type.</param>
-    /// <param name="options">Supplies the linked content types whose fields are flattened into a covered type's documents.</param>
+    /// <param name="options">Supplies the linked content types whose fields are flattened into a covered type's documents, and the fields contributed with <see cref="XpSearchIndexingOptions.AddField"/>.</param>
     public IndexSchemaProvider(
         ILuceneIndexAccessor accessor,
         IIndexContentTypeSource contentTypeSource,
@@ -108,6 +108,10 @@ public sealed class IndexSchemaProvider : IIndexSchemaProvider
                     fields.AddRange(fieldSource.GetFields(linkedContentType));
                 }
             }
+
+            // Contributed fields come last for the same reason: a field the content type or a
+            // flattened link already defines keeps its detected definition.
+            fields.AddRange(options.ContributedFieldsOf(contentType));
         }
 
         return new IndexSchema(indexName, fields);
