@@ -165,6 +165,30 @@ internal sealed class RuleSelectionTests
         Assert.That(
             RuleFilterExpression.Parse("Category:coffee, Tags:brewing, nonsense, :empty, trailing:"),
             Is.EqualTo(new[] { ("Category", "coffee"), ("Tags", "brewing") }).AsCollection);
+
+    /// <summary>
+    /// The rule builder's attribute rows and its "Edit as text" box are the same stored string seen
+    /// two ways, so composing what was parsed has to give the expression back.
+    /// </summary>
+    [Test]
+    public void FilterExpression_ComposesBackWhatItParsed()
+    {
+        Expect.Multiple(() =>
+        {
+            Assert.That(
+                RuleFilterExpression.Compose(RuleFilterExpression.Parse("Category:coffee, Tags:brewing")),
+                Is.EqualTo("Category:coffee, Tags:brewing"));
+            Assert.That(
+                RuleFilterExpression.Compose(RuleFilterExpression.Parse("  Category :  coffee ,nonsense,Tags:brewing")),
+                Is.EqualTo("Category:coffee, Tags:brewing"),
+                "compose(parse(x)) is the canonical form the builder stores");
+            Assert.That(
+                RuleFilterExpression.Compose([("Category", "coffee"), (" ", "x"), ("Tags", string.Empty)]),
+                Is.EqualTo("Category:coffee"),
+                "a half-filled row is left out rather than stored as rubbish");
+            Assert.That(RuleFilterExpression.Compose([]), Is.Empty);
+        });
+    }
 }
 
 /// <summary>

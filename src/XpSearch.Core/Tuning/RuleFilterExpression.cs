@@ -39,4 +39,25 @@ public static class RuleFilterExpression
 
         return pairs;
     }
+
+    /// <summary>Writes field/value pairs back into the stored expression.</summary>
+    /// <param name="pairs">The pairs, in the order they should be written.</param>
+    /// <returns>The expression. Pairs with a blank field or a blank value are left out.</returns>
+    /// <remarks>
+    /// The inverse of <see cref="Parse"/> up to whitespace: <c>Compose(Parse(x))</c> is the canonical
+    /// form of <c>x</c>, which is what the rule builder stores. A value containing a comma cannot be
+    /// expressed - the comma is the pair separator and the language has no escape - so such a pair is
+    /// written as typed and will parse back short. See docs/internal/KNOWN-LIMITATIONS.md.
+    /// </remarks>
+    public static string Compose(IEnumerable<(string Field, string Value)> pairs)
+    {
+        ArgumentNullException.ThrowIfNull(pairs);
+
+        return string.Join(
+            ", ",
+            pairs
+                .Select(pair => (Field: (pair.Field ?? string.Empty).Trim(), Value: (pair.Value ?? string.Empty).Trim()))
+                .Where(pair => pair.Field.Length > 0 && pair.Value.Length > 0)
+                .Select(pair => $"{pair.Field}:{pair.Value}"));
+    }
 }
