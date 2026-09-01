@@ -155,9 +155,9 @@ public class SynonymSuggestionListing : ListingPage
                 formatter: (value, _) => Evidence(CMS.Helpers.ValidationHelper.GetInteger(value, 0)))
             .AddColumn(nameof(XpSearchSynonymSuggestionInfo.SynonymSuggestionLastSeen), "Last seen");
 
-        // Labelled buttons, no icon-only actions: the label is what a screen reader announces.
-        PageConfiguration.TableActions.AddCommand("Approve", nameof(Approve));
-        PageConfiguration.TableActions.AddCommand("Dismiss", nameof(Dismiss));
+        // The label is what a screen reader announces; the icon is what the action cell renders.
+        PageConfiguration.TableActions.AddCommand("Approve", nameof(Approve), icon: "icon-check-circle");
+        PageConfiguration.TableActions.AddCommand("Dismiss", nameof(Dismiss), icon: "icon-times-circle");
 
         PageConfiguration.QueryModifiers.AddModifier((query, _) =>
             query
