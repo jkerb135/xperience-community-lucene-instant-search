@@ -233,3 +233,66 @@ re-observed under the host bundle.
     *Docs demo experiment*, not the experiment GUID (`3be7f5a5-...`). Same on a variant-scoped tuning page - open
     the experiment's **Rules** (`/admin/lucene/indexes/edit/2/experiments/2/rules`) and check both
     again. — **PASS** (owner, 2026-09-01, on the running host).
+
+## P. HW-14 demo data parity — product thumbnails, path lines, clean autocomplete (added 2026-09-01)
+
+Host-only changes, all in `src/`: the indexing strategy now contributes an `image` (product asset
+URL) and a `path` (`Store › Grinders`) attribute and puts both in the index schema through an
+`IContentTypeFieldSource` decorator; both product cards (`Search/Products.cshtml` and the
+`registerWidgetType('results', …)` twin in `Search/client/main.ts`) render them; `SuggestField` is
+`ProductFieldName`; the three leftover ingestion smoke-test documents (`pim` ×2, `kb` ×1) were
+deleted and the index rebuilt (32 Xperience documents, no external ones).
+
+76. **Thumbnails.** `/search?q=grinder` shows a 96×96 product photo on every product card, in the
+    first paint (view source: `.xps-result__media > img.xps-result__image`) and after hydration.
+    An image that 404s means the asset URL kept its `~/` prefix.
+77. **Path lines.** Every product card shows a muted `Store › <category>` line between the title and
+    the snippet (`.xps-result__path`), matching the mockup. Articles, if any are ever opted in,
+    show their ancestor path instead.
+78. **Autocomplete is real.** Type `aero` in the search box: the popup lists *AeroPress* and
+    *AeroPress Filters* — product names, not web page item names (`AeroPress-vf15ekn4`) — and no
+    `… (PIM)` / knowledge-base entries from the ingestion smoke tests. Clicking one navigates to the
+    product page.
+79. **No group headings yet (known gap).** The popup is one flat list with no "Suggestions" /
+    "Pages" headings and no recent searches. That is a LIBRARY gap, not a host regression:
+    `XpSearchIndexOptions.SuggestMode` is exclusive (`Documents` OR `QuerySuggestions`), so one
+    response never carries both kinds, and `suggestionsPanel.ts` only groups when it does
+    (`grouped = queries.length > 0 && documents.length > 0`). Verified on this host by temporarily
+    flipping the index to `QuerySuggestions`: `"co"` → `coffee`, `coffee grinder` — text-only
+    suggestions with no `result`, i.e. still one ungrouped list. Reverted to `Documents`.
+
+## Q. Design-note review — mobile composition + edge states (added 2026-09-01; owner-requested check)
+
+Source: mockup canvas `kentico-violet` — the `mobile-note` sticky and the three edge-state
+artboards (LOADING / NO RESULTS–FILTERS ACTIVE / NO RESULTS–WITH RECOVERY). Items marked
+**KNOWN FAIL** are confirmed gaps, tracked in `.paul/` (plans named per item) — tick them only
+when their plan ships; the others verify what should already work.
+
+80. **Sidebar collapses below 1024px.** Narrow the window under 1024px on `/search`: the facet
+    sidebar disappears, leaving the Filter & Sort button (+ badge) and the scrolling chips row.
+    **KNOWN FAIL today** — the guide's `.search-sidebar { display:none }` half of the swap was
+    never applied to the host (plan 1.1-01 MB-1). The trigger/badge/chips themselves work.
+81. **Load-more replaces pagination below 1024px.** Under 1024px the results append via a
+    Load more button; at desktop width numbered pagination returns. **KNOWN FAIL today** — and
+    not a CSS swap: `loadMore` replaces `results`+`pagination` and owns `state.page`
+    (widget-reference §loadMore), so this needs a mount-time viewport decision (plan 1.1-01).
+82. **Sheet apply button previews the pending count.** In the Filter & Sort sheet, tick a
+    pending facet: the apply button reads "Show N results" with a live N. **KNOWN FAIL today**
+    — TH-2 STOP clause: every server query is journaled, no probe flag in the contract
+    (plan 1.1-02 ES-1; same probe flag feeds item 84).
+83. **First-search skeleton matches the card layout.** Cold load with a query: skeleton rows
+    show a media square + text lines matching the thumbnail card (the mock's shape); skeletons
+    appear only when no earlier results are on screen; refinements dim stale results instead of
+    blanking. Verify the media square exists now that cards carry images (suspect: skeleton
+    predates HW-14 thumbnails — if it is lines-only, log under plan 1.1-02).
+84. **Filtered no-results shows the unfiltered count.** `?q=<no-hits-with-filter>` + an active
+    facet: "No results for ... with these filters", "There are N results without them", and the
+    button reads "Clear filters and show N results". **KNOWN FAIL today** — button ships
+    countless (plan 1.1-02 ES-1).
+85. **No-results recovery: did-you-mean.** Misspelled query with no hits shows "Did you mean
+    <correction>?" which runs the corrected query on click. **KNOWN FAIL today** — no
+    suggester/contract support (folded into plan 04-04 SG-1).
+86. **No-results recovery: popular searches.** The no-results state offers popular-search
+    chips drawn from the analytics query log, rendered only when the host enables it.
+    **KNOWN FAIL today** — no public endpoint for the query-log popularity data
+    (plan 04-04 SG-1).

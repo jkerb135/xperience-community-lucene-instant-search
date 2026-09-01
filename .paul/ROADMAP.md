@@ -25,7 +25,8 @@ Phases: 1 of 5 complete
 | Phase | Name | Plans | Status | Completed |
 |-------|------|-------|--------|-----------|
 | 1 | Default experience completion | 2 | Complete (2026-09-01) | 2026-09-01 |
-| 2 | Fuzzy search configuration (FZ-1) | 1 | Not started | - |
+| 1.1 | [INSERTED] Mobile composition + edge-state parity | 2 | Not started | - |
+| 2 | Fuzzy search configuration (FZ-1) | 1 | In progress (dispatched) | - |
 | 3 | Verification closure & defect burn-down | TBD | In progress (owner items) | - |
 | 4 | Remaining spec scope | 5 | Not started | - |
 | 5 | Packaging & release (spec Phase 8) | TBD | Not started | - |
@@ -45,6 +46,31 @@ Phases: 1 of 5 complete
 **Plans:**
 - [x] 01-01: TH-4 unit — merged 637045b (2026-09-01); TH-5 range-slider parity fix folded in, merged 3bfbae4
 - [x] 01-02: Host adoption pass + mockup parity check — done 2026-09-01 (HW-13/HW-14; final side-by-side delivered; residual cosmetic quirks in STATE.md deferred issues)
+
+### Phase 1.1: [INSERTED] Mobile composition + edge-state parity
+
+**Goal:** The mockup's `mobile-note` and the three edge-state artboards hold on the live demo —
+owner review 2026-09-01 found them partially unimplemented (checklist §Q items 80–86 is the
+acceptance test; KNOWN-FAIL items flip to pass as these plans ship).
+**Depends on:** Nothing hard (FZ-1 runs in parallel; contract addition in 1.1-02 must not collide
+with SG-1's later contract work — coordinate the contract regen).
+**Research:** Unlikely (gaps are diagnosed with evidence)
+
+**Scope & Plans:**
+- [ ] 1.1-01 MB-1 — mobile swap: host applies the guide's sidebar-hide half of the swap
+  (`.search-sidebar { display:none }` under 1024px — guide has it, host never adopted it), AND a
+  supported mechanism for the pagination↔load-more swap. NOT a CSS swap: `loadMore` replaces
+  `results`+`pagination` and owns `state.page`, so this needs a mount-time viewport decision —
+  design the smallest honest mechanism (host boot-time choice via `matchMedia` documented as the
+  recipe, or a library `pagination` style that degrades; decide in the unit spec) and apply it to
+  the demo. Checklist items 80–81.
+- [ ] 1.1-02 ES-1 — probe flag + counted recovery: contract gains an opt-out-of-journaling probe
+  member on `SearchRequest` (coordinated contract regen); the results widget's filtered-empty
+  state runs the unfiltered probe and renders "There are N results without them" + "Clear filters
+  and show N results"; TH-2's sheet apply button consumes the same flag for its live "Show N
+  results" preview; empty-state magnifier-slash icon per the mock; skeleton updated to match the
+  thumbnail card layout (media square + lines). Checklist items 82–84; removes the TH-2/TH-1
+  KNOWN-LIMITATIONS entries it obsoletes.
 
 ### Phase 2: Fuzzy search configuration (FZ-1)
 
@@ -92,7 +118,11 @@ Phases: 1 of 5 complete
   into one `SuggestResponse`; a group/type member on the wire `Suggestion` (contract change —
   coordinated event); recency/visitor scoping option for `QuerySuggestionService` so a "Recent
   searches" group is honest. Unlocks the currently-dead `groupLabels` config in both suggestion
-  consumers; demo then wires the grouped panel the mockup shows.
+  consumers; demo then wires the grouped panel the mockup shows. EXTENDED 2026-09-01 (owner
+  edge-state mock review, checklist items 85–86): also "Did you mean" on the no-results state
+  (Lucene spellcheck/suggester + contract member + widget rendering; corrected query runs on
+  click) and "Popular searches" chips (public endpoint over the analytics query log, host
+  opt-in section) — both live on the NO RESULTS–WITH RECOVERY artboard.
 - IX-1 — indexing field API (HW-14 gap 4, an API defect): `XpSearchIndexingOptions.AddField`
   (or schema registration from `ContributeAsync`) so contributed fields reach the schema and
   the wire without the `IContentTypeFieldSource` decorator workaround the sample host ships;
