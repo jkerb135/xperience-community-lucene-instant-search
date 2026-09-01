@@ -11,6 +11,7 @@ using XpSearch.Admin.Tuning;
 using XpSearch.Admin.UIPages;
 using XpSearch.Admin.UIPages.Experiments;
 using XpSearch.Admin.UIPages.RuleBuilder;
+using XpSearch.Core.Popularity;
 using XpSearch.Core.Tuning;
 
 [assembly: UIPage(
@@ -191,17 +192,20 @@ public abstract class RuleListingBase : ListingPage
 /// <summary>Lists the live relevance rules of one index (spec §8.1).</summary>
 public class RuleListing : RuleListingBase
 {
+    private readonly IInfoProvider<XpSearchPopularitySuggestionInfo> suggestions;
+
     /// <summary>Initializes a new instance of the <see cref="RuleListing"/> class.</summary>
     /// <param name="storageService">Reads the stored index configuration, to resolve the index in the URL.</param>
     /// <param name="contactGroups">Resolves a stored contact group code name to what the marketer named it.</param>
     /// <param name="provider">Provider of rule objects, to check what a delete would remove.</param>
+    /// <param name="suggestions">Provider of suggested rules, counted for the banner that points at them (RK-1).</param>
     public RuleListing(
         ILuceneConfigurationStorageService storageService,
         IContactGroupCatalog contactGroups,
-        IInfoProvider<XpSearchRuleInfo> provider)
-        : base(storageService, contactGroups, provider)
-    {
-    }
+        IInfoProvider<XpSearchRuleInfo> provider,
+        IInfoProvider<XpSearchPopularitySuggestionInfo> suggestions)
+        : base(storageService, contactGroups, provider) =>
+        this.suggestions = suggestions;
 
     /// <summary>Deletes one live rule.</summary>
     /// <param name="id">The identifier of the row to delete.</param>
@@ -212,10 +216,33 @@ public class RuleListing : RuleListingBase
     /// <inheritdoc />
     protected override void ConfigureActions()
     {
+        int pending = PendingSuggestions();
+
+        if (pending > 0)
+        {
+            PageConfiguration.Callouts =
+            [
+                new CalloutConfiguration
+                {
+                    Headline = pending == 1 ? "1 suggested rule is waiting" : $"{pending} suggested rules are waiting",
+                    Content = "The popularity task found queries where one result clearly wins the clicks. "
+                        + "Open Suggestions in the menu to approve or dismiss them; nothing is applied until you do.",
+                    ContentAsHtml = false,
+                }
+            ];
+        }
+
         PageConfiguration.HeaderActions.AddLink<RuleCreate>("New rule", parameters: IndexScope.Route(IndexIdentifier));
+        PageConfiguration.HeaderActions.AddLink<PopularitySuggestionListing>("Suggestions", parameters: IndexScope.Route(IndexIdentifier));
         PageConfiguration.AddEditRowAction<RuleEdit>(parameters: IndexScope.Route(IndexIdentifier));
         PageConfiguration.TableActions.AddDeleteAction(nameof(Delete), "Delete");
     }
+
+    private int PendingSuggestions() =>
+        suggestions.Get()
+            .WhereEquals(nameof(XpSearchPopularitySuggestionInfo.SuggestionIndexName), IndexName)
+            .WhereEquals(nameof(XpSearchPopularitySuggestionInfo.SuggestionState), (int)PopularitySuggestionState.Pending)
+            .Count;
 }
 
 /// <summary>Lists the relevance rules of an experiment's variant B (XP-1).</summary>

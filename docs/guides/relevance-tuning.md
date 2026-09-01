@@ -425,6 +425,11 @@ usually deserves more than a match halfway down a body of text.
 Start small. Move one field to `2` or `3`, look at the results, then adjust. Weights of 20 tend to
 turn search into "whatever has the word in the title", which is rarely what anyone wanted.
 
+The header of this page also carries **Boost by popularity**, the index-wide opt-in that lets the
+results your visitors click most rank a little higher — off by default, and explained in
+[Popularity boosts](popularity-boosts.md). The same feature is where the *Suggestions* page next to
+**Rules** comes from.
+
 ### Finding a result id
 
 You should not have to. Pin, hide, bury and boost point at an item through the panel's item picker,

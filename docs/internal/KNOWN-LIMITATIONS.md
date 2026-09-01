@@ -955,3 +955,43 @@ and how to lift it.
   ranges, doubled. There is no paging or aggregation in SQL.
 - **Upgrade path:** push the experiment and variant filter into `IQueryLogStore.ReadAsync`, then into a
   `GROUP BY` that returns the four totals rather than the rows - the report only ever shows totals.
+
+## The popularity signal learns from the ranking that produced it, in `PopularityAggregator.Aggregate`
+
+- **Simplified:** the only evidence is clicks that actually happened, so a document that never
+  appeared on page one can never earn a boost. `Damp` (`log2(position + 1)`) is a crude
+  inverse-propensity correction: it values a click further down the list more, which is the cheapest
+  honest defence against the feedback loop, but it does not model what a visitor actually saw.
+- **Ceiling:** popularity entrenches what is already popular, and a new document starts from zero -
+  a rich-get-richer bias that grows the longer the boost is on. There is no exploration, no
+  impression data, and no significance test anywhere: the cap (2x) and the opt-in flag are what keep
+  the damage bounded.
+- **Upgrade path:** log impressions (which ids were returned for which query) alongside the clicks,
+  then compute a click-through *rate* per (query, document) instead of a click count, and reserve a
+  small share of traffic for exploration. Both need a contract change on the events endpoint.
+
+## The task reads the whole lookback window into memory, in `XpSearchPopularityTask.Execute`
+
+- **Simplified:** one `IQueryLogStore.ReadAsync` for every index and the whole window, grouped in
+  memory - the same read-once shape `SearchAnalyticsService` uses, so the two can never disagree about
+  what a click is. Storage is written per index with row-by-row info-provider calls and no
+  transaction; a run that dies halfway leaves some indexes on the previous signal.
+- **Ceiling:** a busy site with a long lookback holds a month of query log rows at once during the
+  run. A crash between an index's score delete and its inserts leaves that index with an empty signal
+  (no boost) until the next run - degraded, never wrong.
+- **Upgrade path:** page `ReadAsync` by index and by day, or move the aggregation into a `GROUP BY`
+  over `LogClickedResultID`; wrap each index's replace in a `CMSTransactionScope`.
+
+## The boost is one SHOULD clause per scored document, in `PopularityBoostStage`
+
+- **Simplified:** the signal is capped at `PopularityDocumentLimit` (100) documents per index and each
+  one becomes a `TermQuery` on the document id with its factor, exactly like `BoostRulesStage` applies
+  a rule's boost. Lucene adds that clause's score rather than multiplying the hit's, so "2x" is a
+  bound on the boost clause, not a literal doubling of the final score.
+- **Ceiling:** raising the limit grows every query of that index by one clause per document, and the
+  effect of a factor depends on the query's own score scale - a boost is worth relatively more on a
+  weak text match than on a strong one. Popularity can therefore reorder near-ties confidently and
+  barely move a decisive text match, which is the intended bias but is not a promise.
+- **Upgrade path:** a custom `Rescorer` (Lucene 4.8 has `QueryRescorer`) over the top-N hits would
+  multiply the score instead of adding to it and would cost one clause instead of a hundred; it
+  needs `ExecuteSearchStage` to expose the collector.

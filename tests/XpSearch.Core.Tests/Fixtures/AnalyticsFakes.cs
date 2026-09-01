@@ -14,7 +14,7 @@ internal sealed class InMemoryQueryLogStore : IQueryLogStore
         return Task.CompletedTask;
     }
 
-    public Task<bool> SetClickedPositionAsync(string queryId, int position, CancellationToken cancellationToken)
+    public Task<bool> SetClickAsync(string queryId, int position, string resultId, CancellationToken cancellationToken)
     {
         int index = Rows.FindIndex(row => string.Equals(row.QueryId, queryId, StringComparison.Ordinal));
 
@@ -23,7 +23,11 @@ internal sealed class InMemoryQueryLogStore : IQueryLogStore
             return Task.FromResult(false);
         }
 
-        Rows[index] = Rows[index] with { ClickedPosition = position };
+        Rows[index] = Rows[index] with
+        {
+            ClickedPosition = position,
+            ClickedResultId = string.IsNullOrEmpty(resultId) ? null : resultId
+        };
 
         return Task.FromResult(true);
     }

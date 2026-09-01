@@ -40,6 +40,7 @@ public sealed class InfoQueryLogStore : IQueryLogStore
             LogLanguage = entry.Language,
             LogProcessingTimeMs = entry.ProcessingTimeMs,
             LogClickedPosition = entry.ClickedPosition ?? 0,
+            LogClickedResultID = entry.ClickedResultId ?? string.Empty,
             LogExperimentID = entry.ExperimentId,
             LogVariant = entry.Variant ?? string.Empty
         });
@@ -48,7 +49,7 @@ public sealed class InfoQueryLogStore : IQueryLogStore
     }
 
     /// <inheritdoc />
-    public async Task<bool> SetClickedPositionAsync(string queryId, int position, CancellationToken cancellationToken)
+    public async Task<bool> SetClickAsync(string queryId, int position, string resultId, CancellationToken cancellationToken)
     {
         var rows = await provider.Get()
             .WhereEquals(nameof(XpSearchQueryLogInfo.LogQueryID), queryId)
@@ -64,6 +65,7 @@ public sealed class InfoQueryLogStore : IQueryLogStore
         }
 
         row.LogClickedPosition = position;
+        row.LogClickedResultID = resultId ?? string.Empty;
         provider.Set(row);
 
         return true;
@@ -120,5 +122,6 @@ public sealed class InfoQueryLogStore : IQueryLogStore
             row.LogProcessingTimeMs,
             row.LogClickedPosition > 0 ? row.LogClickedPosition : null,
             row.LogExperimentID > 0 ? row.LogExperimentID : null,
-            string.IsNullOrEmpty(row.LogVariant) ? null : row.LogVariant);
+            string.IsNullOrEmpty(row.LogVariant) ? null : row.LogVariant,
+            string.IsNullOrEmpty(row.LogClickedResultID) ? null : row.LogClickedResultID);
 }

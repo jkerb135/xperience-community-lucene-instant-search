@@ -10,6 +10,7 @@ using XpSearch.Core.Options;
 using XpSearch.Core.Personalization;
 using XpSearch.Core.Pipeline;
 using XpSearch.Core.Pipeline.Stages;
+using XpSearch.Core.Popularity;
 
 namespace XpSearch.Core.Caching;
 
@@ -38,6 +39,7 @@ public sealed class CachedSearchPipeline : ISearchPipeline
     private readonly IContactGroupResolver contactGroups;
     private readonly IExperimentAssignmentResolver experiments;
     private readonly ISearchRequestJournal journal;
+    private readonly IPopularitySignalStore popularity;
 
     /// <summary>Initializes a new instance of the <see cref="CachedSearchPipeline"/> class.</summary>
     /// <param name="inner">The pipeline that does the work on a cache miss.</param>
@@ -54,13 +56,20 @@ public sealed class CachedSearchPipeline : ISearchPipeline
     /// reaches the stage that resolves it. The answer is memoized for the request.
     /// </param>
     /// <param name="journal">Records the answered search for analytics.</param>
+    /// <param name="popularity">
+    /// Supplies the popularity signal version of the index (RK-1). Asked here because a cache hit
+    /// never reaches the boost stage, and a response boosted by one run of the signal must not be
+    /// served after the next one; an index that has not opted in reports version zero, which changes
+    /// no key at all.
+    /// </param>
     public CachedSearchPipeline(
         ISearchPipeline inner,
         ISearchCache cache,
         IOptions<XpSearchOptions> options,
         IContactGroupResolver contactGroups,
         IExperimentAssignmentResolver experiments,
-        ISearchRequestJournal journal)
+        ISearchRequestJournal journal,
+        IPopularitySignalStore popularity)
     {
         ArgumentNullException.ThrowIfNull(inner);
         ArgumentNullException.ThrowIfNull(cache);
@@ -68,7 +77,9 @@ public sealed class CachedSearchPipeline : ISearchPipeline
         ArgumentNullException.ThrowIfNull(contactGroups);
         ArgumentNullException.ThrowIfNull(experiments);
         ArgumentNullException.ThrowIfNull(journal);
+        ArgumentNullException.ThrowIfNull(popularity);
 
+        this.popularity = popularity;
         this.inner = inner;
         this.cache = cache;
         this.options = options.Value;
@@ -99,8 +110,9 @@ public sealed class CachedSearchPipeline : ISearchPipeline
         }
 
         var groups = await contactGroups.GetContactGroupsAsync(cancellationToken).ConfigureAwait(false);
+        var signal = await popularity.GetSignalAsync(request.Index, cancellationToken).ConfigureAwait(false);
 
-        string key = SearchCacheKey.Compute(request, queryText, groups, experiment);
+        string key = SearchCacheKey.Compute(request, queryText, groups, experiment, signal.Version);
 
         var cached = await cache
             .GetOrAddAsync(request.Index, key, token => inner.ExecuteAsync(request, token), cancellationToken)

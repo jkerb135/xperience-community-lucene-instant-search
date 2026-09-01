@@ -113,3 +113,28 @@ sidebar label **Edit index** — old `/tuning/` bookmarks 500.
     DB round trip is the XP-1a logic that unit tests could not cover - this is its verification.)
 40. Started experiment: variant-B editors are read-only (listings show rows, no actions; direct
     save/delete attempts refused).
+
+## J. RK-1 popularity boosts (added 2026-09-01)
+41. Startup after rebuild: event log clean; the three XpSearch_Popularity* tables exist and
+    XpSearch_QueryLog gained the nullable LogClickedResultID column (existing rows untouched).
+42. Click tracking writes it: search on /search, click a result, then check the query log row for
+    that queryId - LogClickedResultID holds the clicked result id, LogClickedPosition its position.
+43. Scheduled task: create the `XpSearch.PopularitySignal` configuration per the guide and run it
+    once. Last result reads "Popularity computed for N documents across M indexes ...";
+    XpSearch_PopularityScore holds N rows and XpSearch_PopularityIndex one row per index with
+    the computed-at stamp. (These DB round trips are the RK-1 logic unit tests could not cover.)
+44. Idempotence: run the task a second time - the score row COUNT stays the same (rows replaced,
+    not appended) and the computed-at stamp moves.
+45. Off by default: with the task run but the index NOT opted in, /search results and the cached
+    responses are unchanged, and `explain: true` shows no popularity entry.
+46. Opt in on Field weights (header action): the callout flips to "on", `explain: true` now lists
+    "Popularity boost from N document(s), up to 2.0x (signal ...)", and a clicked-heavily document
+    ranks higher than before. Toggling back off restores the previous order without a restart.
+47. Cache: after opting in, run the task again - the next identical search is served from a fresh
+    response (the signal version changed the key), and an index that is opted OUT keeps its cache.
+48. Suggestions: with enough clicks on one query for one document (5+, majority), the run fills the
+    Suggestions page; the Rules page shows the "suggested rules are waiting" banner and links to it.
+49. Approve one - an ordinary rule "Popular for '<query>'" appears in Rules, editable and deletable,
+    and it applies to /search. Dismiss another. Run the task again: neither reappears.
+50. Experiment boundary: with an experiment running, both A- and B-bucketed browsers see the same
+    popularity boost, and the Suggestions page exists only for the live tuning.

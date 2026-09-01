@@ -12,6 +12,11 @@ namespace XpSearch.Core.Analytics;
 /// <param name="ClickedPosition">One-based position of the clicked result, or <see langword="null"/>.</param>
 /// <param name="ExperimentId">Identifier of the experiment that answered the search, or <see langword="null"/> (XP-1).</param>
 /// <param name="Variant">Variant the visitor was bucketed into, or <see langword="null"/> when no experiment ran.</param>
+/// <param name="ClickedResultId">
+/// Result id of the clicked document, or <see langword="null"/>. It is what makes the click evidence
+/// attributable to a document, which is all the popularity signal is built from (RK-1); the
+/// <c>xpsearch_click</c> activity carries the same id but is consent-gated and per contact.
+/// </param>
 public sealed record QueryLogEntry(
     string QueryId,
     string IndexName,
@@ -23,7 +28,8 @@ public sealed record QueryLogEntry(
     int ProcessingTimeMs,
     int? ClickedPosition = null,
     int? ExperimentId = null,
-    string? Variant = null);
+    string? Variant = null,
+    string? ClickedResultId = null);
 
 /// <summary>
 /// Reads and writes the aggregate query log. Nothing here is personal data, so it works the same for
@@ -40,9 +46,10 @@ public interface IQueryLogStore
     /// <summary>Records which result was clicked on an already logged search.</summary>
     /// <param name="queryId">Correlation id of the search.</param>
     /// <param name="position">One-based position of the clicked result.</param>
+    /// <param name="resultId">Result id of the clicked document, or an empty string when the client sent none.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns><see langword="true"/> when a row was updated, <see langword="false"/> when the id is unknown.</returns>
-    Task<bool> SetClickedPositionAsync(string queryId, int position, CancellationToken cancellationToken);
+    Task<bool> SetClickAsync(string queryId, int position, string resultId, CancellationToken cancellationToken);
 
     /// <summary>Reads the rows of one index in a time range, oldest first.</summary>
     /// <param name="indexName">Code name of the index, or an empty string for every index.</param>
