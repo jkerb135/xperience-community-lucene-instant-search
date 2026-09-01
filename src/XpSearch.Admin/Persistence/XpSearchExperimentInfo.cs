@@ -61,7 +61,9 @@ public class XpSearchExperimentInfo : AbstractInfo<XpSearchExperimentInfo, IInfo
             null,
             nameof(ExperimentGuid),
             null,
-            null,
+            // Display name column: EditSectionPage names the breadcrumb and the sidebar section from
+            // the object's display name, which without this falls back to the code name and then the GUID.
+            nameof(ExperimentDisplayName),
             null,
             null,
             null)

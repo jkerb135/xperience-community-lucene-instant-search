@@ -12,6 +12,12 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Fixed (admin):** an experiment's breadcrumb and sidebar section header showed its GUID instead of
+  its name on the experiment detail page and every variant-scoped tuning page. `XpSearchExperimentInfo`
+  declared no display name column, so Xperience resolved the object's display name through its code
+  name column (absent too) down to the GUID column; the type now names itself by
+  `ExperimentDisplayName`. Code-side type metadata over an existing column — no schema change.
+
 - **Added (docs):** a screenshot-led tour of the administration surface,
   [Administration UI tour](docs/guides/admin-ui-tour.md) — how the per-index tuning pages are grafted
   onto the Lucene integration's index listing (**Lucene Search → List of registered Lucene indices →
