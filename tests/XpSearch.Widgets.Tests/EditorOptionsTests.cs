@@ -11,7 +11,7 @@ using XpSearch.Widgets.Components.Widgets.XpSearch;
 using XpSearch.Widgets.Mounting;
 using XpSearch.Widgets.Options;
 using XpSearch.Widgets.Sorting;
-using XpSearch.Widgets.Templates;
+using XpSearch.Core.Rendering;
 
 [assembly: RegisterSearchResultTemplate(
     "XpSearch.Tests.ProductCard",

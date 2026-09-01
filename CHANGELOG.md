@@ -8,6 +8,41 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Added (core):** server-rendered first paint is a `XpSearch.Core` capability, not a Page Builder one.
+  `AddXpSearch()` registers `ServerRenderedResults` and the result template registry, so a host that
+  builds its search UI in plain JavaScript against the npm package can inject `ServerRenderedResults`
+  into its own Razor page, render the visitor's first search into its own element and hand the
+  returned `QueryId` to `createSearch` (`initialQueryId`, unchanged since it shipped). Without a
+  result partial, Core emits a built-in card whose markup matches the client's default item template
+  (`themes/MARKUP.md`); the Results widget still renders through the `_Result.cshtml` partial of
+  `XpSearch.Widgets`, which it now passes as `ServerResultsOptions.DefaultViewPath`. New guide:
+  [Server rendering and the mount contract](docs/guides/server-rendering.md).
+
+- **Added (docs):** the widget **mount contract** — `class="xps-mount"`, `data-xps-widget`,
+  `data-xps-instance`, `data-xps-instance-config`, `data-xps-config` — is documented as **stable**: a
+  Page Builder widget mount hydrates from either the tag-helper bundle or a host's own bundle
+  importing `@xperience-community/xperience-search`. From this release on, a change to the mount
+  markup or to any config key is a breaking change and is recorded here as one.
+
+- **Breaking (core, widgets):** the server-rendering primitives moved from `XpSearch.Widgets` to
+  `XpSearch.Core`, namespace `XpSearch.Core.Rendering`. Type and member names are unchanged; update
+  the `using` (there are no type forwarders). `AddXpSearchWidgets()` no longer registers these
+  services itself — call it next to `AddXpSearch()`, as it always documented.
+
+  | Type | Was | Now |
+  |---|---|---|
+  | `SearchQueryState` | `XpSearch.Widgets.Rendering` | `XpSearch.Core.Rendering` |
+  | `ServerRenderedResults` | `XpSearch.Widgets.Rendering` | `XpSearch.Core.Rendering` |
+  | `ServerResultsOptions` | `XpSearch.Widgets.Rendering` | `XpSearch.Core.Rendering` |
+  | `ServerResultsRender` | `XpSearch.Widgets.Rendering` | `XpSearch.Core.Rendering` |
+  | `ISearchResultTemplateRegistry` | `XpSearch.Widgets.Templates` | `XpSearch.Core.Rendering` |
+  | `SearchResultTemplateRegistry` | `XpSearch.Widgets.Templates` | `XpSearch.Core.Rendering` |
+  | `RegisterSearchResultTemplateAttribute` | `XpSearch.Widgets.Templates` | `XpSearch.Core.Rendering` |
+  | `SearchResultTemplate` | `XpSearch.Widgets.Templates` | `XpSearch.Core.Rendering` |
+  | `SearchResultViewModel` | `XpSearch.Widgets.Templates` | `XpSearch.Core.Rendering` |
+
+  `ServerResultsOptions` also takes a new optional last parameter, `DefaultViewPath`.
+
 - **Fixed (admin):** in the rule builder's action side panel, **Add row** in the attribute + value
   editor did nothing, and picking an attribute erased the row again (Filter results, and the
   "matching" variant of Boost and Bury). The panel kept its rows only as the stored

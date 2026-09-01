@@ -3,6 +3,20 @@
 Intentional simplifications, one entry each: where it lives, what was simplified, the ceiling it hits,
 and how to lift it.
 
+## `ServerRenderedResults.DefaultCard` in `XpSearch.Core/Rendering/ServerRenderedResults.cs`
+
+- **Simplified:** the fallback card a host without a result partial gets is emitted as string literals
+  in C#. `XpSearch.Core` is a plain library, not a Razor class library, and turning it into one to
+  ship a single `_Result.cshtml` costs every consumer the Razor SDK; PK-2 was explicitly not allowed
+  to add package references either.
+- **Ceiling:** the default card's markup now exists three times — this method, the widgets'
+  `_Result.cshtml`, and the client's `templates.item` — and the three have to be changed together, with
+  only tests (`ServerRenderedResultsTests` in the Core and Widgets suites, `widgets.test.ts`) and
+  `themes/MARKUP.md` holding them in step.
+- **Upgrade path:** if the markup starts drifting, generate all three from `themes/MARKUP.md`, or make
+  Core's Razor class library a fourth package (`XperienceCommunity.Search.Views`) that both Widgets
+  and plain hosts reference.
+
 ## Hierarchical facets in `XpSearchIndexingStrategy.AddTags` and `TaxonomyFacetProvider`
 
 - **Simplified:** a tag's ancestors are resolved **when the document is indexed** (ADR-0018) and

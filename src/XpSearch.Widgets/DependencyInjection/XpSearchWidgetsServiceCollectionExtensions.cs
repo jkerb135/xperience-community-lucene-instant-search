@@ -2,8 +2,6 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 using XpSearch.Widgets.Mounting;
 using XpSearch.Widgets.Options;
-using XpSearch.Widgets.Rendering;
-using XpSearch.Widgets.Templates;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -13,9 +11,10 @@ namespace Microsoft.Extensions.DependencyInjection;
 public static class XpSearchWidgetsServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers the mount renderer, the editor-mode seam, the index catalog and the result template
-    /// registry. Call it next to <c>AddXpSearch()</c>; the widgets themselves register through their
-    /// <c>RegisterWidget</c> assembly attributes.
+    /// Registers the mount renderer, the editor-mode seam and the index catalog. Call it next to
+    /// <c>AddXpSearch()</c>, which registers the rendering services the widgets use (the result
+    /// template registry and the server-rendered first paint); the widgets themselves register
+    /// through their <c>RegisterWidget</c> assembly attributes.
     /// </summary>
     /// <param name="services">The service collection. <c>AddXpSearch</c> must also be called on it.</param>
     /// <returns>The same collection, for chaining.</returns>
@@ -27,9 +26,6 @@ public static class XpSearchWidgetsServiceCollectionExtensions
         services.TryAddSingleton<IXpSearchMountRenderer, XpSearchMountRenderer>();
         services.TryAddSingleton<IXpSearchEditorContext, KenticoEditorContext>();
         services.TryAddSingleton<IXpSearchIndexCatalog, LuceneIndexCatalog>();
-        services.TryAddSingleton<ISearchResultTemplateRegistry, SearchResultTemplateRegistry>();
-        // Scoped: it runs a search through the pipeline, which is scoped.
-        services.TryAddScoped<ServerRenderedResults>();
 
         return services;
     }

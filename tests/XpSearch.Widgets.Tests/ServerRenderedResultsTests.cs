@@ -16,21 +16,21 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-using XpSearch.Core.Abstractions;
 using XpSearch.Core.Contract;
 using XpSearch.Core.Pipeline;
+using XpSearch.Core.Rendering;
 using XpSearch.Widgets.Components.Widgets.XpSearch;
 using XpSearch.Widgets.Mounting;
-using XpSearch.Widgets.Rendering;
-using XpSearch.Widgets.Templates;
 
 using NUnit.Framework;
 
 namespace XpSearch.Widgets.Tests;
 
 /// <summary>
-/// The server-rendered first paint of the results widget (spec §5.8): the widget's own search, run
-/// through the same pipeline as the public endpoint, rendered into the mount element.
+/// The Results widget's use of the Core first paint (spec §5.8): the search runs inside the mount
+/// element, never in the Page Builder, it renders through this library's <c>_Result.cshtml</c>
+/// partial, and what the server did is handed to the client. The renderer itself is covered by
+/// <c>XpSearch.Core.Tests.ServerRenderedResultsTests</c>.
 /// </summary>
 [TestFixture]
 internal sealed class ServerRenderedResultsTests
@@ -56,162 +56,14 @@ internal sealed class ServerRenderedResultsTests
     public void TearDown() => provider.Dispose();
 
     [Test]
-    public async Task It_renders_one_card_per_result_inside_a_server_rendered_block()
+    public void AddXpSearchWidgets_next_to_AddXpSearch_registers_the_rendering_services_once()
     {
-        string html = (await RenderAsync(new FakePipeline(TwoResults())))!;
+        var services = new ServiceCollection().AddXpSearch().AddXpSearchWidgets();
 
         Expect.Multiple(() =>
         {
-            Assert.That(html, Does.StartWith("<div data-xps-server-rendered class=\"xps xps-results\"><ol class=\"xps-results__list\">"));
-            Assert.That(html, Does.Contain("<li class=\"xps-results__item\">"));
-            Assert.That(html.Split("<article class=\"xps-result\">"), Has.Length.EqualTo(3));
-            Assert.That(html, Does.Contain("href=\"/blog/espresso\""));
-            // The highlighted form wins and keeps the shell's class, exactly like the JS template.
-            Assert.That(html, Does.Contain("Choosing an <mark class=\"xps-highlight\">espresso</mark> machine"));
-            Assert.That(html, Does.Contain("<li class=\"xps-result__meta-item\">Article</li>"));
-            Assert.That(html, Does.Contain("<img class=\"xps-result__image\" src=\"/img/1.png\""));
-            // Second result: no image, no highlight, no content type - those blocks are omitted.
-            Assert.That(html, Does.Contain("Descaling &lt;b&gt;your&lt;/b&gt; machine"));
-            Assert.That(html, Does.Not.Contain("<b>your</b>"));
-        });
-    }
-
-    [Test]
-    public async Task The_editors_page_size_fields_and_the_visitors_URL_state_reach_the_pipeline()
-    {
-        var pipeline = new FakePipeline(TwoResults());
-
-        await RenderAsync(
-            pipeline,
-            options => options with { ResultsPerPage = 12, Fields = ["title", "url"] },
-            queryString: "?q=espresso&page=3&tags=coffee");
-
-        var request = pipeline.Requests.Single();
-        Expect.Multiple(() =>
-        {
-            Assert.That(request.Index, Is.EqualTo("site-content"));
-            Assert.That(request.PageSize, Is.EqualTo(12));
-            Assert.That(request.Fields, Is.EqualTo(new[] { "title", "url" }));
-            Assert.That(request.Query, Is.EqualTo("espresso"));
-            Assert.That(request.Page, Is.EqualTo(3));
-            Assert.That(request.Filters!.Facets!.Single().Values, Is.EqualTo(new[] { "coffee" }));
-        });
-    }
-
-    [Test]
-    public async Task A_query_param_that_is_not_an_attribute_of_the_index_is_not_a_filter()
-    {
-        var pipeline = new FakePipeline(TwoResults());
-        var schema = new IndexSchema(
-            "site-content",
-            [new SchemaField("tags", SearchFieldKind.Taxonomy, false, true, false, true)]);
-
-        // `uh` is Kentico's preview parameter: adopting it made the query endpoint answer 400.
-        await RenderAsync(pipeline, queryString: "?q=espresso&uh=abc123&tags=coffee", schemas: new FakeSchemas(schema));
-
-        var filters = pipeline.Requests.Single().Filters!;
-        Assert.That(filters.Facets!.Single().Attribute, Is.EqualTo("tags"));
-    }
-
-    [Test]
-    public async Task An_unreadable_schema_still_renders_and_logs_a_warning()
-    {
-        var log = new CapturingLogger();
-        var pipeline = new FakePipeline(TwoResults());
-
-        string? html = await RenderAsync(
-            pipeline,
-            logger: log,
-            queryString: "?tags=coffee",
-            schemas: new FakeSchemas(new InvalidOperationException("no such index")));
-
-        Expect.Multiple(() =>
-        {
-            Assert.That(log.Warnings.Single(), Does.Contain("schema of index"));
-            Assert.That(pipeline.Requests.Single().Filters!.Facets!.Single().Attribute, Is.EqualTo("tags"));
-            Assert.That(html, Does.Contain("<article class=\"xps-result\">"));
-        });
-    }
-
-    [Test]
-    public async Task The_attribute_overrides_choose_what_a_card_shows()
-    {
-        string html = (await RenderAsync(
-            new FakePipeline(TwoResults()),
-            options => options with
-            {
-                TitleAttribute = "heading",
-                UrlAttribute = "permalink",
-                SnippetAttributes = ["teaser"]
-            }))!;
-
-        Expect.Multiple(() =>
-        {
-            Assert.That(html, Does.Contain("href=\"/permalink/1\""));
-            Assert.That(html, Does.Contain(">Heading one</a>"));
-            Assert.That(html, Does.Contain("<p class=\"xps-result__snippet\">A teaser.</p>"));
-            Assert.That(html, Does.Not.Contain("A dual-boiler"));
-        });
-    }
-
-    [Test]
-    public async Task An_empty_result_set_renders_the_empty_state()
-    {
-        string html = (await RenderAsync(new FakePipeline(new SearchResponse { Results = [] })))!;
-
-        Assert.That(html, Is.EqualTo(
-            "<div data-xps-server-rendered class=\"xps xps-results xps-results--empty\">"
-            + "<div class=\"xps-results__empty\"><p>No results.</p></div></div>"));
-    }
-
-    [Test]
-    public async Task A_failing_search_leaves_an_empty_mount_and_a_logged_warning()
-    {
-        var log = new CapturingLogger();
-
-        string? content = await RenderAsync(new FakePipeline(new InvalidOperationException("index is gone")), logger: log);
-
-        Expect.Multiple(() =>
-        {
-            Assert.That(content, Is.Null, "a broken search must not break the page");
-            Assert.That(log.Warnings.Single(), Does.Contain("could not be rendered on the server"));
-        });
-    }
-
-    [Test]
-    public async Task An_unregistered_template_falls_back_to_the_default_card_with_a_warning()
-    {
-        var log = new CapturingLogger();
-
-        string? html = await RenderAsync(
-            new FakePipeline(TwoResults()),
-            options => options with { TemplateIdentifier = "MyCompany.Missing" },
-            log);
-
-        Expect.Multiple(() =>
-        {
-            Assert.That(log.Warnings.Single(), Does.Contain("MyCompany.Missing"));
-            Assert.That(html, Does.Contain("<article class=\"xps-result\">"));
-        });
-    }
-
-    [Test]
-    public async Task A_registered_template_whose_view_is_missing_falls_back_to_the_default_card()
-    {
-        var log = new CapturingLogger();
-        var registry = new FakeTemplateRegistry(
-            new SearchResultTemplate("MyCompany.ProductCard", "Product card", "~/Views/Nowhere/_Card.cshtml", []));
-
-        string? html = await RenderAsync(
-            new FakePipeline(TwoResults()),
-            options => options with { TemplateIdentifier = "MyCompany.ProductCard" },
-            log,
-            registry);
-
-        Expect.Multiple(() =>
-        {
-            Assert.That(log.Warnings.Single(), Does.Contain("_Card.cshtml"));
-            Assert.That(html, Does.Contain("<article class=\"xps-result\">"));
+            Assert.That(services.Count(descriptor => descriptor.ServiceType == typeof(ServerRenderedResults)), Is.EqualTo(1));
+            Assert.That(services.Count(descriptor => descriptor.ServiceType == typeof(ISearchResultTemplateRegistry)), Is.EqualTo(1));
         });
     }
 
@@ -219,18 +71,7 @@ internal sealed class ServerRenderedResultsTests
     public async Task The_results_widget_renders_the_block_inside_its_mount_element_and_never_in_the_Page_Builder()
     {
         var editor = new FakeEditorContext(XpSearchEditorMode.Live);
-        var component = new ResultsWidgetViewComponent(
-            new XpSearchMountRenderer(),
-            editor,
-            new FakeIndexCatalog("site-content"),
-            new ServerRenderedResults(
-                new FakePipeline(TwoResults()),
-                provider.GetRequiredService<ICompositeViewEngine>(),
-                new FakeTemplateRegistry(),
-                new CapturingLogger()))
-        {
-            ViewComponentContext = new ViewComponentContext { ViewContext = ViewContext("?q=espresso") }
-        };
+        var component = ResultsWidget(new FakePipeline(TwoResults()), editor);
 
         var properties = new ResultsWidgetProperties { Index = "site-content" };
         var live = await component.BuildModelAsync(properties, CancellationToken.None).ConfigureAwait(false);
@@ -241,6 +82,10 @@ internal sealed class ServerRenderedResultsTests
             Assert.That(markup, Does.StartWith("<div class=\"xps-mount\""));
             Assert.That(markup, Does.Contain("<div data-xps-server-rendered"));
             Assert.That(markup, Does.Contain("<article class=\"xps-result\">"));
+            Assert.That(markup, Does.Contain("href=\"/blog/espresso\""));
+            // The card came from this library's Razor partial, not from the C# fallback Core emits
+            // for a host without it: the partial's markup is laid out over several lines.
+            Assert.That(markup, Does.Not.Contain("<article class=\"xps-result\"><div"));
             Assert.That(markup, Does.EndWith("</div>"));
         });
 
@@ -291,10 +136,10 @@ internal sealed class ServerRenderedResultsTests
         });
     }
 
-    private ResultsWidgetViewComponent ResultsWidget(ISearchPipeline pipeline) =>
+    private ResultsWidgetViewComponent ResultsWidget(ISearchPipeline pipeline, IXpSearchEditorContext? editor = null) =>
         new(
             new XpSearchMountRenderer(),
-            new FakeEditorContext(XpSearchEditorMode.Live),
+            editor ?? new FakeEditorContext(XpSearchEditorMode.Live),
             new FakeIndexCatalog("site-content"),
             new ServerRenderedResults(
                 pipeline,
@@ -307,7 +152,7 @@ internal sealed class ServerRenderedResultsTests
 
     private static SearchResponse TwoResults() => new()
     {
-        Total = 2,
+        Total = 1,
         Page = 1,
         PageSize = 10,
         QueryId = "server-query-1",
@@ -317,57 +162,11 @@ internal sealed class ServerRenderedResultsTests
             new Result
             {
                 Id = "doc-1",
-                Attributes = Attributes(
-                    """
-                    {
-                        "title": "Choosing an espresso machine",
-                        "heading": "Heading one",
-                        "url": "/blog/espresso",
-                        "permalink": "/permalink/1",
-                        "summary": "A dual-boiler machine holds temperature.",
-                        "teaser": "A teaser.",
-                        "contentType": "Article",
-                        "image": "/img/1.png"
-                    }
-                    """),
-                Highlights = new Dictionary<string, string>(StringComparer.Ordinal)
-                {
-                    ["title"] = "Choosing an <mark>espresso</mark> machine"
-                }
-            },
-            new Result
-            {
-                Id = "doc-2",
-                Attributes = Attributes("""{ "title": "Descaling <b>your</b> machine", "url": "/support/descaling" }""")
+                Attributes = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(
+                    """{ "title": "Choosing an espresso machine", "url": "/blog/espresso" }""")!
             }
         ]
     };
-
-    private static Dictionary<string, JsonElement> Attributes(string json) =>
-        JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json)!;
-
-    private async Task<string?> RenderAsync(
-        ISearchPipeline pipeline,
-        Func<ServerResultsOptions, ServerResultsOptions>? configure = null,
-        CapturingLogger? logger = null,
-        ISearchResultTemplateRegistry? registry = null,
-        string queryString = "",
-        IIndexSchemaProvider? schemas = null)
-    {
-        var viewContext = ViewContext(queryString);
-        var renderer = new ServerRenderedResults(
-            pipeline,
-            provider.GetRequiredService<ICompositeViewEngine>(),
-            registry ?? new FakeTemplateRegistry(),
-            logger ?? new CapturingLogger(),
-            schemas);
-
-        var blank = new ServerResultsOptions("site-content", 0, [], null, null, null, []);
-        var options = configure is null ? blank : configure(blank);
-        var render = await renderer.RenderAsync(viewContext, options, CancellationToken.None).ConfigureAwait(false);
-
-        return render is null ? null : Rendered.Html(render.Content);
-    }
 
     private ViewContext ViewContext(string queryString)
     {
@@ -400,46 +199,19 @@ internal sealed class ServerRenderedResultsTests
 
         public FakePipeline(Exception failure) => this.failure = failure;
 
-        public List<SearchRequest> Requests { get; } = [];
-
-        public Task<SearchResponse> ExecuteAsync(SearchRequest request, CancellationToken cancellationToken)
-        {
-            Requests.Add(request);
-
-            return failure is null ? Task.FromResult(response!) : Task.FromException<SearchResponse>(failure);
-        }
-    }
-
-    /// <summary>A schema provider that answers with a fixed schema, or throws.</summary>
-    private sealed class FakeSchemas : IIndexSchemaProvider
-    {
-        private readonly IndexSchema? schema;
-        private readonly Exception? failure;
-
-        public FakeSchemas(IndexSchema schema) => this.schema = schema;
-
-        public FakeSchemas(Exception failure) => this.failure = failure;
-
-        public Task<IndexSchema> GetSchemaAsync(string indexName, CancellationToken cancellationToken) =>
-            failure is null ? Task.FromResult(schema!) : Task.FromException<IndexSchema>(failure);
+        public Task<SearchResponse> ExecuteAsync(SearchRequest request, CancellationToken cancellationToken) =>
+            failure is null ? Task.FromResult(response!) : Task.FromException<SearchResponse>(failure);
     }
 
     private sealed class FakeTemplateRegistry : ISearchResultTemplateRegistry
     {
-        private readonly SearchResultTemplate[] templates;
+        public IReadOnlyList<SearchResultTemplate> GetTemplates() => [];
 
-        public FakeTemplateRegistry(params SearchResultTemplate[] templates) => this.templates = templates;
-
-        public IReadOnlyList<SearchResultTemplate> GetTemplates() => templates;
-
-        public SearchResultTemplate? Find(string identifier) =>
-            templates.FirstOrDefault(template => string.Equals(template.Identifier, identifier, StringComparison.OrdinalIgnoreCase));
+        public SearchResultTemplate? Find(string identifier) => null;
     }
 
     private sealed class CapturingLogger : ILogger<ServerRenderedResults>
     {
-        public List<string> Warnings { get; } = [];
-
         public IDisposable? BeginScope<TState>(TState state)
             where TState : notnull => null;
 
@@ -452,10 +224,6 @@ internal sealed class ServerRenderedResultsTests
             Exception? exception,
             Func<TState, Exception?, string> formatter)
         {
-            if (logLevel >= LogLevel.Warning)
-            {
-                Warnings.Add(formatter(state, exception));
-            }
         }
     }
 

@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Http;
 using XpSearch.Core.Abstractions;
 using XpSearch.Core.Contract;
 
-namespace XpSearch.Widgets.Rendering;
+namespace XpSearch.Core.Rendering;
 
 /// <summary>
 /// Reads the search state a visitor arrived with out of the request's query string, using the same

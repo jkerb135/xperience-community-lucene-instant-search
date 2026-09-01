@@ -1,4 +1,4 @@
-namespace XpSearch.Widgets.Templates;
+namespace XpSearch.Core.Rendering;
 
 /// <summary>
 /// Registers a result template so editors can pick it in the Results widget's "Result template"

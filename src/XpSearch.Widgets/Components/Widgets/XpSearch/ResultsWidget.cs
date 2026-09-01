@@ -5,11 +5,11 @@ using Kentico.Xperience.Admin.Base.FormAnnotations;
 
 using Microsoft.AspNetCore.Html;
 
+using XpSearch.Core.Rendering;
 using XpSearch.Widgets;
 using XpSearch.Widgets.Components.Widgets.XpSearch;
 using XpSearch.Widgets.Mounting;
 using XpSearch.Widgets.Options;
-using XpSearch.Widgets.Rendering;
 using XpSearch.Widgets.Resources;
 
 [assembly: RegisterWidget(
@@ -211,7 +211,8 @@ public sealed class ResultsWidgetViewComponent : XpSearchMountWidgetViewComponen
                 properties.ResultTemplate,
                 properties.TitleAttribute,
                 properties.UrlAttribute,
-                ParseLines(properties.SnippetAttributes)),
+                ParseLines(properties.SnippetAttributes),
+                XpSearchWidgetConstants.DefaultResultViewPath),
             cancellationToken).ConfigureAwait(false);
 
         return firstPaint?.Content;

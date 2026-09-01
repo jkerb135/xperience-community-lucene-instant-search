@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace XpSearch.Widgets.Templates;
+namespace XpSearch.Core.Rendering;
 
 /// <summary>
 /// The result templates registered with <see cref="RegisterSearchResultTemplateAttribute"/>.

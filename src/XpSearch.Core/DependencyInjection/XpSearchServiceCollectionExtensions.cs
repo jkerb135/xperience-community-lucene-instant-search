@@ -19,6 +19,7 @@ using XpSearch.Core.Personalization;
 using XpSearch.Core.Pipeline;
 using XpSearch.Core.Pipeline.Stages;
 using XpSearch.Core.Popularity;
+using XpSearch.Core.Rendering;
 using XpSearch.Core.Search;
 using XpSearch.Core.Tuning;
 
@@ -111,6 +112,12 @@ public static class XpSearchServiceCollectionExtensions
         // Popularity boosts (RK-1). Storage and the aggregation task live here rather than in
         // XpSearch.Admin, because the boost stage and the response cache need them without it.
         services.TryAddSingleton<IPopularitySignalStore, InfoPopularitySignalStore>();
+
+        // Server-rendered first paint (spec §5.8). In Core rather than XpSearch.Widgets so a host that
+        // builds its search UI itself, against the npm package alone, can render one too.
+        services.TryAddSingleton<ISearchResultTemplateRegistry, SearchResultTemplateRegistry>();
+        // Scoped: it runs a search through the pipeline, which is scoped.
+        services.TryAddScoped<ServerRenderedResults>();
 
         // Mined synonym candidates (SY-1): the same task's second aggregation, stored the same way.
         services.TryAddSingleton<ISynonymSuggestionStore, InfoSynonymSuggestionStore>();
