@@ -122,6 +122,20 @@ public class RuleActionDto
     /// <summary>Gets or sets the result id of the document to pin, hide, boost or bury.</summary>
     public string TargetId { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Gets or sets the title of the document <see cref="TargetId"/> names, filled in when the rule
+    /// is loaded so the summary row reads as a title rather than an id.
+    /// </summary>
+    /// <remarks>
+    /// <see langword="null"/> means the id was not resolved - either nothing was asked for, or the
+    /// index no longer holds it, which the builder shows as a warning. It is never sent back on a
+    /// save: the rule stores the id alone.
+    /// </remarks>
+    public string? TargetTitle { get; set; }
+
+    /// <summary>Gets or sets the link of the document <see cref="TargetId"/> names. See <see cref="TargetTitle"/>.</summary>
+    public string? TargetUrl { get; set; }
+
     /// <summary>Gets or sets the one-based position a pinned document is moved to.</summary>
     public int Position { get; set; } = 1;
 
@@ -178,9 +192,9 @@ public class RuleActionDto
         {
             "pin" => new RuleAction.Pin(Trim(TargetId), Position),
             "hide" => new RuleAction.Hide(Trim(TargetId)),
-            "boost" => new RuleAction.Boost(Trim(TargetId), Trim(FilterExpression), Multiplier),
-            "bury" => new RuleAction.Bury(Trim(TargetId), Trim(FilterExpression)),
-            "filterResults" => new RuleAction.FilterResults(Trim(FilterExpression)),
+            "boost" => new RuleAction.Boost(Trim(TargetId), Expression(), Multiplier),
+            "bury" => new RuleAction.Bury(Trim(TargetId), Expression()),
+            "filterResults" => new RuleAction.FilterResults(Expression()),
             "removeWord" => new RuleAction.RemoveWord(Trim(Word)),
             "replaceWord" => new RuleAction.ReplaceWord(Trim(Word), Trim(Replacement)),
             "replaceQuery" => new RuleAction.ReplaceQuery(Trim(Query)),
@@ -192,6 +206,14 @@ public class RuleActionDto
         };
 
     private static string Trim(string? value) => (value ?? string.Empty).Trim();
+
+    /// <summary>
+    /// The submitted filter expression in the canonical form the storage keeps. The builder edits it
+    /// as attribute rows and as raw text ("Edit as text", design canvas 5h), so what arrives is
+    /// whichever of the two the marketer last touched; parsing and composing it settles the spacing
+    /// and drops any half-filled row before it is stored.
+    /// </summary>
+    private string Expression() => RuleFilterExpression.Compose(RuleFilterExpression.Parse(FilterExpression));
 }
 
 /// <summary>A whole rule, as the builder loads and saves it.</summary>
@@ -242,6 +264,44 @@ public class RuleDto
             Conditions = RuleConditionsDto.From(rule.Conditions),
             Actions = [.. rule.Actions.Select(RuleActionDto.From)],
         };
+    }
+
+    /// <summary>The distinct result ids this rule's actions name, in the order the actions run.</summary>
+    /// <returns>The ids, empty when no action targets an item.</returns>
+    public IReadOnlyList<string> TargetIds() =>
+    [
+        .. (Actions ?? [])
+            .Select(action => (action.TargetId ?? string.Empty).Trim())
+            .Where(id => id.Length > 0)
+            .Distinct(StringComparer.Ordinal)
+    ];
+
+    /// <summary>
+    /// Writes what each targeted id points at onto the actions that name it, so the builder's summary
+    /// rows read as titles.
+    /// </summary>
+    /// <param name="items">The resolved items, as <see cref="IRulePicker.ResolveAsync"/> returns them.</param>
+    /// <remarks>
+    /// An item with no title - one the index no longer holds - leaves the action's
+    /// <see cref="RuleActionDto.TargetTitle"/> null, which is what makes the builder show the raw id
+    /// with a warning instead of dropping the action (design canvas 5h).
+    /// </remarks>
+    public void ApplyResolvedItems(IReadOnlyList<PickedItemDto> items)
+    {
+        ArgumentNullException.ThrowIfNull(items);
+
+        var byId = items
+            .Where(item => !string.IsNullOrEmpty(item.Title))
+            .ToDictionary(item => item.Id, StringComparer.Ordinal);
+
+        foreach (var action in Actions ?? [])
+        {
+            if (byId.TryGetValue((action.TargetId ?? string.Empty).Trim(), out var item))
+            {
+                action.TargetTitle = item.Title;
+                action.TargetUrl = item.Url;
+            }
+        }
     }
 
     /// <summary>Formats a stored moment as the day the builder shows.</summary>
@@ -320,6 +380,12 @@ public class RuleBuilderClientProperties : TemplateClientProperties
 
     /// <summary>Gets or sets the content languages the index is configured for.</summary>
     public IEnumerable<string> Languages { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets the attributes the attribute drop-downs offer: the index's facetable fields
+    /// (design canvas 5h). Empty when the index has none, which drops the pickers back to text.
+    /// </summary>
+    public IEnumerable<string> Attributes { get; set; } = [];
 
     /// <summary>Gets or sets whether this is a new rule, which hides Delete and changes the headline.</summary>
     public bool IsNew { get; set; }

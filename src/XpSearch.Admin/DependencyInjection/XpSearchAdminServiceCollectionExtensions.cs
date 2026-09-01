@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using XpSearch.Admin.Persistence;
 using XpSearch.Admin.Tuning;
 using XpSearch.Admin.UIPages.QueryTester;
+using XpSearch.Admin.UIPages.RuleBuilder;
 using XpSearch.Core.Tuning;
 
 namespace Microsoft.Extensions.DependencyInjection;
@@ -29,6 +30,7 @@ public static class XpSearchAdminServiceCollectionExtensions
 
         services.TryAddSingleton<XpSearchTuningModuleInstaller>();
         services.TryAddSingleton<IQueryTesterSearch, QueryTesterSearch>();
+        services.TryAddSingleton<IRulePicker, RulePicker>();
         services.TryAddSingleton<IContactGroupCatalog, ContactGroupCatalog>();
         services.Replace(ServiceDescriptor.Singleton<IRelevanceTuningSource, InfoRelevanceTuningSource>());
 

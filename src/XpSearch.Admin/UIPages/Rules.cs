@@ -1,4 +1,4 @@
-using CMS.DataEngine;
+﻿using CMS.DataEngine;
 using CMS.Membership;
 
 using Kentico.Xperience.Admin.Base;
@@ -123,12 +123,14 @@ public class RuleEdit : RuleBuilderPage
     /// <param name="provider">Provider of rule objects.</param>
     /// <param name="contactGroups">Supplies the contact groups the Context toggle offers.</param>
     /// <param name="pageLinkGenerator">Generates admin URLs.</param>
+    /// <param name="picker">Reads the index behind the item and attribute pickers.</param>
     public RuleEdit(
         ILuceneConfigurationStorageService storageService,
         IInfoProvider<XpSearchRuleInfo> provider,
         IContactGroupCatalog contactGroups,
-        IPageLinkGenerator pageLinkGenerator)
-        : base(storageService, provider, contactGroups, pageLinkGenerator)
+        IPageLinkGenerator pageLinkGenerator,
+        IRulePicker picker)
+        : base(storageService, provider, contactGroups, pageLinkGenerator, picker)
     {
     }
 
@@ -149,12 +151,14 @@ public class RuleCreate : RuleBuilderPage
     /// <param name="provider">Provider of rule objects.</param>
     /// <param name="contactGroups">Supplies the contact groups the Context toggle offers.</param>
     /// <param name="pageLinkGenerator">Generates admin URLs.</param>
+    /// <param name="picker">Reads the index behind the item and attribute pickers.</param>
     public RuleCreate(
         ILuceneConfigurationStorageService storageService,
         IInfoProvider<XpSearchRuleInfo> provider,
         IContactGroupCatalog contactGroups,
-        IPageLinkGenerator pageLinkGenerator)
-        : base(storageService, provider, contactGroups, pageLinkGenerator)
+        IPageLinkGenerator pageLinkGenerator,
+        IRulePicker picker)
+        : base(storageService, provider, contactGroups, pageLinkGenerator, picker)
     {
     }
 }
