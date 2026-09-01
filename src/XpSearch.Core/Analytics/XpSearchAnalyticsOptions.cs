@@ -36,4 +36,16 @@ public sealed class XpSearchAnalyticsOptions
     /// rule. Defaults to 10.
     /// </summary>
     public int PopularitySuggestionQueries { get; set; } = 10;
+
+    /// <summary>
+    /// Gets or sets how long after a search with no click a following click still counts as the same
+    /// visitor reformulating (SY-1). Defaults to 60 seconds.
+    /// </summary>
+    public int SynonymWindowSeconds { get; set; } = 60;
+
+    /// <summary>
+    /// Gets or sets how often a reformulation pair has to happen in the window before it is suggested
+    /// as a synonym (SY-1). Defaults to 3, which is what keeps the time-adjacency noise out.
+    /// </summary>
+    public int SynonymMinimumOccurrences { get; set; } = 3;
 }

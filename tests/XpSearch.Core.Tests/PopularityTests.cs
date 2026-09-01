@@ -366,6 +366,7 @@ internal sealed class PopularityTests
         new(
             log,
             store,
+            new FakeSynonymSuggestionStore(),
             Microsoft.Extensions.Options.Options.Create(options ?? new XpSearchOptions()),
             NullLogger<XpSearchPopularityTask>.Instance);
 

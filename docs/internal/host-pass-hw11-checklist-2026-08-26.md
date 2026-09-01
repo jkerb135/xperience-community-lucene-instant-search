@@ -138,3 +138,24 @@ sidebar label **Edit index** — old `/tuning/` bookmarks 500.
     and it applies to /search. Dismiss another. Run the task again: neither reappears.
 50. Experiment boundary: with an experiment running, both A- and B-bucketed browsers see the same
     popularity boost, and the Suggestions page exists only for the live tuning.
+
+## K. SY-1 mined synonyms (added 2026-09-01)
+51. Startup after rebuild: event log clean; the XpSearch_SynonymSuggestion table exists with the
+    two query columns, occurrences, last-seen and state.
+52. Seed a reformulation on the host: on /search, search a word your index has nothing for (e.g.
+    `settee`), click nothing, then within a minute search a word that works (e.g. `sofa`) and click
+    a result. Repeat three times (the default threshold), leaving a gap between rounds.
+53. Run the `XpSearch.PopularitySignal` task: Last result now ends "... N suggested synonyms", and
+    XpSearch_SynonymSuggestion holds the settee -> sofa row with occurrences 3 and state 0.
+    (This DB round trip is the SY-1 logic unit tests could not cover.)
+54. Synonym suggestions page: Edit index -> Synonym suggestions lists the pair with "3
+    reformulations" and a last-seen stamp; the Synonyms page shows the "suggested synonyms are
+    waiting" banner and its Suggestions link opens the page.
+55. Approve it: a two-way group `settee, sofa` appears on Synonyms, enabled and editable, and a
+    /search for `settee` now returns the sofa results. Dismiss a second suggestion.
+56. Replace-per-run: run the task again - neither the approved nor the dismissed pair reappears, and
+    a still-pending pair keeps its row rather than duplicating.
+57. Noise floor: a pair seen only once or twice never reaches the page; a retry more than a minute
+    after the failed search produces no pair at all.
+58. Experiment boundary: an experiment's variant B has no Synonym suggestions page, and approving
+    writes into the live synonyms only.

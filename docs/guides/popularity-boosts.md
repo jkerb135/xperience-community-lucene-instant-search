@@ -1,8 +1,9 @@
-## Popularity boosts
+## Popularity boosts and mined suggestions
 
-Search already knows which results your visitors click. This feature turns that into two things: an
-optional, bounded ranking boost for the results people actually open, and a list of *suggested* boost
-rules that a human approves or dismisses. Nothing here calls an external service, and nothing changes
+Search already knows which results your visitors click. This feature turns that into three things: an
+optional, bounded ranking boost for the results people actually open, a list of *suggested* boost
+rules, and a list of *suggested* synonyms mined from searches that failed and were retried. Both lists
+wait for a human to approve or dismiss. Nothing here calls an external service, and nothing changes
 a search until you switch it on.
 
 It is off for every index until you turn it on, and no rule is ever created without a person clicking
@@ -14,7 +15,8 @@ A scheduled task reads the last 30 days of the [query log](analytics.md#the-quer
 clicks each document received, and stores one *popularity signal* per index. If an index has opted
 in, the query pipeline boosts those documents at search time — by at most 2x for the single most
 clicked document, less for everything else. The same run also looks at the most frequent queries and,
-where one document clearly wins a query's clicks, offers a suggested boost rule.
+where one document clearly wins a query's clicks, offers a suggested boost rule — and at searches that
+got no click and were followed by a different search that did, which it offers as suggested synonyms.
 
 ### Turn it on
 
@@ -31,7 +33,11 @@ has a *configuration*, which can only be created in the administration:
 6. **Save**.
 
 The *Last result* column then reads like
-`Popularity computed for 84 documents across 2 indexes since 2026-08-02 03:00:00Z; 3 suggested rules.`
+`Popularity computed for 84 documents across 2 indexes since 2026-08-02 03:00:00Z; 3 suggested rules,
+2 suggested synonyms.`
+
+Step 2 is only about the ranking boost — both suggestion lists fill up as soon as the task runs, on
+every index, opted in or not.
 
 **2. Opt the index in.** Open **Lucene Search → indexes → your index → Edit index → Field weights**
 and select **Boost by popularity** in the page header. The callout above the table tells you which
@@ -111,6 +117,39 @@ Either answer is final: that query and document never appear as a suggestion aga
 times the task recomputes. Suggestions are for the live rules only; an experiment's variant B has no
 suggestion list.
 
+### Suggested synonyms
+
+The same run also reads the window in timestamp order, per index, looking for a *reformulation*: a
+search that got **no click**, followed within **60 seconds** by a **different** search that **did** get
+a click. `settee` → (nothing clicked) → `sofa` → (click) says those two words mean the same thing on
+your site.
+
+Pairs are thrown away when
+
+- one text contains the other — `coff` → `coffee` is somebody typing, `sofa` → `red sofa` is somebody
+  narrowing, and neither is a synonym;
+- they differ only in case or spacing;
+- the pair happened fewer than **3 times** in the window.
+
+Open **Lucene Search → indexes → your index → Edit index → Synonym suggestions** (the **Synonyms**
+page shows a banner and a link when any are waiting). Each row shows what was searched for, what found
+it, the evidence (`4 reformulations`) and when it last happened.
+
+- **Approve** creates an ordinary **two-way** synonym group — `settee, sofa` — enabled straight away.
+  From that moment it is a normal group on the **Synonyms** page: edit it, disable it or delete it like
+  any other. If you only want the failed phrase rewritten and not the reverse, open the created group
+  and switch its **Direction** to one-way with `settee` in **Words** and `sofa` in **Replacements**.
+- **Dismiss** turns it down.
+
+Either answer is final: that pair never appears as a suggestion again. Like the boost suggestions,
+this is live tuning only — an experiment's variant B has no suggestion list.
+
+> **Read the evidence before approving.** The query log holds no visitor or session identifier (and
+> deliberately never will — see [Search analytics](analytics.md)), so "the same visitor searched
+> again" is approximated by *timing*: two visitors searching in the same minute can produce a pair
+> nobody actually made. The three-occurrence threshold is what keeps that noise out, not certainty.
+> On a quiet site, raise it. See `docs/adr/0026-mined-synonyms.md`.
+
 ### Settings
 
 ```csharp
@@ -119,6 +158,8 @@ services.AddXpSearch(options =>
     options.Analytics.PopularityLookbackDays = 30;      // how far back clicks count
     options.Analytics.PopularityDocumentLimit = 100;    // documents kept per index
     options.Analytics.PopularitySuggestionQueries = 10; // frequent queries examined per run
+    options.Analytics.SynonymWindowSeconds = 60;        // how long a retried search still counts
+    options.Analytics.SynonymMinimumOccurrences = 3;    // times a pair must repeat to be suggested
 });
 ```
 
@@ -127,13 +168,14 @@ document that stops being clicked simply stops being in them. There is no decay 
 
 ### Where it is stored
 
-Three module classes in `CMS.Integration.XpSearchAnalytics`, installed on first start:
+Four module classes in `CMS.Integration.XpSearchAnalytics`, installed on first start:
 
 | Class | Holds |
 |---|---|
 | `XpSearch.PopularityIndex` | one row per index: the opt-in flag and when the signal was last computed |
 | `XpSearch.PopularityScore` | one row per scored document: index, result id, weight, computed-at |
 | `XpSearch.PopularitySuggestion` | one row per suggestion: query, result id, clicks, share, and whether a human answered it |
+| `XpSearch.SynonymSuggestion` | one row per mined pair: the two queries, how often it happened, when it last did, and whether a human answered it |
 
 The clicked result id now also lands on the query log itself, in `LogClickedResultID` — that column is
 what makes the evidence attributable to a document. It is as anonymous as the rest of the row: it
@@ -152,7 +194,12 @@ tracking.
   client has to. See the [JS client guide](js-client.md).
 - **It is index-wide, not per variant.** An [experiment](experiments.md) tests the tuning you wrote;
   both of its variants see the same popularity boost.
+- **Mined synonyms are pairs found by timing, not by visitor.** Busy minutes produce pairs nobody
+  searched; a visitor who reformulates after two minutes produces none. Read the pair, then approve.
+- **A mined pair is only a candidate.** Approving `settee, sofa` makes both words find both sets of
+  results — check that this is what you want, especially for brand names and product codes.
 
 See also: [Relevance tuning](relevance-tuning.md) for rules, synonyms and field weights,
 [Search analytics](analytics.md) for the query log this is built on, and
-`docs/adr/0025-popularity-boosts.md` for why the numbers are what they are.
+`docs/adr/0025-popularity-boosts.md` / `docs/adr/0026-mined-synonyms.md` for why the numbers are what
+they are.

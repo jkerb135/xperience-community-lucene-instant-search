@@ -395,6 +395,11 @@ rather than the plain `sofa` group, because the longer phrase always wins.
 Synonyms widen a search. They never narrow it: *red sofa* with `sofa = couch` still requires
 something red.
 
+You do not have to think of every pair yourself. The **Synonym suggestions** page next to this one
+lists pairs mined from real searches that failed and were immediately retried with different words —
+approve one and it becomes an ordinary group here. See
+[Popularity boosts and mined suggestions](popularity-boosts.md#suggested-synonyms).
+
 ### Stopwords
 
 Stopwords are words that are ignored when someone searches — *the*, *a*, *of*, or your own noise

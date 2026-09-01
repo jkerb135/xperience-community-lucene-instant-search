@@ -158,7 +158,9 @@ public static class PopularitySuggestionMerge
         return [.. candidates.Where(candidate => !answered.Contains((candidate.Query, candidate.DocumentId)))];
     }
 
-    private static IEqualityComparer<(string, string)> Comparer { get; } = new PairComparer();
+    /// <summary>Gets the comparer two answered pairs are matched by: both parts, ignoring case.</summary>
+    /// <remarks>Public because SY-1's mined synonym pairs are remembered the same way.</remarks>
+    public static IEqualityComparer<(string, string)> Comparer { get; } = new PairComparer();
 
     private sealed class PairComparer : IEqualityComparer<(string, string)>
     {

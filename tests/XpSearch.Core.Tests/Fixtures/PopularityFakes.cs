@@ -2,6 +2,23 @@ using XpSearch.Core.Popularity;
 
 namespace XpSearch.Core.Tests.Fixtures;
 
+/// <summary>The mined synonym candidates in memory, so a task run can be tested without a database (SY-1).</summary>
+internal sealed class FakeSynonymSuggestionStore : ISynonymSuggestionStore
+{
+    internal List<(string IndexName, IReadOnlyList<ReformulationPair> Pairs, DateTime ComputedUtc)> Written { get; } = [];
+
+    public Task ReplaceAsync(
+        string indexName,
+        IReadOnlyList<ReformulationPair> pairs,
+        DateTime computedUtc,
+        CancellationToken cancellationToken)
+    {
+        Written.Add((indexName, pairs, computedUtc));
+
+        return Task.CompletedTask;
+    }
+}
+
 /// <summary>The popularity signal in memory, so the boost and the cache key can be tested without a database.</summary>
 internal sealed class FakePopularitySignalStore : IPopularitySignalStore
 {
