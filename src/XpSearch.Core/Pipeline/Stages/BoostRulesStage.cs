@@ -10,15 +10,15 @@ using XpSearch.Core.Tuning;
 namespace XpSearch.Core.Pipeline.Stages;
 
 /// <summary>
-/// Applies the consequences that act before the search runs (ADR-0022):
-/// <see cref="RuleConsequence.Boost"/> raises the score of its target,
-/// <see cref="RuleConsequence.FilterResults"/> restricts the result set,
-/// <see cref="RuleConsequence.Hide"/> takes a document out of it altogether and
-/// <see cref="RuleConsequence.Redirect"/> records a destination on the response.
+/// Applies the actions that act before the search runs (ADR-0022):
+/// <see cref="RuleAction.Boost"/> raises the score of its target,
+/// <see cref="RuleAction.FilterResults"/> restricts the result set,
+/// <see cref="RuleAction.Hide"/> takes a document out of it altogether and
+/// <see cref="RuleAction.Redirect"/> records a destination on the response.
 /// Pin and bury are a post-execution reordering and belong to <see cref="PinnedAndBuriedStage"/>.
 /// </summary>
 /// <remarks>
-/// Rules arrive in precedence order (priority, then id), and each rule's consequences in the order it
+/// Rules arrive in precedence order (priority, then id), and each rule's actions in the order it
 /// lists them, so a later clause wraps the earlier ones. Boost, filter and hide all apply; only the
 /// first redirect does, and it does not stop the search - the response carries results next to the
 /// destination and the client decides whether to navigate.
@@ -39,14 +39,14 @@ public sealed class BoostRulesStage : ISearchStage
         {
             bool applied = false;
 
-            foreach (var consequence in rule.Consequences)
+            foreach (var action in rule.Actions)
             {
-                applied |= consequence switch
+                applied |= action switch
                 {
-                    RuleConsequence.Boost boost => Boost(context, boost),
-                    RuleConsequence.FilterResults filter => Filter(context, filter.FilterExpression),
-                    RuleConsequence.Hide hide => Hide(context, hide),
-                    RuleConsequence.Redirect redirect => Redirect(context, rule, redirect),
+                    RuleAction.Boost boost => Boost(context, boost),
+                    RuleAction.FilterResults filter => Filter(context, filter.FilterExpression),
+                    RuleAction.Hide hide => Hide(context, hide),
+                    RuleAction.Redirect redirect => Redirect(context, rule, redirect),
                     _ => false
                 };
             }
@@ -61,7 +61,7 @@ public sealed class BoostRulesStage : ISearchStage
     }
 
     /// <summary>Builds the query a boost targets: one document by id, or everything its filter expression selects.</summary>
-    private static Query? Target(SearchContext context, RuleConsequence.Boost rule)
+    private static Query? Target(SearchContext context, RuleAction.Boost rule)
     {
         if (!string.IsNullOrWhiteSpace(rule.TargetId))
         {
@@ -97,7 +97,7 @@ public sealed class BoostRulesStage : ISearchStage
     private static Term TermFor(SearchContext context, string field, string value) =>
         new(context.Schema.Find(field)?.LuceneName ?? field, value);
 
-    private static bool Boost(SearchContext context, RuleConsequence.Boost rule)
+    private static bool Boost(SearchContext context, RuleAction.Boost rule)
     {
         if (Target(context, rule) is not { } target || rule.Multiplier <= 0)
         {
@@ -121,7 +121,7 @@ public sealed class BoostRulesStage : ISearchStage
     /// precedence order, and a later one naming another destination is ignored rather than
     /// overwriting it. A rule with no URL configured is not a redirect at all.
     /// </summary>
-    private static bool Redirect(SearchContext context, TuningRule rule, RuleConsequence.Redirect redirect)
+    private static bool Redirect(SearchContext context, TuningRule rule, RuleAction.Redirect redirect)
     {
         if (context.Redirect is not null || string.IsNullOrWhiteSpace(redirect.Url))
         {
@@ -142,7 +142,7 @@ public sealed class BoostRulesStage : ISearchStage
     /// This is the difference between hide and bury. Bury removes a document from the page that came
     /// back; hide keeps it out of the result set, which is only expressible before the search runs.
     /// </remarks>
-    private static bool Hide(SearchContext context, RuleConsequence.Hide rule)
+    private static bool Hide(SearchContext context, RuleAction.Hide rule)
     {
         if (string.IsNullOrWhiteSpace(rule.TargetId))
         {

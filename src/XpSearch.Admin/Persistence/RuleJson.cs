@@ -21,8 +21,8 @@ namespace XpSearch.Admin.Persistence;
 ///  "contactGroup":"CoffeeGrinders","language":"en"}
 /// </code>
 /// <para>
-/// <see cref="XpSearchRuleInfo.RuleConsequences"/> holds an array, in the order the rule applies
-/// them, each tagged with the <c>type</c> discriminator declared on <see cref="RuleConsequence"/>:
+/// <see cref="XpSearchRuleInfo.RuleActions"/> holds an array, in the order the rule applies
+/// them, each tagged with the <c>type</c> discriminator declared on <see cref="RuleAction"/>:
 /// </para>
 /// <code>
 /// [{"type":"pin","targetId":"doc-1:en","position":1},
@@ -30,7 +30,7 @@ namespace XpSearch.Admin.Persistence;
 /// </code>
 /// <para>
 /// Reading never throws. A column that a hand edit or a failed write left unparseable comes back as
-/// "no conditions" or "no consequences", which makes the rule inert rather than taking the whole
+/// "no conditions" or "no actions", which makes the rule inert rather than taking the whole
 /// index's tuning down with it - the same tolerance the ingestion log has for a bad row.
 /// </para>
 /// </remarks>
@@ -59,10 +59,10 @@ public static class RuleJson
         JsonSerializer.Serialize(conditions ?? NoConditions, Options);
 
     /// <summary>Writes the <c>then</c> of a rule.</summary>
-    /// <param name="consequences">The consequences, in the order they are applied.</param>
+    /// <param name="actions">The actions, in the order they are applied.</param>
     /// <returns>The JSON to store.</returns>
-    public static string Write(IReadOnlyList<RuleConsequence> consequences) =>
-        JsonSerializer.Serialize(consequences ?? [], Options);
+    public static string Write(IReadOnlyList<RuleAction> actions) =>
+        JsonSerializer.Serialize(actions ?? [], Options);
 
     /// <summary>Reads the <c>if</c> of a rule back.</summary>
     /// <param name="json">The stored JSON.</param>
@@ -88,8 +88,8 @@ public static class RuleJson
 
     /// <summary>Reads the <c>then</c> of a rule back.</summary>
     /// <param name="json">The stored JSON.</param>
-    /// <returns>The consequences, or an empty list when the column is empty or unreadable.</returns>
-    public static IReadOnlyList<RuleConsequence> ReadConsequences(string? json)
+    /// <returns>The actions, or an empty list when the column is empty or unreadable.</returns>
+    public static IReadOnlyList<RuleAction> ReadActions(string? json)
     {
         if (string.IsNullOrWhiteSpace(json))
         {
@@ -98,8 +98,8 @@ public static class RuleJson
 
         try
         {
-            return JsonSerializer.Deserialize<List<RuleConsequence>>(json, Options) is { } read
-                ? [.. read.Where(consequence => consequence is not null)]
+            return JsonSerializer.Deserialize<List<RuleAction>>(json, Options) is { } read
+                ? [.. read.Where(action => action is not null)]
                 : [];
         }
         catch (JsonException)
@@ -108,7 +108,7 @@ public static class RuleJson
         }
     }
 
-    /// <summary>Tells whether a text is a JSON object, which is all <see cref="RuleConsequence.CustomData"/> accepts.</summary>
+    /// <summary>Tells whether a text is a JSON object, which is all <see cref="RuleAction.CustomData"/> accepts.</summary>
     /// <param name="json">The text to check.</param>
     /// <returns><see langword="true"/> when the text parses to a JSON object.</returns>
     public static bool IsJsonObject(string? json)

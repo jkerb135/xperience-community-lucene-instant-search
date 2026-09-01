@@ -62,7 +62,7 @@ public sealed class QueryRewriteStage : ISearchStage
         Rewrite(context, active);
     }
 
-    /// <summary>Applies the rewrite consequences of the fired rules, in rule order then listed order.</summary>
+    /// <summary>Applies the rewrite actions of the fired rules, in rule order then listed order.</summary>
     private static void Rewrite(SearchContext context, IReadOnlyList<TuningRule> rules)
     {
         bool explain = context.Request.Explain ?? false;
@@ -72,13 +72,13 @@ public sealed class QueryRewriteStage : ISearchStage
         {
             bool applied = false;
 
-            foreach (var consequence in rule.Consequences)
+            foreach (var action in rule.Actions)
             {
-                string rewritten = consequence switch
+                string rewritten = action switch
                 {
-                    RuleConsequence.RemoveWord remove => ReplaceWord(text, remove.Word, string.Empty),
-                    RuleConsequence.ReplaceWord replace => ReplaceWord(text, replace.Word, replace.Replacement),
-                    RuleConsequence.ReplaceQuery replace => (replace.Query ?? string.Empty).Trim(),
+                    RuleAction.RemoveWord remove => ReplaceWord(text, remove.Word, string.Empty),
+                    RuleAction.ReplaceWord replace => ReplaceWord(text, replace.Word, replace.Replacement),
+                    RuleAction.ReplaceQuery replace => (replace.Query ?? string.Empty).Trim(),
                     _ => text
                 };
 

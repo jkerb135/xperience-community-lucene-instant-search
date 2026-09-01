@@ -145,7 +145,7 @@ server-side time excluding the network.
 
 #### `redirect` is present on every response
 
-`redirect` is `null` unless a relevance rule with the **Redirect** consequence matched the query, in which
+`redirect` is `null` unless a relevance rule with the **Redirect** action matched the query, in which
 case it names the destination and the rule that chose it:
 
 ```json

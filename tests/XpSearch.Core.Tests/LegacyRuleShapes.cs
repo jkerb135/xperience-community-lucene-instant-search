@@ -38,7 +38,7 @@ internal enum FlatConsequence
 }
 
 /// <summary>
-/// Builds a <see cref="TuningRule"/> with one query condition and one consequence, which is what most
+/// Builds a <see cref="TuningRule"/> with one query condition and one action, which is what most
 /// of the pipeline tests need and all they used to be able to express.
 /// </summary>
 /// <remarks>
@@ -55,7 +55,7 @@ internal static class LegacyRuleShapes
         bool enabled,
         FlatCondition condition,
         string pattern,
-        FlatConsequence consequence,
+        FlatConsequence action,
         string targetId,
         int targetPosition,
         double boostValue,
@@ -74,13 +74,13 @@ internal static class LegacyRuleShapes
             _ => new QueryCondition(QueryOperator.Contains, pattern, false)
         };
 
-        RuleConsequence applied = consequence switch
+        RuleAction applied = action switch
         {
-            FlatConsequence.Pin => new RuleConsequence.Pin(targetId, targetPosition),
-            FlatConsequence.Bury => new RuleConsequence.Bury(targetId, string.Empty),
-            FlatConsequence.Filter => new RuleConsequence.FilterResults(filterExpression),
-            FlatConsequence.Redirect => new RuleConsequence.Redirect(redirectUrl),
-            _ => new RuleConsequence.Boost(targetId, filterExpression, boostValue)
+            FlatConsequence.Pin => new RuleAction.Pin(targetId, targetPosition),
+            FlatConsequence.Bury => new RuleAction.Bury(targetId, string.Empty),
+            FlatConsequence.Filter => new RuleAction.FilterResults(filterExpression),
+            FlatConsequence.Redirect => new RuleAction.Redirect(redirectUrl),
+            _ => new RuleAction.Boost(targetId, filterExpression, boostValue)
         };
 
         // A blank pattern under anything but "always" matched nothing, so such a rule is dead.

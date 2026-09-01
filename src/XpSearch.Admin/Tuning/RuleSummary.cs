@@ -60,32 +60,32 @@ public static class RuleSummary
     }
 
     /// <summary>Describes one <c>then</c> of a rule.</summary>
-    /// <param name="consequence">The consequence.</param>
+    /// <param name="action">The action.</param>
     /// <returns>The summary.</returns>
-    public static string Describe(RuleConsequence consequence) =>
-        consequence switch
+    public static string Describe(RuleAction action) =>
+        action switch
         {
-            RuleConsequence.Pin pin => $"Pin {pin.TargetId} to position {pin.Position.ToString(CultureInfo.InvariantCulture)}",
-            RuleConsequence.Hide hide => $"Hide {hide.TargetId}",
-            RuleConsequence.Boost boost =>
+            RuleAction.Pin pin => $"Pin {pin.TargetId} to position {pin.Position.ToString(CultureInfo.InvariantCulture)}",
+            RuleAction.Hide hide => $"Hide {hide.TargetId}",
+            RuleAction.Boost boost =>
                 $"Boost {(string.IsNullOrWhiteSpace(boost.TargetId) ? boost.FilterExpression : boost.TargetId)} ×{boost.Multiplier.ToString("0.##", CultureInfo.InvariantCulture)}",
-            RuleConsequence.Bury bury => $"Bury {bury.TargetId}",
-            RuleConsequence.FilterResults filter => $"Filter results to {filter.FilterExpression}",
-            RuleConsequence.RemoveWord remove => $"Remove the word “{remove.Word}”",
-            RuleConsequence.ReplaceWord replace => $"Replace “{replace.Word}” with “{replace.Replacement}”",
-            RuleConsequence.ReplaceQuery replace => $"Search instead for “{replace.Query}”",
-            RuleConsequence.Redirect redirect => $"Redirect to {redirect.Url}",
-            RuleConsequence.CustomData => "Return custom data",
+            RuleAction.Bury bury => $"Bury {bury.TargetId}",
+            RuleAction.FilterResults filter => $"Filter results to {filter.FilterExpression}",
+            RuleAction.RemoveWord remove => $"Remove the word “{remove.Word}”",
+            RuleAction.ReplaceWord replace => $"Replace “{replace.Word}” with “{replace.Replacement}”",
+            RuleAction.ReplaceQuery replace => $"Search instead for “{replace.Query}”",
+            RuleAction.Redirect redirect => $"Redirect to {redirect.Url}",
+            RuleAction.CustomData => "Return custom data",
             _ => string.Empty
         };
 
     /// <summary>Describes the whole <c>then</c> of a rule, in the order it is applied.</summary>
-    /// <param name="consequences">The consequences.</param>
+    /// <param name="actions">The actions.</param>
     /// <returns>The summary, or "Nothing" when the rule does nothing.</returns>
-    public static string Describe(IReadOnlyList<RuleConsequence>? consequences) =>
-        consequences is null || consequences.Count == 0
+    public static string Describe(IReadOnlyList<RuleAction>? actions) =>
+        actions is null || actions.Count == 0
             ? "Nothing"
-            : string.Join(Separator, consequences.Select(Describe));
+            : string.Join(Separator, actions.Select(Describe));
 
     private static string Operator(QueryOperator value) =>
         value switch

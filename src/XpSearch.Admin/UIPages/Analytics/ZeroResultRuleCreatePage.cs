@@ -46,7 +46,7 @@ public class ZeroResultRuleSection : SecondaryMenuSectionPage
 
 /// <summary>
 /// The rule builder a zero-result row deep-links to (spec §9.3), seeded with a query condition for
-/// the query that found nothing and no consequences yet.
+/// the query that found nothing and no actions yet.
 /// </summary>
 /// <remarks>
 /// <para>

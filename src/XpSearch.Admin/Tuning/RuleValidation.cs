@@ -8,7 +8,7 @@ namespace XpSearch.Admin.Tuning;
 /// <summary>One thing wrong with a rule, addressed to the field the marketer has to fix.</summary>
 /// <param name="Field">
 /// Which control is at fault: <c>name</c>, <c>conditions</c>, <c>query</c>, <c>filters</c>, or
-/// <c>consequence:{index}</c> for the card at that position in the <c>then</c> column.
+/// <c>action:{index}</c> for the card at that position in the <c>then</c> column.
 /// </param>
 /// <param name="Message">What to tell them, as the design canvas words it.</param>
 public sealed record RuleError(string Field, string Message);
@@ -29,12 +29,12 @@ public static class RuleValidation
     /// <summary>Finds everything wrong with a rule.</summary>
     /// <param name="name">The rule's display name.</param>
     /// <param name="conditions">The <c>if</c>.</param>
-    /// <param name="consequences">The <c>then</c>, in the order it is applied.</param>
+    /// <param name="actions">The <c>then</c>, in the order it is applied.</param>
     /// <returns>The errors, empty when the rule can be saved.</returns>
     public static IReadOnlyList<RuleError> Validate(
         string? name,
         RuleConditions? conditions,
-        IReadOnlyList<RuleConsequence>? consequences)
+        IReadOnlyList<RuleAction>? actions)
     {
         var errors = new List<RuleError>();
 
@@ -65,11 +65,11 @@ public static class RuleValidation
             }
         }
 
-        for (int index = 0; index < (consequences?.Count ?? 0); index++)
+        for (int index = 0; index < (actions?.Count ?? 0); index++)
         {
             string field = Field(index);
 
-            foreach (string message in Wrong(consequences![index]))
+            foreach (string message in Wrong(actions![index]))
             {
                 errors.Add(new RuleError(field, message));
             }
@@ -78,17 +78,17 @@ public static class RuleValidation
         return errors;
     }
 
-    /// <summary>The field name of the consequence card at a position.</summary>
+    /// <summary>The field name of the action card at a position.</summary>
     /// <param name="index">Zero-based position in the <c>then</c> column.</param>
     /// <returns>The field name.</returns>
     public static string Field(int index) =>
-        string.Create(CultureInfo.InvariantCulture, $"consequence:{index}");
+        string.Create(CultureInfo.InvariantCulture, $"action:{index}");
 
-    private static IEnumerable<string> Wrong(RuleConsequence consequence)
+    private static IEnumerable<string> Wrong(RuleAction action)
     {
-        switch (consequence)
+        switch (action)
         {
-            case RuleConsequence.Pin pin:
+            case RuleAction.Pin pin:
                 if (string.IsNullOrWhiteSpace(pin.TargetId))
                 {
                     yield return "Choose the item to pin.";
@@ -101,17 +101,17 @@ public static class RuleValidation
 
                 break;
 
-            case RuleConsequence.Hide hide when string.IsNullOrWhiteSpace(hide.TargetId):
+            case RuleAction.Hide hide when string.IsNullOrWhiteSpace(hide.TargetId):
                 yield return "Choose the item to hide.";
 
                 break;
 
-            case RuleConsequence.Bury bury when string.IsNullOrWhiteSpace(bury.TargetId):
+            case RuleAction.Bury bury when string.IsNullOrWhiteSpace(bury.TargetId):
                 yield return "Choose the item to bury.";
 
                 break;
 
-            case RuleConsequence.Boost boost:
+            case RuleAction.Boost boost:
                 if (string.IsNullOrWhiteSpace(boost.TargetId) && string.IsNullOrWhiteSpace(boost.FilterExpression))
                 {
                     yield return "Choose an item to boost, or an attribute:value expression to boost by.";
@@ -124,17 +124,17 @@ public static class RuleValidation
 
                 break;
 
-            case RuleConsequence.FilterResults filter when string.IsNullOrWhiteSpace(filter.FilterExpression):
+            case RuleAction.FilterResults filter when string.IsNullOrWhiteSpace(filter.FilterExpression):
                 yield return "Enter the attribute:value pairs to keep.";
 
                 break;
 
-            case RuleConsequence.RemoveWord remove when string.IsNullOrWhiteSpace(remove.Word):
+            case RuleAction.RemoveWord remove when string.IsNullOrWhiteSpace(remove.Word):
                 yield return "Enter the word to remove from the query.";
 
                 break;
 
-            case RuleConsequence.ReplaceWord replace:
+            case RuleAction.ReplaceWord replace:
                 if (string.IsNullOrWhiteSpace(replace.Word) || string.IsNullOrWhiteSpace(replace.Replacement))
                 {
                     yield return "Enter both the word to replace and what to put in its place.";
@@ -142,17 +142,17 @@ public static class RuleValidation
 
                 break;
 
-            case RuleConsequence.ReplaceQuery replace when string.IsNullOrWhiteSpace(replace.Query):
+            case RuleAction.ReplaceQuery replace when string.IsNullOrWhiteSpace(replace.Query):
                 yield return "Enter the query to search for instead.";
 
                 break;
 
-            case RuleConsequence.Redirect redirect when string.IsNullOrWhiteSpace(redirect.Url):
+            case RuleAction.Redirect redirect when string.IsNullOrWhiteSpace(redirect.Url):
                 yield return "Enter where the visitor should be sent.";
 
                 break;
 
-            case RuleConsequence.CustomData data when !RuleJson.IsJsonObject(data.Json):
+            case RuleAction.CustomData data when !RuleJson.IsJsonObject(data.Json):
                 yield return "Not valid JSON — custom data has to be a JSON object, for example {\"banner\": \"…\"}.";
 
                 break;

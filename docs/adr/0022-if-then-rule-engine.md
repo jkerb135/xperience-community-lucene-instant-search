@@ -1,5 +1,9 @@
 # ADR-0022: The if/then rule engine
 
+> **2026-08-31:** `RuleConsequence`/`Consequences` renamed `RuleAction`/`Actions`; stored column
+> `RuleConsequences` → `RuleActions` with an automatic copy-forward in `RuleStorageMigration`. JSON
+> discriminators unchanged.
+
 - **Status:** accepted — owner approval 2026-08-24 (design canvas signed off)
 - **Date:** 2026-08-24
 - **Spec reference:** §8.2, §8.3 — amends the rule model of [ADR-0014](0014-relevance-tuning.md)

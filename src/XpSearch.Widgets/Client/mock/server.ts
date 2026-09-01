@@ -282,7 +282,7 @@ export function query(request: SearchRequest): SearchResponse {
     totalPages: Math.ceil(scored.length / pageSize),
     tookMs: Date.now() - started,
     redirect: null,
-    // Stands in for a Search-tuning rule with the Return-custom-data consequence, so a client can
+    // Stands in for a Search-tuning rule with the Return-custom-data action, so a client can
     // be developed against `results.ruleData` without an Xperience instance.
     ...(request.query?.toLowerCase().includes('espresso')
       ? { ruleData: { banner: 'espresso-week', layout: 'grid' } }

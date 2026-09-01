@@ -30,41 +30,41 @@ internal static class SameConditions
 
 /// <summary>
 /// The two JSON columns a rule is stored in (ADR-0022 addendum): what they look like on disk, that
-/// every consequence type survives a round trip, and that a column a hand edit broke cannot take the
+/// every action type survives a round trip, and that a column a hand edit broke cannot take the
 /// index's tuning down with it.
 /// </summary>
 [TestFixture]
 internal sealed class RuleJsonTests
 {
-    private static readonly RuleConsequence[] EveryType =
+    private static readonly RuleAction[] EveryType =
     [
-        new RuleConsequence.Pin("doc-1:en", 3),
-        new RuleConsequence.Hide("doc-2:en"),
-        new RuleConsequence.Boost("doc-3:en", "Category:coffee", 2.5),
-        new RuleConsequence.Bury("doc-4:en", "Category:tea"),
-        new RuleConsequence.FilterResults("Category:coffee, Tags:brewing"),
-        new RuleConsequence.RemoveWord("cheap"),
-        new RuleConsequence.ReplaceWord("mill", "grinder"),
-        new RuleConsequence.ReplaceQuery("hand grinder"),
-        new RuleConsequence.Redirect("/campaigns/grinder-week"),
-        new RuleConsequence.CustomData("{\"banner\":\"Grinder week\"}")
+        new RuleAction.Pin("doc-1:en", 3),
+        new RuleAction.Hide("doc-2:en"),
+        new RuleAction.Boost("doc-3:en", "Category:coffee", 2.5),
+        new RuleAction.Bury("doc-4:en", "Category:tea"),
+        new RuleAction.FilterResults("Category:coffee, Tags:brewing"),
+        new RuleAction.RemoveWord("cheap"),
+        new RuleAction.ReplaceWord("mill", "grinder"),
+        new RuleAction.ReplaceQuery("hand grinder"),
+        new RuleAction.Redirect("/campaigns/grinder-week"),
+        new RuleAction.CustomData("{\"banner\":\"Grinder week\"}")
     ];
 
     /// <summary>
-    /// Every consequence the model has must survive storage. A type added to
-    /// <see cref="RuleConsequence"/> without a <c>JsonDerivedType</c> throws on write, which this
+    /// Every action the model has must survive storage. A type added to
+    /// <see cref="RuleAction"/> without a <c>JsonDerivedType</c> throws on write, which this
     /// catches; one added without a case here would go untested, so the count is asserted too.
     /// </summary>
     [Test]
-    public void EveryConsequenceTypeRoundTrips()
+    public void EveryActionTypeRoundTrips()
     {
-        int declared = typeof(RuleConsequence).GetNestedTypes().Length;
+        int declared = typeof(RuleAction).GetNestedTypes().Length;
 
-        var read = RuleJson.ReadConsequences(RuleJson.Write(EveryType));
+        var read = RuleJson.ReadActions(RuleJson.Write(EveryType));
 
         Expect.Multiple(() =>
         {
-            Assert.That(EveryType, Has.Length.EqualTo(declared), "a new consequence type needs a case in this test");
+            Assert.That(EveryType, Has.Length.EqualTo(declared), "a new action type needs a case in this test");
             Assert.That(read, Is.EqualTo(EveryType).AsCollection);
         });
     }
@@ -99,14 +99,14 @@ internal sealed class RuleJsonTests
             "CoffeeGrinders",
             "en"));
 
-        string consequences = RuleJson.Write([new RuleConsequence.Pin("doc-1:en", 1)]);
+        string actions = RuleJson.Write([new RuleAction.Pin("doc-1:en", 1)]);
 
         Expect.Multiple(() =>
         {
             Assert.That(
                 conditions,
                 Is.EqualTo("{\"query\":{\"operator\":\"contains\",\"pattern\":\"grinder\",\"matchAnalyzed\":true},\"filters\":[{\"attribute\":\"Category\",\"value\":\"Grinders\"}],\"contactGroup\":\"CoffeeGrinders\",\"language\":\"en\"}"));
-            Assert.That(consequences, Is.EqualTo("[{\"type\":\"pin\",\"targetId\":\"doc-1:en\",\"position\":1}]"));
+            Assert.That(actions, Is.EqualTo("[{\"type\":\"pin\",\"targetId\":\"doc-1:en\",\"position\":1}]"));
             Assert.That(
                 RuleJson.Write(RuleJson.NoConditions),
                 Is.EqualTo("{\"filters\":[],\"contactGroup\":\"\",\"language\":\"\"}"),
@@ -122,8 +122,8 @@ internal sealed class RuleJsonTests
         {
             Assert.That(RuleJson.ReadConditions("not json").IsEmpty, Is.True);
             Assert.That(RuleJson.ReadConditions("{\"query\":").IsEmpty, Is.True);
-            Assert.That(RuleJson.ReadConsequences("[{\"type\":\"nope\"}]"), Is.Empty);
-            Assert.That(RuleJson.ReadConsequences("not json"), Is.Empty);
+            Assert.That(RuleJson.ReadActions("[{\"type\":\"nope\"}]"), Is.Empty);
+            Assert.That(RuleJson.ReadActions("not json"), Is.Empty);
             Assert.That(RuleJson.ReadConditions(string.Empty).IsEmpty, Is.True);
         });
     }
@@ -147,15 +147,15 @@ internal sealed class RuleJsonTests
     {
         string authored = "{\n  \"banner\": \"Grinder week\",\n  \"cta\": \"/campaigns\"\n}";
 
-        var read = RuleJson.ReadConsequences(RuleJson.Write([new RuleConsequence.CustomData(authored)]));
+        var read = RuleJson.ReadActions(RuleJson.Write([new RuleAction.CustomData(authored)]));
 
-        Assert.That(((RuleConsequence.CustomData)read[0]).Json, Is.EqualTo(authored), "the author's formatting is theirs");
+        Assert.That(((RuleAction.CustomData)read[0]).Json, Is.EqualTo(authored), "the author's formatting is theirs");
     }
 }
 
 /// <summary>
 /// The one-time conversion of the flat rule columns into the JSON ones (unit CR-4b): every legacy
-/// condition and consequence has to arrive unchanged, the pass has to be repeatable, and it has to
+/// condition and action has to arrive unchanged, the pass has to be repeatable, and it has to
 /// be safe to interrupt.
 /// </summary>
 [TestFixture]
@@ -166,7 +166,7 @@ internal sealed class RuleStorageMigrationTests
     private static TuningRule Flat(
         LegacyCondition condition = LegacyCondition.Contains,
         string pattern = "espresso",
-        LegacyConsequence consequence = LegacyConsequence.Boost,
+        LegacyConsequence action = LegacyConsequence.Boost,
         string targetId = "doc-1",
         int position = 3,
         double boost = 2.5,
@@ -174,19 +174,19 @@ internal sealed class RuleStorageMigrationTests
         string redirect = "/promo",
         string group = "vips") =>
         RuleStorageMigration.FromFlat(
-            7, "legacy", true, condition, pattern, consequence, targetId, position, boost, filter, redirect,
+            7, "legacy", true, condition, pattern, action, targetId, position, boost, filter, redirect,
             Now.AddDays(-1), Now.AddDays(1), 42, group);
 
     [Test]
-    public void EveryConsequenceTypeIsMapped()
+    public void EveryActionTypeIsMapped()
     {
         Expect.Multiple(() =>
         {
-            Assert.That(Flat(consequence: LegacyConsequence.Pin).Consequences[0], Is.EqualTo(new RuleConsequence.Pin("doc-1", 3)));
-            Assert.That(Flat(consequence: LegacyConsequence.Bury).Consequences[0], Is.EqualTo(new RuleConsequence.Bury("doc-1", string.Empty)));
-            Assert.That(Flat(consequence: LegacyConsequence.Boost).Consequences[0], Is.EqualTo(new RuleConsequence.Boost("doc-1", "Category:coffee", 2.5)));
-            Assert.That(Flat(consequence: LegacyConsequence.Filter).Consequences[0], Is.EqualTo(new RuleConsequence.FilterResults("Category:coffee")));
-            Assert.That(Flat(consequence: LegacyConsequence.Redirect).Consequences[0], Is.EqualTo(new RuleConsequence.Redirect("/promo")));
+            Assert.That(Flat(action: LegacyConsequence.Pin).Actions[0], Is.EqualTo(new RuleAction.Pin("doc-1", 3)));
+            Assert.That(Flat(action: LegacyConsequence.Bury).Actions[0], Is.EqualTo(new RuleAction.Bury("doc-1", string.Empty)));
+            Assert.That(Flat(action: LegacyConsequence.Boost).Actions[0], Is.EqualTo(new RuleAction.Boost("doc-1", "Category:coffee", 2.5)));
+            Assert.That(Flat(action: LegacyConsequence.Filter).Actions[0], Is.EqualTo(new RuleAction.FilterResults("Category:coffee")));
+            Assert.That(Flat(action: LegacyConsequence.Redirect).Actions[0], Is.EqualTo(new RuleAction.Redirect("/promo")));
         });
     }
 
@@ -220,7 +220,7 @@ internal sealed class RuleStorageMigrationTests
             Assert.That(rule.Conditions.ContactGroup, Is.EqualTo("vips"));
             Assert.That(rule.Conditions.Filters, Is.Empty);
             Assert.That(rule.Conditions.Language, Is.Empty);
-            Assert.That(rule.Consequences, Has.Count.EqualTo(1));
+            Assert.That(rule.Actions, Has.Count.EqualTo(1));
         });
     }
 
@@ -254,17 +254,17 @@ internal sealed class RuleStorageMigrationTests
     [Test]
     public void ConvertingAndReadingBackGivesTheSameRule()
     {
-        foreach (var consequence in Enum.GetValues<LegacyConsequence>())
+        foreach (var action in Enum.GetValues<LegacyConsequence>())
         {
             foreach (var condition in Enum.GetValues<LegacyCondition>())
             {
-                var expected = Flat(condition, consequence: consequence);
-                string because = $"{condition} / {consequence}";
+                var expected = Flat(condition, action: action);
+                string because = $"{condition} / {action}";
 
                 SameConditions.Assert(RuleJson.ReadConditions(RuleJson.Write(expected.Conditions)), expected.Conditions, because);
                 Assert.That(
-                    RuleJson.ReadConsequences(RuleJson.Write(expected.Consequences)),
-                    Is.EqualTo(expected.Consequences).AsCollection,
+                    RuleJson.ReadActions(RuleJson.Write(expected.Actions)),
+                    Is.EqualTo(expected.Actions).AsCollection,
                     because);
             }
         }
@@ -298,6 +298,41 @@ internal sealed class RuleStorageMigrationTests
         });
     }
 
+    /// <summary>
+    /// The same "the marker is the row" trick for the interim <c>RuleConsequences</c> column: an
+    /// empty <c>RuleActions</c> next to a legacy column that still holds something means the row has
+    /// not been carried forward, and the array is copied verbatim because it is the same contract.
+    /// </summary>
+    /// <remarks>
+    /// Asserted on the marker and the copy rather than on a stored row: constructing an
+    /// <c>XpSearchRuleInfo</c> needs Kentico's IoC container. See docs/internal/KNOWN-LIMITATIONS.md.
+    /// </remarks>
+    [Test]
+    public void ARowIsCarriedForwardFromTheOldActionsColumnExactlyOnce()
+    {
+        string legacy = RuleJson.Write([new RuleAction.Pin("doc-1:en", 1), new RuleAction.CustomData("{\"banner\":\"Grinder week\"}")]);
+
+        string carried = RuleStorageMigration.StoredActions(string.Empty, legacy);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(RuleStorageMigration.NeedsActionCopy(string.Empty, legacy), Is.True);
+            Assert.That(RuleStorageMigration.NeedsActionCopy(null, legacy), Is.True);
+            Assert.That(carried, Is.EqualTo(legacy), "the array is copied verbatim, not re-serialized");
+
+            // Second pass over the same row, with the legacy column still present: nothing to do.
+            Assert.That(RuleStorageMigration.NeedsActionCopy(carried, legacy), Is.False);
+            Assert.That(RuleStorageMigration.StoredActions(carried, legacy), Is.EqualTo(legacy));
+
+            // And once the legacy column has been retired.
+            Assert.That(RuleStorageMigration.NeedsActionCopy(carried, string.Empty), Is.False);
+
+            // A rule that genuinely does nothing stores an empty array, so it is not carried forward.
+            Assert.That(RuleStorageMigration.NeedsActionCopy("[]", legacy), Is.False);
+            Assert.That(RuleStorageMigration.NeedsActionCopy(string.Empty, string.Empty), Is.False);
+        });
+    }
+
     /// <summary>Every flat column has to be named for retirement, or the class keeps a NOT NULL trap.</summary>
     [Test]
     public void TheRetiredColumnsAreTheOnesTheOldFormDefined()
@@ -308,7 +343,7 @@ internal sealed class RuleStorageMigrationTests
         {
             Assert.That(RuleStorageMigration.LegacyColumns, Has.Count.EqualTo(9));
             Assert.That(
-                RuleStorageMigration.LegacyColumns.Where(current.Contains),
+                RuleStorageMigration.LegacyColumns.Append(RuleStorageMigration.LegacyActionsColumn).Where(current.Contains),
                 Is.Empty,
                 "the installed form must not offer a column the migration is about to drop");
         });
@@ -356,7 +391,7 @@ internal sealed class RuleStorageMigrationTests
         Expect.Multiple(() =>
         {
             Assert.That(names.Count(name => name == nameof(XpSearchRuleInfo.RuleConditions)), Is.EqualTo(1));
-            Assert.That(names, Does.Contain(nameof(XpSearchRuleInfo.RuleConsequences)));
+            Assert.That(names, Does.Contain(nameof(XpSearchRuleInfo.RuleActions)));
             Assert.That(names, Does.Contain(nameof(XpSearchRuleInfo.RuleMigrated)));
             Assert.That(names, Does.Contain("RulePattern"), "CombineWithForm only ever adds - the removal is explicit");
         });
@@ -368,7 +403,7 @@ internal sealed class RuleStorageMigrationTests
         var form = XpSearchTuningModuleInstaller.RuleForm();
 
         form.RemoveFormField(nameof(XpSearchRuleInfo.RuleConditions));
-        form.RemoveFormField(nameof(XpSearchRuleInfo.RuleConsequences));
+        form.RemoveFormField(nameof(XpSearchRuleInfo.RuleActions));
         form.RemoveFormField(nameof(XpSearchRuleInfo.RuleMigrated));
 
         foreach (string column in RuleStorageMigration.LegacyColumns)
@@ -388,8 +423,8 @@ internal sealed class RuleValidationTests
 {
     private static readonly RuleConditions Something = new(new QueryCondition(QueryOperator.Contains, "grinder", false), [], string.Empty, string.Empty);
 
-    private static IReadOnlyList<string> Fields(string? name, RuleConditions? conditions, params RuleConsequence[] consequences) =>
-        [.. RuleValidation.Validate(name, conditions, consequences).Select(error => error.Field)];
+    private static IReadOnlyList<string> Fields(string? name, RuleConditions? conditions, params RuleAction[] actions) =>
+        [.. RuleValidation.Validate(name, conditions, actions).Select(error => error.Field)];
 
     [Test]
     public void ARuleThatSaysNothingIsRefused()
@@ -427,24 +462,24 @@ internal sealed class RuleValidationTests
                 "the Query toggle is on, so a text is required");
             Assert.That(Fields("r", new RuleConditions(null, [new AttributeIs("Category", " ")], string.Empty, string.Empty)), Does.Contain("filters"));
 
-            Assert.That(Fields("r", Something, new RuleConsequence.Pin(string.Empty, 1)), Does.Contain("consequence:0"));
-            Assert.That(Fields("r", Something, new RuleConsequence.Pin("doc-1", 0)), Does.Contain("consequence:0"), "position counts from 1");
-            Assert.That(Fields("r", Something, new RuleConsequence.Pin("doc-1", 1)), Is.Empty);
+            Assert.That(Fields("r", Something, new RuleAction.Pin(string.Empty, 1)), Does.Contain("action:0"));
+            Assert.That(Fields("r", Something, new RuleAction.Pin("doc-1", 0)), Does.Contain("action:0"), "position counts from 1");
+            Assert.That(Fields("r", Something, new RuleAction.Pin("doc-1", 1)), Is.Empty);
 
-            Assert.That(Fields("r", Something, new RuleConsequence.Hide(" ")), Does.Contain("consequence:0"));
-            Assert.That(Fields("r", Something, new RuleConsequence.Bury(" ", string.Empty)), Does.Contain("consequence:0"));
-            Assert.That(Fields("r", Something, new RuleConsequence.Boost(string.Empty, string.Empty, 2)), Does.Contain("consequence:0"));
-            Assert.That(Fields("r", Something, new RuleConsequence.Boost("doc-1", string.Empty, 0)), Does.Contain("consequence:0"), "a multiplier of 0 switches the rule off");
-            Assert.That(Fields("r", Something, new RuleConsequence.Boost(string.Empty, "Category:coffee", 2)), Is.Empty, "an expression is a target too");
-            Assert.That(Fields("r", Something, new RuleConsequence.FilterResults(" ")), Does.Contain("consequence:0"));
-            Assert.That(Fields("r", Something, new RuleConsequence.RemoveWord(" ")), Does.Contain("consequence:0"));
-            Assert.That(Fields("r", Something, new RuleConsequence.ReplaceWord("mill", " ")), Does.Contain("consequence:0"));
-            Assert.That(Fields("r", Something, new RuleConsequence.ReplaceQuery(" ")), Does.Contain("consequence:0"));
-            Assert.That(Fields("r", Something, new RuleConsequence.Redirect(" ")), Does.Contain("consequence:0"));
+            Assert.That(Fields("r", Something, new RuleAction.Hide(" ")), Does.Contain("action:0"));
+            Assert.That(Fields("r", Something, new RuleAction.Bury(" ", string.Empty)), Does.Contain("action:0"));
+            Assert.That(Fields("r", Something, new RuleAction.Boost(string.Empty, string.Empty, 2)), Does.Contain("action:0"));
+            Assert.That(Fields("r", Something, new RuleAction.Boost("doc-1", string.Empty, 0)), Does.Contain("action:0"), "a multiplier of 0 switches the rule off");
+            Assert.That(Fields("r", Something, new RuleAction.Boost(string.Empty, "Category:coffee", 2)), Is.Empty, "an expression is a target too");
+            Assert.That(Fields("r", Something, new RuleAction.FilterResults(" ")), Does.Contain("action:0"));
+            Assert.That(Fields("r", Something, new RuleAction.RemoveWord(" ")), Does.Contain("action:0"));
+            Assert.That(Fields("r", Something, new RuleAction.ReplaceWord("mill", " ")), Does.Contain("action:0"));
+            Assert.That(Fields("r", Something, new RuleAction.ReplaceQuery(" ")), Does.Contain("action:0"));
+            Assert.That(Fields("r", Something, new RuleAction.Redirect(" ")), Does.Contain("action:0"));
 
-            Assert.That(Fields("r", Something, new RuleConsequence.CustomData("{ \"banner\": ")), Does.Contain("consequence:0"), "invalid JSON blocks save");
-            Assert.That(Fields("r", Something, new RuleConsequence.CustomData("[1]")), Does.Contain("consequence:0"), "an array is not an object");
-            Assert.That(Fields("r", Something, new RuleConsequence.CustomData("{\"banner\":\"x\"}")), Is.Empty);
+            Assert.That(Fields("r", Something, new RuleAction.CustomData("{ \"banner\": ")), Does.Contain("action:0"), "invalid JSON blocks save");
+            Assert.That(Fields("r", Something, new RuleAction.CustomData("[1]")), Does.Contain("action:0"), "an array is not an object");
+            Assert.That(Fields("r", Something, new RuleAction.CustomData("{\"banner\":\"x\"}")), Is.Empty);
         });
     }
 
@@ -455,7 +490,7 @@ internal sealed class RuleValidationTests
         var errors = RuleValidation.Validate(
             "r",
             Something,
-            [new RuleConsequence.Pin("doc-1", 1), new RuleConsequence.Redirect(string.Empty)]);
+            [new RuleAction.Pin("doc-1", 1), new RuleAction.Redirect(string.Empty)]);
 
         Assert.That(errors.Select(error => error.Field), Is.EqualTo(new[] { RuleValidation.Field(1) }).AsCollection);
     }
@@ -491,17 +526,17 @@ internal sealed class RuleSummaryTests
     }
 
     [Test]
-    public void EveryConsequenceReadsAsASentence()
+    public void EveryActionReadsAsASentence()
     {
         Expect.Multiple(() =>
         {
-            Assert.That(RuleSummary.Describe(new RuleConsequence.Pin("doc-1", 1)), Is.EqualTo("Pin doc-1 to position 1"));
-            Assert.That(RuleSummary.Describe(new RuleConsequence.Hide("doc-1")), Is.EqualTo("Hide doc-1"));
-            Assert.That(RuleSummary.Describe(new RuleConsequence.Boost("doc-1", string.Empty, 2)), Is.EqualTo("Boost doc-1 ×2"));
-            Assert.That(RuleSummary.Describe(new RuleConsequence.Boost(string.Empty, "Category:coffee", 1.5)), Is.EqualTo("Boost Category:coffee ×1.5"));
-            Assert.That(RuleSummary.Describe(new RuleConsequence.RemoveWord("cheap")), Is.EqualTo("Remove the word “cheap”"));
-            Assert.That(RuleSummary.Describe(new RuleConsequence.CustomData("{}")), Is.EqualTo("Return custom data"));
-            Assert.That(RuleSummary.Describe((IReadOnlyList<RuleConsequence>)[]), Is.EqualTo("Nothing"));
+            Assert.That(RuleSummary.Describe(new RuleAction.Pin("doc-1", 1)), Is.EqualTo("Pin doc-1 to position 1"));
+            Assert.That(RuleSummary.Describe(new RuleAction.Hide("doc-1")), Is.EqualTo("Hide doc-1"));
+            Assert.That(RuleSummary.Describe(new RuleAction.Boost("doc-1", string.Empty, 2)), Is.EqualTo("Boost doc-1 ×2"));
+            Assert.That(RuleSummary.Describe(new RuleAction.Boost(string.Empty, "Category:coffee", 1.5)), Is.EqualTo("Boost Category:coffee ×1.5"));
+            Assert.That(RuleSummary.Describe(new RuleAction.RemoveWord("cheap")), Is.EqualTo("Remove the word “cheap”"));
+            Assert.That(RuleSummary.Describe(new RuleAction.CustomData("{}")), Is.EqualTo("Return custom data"));
+            Assert.That(RuleSummary.Describe((IReadOnlyList<RuleAction>)[]), Is.EqualTo("Nothing"));
         });
     }
 }
@@ -511,31 +546,31 @@ internal sealed class RuleSummaryTests
 internal sealed class RuleBuilderModelTests
 {
     /// <summary>
-    /// The flat consequence shape the client edits has to carry every type both ways, or a card would
+    /// The flat action shape the client edits has to carry every type both ways, or a card would
     /// silently save as something else.
     /// </summary>
     [Test]
-    public void EveryConsequenceTypeSurvivesTheWireShape()
+    public void EveryActionTypeSurvivesTheWireShape()
     {
-        RuleConsequence[] every =
+        RuleAction[] every =
         [
-            new RuleConsequence.Pin("doc-1", 2),
-            new RuleConsequence.Hide("doc-2"),
-            new RuleConsequence.Boost("doc-3", "Category:coffee", 3),
-            new RuleConsequence.Bury("doc-4", "Category:tea"),
-            new RuleConsequence.FilterResults("Category:coffee"),
-            new RuleConsequence.RemoveWord("cheap"),
-            new RuleConsequence.ReplaceWord("mill", "grinder"),
-            new RuleConsequence.ReplaceQuery("hand grinder"),
-            new RuleConsequence.Redirect("/promo"),
-            new RuleConsequence.CustomData("{\"a\":1}")
+            new RuleAction.Pin("doc-1", 2),
+            new RuleAction.Hide("doc-2"),
+            new RuleAction.Boost("doc-3", "Category:coffee", 3),
+            new RuleAction.Bury("doc-4", "Category:tea"),
+            new RuleAction.FilterResults("Category:coffee"),
+            new RuleAction.RemoveWord("cheap"),
+            new RuleAction.ReplaceWord("mill", "grinder"),
+            new RuleAction.ReplaceQuery("hand grinder"),
+            new RuleAction.Redirect("/promo"),
+            new RuleAction.CustomData("{\"a\":1}")
         ];
 
         Expect.Multiple(() =>
         {
-            Assert.That(RuleConsequenceDto.Types, Is.EquivalentTo(every.Select(c => RuleConsequenceDto.From(c).Type)));
-            Assert.That(every.Select(c => RuleConsequenceDto.From(c).ToModel()).ToList(), Is.EqualTo(every).AsCollection);
-            Assert.That(new RuleConsequenceDto { Type = "invented" }.ToModel(), Is.Null, "an unknown type is dropped, not guessed");
+            Assert.That(RuleActionDto.Types, Is.EquivalentTo(every.Select(c => RuleActionDto.From(c).Type)));
+            Assert.That(every.Select(c => RuleActionDto.From(c).ToModel()).ToList(), Is.EqualTo(every).AsCollection);
+            Assert.That(new RuleActionDto { Type = "invented" }.ToModel(), Is.Null, "an unknown type is dropped, not guessed");
         });
     }
 
@@ -550,10 +585,10 @@ internal sealed class RuleBuilderModelTests
             new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Utc),
             null,
             new RuleConditions(new QueryCondition(QueryOperator.StartsWith, "grind", true), [new AttributeIs("Category", "Grinders")], "vips", "en"),
-            [new RuleConsequence.Pin("doc-1", 1)]);
+            [new RuleAction.Pin("doc-1", 1)]);
 
         var dto = RuleDto.From(rule);
-        (var conditions, var consequences) = dto.ToModel();
+        (var conditions, var actions) = dto.ToModel();
 
         Expect.Multiple(() =>
         {
@@ -562,7 +597,7 @@ internal sealed class RuleBuilderModelTests
             Assert.That(RuleDto.Moment(dto.ValidFrom), Is.EqualTo(rule.ValidFrom));
             Assert.That(RuleDto.Moment("not a date"), Is.Null);
             SameConditions.Assert(conditions, rule.Conditions);
-            Assert.That(consequences, Is.EqualTo(rule.Consequences).AsCollection);
+            Assert.That(actions, Is.EqualTo(rule.Actions).AsCollection);
         });
     }
 
@@ -580,21 +615,21 @@ internal sealed class RuleBuilderModelTests
 
     /// <summary>
     /// A zero-result row seeds a rule that fires on that query and does nothing yet, so the marketer
-    /// only has to choose the consequence (spec §9.3).
+    /// only has to choose the action (spec §9.3).
     /// </summary>
     [Test]
     public void TheSeededRuleMatchesTheQueryAndDoesNothingYet()
     {
         var seeded = ZeroResultRuleCreatePage.SeedFor("yirgacheffe");
-        (var conditions, var consequences) = seeded.ToModel();
+        (var conditions, var actions) = seeded.ToModel();
 
         Expect.Multiple(() =>
         {
             Assert.That(seeded.Name, Is.EqualTo("Rule for 'yirgacheffe'"));
             Assert.That(conditions.Query, Is.EqualTo(new QueryCondition(QueryOperator.Contains, "yirgacheffe", false)));
-            Assert.That(consequences, Is.Empty);
+            Assert.That(actions, Is.Empty);
             Assert.That(seeded.Enabled, Is.True);
-            Assert.That(RuleValidation.Validate(seeded.Name, conditions, consequences), Is.Empty, "the seeded rule is savable as it stands");
+            Assert.That(RuleValidation.Validate(seeded.Name, conditions, actions), Is.Empty, "the seeded rule is savable as it stands");
         });
     }
 
@@ -612,15 +647,15 @@ internal sealed class RuleBuilderModelTests
     }
 
     /// <summary>
-    /// The builder and the storage speak the same consequence vocabulary; a discriminator renamed on
+    /// The builder and the storage speak the same action vocabulary; a discriminator renamed on
     /// one side only would store a rule the pipeline cannot read.
     /// </summary>
     [Test]
     public void TheWireDiscriminatorsAreTheStoredOnes()
     {
-        foreach (string type in RuleConsequenceDto.Types)
+        foreach (string type in RuleActionDto.Types)
         {
-            var model = new RuleConsequenceDto { Type = type, TargetId = "doc-1", Word = "w", Replacement = "r", Query = "q", Url = "/u", FilterExpression = "a:b", Json = "{}" }.ToModel();
+            var model = new RuleActionDto { Type = type, TargetId = "doc-1", Word = "w", Replacement = "r", Query = "q", Url = "/u", FilterExpression = "a:b", Json = "{}" }.ToModel();
 
             using var stored = JsonDocument.Parse(RuleJson.Write([model!]));
 

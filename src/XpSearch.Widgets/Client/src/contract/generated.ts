@@ -269,10 +269,10 @@ export interface SearchResponse {
     queryId?: string;
     /**
      * Required, and null whenever no redirect rule matched. Set when a relevance rule with the
-     * Redirect consequence matched this query; the first such rule in precedence order
-     * (priority, then id) wins. The results are still returned alongside it, because following
-     * a redirect is the client's decision: the shipped search box navigates only for a query
-     * the visitor submitted, never as they type.
+     * Redirect action matched this query; the first such rule in precedence order (priority,
+     * then id) wins. The results are still returned alongside it, because following a redirect
+     * is the client's decision: the shipped search box navigates only for a query the visitor
+     * submitted, never as they type.
      */
     redirect: SearchRedirect | null;
     /**
@@ -281,8 +281,8 @@ export interface SearchResponse {
     results: Result[];
     /**
      * Optional. Editor-authored data attached by matching Search-tuning rules (the
-     * Return-custom-data consequence), shallow-merged in rule order. Absent when no matching
-     * rule returns data.
+     * Return-custom-data action), shallow-merged in rule order. Absent when no matching rule
+     * returns data.
      */
     ruleData?: { [key: string]: unknown };
     /**

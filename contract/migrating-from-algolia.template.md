@@ -106,7 +106,7 @@ Things Algolia does that this product does not, stated plainly rather than appro
   filters the values already returned, in the browser.
 - **Personalization and A/B testing.** No equivalent, and none planned in this library.
 - **The Rules DSL.** Pinning, burying and conditional boosts are admin configuration in the Search
-  application, not a rule language with its own consequences and validity windows.
+  application, not a rule language with its own actions and validity windows.
 - **Numeric facet statistics.** The response carries no min/max per attribute, so a range control's
   bounds are configured rather than discovered.
 - **Impression events.** `/events` accepts clicks and conversions only.

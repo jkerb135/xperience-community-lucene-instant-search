@@ -3,21 +3,19 @@ import {
   Pagination,
   Card,
   CellType,
-  Column as LayoutColumn,
   ColumnContentType,
   Colors,
   Headline,
   HeadlineSize,
-  Inline,
-  LayoutAlignment,
-  Row as LayoutRow,
   Spacing,
   Table,
-  Tag,
+  Tag, Box
 } from '@kentico/xperience-admin-components';
 import type { TableColumn, TableRow } from '@kentico/xperience-admin-components';
 
-import { muted } from '../theme';
+import {muted,  flexRow} from '../theme';
+
+import "./ReportTable.scss";
 
 /*
  * The report card the analytics dashboard repeats four times: a Card holding a stock Table, with an
@@ -64,14 +62,10 @@ const TablePager = ({
   readonly total: number;
   readonly onChange: (page: number) => void;
 }) => (
-  <LayoutRow spacing={Spacing.S} alignX={LayoutAlignment.End} alignY={LayoutAlignment.Center}>
-    <LayoutColumn>
-      <p style={muted} aria-live="polite">{`Page ${page} of ${totalPages} · ${total} rows`}</p>
-    </LayoutColumn>
-    <LayoutColumn>
-      <Pagination selectedPage={page} totalPages={totalPages} onPageChange={onChange} />
-    </LayoutColumn>
-  </LayoutRow>
+  <Box spacing={Spacing.S} className={"pager"}>
+    <p style={muted} aria-live="polite">{`Page ${page} of ${totalPages} · ${total} rows`}</p>
+    <Pagination selectedPage={page} totalPages={totalPages} onPageChange={onChange} />
+  </Box>
 );
 
 interface ReportTableProps {
@@ -100,10 +94,10 @@ export const ReportTable = ({ headline, count, note, columns, rows, pageSize, em
   return (
     <Card
       headline={
-        <Inline spacing={Spacing.S}>
+        <div style={flexRow}>
           <Headline size={HeadlineSize.S}>{headline}</Headline>
-          {count === undefined ? null : <Tag label={count} readOnly background={{ color: Colors.BackgroundTagMajorelleBlue }} />}
-        </Inline>
+          {count === undefined ? null : <Tag label={count} readOnly background={{ color: Colors.InfoBackgroundHighEmphasis }} />}
+        </div>
       }
       description={note === undefined ? undefined : <p style={muted}>{note}</p>}
       footer={footer}

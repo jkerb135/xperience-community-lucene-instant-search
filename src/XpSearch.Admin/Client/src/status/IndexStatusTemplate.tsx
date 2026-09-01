@@ -238,7 +238,7 @@ export const IndexStatusTemplate = ({indexName}: IndexStatusProps) => {
                     <Tag
                         label={entry.succeeded ? 'Succeeded' : 'Failed'}
                         readOnly
-                        background={{color: entry.succeeded ? Colors.SuccessBackgroundLowEmphasis : Colors.AlertBackgroundLowEmphasis}}
+                        background={{color: entry.succeeded ? Colors.SuccessBackgroundHighEmphasis : Colors.AlertBackgroundHighEmphasis}}
                     />
                 )),
                 text('message', entry.message),

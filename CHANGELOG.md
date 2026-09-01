@@ -8,6 +8,20 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Changed — BREAKING for custom `IRelevanceTuningSource` implementations and for anything reading
+  `RuleConsequences`:** a rule's `then` is called an **action** everywhere, not a *consequence*.
+  `RuleConsequence` is now `RuleAction` (with the same ten nested records), `TuningRule.Consequences`
+  is `TuningRule.Actions`, `RuleJson.ReadConsequences` is `RuleJson.ReadActions`, and the admin
+  template props, validation field names (`action:{index}`) and UI labels (**Action(s)**, **Add
+  action**) follow. **The stored JSON is unchanged**: the same array, the same `type` discriminators
+  (`pin`, `hide`, `boost`, …) and the same member names — only the column it lives in was renamed,
+  `RuleConsequences` → `RuleActions`. Upgrading is automatic: `RuleStorageMigration` copies a row's
+  `RuleConsequences` verbatim into an empty `RuleActions` on the same start-up pass that converts the
+  flat columns, then retires the old column with them. The pass stays idempotent and crash-safe — the
+  marker is still the row itself — and `InfoRelevanceTuningSource.Read` falls back to the old column
+  for a row inserted by a script after start-up. Conditions are untouched, including the
+  `RuleConditions` column.
+
 - **Changed (admin):** the **Field** input of a field weight is a drop-down of the scoped index's
   searchable fields instead of a text box. A stored weight naming a field the index no longer has
   keeps that value as an option, so opening the row and saving it cannot silently retarget the weight.

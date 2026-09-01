@@ -15,13 +15,13 @@ namespace XpSearch.Admin.UIPages.RuleBuilder;
 /// <summary>
 /// The if/then rule builder (ADR-0022, design canvas 5a-5f): the rule-level settings strip, the
 /// <c>If</c> column of condition summary rows with a side panel behind each, and the <c>Then</c>
-/// column of consequence cards.
+/// column of action cards.
 /// </summary>
 /// <remarks>
 /// A custom client template, because the model is a list of conditions and an ordered list of ten
-/// kinds of consequence - a shape no built-in template can express
+/// kinds of action - a shape no built-in template can express
 /// (https://docs.kentico.com/documentation/developers-and-admins/customization/extend-the-administration-interface/ui-pages).
-/// It replaces the flat one-condition/one-consequence EDIT form of ADR-0014, at the same URLs.
+/// It replaces the flat one-condition/one-action EDIT form of ADR-0014, at the same URLs.
 /// </remarks>
 public abstract class RuleBuilderPage : Page<RuleBuilderClientProperties>
 {
@@ -142,9 +142,9 @@ public abstract class RuleBuilderPage : Page<RuleBuilderClientProperties>
             return Refuse(RuleSaveResult.Failed("This rule belongs to a different search index and was not saved."));
         }
 
-        (var conditions, var consequences) = submitted.ToModel();
+        (var conditions, var actions) = submitted.ToModel();
 
-        var errors = RuleValidation.Validate(submitted.Name, conditions, consequences);
+        var errors = RuleValidation.Validate(submitted.Name, conditions, actions);
 
         if (errors.Count > 0)
         {
@@ -162,7 +162,7 @@ public abstract class RuleBuilderPage : Page<RuleBuilderClientProperties>
         row.RuleValidFrom = RuleDto.Moment(submitted.ValidFrom);
         row.RuleValidTo = RuleDto.Moment(submitted.ValidTo);
         row.RuleConditions = RuleJson.Write(conditions);
-        row.RuleConsequences = RuleJson.Write(consequences);
+        row.RuleActions = RuleJson.Write(actions);
 
         // The "converted from the previous format" note has now been seen and acted on.
         row.RuleMigrated = false;

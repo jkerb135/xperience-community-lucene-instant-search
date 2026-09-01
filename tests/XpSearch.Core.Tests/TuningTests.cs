@@ -35,7 +35,7 @@ internal sealed class RuleSelectionTests
     private static readonly DateTime Now = new(2026, 8, 21, 12, 0, 0, DateTimeKind.Utc);
 
     /// <summary>
-    /// A rule with one query condition and one consequence - the shape most of these tests need.
+    /// A rule with one query condition and one action - the shape most of these tests need.
     /// See <see cref="LegacyRuleShapes"/>.
     /// </summary>
     internal static TuningRule Rule(
@@ -44,7 +44,7 @@ internal sealed class RuleSelectionTests
         bool enabled = true,
         FlatCondition condition = FlatCondition.Contains,
         string pattern = "espresso",
-        FlatConsequence consequence = FlatConsequence.Boost,
+        FlatConsequence action = FlatConsequence.Boost,
         string targetId = "",
         int targetPosition = 0,
         double boost = 2,
@@ -55,7 +55,7 @@ internal sealed class RuleSelectionTests
         int priority = 100,
         string contactGroup = "") =>
         LegacyRuleShapes.Build(
-            id, name, enabled, condition, pattern, consequence, targetId, targetPosition, boost, filter, redirectUrl, from, to, priority, contactGroup);
+            id, name, enabled, condition, pattern, action, targetId, targetPosition, boost, filter, redirectUrl, from, to, priority, contactGroup);
 
     /// <summary>Whether a rule fires for a query alone: no filters, no language, no contact group.</summary>
     private static bool Fires(TuningRule rule, string query) =>
@@ -184,7 +184,7 @@ internal sealed class TuningPipelineTests
     {
         var source = new FakeTuningSource
         {
-            Rules = [RuleSelectionTests.Rule(consequence: FlatConsequence.Pin, targetId: "doc-5:en", targetPosition: 1)]
+            Rules = [RuleSelectionTests.Rule(action: FlatConsequence.Pin, targetId: "doc-5:en", targetPosition: 1)]
         };
 
         using var harness = Harness(source);
@@ -199,7 +199,7 @@ internal sealed class TuningPipelineTests
     {
         var source = new FakeTuningSource
         {
-            Rules = [RuleSelectionTests.Rule(consequence: FlatConsequence.Pin, targetId: "doc-4:en", targetPosition: 1)]
+            Rules = [RuleSelectionTests.Rule(action: FlatConsequence.Pin, targetId: "doc-4:en", targetPosition: 1)]
         };
 
         using var harness = Harness(source);
@@ -220,7 +220,7 @@ internal sealed class TuningPipelineTests
     {
         var source = new FakeTuningSource
         {
-            Rules = [RuleSelectionTests.Rule(consequence: FlatConsequence.Pin, targetId: "doc-4:en", targetPosition: 1)]
+            Rules = [RuleSelectionTests.Rule(action: FlatConsequence.Pin, targetId: "doc-4:en", targetPosition: 1)]
         };
 
         using var harness = Harness(source);
@@ -245,7 +245,7 @@ internal sealed class TuningPipelineTests
     {
         var source = new FakeTuningSource
         {
-            Rules = [RuleSelectionTests.Rule(consequence: FlatConsequence.Pin, targetId: "doc-5:en", targetPosition: 1)]
+            Rules = [RuleSelectionTests.Rule(action: FlatConsequence.Pin, targetId: "doc-5:en", targetPosition: 1)]
         };
 
         using var harness = Harness(source);
@@ -266,7 +266,7 @@ internal sealed class TuningPipelineTests
     {
         var source = new FakeTuningSource
         {
-            Rules = [RuleSelectionTests.Rule(consequence: FlatConsequence.Bury, targetId: "doc-1:en")]
+            Rules = [RuleSelectionTests.Rule(action: FlatConsequence.Bury, targetId: "doc-1:en")]
         };
 
         using var harness = Harness(source);
@@ -287,7 +287,7 @@ internal sealed class TuningPipelineTests
     {
         var source = new FakeTuningSource
         {
-            Rules = [RuleSelectionTests.Rule(consequence: FlatConsequence.Boost, targetId: "doc-3:en", boost: 100)]
+            Rules = [RuleSelectionTests.Rule(action: FlatConsequence.Boost, targetId: "doc-3:en", boost: 100)]
         };
 
         using var harness = Harness(source);
@@ -305,7 +305,7 @@ internal sealed class TuningPipelineTests
             Rules =
             [
                 RuleSelectionTests.Rule(
-                    consequence: FlatConsequence.Filter,
+                    action: FlatConsequence.Filter,
                     filter: $"{TestCorpus.CategoryField}:equipment")
             ]
         };
@@ -333,7 +333,7 @@ internal sealed class TuningPipelineTests
             Rules =
             [
                 RuleSelectionTests.Rule(
-                    consequence: FlatConsequence.Filter,
+                    action: FlatConsequence.Filter,
                     filter: $"{TestCorpus.ContentTypeField}:Product")
             ]
         };
@@ -358,7 +358,7 @@ internal sealed class TuningPipelineTests
             [
                 RuleSelectionTests.Rule(
                     name: "Espresso landing page",
-                    consequence: FlatConsequence.Redirect,
+                    action: FlatConsequence.Redirect,
                     redirectUrl: "  /promotions/espresso  ")
             ]
         };
@@ -384,10 +384,10 @@ internal sealed class TuningPipelineTests
         {
             Rules =
             [
-                RuleSelectionTests.Rule(id: 1, enabled: false, consequence: FlatConsequence.Redirect, redirectUrl: "/disabled"),
-                RuleSelectionTests.Rule(id: 2, consequence: FlatConsequence.Redirect, redirectUrl: "/expired", to: never),
-                RuleSelectionTests.Rule(id: 3, pattern: "decaf", consequence: FlatConsequence.Redirect, redirectUrl: "/other-query"),
-                RuleSelectionTests.Rule(id: 4, consequence: FlatConsequence.Redirect, redirectUrl: "   ")
+                RuleSelectionTests.Rule(id: 1, enabled: false, action: FlatConsequence.Redirect, redirectUrl: "/disabled"),
+                RuleSelectionTests.Rule(id: 2, action: FlatConsequence.Redirect, redirectUrl: "/expired", to: never),
+                RuleSelectionTests.Rule(id: 3, pattern: "decaf", action: FlatConsequence.Redirect, redirectUrl: "/other-query"),
+                RuleSelectionTests.Rule(id: 4, action: FlatConsequence.Redirect, redirectUrl: "   ")
             ]
         };
 
@@ -411,9 +411,9 @@ internal sealed class TuningPipelineTests
         {
             Rules =
             [
-                RuleSelectionTests.Rule(id: 7, name: "Late", consequence: FlatConsequence.Redirect, redirectUrl: "/late", priority: 200),
-                RuleSelectionTests.Rule(id: 9, name: "Early", consequence: FlatConsequence.Redirect, redirectUrl: "/early", priority: 100),
-                RuleSelectionTests.Rule(id: 2, name: "Same priority, lower id", consequence: FlatConsequence.Redirect, redirectUrl: "/tie-break", priority: 100)
+                RuleSelectionTests.Rule(id: 7, name: "Late", action: FlatConsequence.Redirect, redirectUrl: "/late", priority: 200),
+                RuleSelectionTests.Rule(id: 9, name: "Early", action: FlatConsequence.Redirect, redirectUrl: "/early", priority: 100),
+                RuleSelectionTests.Rule(id: 2, name: "Same priority, lower id", action: FlatConsequence.Redirect, redirectUrl: "/tie-break", priority: 100)
             ]
         };
 
@@ -431,7 +431,7 @@ internal sealed class TuningPipelineTests
         {
             Rules =
             [
-                RuleSelectionTests.Rule(name: "Support redirect", consequence: FlatConsequence.Redirect, redirectUrl: "/support")
+                RuleSelectionTests.Rule(name: "Support redirect", action: FlatConsequence.Redirect, redirectUrl: "/support")
             ]
         };
 
@@ -475,7 +475,7 @@ internal sealed class TuningPipelineTests
     {
         var source = new FakeTuningSource
         {
-            Rules = [RuleSelectionTests.Rule(name: "Promote machines", consequence: FlatConsequence.Boost, targetId: "doc-3:en", boost: 5)],
+            Rules = [RuleSelectionTests.Rule(name: "Promote machines", action: FlatConsequence.Boost, targetId: "doc-3:en", boost: 5)],
             Synonyms = [new TuningSynonym(SynonymDirection.TwoWay, ["espresso", "coffee"], [])],
             Weights = [new FieldWeight(TestCorpus.BodyField, 2.5)]
         };

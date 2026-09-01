@@ -24,24 +24,24 @@ import { usePageCommand } from '@kentico/xperience-admin-base';
 
 import { muted } from '../theme';
 import { ConditionPanel } from './ConditionPanel';
-import { ConsequenceCard } from './ConsequenceCard';
+import { ActionCard } from './ActionCard';
 import {
   conflicts,
-  consequenceLabels,
-  consequenceTypes,
-  emptyConsequence,
+  actionLabels,
+  actionTypes,
+  emptyAction,
   isEmpty,
   merge,
   newFragment,
   split,
 } from './model';
-import type { Consequence, ConsequenceType, ContactGroup, Fragment, Rule, RuleError, SaveResult } from './model';
+import type { Action, ActionType, ContactGroup, Fragment, Rule, RuleError, SaveResult } from './model';
 import { describe } from './summary';
 import styles from './RuleBuilderTemplate.module.scss';
 
 /*
  * Client template of the if/then rule builder (ADR-0022), built to the owner's approved design
- * canvas: 5a the editor, 5b the add-consequence menu, 5c the five new editors, 5d validation,
+ * canvas: 5a the editor, 5b the add-action menu, 5c the five new editors, 5d validation,
  * 5e narrow at 1024, 5f the condition side panel. Registered as
  * "@xperience-community/xperience-search/RuleBuilder"; the back end is
  * XpSearch.Admin.UIPages.RuleBuilder.RuleBuilderPage.
@@ -64,8 +64,8 @@ const Commands = {
   Delete: 'Delete',
 };
 
-/** The field name the server addresses a consequence card's errors to. */
-const consequenceField = (index: number): string => `consequence:${index}`;
+/** The field name the server addresses an action card's errors to. */
+const actionField = (index: number): string => `action:${index}`;
 
 const messagesFor = (errors: RuleError[], field: string): string[] =>
   errors.filter((error) => error.field === field).map((error) => error.message);
@@ -77,7 +77,7 @@ export const RuleBuilderTemplate = ({ indexName, rule, contactGroups, languages,
   const [validFrom, setValidFrom] = useState(rule.validFrom);
   const [validTo, setValidTo] = useState(rule.validTo);
   const [fragments, setFragments] = useState<Fragment[]>(split(rule.conditions));
-  const [consequences, setConsequences] = useState<Consequence[]>(rule.consequences);
+  const [actions, setActions] = useState<Action[]>(rule.actions);
   const [editing, setEditing] = useState<number | undefined>(undefined);
   const [errors, setErrors] = useState<RuleError[]>([]);
   const [saving, setSaving] = useState(false);
@@ -111,7 +111,7 @@ export const RuleBuilderTemplate = ({ indexName, rule, contactGroups, languages,
       validFrom,
       validTo,
       conditions: merge(fragments),
-      consequences,
+      actions,
     });
   };
 
@@ -125,10 +125,10 @@ export const RuleBuilderTemplate = ({ indexName, rule, contactGroups, languages,
     setEditing(fragments.length);
   };
 
-  const addConsequence = (type: ConsequenceType) => setConsequences((current) => [...current, emptyConsequence(type)]);
+  const addAction = (type: ActionType) => setActions((current) => [...current, emptyAction(type)]);
 
-  const changeConsequence = (at: number, values: Partial<Consequence>) =>
-    setConsequences((current) => current.map((consequence, i) => (i === at ? { ...consequence, ...values } : consequence)));
+  const changeAction = (at: number, values: Partial<Action>) =>
+    setActions((current) => current.map((action, i) => (i === at ? { ...action, ...values } : action)));
 
   const pageErrors = messagesFor(errors, 'page');
   const nameErrors = messagesFor(errors, 'name');
@@ -189,7 +189,7 @@ export const RuleBuilderTemplate = ({ indexName, rule, contactGroups, languages,
             headline="Converted from the previous format"
             maxWidth="100%"
           >
-            Converted from the previous format — one condition, one consequence. Nothing about its behaviour changed.
+            Converted from the previous format — one condition, one action. Nothing about its behaviour changed.
           </Callout>
         ) : null}
 
@@ -249,11 +249,12 @@ export const RuleBuilderTemplate = ({ indexName, rule, contactGroups, languages,
                 <DateTimeRangeInput
                     timeZone="UTC"
                     showTime={false}
+                    minDate={new Date()}
                     allowClear
                     value={validFrom !== '' && validTo !== ''
                         ? {from: new Date(`${validFrom}T00:00:00Z`), to: new Date(`${validTo}T00:00:00Z`)}
                         : null}
-                    onChange={(range) => {
+                    onChange={(range: any) => {
                       if (range === null) {
                         setValidFrom('');
                         setValidTo('');
@@ -285,7 +286,7 @@ export const RuleBuilderTemplate = ({ indexName, rule, contactGroups, languages,
                 maxWidth="100%"
               >
                 A rule needs at least one condition — what the visitor searched, the filters on the request, or who they are
-                (contact group, language). Consequences describe what happens when every condition holds.
+                (contact group, language). Actions describe what happens when every condition holds.
               </Callout>
             ) : null}
 
@@ -340,13 +341,13 @@ export const RuleBuilderTemplate = ({ indexName, rule, contactGroups, languages,
             </p>
           </div>
           <div className={styles.flowStack}>
-            {consequences.map((consequence, index) => (
-              <ConsequenceCard
-                key={`${consequence.type}-${index}`}
-                consequence={consequence}
-                errors={messagesFor(errors, consequenceField(index))}
-                onChange={(values) => changeConsequence(index, values)}
-                onRemove={() => setConsequences((current) => current.filter((_, i) => i !== index))}
+            {actions.map((action, index) => (
+              <ActionCard
+                key={`${action.type}-${index}`}
+                action={action}
+                errors={messagesFor(errors, actionField(index))}
+                onChange={(values) => changeAction(index, values)}
+                onRemove={() => setActions((current) => current.filter((_, i) => i !== index))}
               />
             ))}
 
@@ -355,21 +356,21 @@ export const RuleBuilderTemplate = ({ indexName, rule, contactGroups, languages,
                 placement={DropDownPlacement.BottomStart}
                 renderTrigger={(ref, onTriggerClick) => (
                   <span ref={ref as React.RefObject<HTMLSpanElement>}>
-                    <Button label="Add consequence" icon="xp-chevron-down" color={ButtonColor.Tertiary} onClick={onTriggerClick} />
+                    <Button label="Add action" icon="xp-chevron-down" color={ButtonColor.Tertiary} onClick={onTriggerClick} />
                   </span>
                 )}
               >
-                {consequenceTypes.map((type) => (
+                {actionTypes.map((type) => (
                   <MenuItem
                     key={type}
-                    primaryLabel={consequenceLabels[type].label}
-                    secondaryLabel={consequenceLabels[type].hint}
+                    primaryLabel={actionLabels[type].label}
+                    secondaryLabel={actionLabels[type].hint}
                     trailingElement={
-                      consequenceLabels[type].isNew
+                      actionLabels[type].isNew
                         ? { type: 'label' as const, element: <Tag label="new" readOnly background={{ color: Colors.BackgroundTagNeonGreen }} /> }
                         : undefined
                     }
-                    onClick={() => addConsequence(type)}
+                    onClick={() => addAction(type)}
                   />
                 ))}
               </DropDownActionMenu>

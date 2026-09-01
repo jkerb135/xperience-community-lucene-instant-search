@@ -53,7 +53,7 @@ public sealed class XpSearchTuningModuleInstaller
         // never has those columns at all. Both allow empty: a row is written before the builder can
         // have filled them, and an empty "if" is exactly the marker the migration keys on.
         Add(form, nameof(XpSearchRuleInfo.RuleConditions), FieldDataType.LongText, allowEmpty: true);
-        Add(form, nameof(XpSearchRuleInfo.RuleConsequences), FieldDataType.LongText, allowEmpty: true);
+        Add(form, nameof(XpSearchRuleInfo.RuleActions), FieldDataType.LongText, allowEmpty: true);
         Add(form, nameof(XpSearchRuleInfo.RuleMigrated), FieldDataType.Boolean);
         Add(form, nameof(XpSearchRuleInfo.RuleValidFrom), FieldDataType.DateTime, allowEmpty: true);
         Add(form, nameof(XpSearchRuleInfo.RuleValidTo), FieldDataType.DateTime, allowEmpty: true);

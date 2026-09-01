@@ -48,7 +48,7 @@ Say the search *espresso machine* should always show your flagship machine first
 4. Under **Condition(s) — If**, select **Add condition**. A panel slides in from the right. Turn
    **Query** on, leave the operator at *Contains*, type `espresso machine`, and select **Apply**. The
    panel closes and the condition reads back as `Query contains “espresso machine”`.
-5. Under **Consequence(s) — Then**, select **Add consequence** and pick **Pin an item**. Fill in the
+5. Under **Action(s) — Then**, select **Add action** and pick **Pin an item**. Fill in the
    **Item** (the id of the product, for example `f3c1…:en` — see *Finding a result id* below) and
    **Position** `1`. Select **Save rule**.
 
@@ -97,7 +97,7 @@ A rule matches **one** query pattern and has **one** contact group and language,
 own the Query switch and only one can own Context. Turning a second one on is refused with a message
 rather than silently overwriting the first. Filters add up across cards.
 
-**The Then column.** One card per consequence, applied top to bottom. **Add consequence** opens a
+**The Then column.** One card per action, applied top to bottom. **Add action** opens a
 menu of the ten kinds listed below; a kind already used stays available, because a rule may pin
 several items or chain rewrites. Each card has its own fields and a **Remove**.
 
@@ -119,7 +119,7 @@ the specific message on the field that has to change. The checks are:
 Nothing is written when a save is refused.
 
 **Rules converted from the previous release** open with a note: *“Converted from the previous format
-— one condition, one consequence. Nothing about its behaviour changed.”* It appears once; saving the
+— one condition, one action. Nothing about its behaviour changed.”* It appears once; saving the
 rule clears it. You do not have to do anything about it.
 
 **The Rules listing** shows the same condition summary in its *Conditions* column, so you can read
@@ -151,7 +151,7 @@ their search.
    - **Add condition** → turn **Query** on, *Contains*, `coffee`; turn **Context** on and select
      *Grinder shoppers* as the **Contact group** → **Apply**. Both live on one card, whose summary
      reads `Query contains "coffee" · Contact group Grinder shoppers · any language`.
-   - **Add consequence** → **Boost matching results**. Put the id of the grinder you want lifted
+   - **Add action** → **Boost matching results**. Put the id of the grinder you want lifted
      in **Item** and `2` in **Multiplier**.
 3. **Save rule.**
 
@@ -197,8 +197,8 @@ tracking, do whatever puts you in the group, then search. If nothing changes, th
 
 ### What a rule is: if this, then that
 
-A rule is a list of **conditions** and a list of **consequences**. Every condition has to hold for
-the rule to fire; when it does, its consequences are applied in the order they are listed. A rule
+A rule is a list of **conditions** and a list of **actions**. Every condition has to hold for
+the rule to fire; when it does, its actions are applied in the order they are listed. A rule
 with no conditions at all never fires — an "if" that is always true would change every search on the
 site, so it is treated as unfinished rather than as a wildcard.
 
@@ -527,7 +527,7 @@ opening the index's configuration form first.
 - The **attribute** box on a filter condition is free text — it does not offer the attributes your
   index actually has. Copy the name from a search result or from the facet **Attribute** drop-down on
   the index settings page. A wrong name simply never matches.
-- Consequences are reordered by removing and re-adding a card; there is no drag handle.
+- Actions are reordered by removing and re-adding a card; there is no drag handle.
 
 ### Appendix: how a rule is stored
 
@@ -551,7 +551,7 @@ columns; the rest of the row is the name, the schedule, the priority and the ind
 `operator` is `is`, `contains` or `startsWith`. A rule that is scoped to nobody in particular reads
 `{"filters":[],"contactGroup":"","language":""}`.
 
-**`RuleConsequences`** — an array, in the order the rule applies them, each tagged with `type`:
+**`RuleActions`** — an array, in the order the rule applies them, each tagged with `type`:
 
 | `type` | The rest of the object |
 |---|---|
@@ -572,12 +572,16 @@ columns; the rest of the row is the name, the schedule, the priority and the ind
 ```
 
 **Upgrading from the previous release.** Rules written before this release used nine separate columns
-for one condition and one consequence. They are converted the first time the application starts, in
+for one condition and one action. They are converted the first time the application starts, in
 place, automatically, and nothing changes meaning — including the two odd corners of the old model:
 *Is anything at all* becomes "contains nothing in particular", which still fires on every search, and
 a rule whose pattern was blank under any other operator comes back **disabled**, because it never
 matched anything anyway. Converted rules show the note described above until you save them. The nine
 old columns are removed once every row has been converted.
+
+The `then` of a rule was briefly stored in a column called `RuleConsequences`. If your database has
+one, the same start-up pass copies it into `RuleActions` unchanged — the array itself, `type`
+discriminators and all, is the same — and then removes it. There is nothing to do by hand.
 
 The full specification, including why the conversion needs no flag to be safe, is in
 [ADR-0022](../adr/0022-if-then-rule-engine.md#addendum--storage-and-migration-unit-cr-4b-2026-08-24).

@@ -1,10 +1,12 @@
-/*
- * Layout of the index status page. Scoped by css-loader's CSS-module handling of *.module.css,
- * so nothing here can reach admin chrome. Colours and type come from the components library.
- */
-
 .page {
   padding: 16px;
+}
+
+.flex-center {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: start;
 }
 
 .header {
@@ -20,6 +22,7 @@
   margin: 4px 0 0;
   color: var(--color-text-low-emphasis);
 }
+
 
 .figures {
   display: flex;

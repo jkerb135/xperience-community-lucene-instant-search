@@ -12,20 +12,20 @@ using XpSearch.Core.Tuning;
 namespace XpSearch.Core.Tests;
 
 /// <summary>
-/// The type discriminators the consequence model carries (ADR-0022 addendum). They are the stored
-/// contract of the Admin package's <c>RuleConsequences</c> column, so a consequence added without one
+/// The type discriminators the action model carries (ADR-0022 addendum). They are the stored
+/// contract of the Admin package's <c>RuleActions</c> column, so an action added without one
 /// - or given a name that is already taken - would silently reinterpret rules that are already saved.
 /// </summary>
 [TestFixture]
-internal sealed class RuleConsequenceDiscriminatorTests
+internal sealed class RuleActionDiscriminatorTests
 {
     private static readonly JsonDerivedTypeAttribute[] Declared =
-        [.. typeof(RuleConsequence).GetCustomAttributes(typeof(JsonDerivedTypeAttribute), inherit: false).Cast<JsonDerivedTypeAttribute>()];
+        [.. typeof(RuleAction).GetCustomAttributes(typeof(JsonDerivedTypeAttribute), inherit: false).Cast<JsonDerivedTypeAttribute>()];
 
     [Test]
-    public void EveryConsequenceHasOneAndTheDiscriminatorsAreUnique()
+    public void EveryActionHasOneAndTheDiscriminatorsAreUnique()
     {
-        var nested = typeof(RuleConsequence).GetNestedTypes();
+        var nested = typeof(RuleAction).GetNestedTypes();
 
         Expect.Multiple(() =>
         {
@@ -33,7 +33,7 @@ internal sealed class RuleConsequenceDiscriminatorTests
             Assert.That(
                 Declared.Select(attribute => attribute.TypeDiscriminator).Distinct(),
                 Has.Exactly(nested.Length).Items,
-                "two consequences sharing a discriminator would read back as the wrong one");
+                "two actions sharing a discriminator would read back as the wrong one");
         });
     }
 
@@ -54,20 +54,20 @@ internal sealed class RuleConsequenceDiscriminatorTests
     [Test]
     public void ARoundTripThroughTheDiscriminatorKeepsTheValues()
     {
-        RuleConsequence pinned = new RuleConsequence.Pin("doc-1:en", 4);
+        RuleAction pinned = new RuleAction.Pin("doc-1:en", 4);
 
         string written = JsonSerializer.Serialize(pinned, new JsonSerializerOptions(JsonSerializerDefaults.Web));
 
         Expect.Multiple(() =>
         {
             Assert.That(written, Does.StartWith("{\"type\":\"pin\""));
-            Assert.That(JsonSerializer.Deserialize<RuleConsequence>(written, new JsonSerializerOptions(JsonSerializerDefaults.Web)), Is.EqualTo(pinned));
+            Assert.That(JsonSerializer.Deserialize<RuleAction>(written, new JsonSerializerOptions(JsonSerializerDefaults.Web)), Is.EqualTo(pinned));
         });
     }
 }
 
 /// <summary>
-/// The if/then rule engine of ADR-0022: which conditions fire a rule, and what its consequences do
+/// The if/then rule engine of ADR-0022: which conditions fire a rule, and what its actions do
 /// to the query, the results and the response.
 /// </summary>
 [TestFixture]
@@ -117,7 +117,7 @@ internal sealed class RuleConditionTests
     }
 
     private static TuningRule Rule(RuleConditions conditions) =>
-        new(1, "rule", true, 100, null, null, conditions, [new RuleConsequence.Redirect("/x")]);
+        new(1, "rule", true, 100, null, null, conditions, [new RuleAction.Redirect("/x")]);
 
     private static RuleConditions Conditions(
         QueryCondition? query = null,
@@ -253,16 +253,16 @@ internal sealed class RuleConditionTests
 }
 
 /// <summary>
-/// The consequences over the real Lucene fixture: query rewrites, hide, several consequences on one
+/// The actions over the real Lucene fixture: query rewrites, hide, several actions on one
 /// rule and the data a rule attaches to the response.
 /// </summary>
 [TestFixture]
-internal sealed class RuleConsequencePipelineTests
+internal sealed class RuleActionPipelineTests
 {
     private static SearchRequest Request(string query, bool explain = false) =>
         new() { Index = TestCorpus.IndexName, Query = query, PageSize = 10, Explain = explain };
 
-    private static TuningRule Rule(int id, string pattern, params RuleConsequence[] consequences) =>
+    private static TuningRule Rule(int id, string pattern, params RuleAction[] actions) =>
         new(
             id,
             $"rule-{id}",
@@ -271,7 +271,7 @@ internal sealed class RuleConsequencePipelineTests
             null,
             null,
             new RuleConditions(new QueryCondition(QueryOperator.Contains, pattern, false), [], string.Empty, string.Empty),
-            consequences);
+            actions);
 
     /// <summary>Captures the query as the stages that build the Lucene query see it.</summary>
     private sealed class CaptureQueryStage : ISearchStage
@@ -298,8 +298,8 @@ internal sealed class RuleConsequencePipelineTests
         {
             Rules =
             [
-                Rule(1, "cheap", new RuleConsequence.RemoveWord("cheap"), new RuleConsequence.ReplaceWord("machine", "grinder")),
-                Rule(2, "espresso", new RuleConsequence.ReplaceWord("grinder", "mill"))
+                Rule(1, "cheap", new RuleAction.RemoveWord("cheap"), new RuleAction.ReplaceWord("machine", "grinder")),
+                Rule(2, "espresso", new RuleAction.ReplaceWord("grinder", "mill"))
             ]
         };
 
@@ -316,7 +316,7 @@ internal sealed class RuleConsequencePipelineTests
     {
         var source = new FakeTuningSource
         {
-            Rules = [Rule(1, "beans", new RuleConsequence.ReplaceQuery("grinder"))],
+            Rules = [Rule(1, "beans", new RuleAction.ReplaceQuery("grinder"))],
             Synonyms = [new TuningSynonym(SynonymDirection.TwoWay, ["grinder", "mill"], [])]
         };
 
@@ -339,7 +339,7 @@ internal sealed class RuleConsequencePipelineTests
     [Test]
     public async Task Hide_TakesTheDocumentOutOfTheResultsAndOutOfTheTotal()
     {
-        var source = new FakeTuningSource { Rules = [Rule(1, "espresso", new RuleConsequence.Hide("doc-1:en"))] };
+        var source = new FakeTuningSource { Rules = [Rule(1, "espresso", new RuleAction.Hide("doc-1:en"))] };
 
         using var harness = new TestHarness(tuning: source);
         using var untuned = new TestHarness();
@@ -362,7 +362,7 @@ internal sealed class RuleConsequencePipelineTests
         {
             Rules =
             [
-                Rule(1, "espresso", new RuleConsequence.Hide("doc-4:en"), new RuleConsequence.Pin("doc-4:en", 1))
+                Rule(1, "espresso", new RuleAction.Hide("doc-4:en"), new RuleAction.Pin("doc-4:en", 1))
             ]
         };
 
@@ -374,7 +374,7 @@ internal sealed class RuleConsequencePipelineTests
     }
 
     [Test]
-    public async Task OneRuleAppliesEveryConsequenceItLists()
+    public async Task OneRuleAppliesEveryActionItLists()
     {
         var source = new FakeTuningSource
         {
@@ -383,9 +383,9 @@ internal sealed class RuleConsequencePipelineTests
                 Rule(
                     1,
                     "espresso",
-                    new RuleConsequence.Pin("doc-5:en", 1),
-                    new RuleConsequence.Bury("doc-1:en", string.Empty),
-                    new RuleConsequence.CustomData("""{"banner":"espresso-week"}"""))
+                    new RuleAction.Pin("doc-5:en", 1),
+                    new RuleAction.Bury("doc-1:en", string.Empty),
+                    new RuleAction.CustomData("""{"banner":"espresso-week"}"""))
             ]
         };
 
@@ -408,10 +408,10 @@ internal sealed class RuleConsequencePipelineTests
         {
             Rules =
             [
-                Rule(1, "espresso", new RuleConsequence.CustomData("""{"banner":"first","layout":"grid"}""")),
-                Rule(2, "espresso", new RuleConsequence.CustomData("""{"banner":"second"}""")),
-                Rule(3, "espresso", new RuleConsequence.CustomData("not json at all")),
-                Rule(4, "espresso", new RuleConsequence.CustomData("[1,2,3]"))
+                Rule(1, "espresso", new RuleAction.CustomData("""{"banner":"first","layout":"grid"}""")),
+                Rule(2, "espresso", new RuleAction.CustomData("""{"banner":"second"}""")),
+                Rule(3, "espresso", new RuleAction.CustomData("not json at all")),
+                Rule(4, "espresso", new RuleAction.CustomData("[1,2,3]"))
             ]
         };
 

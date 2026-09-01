@@ -75,7 +75,7 @@ export const specSearchResponse: SearchResponse = {
   totalPages: 3,
   tookMs: 14,
   redirect: null,
-  // Attached by a Search-tuning rule with the Return-custom-data consequence, shallow-merged
+  // Attached by a Search-tuning rule with the Return-custom-data action, shallow-merged
   // in rule order. Absent whenever no matching rule returned data.
   ruleData: { banner: 'espresso-week', layout: 'grid' },
   queryId: 'generated-guid',

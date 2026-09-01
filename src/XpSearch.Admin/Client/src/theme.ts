@@ -11,6 +11,8 @@ import { Colors } from '@kentico/xperience-admin-components';
 /** Secondary prose: hints under a figure, notes next to a headline. */
 export const muted: CSSProperties = { color: Colors.TextLowEmphasis, fontSize: '12px', lineHeight: '16px', margin: 0 };
 
+export const flexRow: CSSProperties = { display:"flex", flexDirection: 'row', alignItems: 'center', justifyContent: 'start', columnGap: '10px' };
+
 /** A rewritten query or a URL, where character alignment carries meaning. */
 export const mono: CSSProperties = { fontFamily: 'monospace', fontSize: '12px', lineHeight: '18px', margin: 0 };
 

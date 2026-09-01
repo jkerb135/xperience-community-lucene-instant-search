@@ -100,7 +100,7 @@ public class RuleConditionsDto
 }
 
 /// <summary>
-/// One <c>then</c> card, flattened: one shape with every field any consequence type needs, tagged
+/// One <c>then</c> card, flattened: one shape with every field any action type needs, tagged
 /// with the same <c>type</c> discriminator the stored JSON uses.
 /// </summary>
 /// <remarks>
@@ -108,7 +108,7 @@ public class RuleConditionsDto
 /// <see cref="Type"/>, and a discriminated union would have to be written twice - once in C# and
 /// once in TypeScript - to buy nothing.
 /// </remarks>
-public class RuleConsequenceDto
+public class RuleActionDto
 {
     /// <summary>The <c>type</c> values the add menu of design canvas 5b offers, in its order.</summary>
     public static IReadOnlyList<string> Types { get; } =
@@ -116,7 +116,7 @@ public class RuleConsequenceDto
         "pin", "hide", "boost", "bury", "filterResults", "removeWord", "replaceWord", "replaceQuery", "redirect", "customData"
     ];
 
-    /// <summary>Gets or sets which consequence this is; one of <see cref="Types"/>.</summary>
+    /// <summary>Gets or sets which action this is; one of <see cref="Types"/>.</summary>
     public string Type { get; set; } = "pin";
 
     /// <summary>Gets or sets the result id of the document to pin, hide, boost or bury.</summary>
@@ -143,51 +143,51 @@ public class RuleConsequenceDto
     /// <summary>Gets or sets the destination of a redirect.</summary>
     public string Url { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the JSON object a custom-data consequence attaches to the response.</summary>
+    /// <summary>Gets or sets the JSON object a custom-data action attaches to the response.</summary>
     public string Json { get; set; } = string.Empty;
 
-    /// <summary>Reads one of the model's consequences into the editable shape.</summary>
-    /// <param name="consequence">The consequence.</param>
+    /// <summary>Reads one of the model's actions into the editable shape.</summary>
+    /// <param name="action">The action.</param>
     /// <returns>The editable shape.</returns>
-    public static RuleConsequenceDto From(RuleConsequence consequence) =>
-        consequence switch
+    public static RuleActionDto From(RuleAction action) =>
+        action switch
         {
-            RuleConsequence.Pin pin => new RuleConsequenceDto { Type = "pin", TargetId = pin.TargetId, Position = pin.Position },
-            RuleConsequence.Hide hide => new RuleConsequenceDto { Type = "hide", TargetId = hide.TargetId },
-            RuleConsequence.Boost boost => new RuleConsequenceDto
+            RuleAction.Pin pin => new RuleActionDto { Type = "pin", TargetId = pin.TargetId, Position = pin.Position },
+            RuleAction.Hide hide => new RuleActionDto { Type = "hide", TargetId = hide.TargetId },
+            RuleAction.Boost boost => new RuleActionDto
             {
                 Type = "boost",
                 TargetId = boost.TargetId,
                 FilterExpression = boost.FilterExpression,
                 Multiplier = boost.Multiplier,
             },
-            RuleConsequence.Bury bury => new RuleConsequenceDto { Type = "bury", TargetId = bury.TargetId, FilterExpression = bury.FilterExpression },
-            RuleConsequence.FilterResults filter => new RuleConsequenceDto { Type = "filterResults", FilterExpression = filter.FilterExpression },
-            RuleConsequence.RemoveWord remove => new RuleConsequenceDto { Type = "removeWord", Word = remove.Word },
-            RuleConsequence.ReplaceWord replace => new RuleConsequenceDto { Type = "replaceWord", Word = replace.Word, Replacement = replace.Replacement },
-            RuleConsequence.ReplaceQuery replace => new RuleConsequenceDto { Type = "replaceQuery", Query = replace.Query },
-            RuleConsequence.Redirect redirect => new RuleConsequenceDto { Type = "redirect", Url = redirect.Url },
-            RuleConsequence.CustomData data => new RuleConsequenceDto { Type = "customData", Json = data.Json },
-            _ => new RuleConsequenceDto()
+            RuleAction.Bury bury => new RuleActionDto { Type = "bury", TargetId = bury.TargetId, FilterExpression = bury.FilterExpression },
+            RuleAction.FilterResults filter => new RuleActionDto { Type = "filterResults", FilterExpression = filter.FilterExpression },
+            RuleAction.RemoveWord remove => new RuleActionDto { Type = "removeWord", Word = remove.Word },
+            RuleAction.ReplaceWord replace => new RuleActionDto { Type = "replaceWord", Word = replace.Word, Replacement = replace.Replacement },
+            RuleAction.ReplaceQuery replace => new RuleActionDto { Type = "replaceQuery", Query = replace.Query },
+            RuleAction.Redirect redirect => new RuleActionDto { Type = "redirect", Url = redirect.Url },
+            RuleAction.CustomData data => new RuleActionDto { Type = "customData", Json = data.Json },
+            _ => new RuleActionDto()
         };
 
-    /// <summary>Builds one of the model's consequences from what the card submitted.</summary>
-    /// <returns>The consequence, or <see langword="null"/> when the type is not one this version knows.</returns>
-    public RuleConsequence? ToModel() =>
+    /// <summary>Builds one of the model's actions from what the card submitted.</summary>
+    /// <returns>The action, or <see langword="null"/> when the type is not one this version knows.</returns>
+    public RuleAction? ToModel() =>
         Type switch
         {
-            "pin" => new RuleConsequence.Pin(Trim(TargetId), Position),
-            "hide" => new RuleConsequence.Hide(Trim(TargetId)),
-            "boost" => new RuleConsequence.Boost(Trim(TargetId), Trim(FilterExpression), Multiplier),
-            "bury" => new RuleConsequence.Bury(Trim(TargetId), Trim(FilterExpression)),
-            "filterResults" => new RuleConsequence.FilterResults(Trim(FilterExpression)),
-            "removeWord" => new RuleConsequence.RemoveWord(Trim(Word)),
-            "replaceWord" => new RuleConsequence.ReplaceWord(Trim(Word), Trim(Replacement)),
-            "replaceQuery" => new RuleConsequence.ReplaceQuery(Trim(Query)),
-            "redirect" => new RuleConsequence.Redirect(Trim(Url)),
+            "pin" => new RuleAction.Pin(Trim(TargetId), Position),
+            "hide" => new RuleAction.Hide(Trim(TargetId)),
+            "boost" => new RuleAction.Boost(Trim(TargetId), Trim(FilterExpression), Multiplier),
+            "bury" => new RuleAction.Bury(Trim(TargetId), Trim(FilterExpression)),
+            "filterResults" => new RuleAction.FilterResults(Trim(FilterExpression)),
+            "removeWord" => new RuleAction.RemoveWord(Trim(Word)),
+            "replaceWord" => new RuleAction.ReplaceWord(Trim(Word), Trim(Replacement)),
+            "replaceQuery" => new RuleAction.ReplaceQuery(Trim(Query)),
+            "redirect" => new RuleAction.Redirect(Trim(Url)),
 
             // The JSON is stored as typed: whitespace inside an object is the author's formatting.
-            "customData" => new RuleConsequence.CustomData(Json ?? string.Empty),
+            "customData" => new RuleAction.CustomData(Json ?? string.Empty),
             _ => null
         };
 
@@ -222,7 +222,7 @@ public class RuleDto
     public RuleConditionsDto Conditions { get; set; } = new();
 
     /// <summary>Gets or sets the <c>then</c>, in the order it is applied.</summary>
-    public IList<RuleConsequenceDto> Consequences { get; set; } = [];
+    public IList<RuleActionDto> Actions { get; set; } = [];
 
     /// <summary>Reads a rule into the editable shape.</summary>
     /// <param name="rule">The rule.</param>
@@ -240,7 +240,7 @@ public class RuleDto
             ValidFrom = Day(rule.ValidFrom),
             ValidTo = Day(rule.ValidTo),
             Conditions = RuleConditionsDto.From(rule.Conditions),
-            Consequences = [.. rule.Consequences.Select(RuleConsequenceDto.From)],
+            Actions = [.. rule.Actions.Select(RuleActionDto.From)],
         };
     }
 
@@ -259,10 +259,10 @@ public class RuleDto
             : null;
 
     /// <summary>Builds the whole rule from what the builder submitted.</summary>
-    /// <returns>The conditions and the consequences.</returns>
-    public (RuleConditions Conditions, IReadOnlyList<RuleConsequence> Consequences) ToModel() =>
+    /// <returns>The conditions and the actions.</returns>
+    public (RuleConditions Conditions, IReadOnlyList<RuleAction> Actions) ToModel() =>
         ((Conditions ?? new()).ToModel(),
-            [.. (Consequences ?? []).Select(consequence => consequence.ToModel()).OfType<RuleConsequence>()]);
+            [.. (Actions ?? []).Select(action => action.ToModel()).OfType<RuleAction>()]);
 }
 
 /// <summary>What one failed field of a save looks like on the wire.</summary>

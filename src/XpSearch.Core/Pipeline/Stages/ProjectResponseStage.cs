@@ -85,7 +85,7 @@ public sealed class ProjectResponseStage : ISearchStage
 
     /// <summary>
     /// The <c>ruleData</c> of the response: the JSON objects of every fired rule's custom-data
-    /// consequence, shallow-merged in application order so a later rule wins a key outright
+    /// action, shallow-merged in application order so a later rule wins a key outright
     /// (ADR-0022). <see langword="null"/> - the member is then absent - when no rule returned data.
     /// </summary>
     /// <remarks>
@@ -98,7 +98,7 @@ public sealed class ProjectResponseStage : ISearchStage
         Dictionary<string, object>? merged = null;
 
         foreach (var (rule, data) in context.Tuning.Rules
-            .SelectMany(rule => rule.Consequences.OfType<RuleConsequence.CustomData>().Select(data => (rule, data))))
+            .SelectMany(rule => rule.Actions.OfType<RuleAction.CustomData>().Select(data => (rule, data))))
         {
             JsonElement parsed;
 

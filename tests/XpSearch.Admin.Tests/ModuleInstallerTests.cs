@@ -26,7 +26,7 @@ internal sealed class ModuleInstallerTests
                 nameof(XpSearchRuleInfo.RuleName),
                 nameof(XpSearchRuleInfo.RuleEnabled),
                 nameof(XpSearchRuleInfo.RuleConditions),
-                nameof(XpSearchRuleInfo.RuleConsequences),
+                nameof(XpSearchRuleInfo.RuleActions),
                 nameof(XpSearchRuleInfo.RuleMigrated),
                 nameof(XpSearchRuleInfo.RuleValidFrom),
                 nameof(XpSearchRuleInfo.RuleValidTo),
@@ -85,7 +85,7 @@ internal sealed class ModuleInstallerTests
             // the marker RuleStorageMigration keys on.
             Assert.That(fields[nameof(XpSearchRuleInfo.RuleConditions)].AllowEmpty, Is.True);
             Assert.That(fields[nameof(XpSearchRuleInfo.RuleConditions)].DataType, Is.EqualTo(FieldDataType.LongText));
-            Assert.That(fields[nameof(XpSearchRuleInfo.RuleConsequences)].DataType, Is.EqualTo(FieldDataType.LongText));
+            Assert.That(fields[nameof(XpSearchRuleInfo.RuleActions)].DataType, Is.EqualTo(FieldDataType.LongText));
         });
     }
 

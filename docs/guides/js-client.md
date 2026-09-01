@@ -208,7 +208,7 @@ version and keeps using the response rather than throwing.
 
 ### Data attached by a rule
 
-A Search-tuning rule can attach a JSON object to the response — the *Return custom data* consequence
+A Search-tuning rule can attach a JSON object to the response — the *Return custom data* action
 ([Relevance tuning](relevance-tuning.md#the-ten-things-a-rule-can-do)). It arrives as `ruleData` on
 the results, wherever results are handed to you:
 

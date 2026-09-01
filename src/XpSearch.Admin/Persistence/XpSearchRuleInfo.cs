@@ -112,13 +112,13 @@ public class XpSearchRuleInfo : AbstractInfo<XpSearchRuleInfo, IInfoProvider<XpS
 
     /// <summary>
     /// Gets or sets the <c>then</c> of the rule, as the JSON array <see cref="RuleJson"/> describes,
-    /// in the order the consequences are applied.
+    /// in the order the actions are applied.
     /// </summary>
     [DatabaseField]
-    public virtual string RuleConsequences
+    public virtual string RuleActions
     {
-        get => ValidationHelper.GetString(GetValue(nameof(RuleConsequences)), string.Empty, CultureInfo.InvariantCulture);
-        set => SetValue(nameof(RuleConsequences), value);
+        get => ValidationHelper.GetString(GetValue(nameof(RuleActions)), string.Empty, CultureInfo.InvariantCulture);
+        set => SetValue(nameof(RuleActions), value);
     }
 
     /// <summary>

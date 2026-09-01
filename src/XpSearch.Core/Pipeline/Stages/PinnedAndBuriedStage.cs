@@ -14,7 +14,7 @@ namespace XpSearch.Core.Pipeline.Stages;
 /// <remarks>
 /// The documented rules, in the order a support ticket will ask about them:
 /// <list type="bullet">
-/// <item>Consequences are applied in precedence order (priority, then rule id, then the order the
+/// <item>Actions are applied in precedence order (priority, then rule id, then the order the
 /// rule lists them) and the first one to name a document wins; later ones naming the same document
 /// are ignored.</item>
 /// <item>Bury removes the document from the page that came back and decrements the total. Taking a
@@ -47,9 +47,9 @@ public sealed class PinnedAndBuriedStage : ISearchStage
         ArgumentNullException.ThrowIfNull(context);
 
         var placements = context.Tuning.Rules
-            .SelectMany(rule => rule.Consequences.Select(consequence => (Rule: rule, Consequence: consequence)))
-            .Where(placement => placement.Consequence is RuleConsequence.Pin or RuleConsequence.Bury)
-            .Where(placement => !string.IsNullOrWhiteSpace(TargetOf(placement.Consequence)))
+            .SelectMany(rule => rule.Actions.Select(action => (Rule: rule, Action: action)))
+            .Where(placement => placement.Action is RuleAction.Pin or RuleAction.Bury)
+            .Where(placement => !string.IsNullOrWhiteSpace(TargetOf(placement.Action)))
             .ToList();
 
         if (placements.Count == 0)
@@ -61,15 +61,15 @@ public sealed class PinnedAndBuriedStage : ISearchStage
         var handled = new HashSet<string>(StringComparer.Ordinal);
         int offset = (context.Page - 1) * context.PageSize;
 
-        foreach (var placement in placements.Where(placement => handled.Add(TargetOf(placement.Consequence))))
+        foreach (var placement in placements.Where(placement => handled.Add(TargetOf(placement.Action))))
         {
-            if (placement.Consequence is RuleConsequence.Bury bury)
+            if (placement.Action is RuleAction.Bury bury)
             {
                 Bury(context, documents, bury.TargetId);
                 continue;
             }
 
-            Pin(context, documents, placement.Rule, (RuleConsequence.Pin)placement.Consequence, offset);
+            Pin(context, documents, placement.Rule, (RuleAction.Pin)placement.Action, offset);
         }
 
         context.Documents = documents;
@@ -90,15 +90,15 @@ public sealed class PinnedAndBuriedStage : ISearchStage
     }
 
     /// <summary>The document a pin or a bury names.</summary>
-    private static string TargetOf(RuleConsequence consequence) =>
-        consequence switch
+    private static string TargetOf(RuleAction action) =>
+        action switch
         {
-            RuleConsequence.Pin pin => pin.TargetId ?? string.Empty,
-            RuleConsequence.Bury bury => bury.TargetId ?? string.Empty,
+            RuleAction.Pin pin => pin.TargetId ?? string.Empty,
+            RuleAction.Bury bury => bury.TargetId ?? string.Empty,
             _ => string.Empty
         };
 
-    private void Pin(SearchContext context, List<ScoredDocument> documents, TuningRule rule, RuleConsequence.Pin pin, int offset)
+    private void Pin(SearchContext context, List<ScoredDocument> documents, TuningRule rule, RuleAction.Pin pin, int offset)
     {
         int slot = pin.Position - 1 - offset;
 

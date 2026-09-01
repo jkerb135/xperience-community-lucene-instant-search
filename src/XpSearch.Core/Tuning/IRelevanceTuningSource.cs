@@ -65,7 +65,7 @@ public sealed record RuleConditions(
 /// applied in the order the rule lists them.
 /// </summary>
 /// <remarks>
-/// The discriminators are the stored contract of the <c>RuleConsequences</c> column (ADR-0022
+/// The discriminators are the stored contract of the <c>RuleActions</c> column (ADR-0022
 /// addendum): renaming one silently reinterprets every stored rule, so they are spelled out here
 /// rather than derived from the type name.
 /// </remarks>
@@ -80,52 +80,52 @@ public sealed record RuleConditions(
 [JsonDerivedType(typeof(ReplaceQuery), "replaceQuery")]
 [JsonDerivedType(typeof(Redirect), "redirect")]
 [JsonDerivedType(typeof(CustomData), "customData")]
-public abstract record RuleConsequence
+public abstract record RuleAction
 {
     /// <summary>Moves a document to a fixed position.</summary>
     /// <param name="TargetId">Result id of the document.</param>
     /// <param name="Position">One-based position, counted across pages.</param>
-    public sealed record Pin(string TargetId, int Position) : RuleConsequence;
+    public sealed record Pin(string TargetId, int Position) : RuleAction;
 
     /// <summary>Removes a document from the results entirely; the total excludes it.</summary>
     /// <param name="TargetId">Result id of the document.</param>
-    public sealed record Hide(string TargetId) : RuleConsequence;
+    public sealed record Hide(string TargetId) : RuleAction;
 
     /// <summary>Raises (or lowers) the score of one document, or of everything an expression selects.</summary>
     /// <param name="TargetId">Result id of the document, or empty to use <paramref name="FilterExpression"/>.</param>
     /// <param name="FilterExpression">Comma-separated <c>attribute:value</c> pairs, used when there is no target id.</param>
     /// <param name="Multiplier">The score multiplier; 1.0 changes nothing, 0 or less disables the rule.</param>
-    public sealed record Boost(string TargetId, string FilterExpression, double Multiplier) : RuleConsequence;
+    public sealed record Boost(string TargetId, string FilterExpression, double Multiplier) : RuleAction;
 
     /// <summary>Pushes a document out of the page that was returned.</summary>
     /// <param name="TargetId">Result id of the document.</param>
     /// <param name="FilterExpression">Reserved for a future group bury; not applied today.</param>
-    public sealed record Bury(string TargetId, string FilterExpression) : RuleConsequence;
+    public sealed record Bury(string TargetId, string FilterExpression) : RuleAction;
 
     /// <summary>Restricts the results to the documents an expression selects.</summary>
     /// <param name="FilterExpression">Comma-separated <c>attribute:value</c> pairs.</param>
-    public sealed record FilterResults(string FilterExpression) : RuleConsequence;
+    public sealed record FilterResults(string FilterExpression) : RuleAction;
 
     /// <summary>Drops a word from the query before it is parsed.</summary>
     /// <param name="Word">The word to remove.</param>
-    public sealed record RemoveWord(string Word) : RuleConsequence;
+    public sealed record RemoveWord(string Word) : RuleAction;
 
     /// <summary>Swaps a word in the query for another before it is parsed.</summary>
     /// <param name="Word">The word to replace.</param>
     /// <param name="Replacement">What to put in its place.</param>
-    public sealed record ReplaceWord(string Word, string Replacement) : RuleConsequence;
+    public sealed record ReplaceWord(string Word, string Replacement) : RuleAction;
 
     /// <summary>Replaces the whole query text before it is parsed.</summary>
     /// <param name="Query">The query to search for instead.</param>
-    public sealed record ReplaceQuery(string Query) : RuleConsequence;
+    public sealed record ReplaceQuery(string Query) : RuleAction;
 
     /// <summary>Sends the visitor to a URL. Surfaced as <c>SearchResponse.redirect</c>; the results are returned alongside it.</summary>
     /// <param name="Url">The destination. A redirect with no URL does nothing.</param>
-    public sealed record Redirect(string Url) : RuleConsequence;
+    public sealed record Redirect(string Url) : RuleAction;
 
     /// <summary>Attaches editor-authored data to the response, as <c>SearchResponse.ruleData</c>.</summary>
     /// <param name="Json">A JSON object. Anything else is ignored.</param>
-    public sealed record CustomData(string Json) : RuleConsequence;
+    public sealed record CustomData(string Json) : RuleAction;
 }
 
 /// <summary>Whether a synonym expands in both directions or only from input to output (spec §8.2).</summary>
@@ -140,7 +140,7 @@ public enum SynonymDirection
 
 /// <summary>
 /// One relevance rule: an <c>if</c> of conditions that must all hold and a <c>then</c> of
-/// consequences applied in order (ADR-0022).
+/// actions applied in order (ADR-0022).
 /// </summary>
 /// <param name="Id">Database identifier; the tie-breaker of the precedence order.</param>
 /// <param name="Name">Display name, echoed in the <c>ranking.boosts</c> explanation.</param>
@@ -149,7 +149,7 @@ public enum SynonymDirection
 /// <param name="ValidFrom">First moment the rule applies, in UTC. Null means "already".</param>
 /// <param name="ValidTo">Last moment the rule applies, in UTC. Null means "forever".</param>
 /// <param name="Conditions">The conditions; all of them must hold.</param>
-/// <param name="Consequences">What the rule does, applied in the order listed.</param>
+/// <param name="Actions">What the rule does, applied in the order listed.</param>
 public sealed record TuningRule(
     int Id,
     string Name,
@@ -158,7 +158,7 @@ public sealed record TuningRule(
     DateTime? ValidFrom,
     DateTime? ValidTo,
     RuleConditions Conditions,
-    IReadOnlyList<RuleConsequence> Consequences);
+    IReadOnlyList<RuleAction> Actions);
 
 /// <summary>One synonym group (spec §8.2).</summary>
 /// <param name="Direction">Whether the group expands both ways.</param>

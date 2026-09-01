@@ -98,7 +98,7 @@ Request and response fields, client options, and the analytics events.
 | `SearchResponse.totalPages` | `nbPages` | Renamed. |
 | `SearchResponse.tookMs` | `processingTimeMS` | Renamed. |
 | `SearchResponse.queryId` | `queryID` | Same meaning: the correlation id for click and conversion events. |
-| `SearchResponse.redirect` | renderingContent.redirect.url, set by a Rule with the Redirect consequence | Always present and null when no rule matched, instead of a key that only appears sometimes. Neither service navigates for you; ours also returns the results, and the searchBox widget follows the URL only for a query the visitor submitted. |
+| `SearchResponse.redirect` | renderingContent.redirect.url, set by a Rule with the Redirect action | Always present and null when no rule matched, instead of a key that only appears sometimes. Neither service navigates for you; ours also returns the results, and the searchBox widget follows the URL only for a query the visitor submitted. |
 | `SearchResponse.redirect.url` | `renderingContent.redirect.url` | Same meaning. |
 | `SearchResponse.redirect.rule` | no equivalent (their redirect carries no rule identity) | Display name of the rule that matched, for logging and for the query tester. |
 | `SearchResponse.ruleData` | `userData` | Renamed, and one object instead of an array: the data of every matching rule is shallow-merged in rule order, later rules winning a key, so a client reads ruleData.banner rather than searching a list. Absent when no rule returned data. |
@@ -208,7 +208,7 @@ Things Algolia does that this product does not, stated plainly rather than appro
   filters the values already returned, in the browser.
 - **Personalization and A/B testing.** No equivalent, and none planned in this library.
 - **The Rules DSL.** Pinning, burying and conditional boosts are admin configuration in the Search
-  application, not a rule language with its own consequences and validity windows.
+  application, not a rule language with its own actions and validity windows.
 - **Numeric facet statistics.** The response carries no min/max per attribute, so a range control's
   bounds are configured rather than discovered.
 - **Impression events.** `/events` accepts clicks and conversions only.

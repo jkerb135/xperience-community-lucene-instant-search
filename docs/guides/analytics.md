@@ -267,7 +267,7 @@ for the index you were looking at, already carrying:
 - one condition, *Query contains* that query,
 - **Rule name** pre-filled as *Rule for '<query>'*.
 
-Choose what the rule should do — **Add consequence**, usually **Pin an item**, pointing at the page
+Choose what the rule should do — **Add action**, usually **Pin an item**, pointing at the page
 that *should* have come back — fill in the item, and **Save rule**. You land back on the **Rules**
 listing.
 Then check it in **Query tester**, next to Analytics in the same sidebar (see

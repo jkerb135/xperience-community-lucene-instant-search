@@ -6,8 +6,8 @@
 
 export type QueryOperator = 'is' | 'contains' | 'startsWith';
 
-/** The consequence types of the add menu, in the order design canvas 5b lists them. */
-export const consequenceTypes = [
+/** The action types of the add menu, in the order design canvas 5b lists them. */
+export const actionTypes = [
   'pin',
   'hide',
   'boost',
@@ -20,10 +20,10 @@ export const consequenceTypes = [
   'customData',
 ] as const;
 
-export type ConsequenceType = (typeof consequenceTypes)[number];
+export type ActionType = (typeof actionTypes)[number];
 
-/** What each consequence type is called, and whether it is new in this release (canvas 5b). */
-export const consequenceLabels: Record<ConsequenceType, { readonly label: string; readonly hint?: string; readonly isNew?: boolean }> = {
+/** What each action type is called, and whether it is new in this release (canvas 5b). */
+export const actionLabels: Record<ActionType, { readonly label: string; readonly hint?: string; readonly isNew?: boolean }> = {
   pin: { label: 'Pin an item' },
   hide: { label: 'Hide an item', isNew: true },
   boost: { label: 'Boost matching results' },
@@ -51,9 +51,9 @@ export interface Conditions {
   language: string;
 }
 
-/** One flat shape with every field any consequence needs; `type` says which of them are read. */
-export interface Consequence {
-  type: ConsequenceType;
+/** One flat shape with every field any action needs; `type` says which of them are read. */
+export interface Action {
+  type: ActionType;
   targetId: string;
   position: number;
   filterExpression: string;
@@ -73,7 +73,7 @@ export interface Rule {
   validFrom: string;
   validTo: string;
   conditions: Conditions;
-  consequences: Consequence[];
+  actions: Action[];
 }
 
 export interface RuleError {
@@ -125,7 +125,7 @@ export const newFragment = (): Fragment => ({
   language: '',
 });
 
-export const emptyConsequence = (type: ConsequenceType): Consequence => ({
+export const emptyAction = (type: ActionType): Action => ({
   type,
   targetId: '',
   position: 1,

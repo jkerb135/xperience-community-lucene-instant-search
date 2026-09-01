@@ -145,9 +145,10 @@ public sealed class InfoRelevanceTuningSource : IRelevanceTuningSource
     /// <param name="row">The stored row.</param>
     /// <returns>The rule.</returns>
     /// <remarks>
-    /// A row still in the pre-CR-4b flat shape is converted on the fly rather than skipped: the
-    /// startup migration will have dealt with it, but a rule inserted by a script while the
-    /// application runs must not silently stop firing.
+    /// A row still in the pre-CR-4b flat shape is converted on the fly rather than skipped, and a
+    /// row whose <c>then</c> is still in the interim <c>RuleConsequences</c> column is read from
+    /// there: the startup migration will have dealt with both, but a rule inserted by a script while
+    /// the application runs must not silently stop firing.
     /// </remarks>
     public static TuningRule Read(XpSearchRuleInfo row)
     {
@@ -166,7 +167,7 @@ public sealed class InfoRelevanceTuningSource : IRelevanceTuningSource
             row.RuleValidFrom,
             row.RuleValidTo,
             RuleJson.ReadConditions(row.RuleConditions),
-            RuleJson.ReadConsequences(row.RuleConsequences));
+            RuleJson.ReadActions(RuleStorageMigration.StoredActions(row)));
     }
 
     /// <summary>Splits a stopword list as it is stored: one word per line, blanks ignored.</summary>

@@ -272,7 +272,7 @@ export const QueryTesterTemplate = ({ selectedIndexName, languages, contactGroup
             submit(language);
           }}
         >
-          <Row spacing={Spacing.L} alignY={LayoutAlignment.End}>
+          <Row spacing={Spacing.L} alignY={LayoutAlignment.Start}>
             <Column cols={narrow ? Cols.Col12 : Cols.Col6}>
               <Input
                 label="Query"
