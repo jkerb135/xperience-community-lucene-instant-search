@@ -164,7 +164,12 @@ whole instance — it is written to `data-xps-instance-config`, which the bootst
 ```
 
 A synced search reads those parameters on load, so `?q=coffee&contentType=Article&page=2` renders that
-result page directly.
+result page directly. It reads back only the filters the page has a widget for: `contentType=Article`
+applies when the page carries a facet list, category tree or toggle on `contentType`, and a numeric
+parameter such as `price_lte=50` when it carries a range filter on `price`. Any other parameter —
+Kentico's own `uh`, campaign parameters, or a filter for an attribute this page does not show — is
+left alone and stays in the URL. So a link shared from a page with more filters than the target page
+has applies only the filters the target page can display.
 
 **At most one search instance per page may sync.** The parameter names (`q`, `page`, `sort`, and each
 facet's attribute name) are not namespaced by instance ID, so two syncing searches on one page write

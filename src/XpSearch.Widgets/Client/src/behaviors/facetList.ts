@@ -62,6 +62,7 @@ export function withFacetList<
     { isShowingMore: boolean }
   >({
     $$type: 'xps.facetList',
+    routable: 'facet',
     createLocal: () => ({ isShowingMore: false }),
     init(params, options) {
       options.actions.setFacetOperator(params.attribute, params.operator ?? 'or');

@@ -21,6 +21,8 @@ export interface BehaviorContext<TLocal> {
 
 export interface BehaviorSpec<TParams, TExtra, TLocal> {
   $$type: string;
+  /** Set when the behaviour filters on `params.attribute`; makes that attribute routable. */
+  routable?: 'facet' | 'numeric';
   createLocal?(): TLocal;
   prepareState?(state: SearchState, params: TParams): SearchState;
   prepareRequest?(request: SearchRequest, params: TParams): SearchRequest;
@@ -60,8 +62,13 @@ export function createBehavior<TParams, TExtra, TLocal = Record<string, never>>(
         renderFn({ ...base, ...spec.getRenderState(base, params, context) }, isFirstRender);
       };
 
+      const attribute = (params as { attribute?: unknown }).attribute;
+
       return {
         $$type: spec.$$type,
+        ...(spec.routable && typeof attribute === 'string'
+          ? { $$routable: { attribute, kind: spec.routable } }
+          : {}),
         ...(spec.prepareState
           ? { prepareState: (state: SearchState) => spec.prepareState!(state, params) }
           : {}),

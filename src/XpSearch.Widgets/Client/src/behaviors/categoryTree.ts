@@ -58,6 +58,7 @@ export function withCategoryTree<
 ): WidgetFactory<TParams & CategoryTreeBehaviorParams> {
   return createBehavior<TParams & CategoryTreeBehaviorParams, CategoryTreeRenderState, never>({
     $$type: 'xps.categoryTree',
+    routable: 'facet',
     prepareRequest: (request, params) => withFacetAttribute(request, params.attribute),
     getRenderState(base, params) {
       const values = base.results?.facets?.[params.attribute] ?? [];

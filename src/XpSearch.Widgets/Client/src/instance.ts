@@ -31,11 +31,12 @@ export function createSearch(options: XpSearchOptions): SearchInstance {
   const routingOptions: RoutingOptions =
     typeof options.routing === 'object' && options.routing !== null ? options.routing : {};
   const routingEnabled = Boolean(options.routing);
-  const router = createRouter({ ...routingOptions, enabled: routingEnabled });
+  // Filled by `addWidgets` and read when the router hydrates, so only attributes a widget on the
+  // page actually filters on are taken out of the URL (foreign params like `uh` are left alone).
+  const routable = { facets: new Set<string>(), numeric: new Set<string>() };
+  const router = createRouter({ ...routingOptions, enabled: routingEnabled, routable });
 
-  const store = st.createStore(
-    st.createState({ ...options.initialState, ...(routingEnabled ? router.read() : {}) })
-  );
+  const store = st.createStore(st.createState(options.initialState));
 
   const widgets: Widget[] = [];
   const rendered = new WeakSet<Widget>();
@@ -249,6 +250,8 @@ export function createSearch(options: XpSearchOptions): SearchInstance {
     addWidgets(added) {
       for (const widget of added) {
         widgets.push(widget);
+        const route = widget.$$routable;
+        if (route) routable[route.kind === 'numeric' ? 'numeric' : 'facets'].add(route.attribute);
         if (started) initWidget(widget, widgets.length - 1);
       }
       if (started && added.length > 0) {
@@ -272,6 +275,9 @@ export function createSearch(options: XpSearchOptions): SearchInstance {
     start() {
       if (started) return instance;
       started = true;
+      // Hydrated here, not in `createSearch`: the URL can only be mapped once every widget has
+      // registered the attribute it owns.
+      if (routingEnabled) store.set(st.createState({ ...store.get(), ...router.read() }));
       widgets.forEach(initWidget);
       unlistenPop = router.listen((route) => {
         // Back/forward: the URL is the state, and it must produce a fresh search.

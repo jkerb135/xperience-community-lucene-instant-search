@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { API_VERSION_HEADER } from './contract/constants';
 import type { SearchRequest, SearchResponse } from './contract/generated';
+import { withFacetList, withRange } from './behaviors';
 import { createSearch } from './instance';
 import { defaultRouteToState, defaultStateToRoute } from './routing';
 import {
@@ -11,7 +12,7 @@ import {
   setSort,
   toggleFacet,
 } from './state';
-import type { SearchInstance } from './types';
+import type { SearchInstance, Widget } from './types';
 
 const BODY: SearchResponse = {
   results: [],
@@ -34,6 +35,10 @@ function stubFetch(): { fetchFn: typeof fetch; requests: SearchRequest[] } {
   });
   return { fetchFn: fetchFn as unknown as typeof fetch, requests };
 }
+
+/** The widgets that make an attribute routable, with rendering stubbed out. */
+const facetWidget = (attribute: string): Widget => withFacetList(() => {})({ attribute });
+const rangeWidget = (attribute: string): Widget => withRange(() => {})({ attribute });
 
 let instance: SearchInstance | undefined;
 
@@ -83,6 +88,27 @@ describe('default route mapping (spec 5.5)', () => {
   it('leaves absent params out, so initialState still applies', () => {
     expect(defaultRouteToState({})).toEqual({});
   });
+
+  it('adopts only routable attributes when the page declares them', () => {
+    const routable = { facets: new Set(['tags']), numeric: new Set(['price']) };
+    const route = {
+      q: ['beans'],
+      uh: ['abc123'],
+      tags: ['coffee'],
+      tags_op: ['and'],
+      brand: ['acme'],
+      brand_op: ['and'],
+      price_lte: ['50'],
+      weight_gte: ['5'],
+    };
+    expect(defaultRouteToState(route, routable)).toEqual({
+      query: 'beans',
+      filters: {
+        facets: [{ attribute: 'tags', values: ['coffee'], operator: 'and' }],
+        numeric: [{ attribute: 'price', operator: 'lte', value: 50 }],
+      },
+    });
+  });
 });
 
 describe('routing: true', () => {
@@ -96,6 +122,7 @@ describe('routing: true', () => {
       fetchFn,
       initialState: { query: 'ignored' },
     });
+    instance.addWidgets([facetWidget('tags'), rangeWidget('price')]);
     instance.start();
     await vi.waitFor(() => expect(requests).toHaveLength(1));
     expect(requests[0]).toMatchObject({
@@ -134,9 +161,24 @@ describe('routing: true', () => {
     expect(window.location.search).toBe('?q=espresso&utm_source=newsletter');
   });
 
+  it('ignores a foreign param and keeps it in the URL (Kentico `uh`)', async () => {
+    window.history.replaceState(null, '', '/search?q=beans&uh=abc123&price_lte=50');
+    const { fetchFn, requests } = stubFetch();
+    instance = createSearch({ index: 'site-content', routing: true, debounceMs: 0, fetchFn });
+    instance.addWidgets([facetWidget('tags')]);
+    instance.start();
+    await vi.waitFor(() => expect(requests).toHaveLength(1));
+    // `uh` is not a facet and `price` has no range widget: neither may reach the API.
+    expect(requests[0]?.filters).toBeUndefined();
+
+    instance.actions.setQuery('espresso');
+    expect(window.location.search).toBe('?price_lte=50&q=espresso&uh=abc123');
+  });
+
   it('restores state and re-searches on popstate', async () => {
     const { fetchFn, requests } = stubFetch();
     instance = createSearch({ index: 'site-content', routing: true, debounceMs: 0, fetchFn });
+    instance.addWidgets([facetWidget('tags')]);
     instance.start();
     await vi.waitFor(() => expect(requests).toHaveLength(1));
 
@@ -172,6 +214,8 @@ describe('routing: true', () => {
 });
 
 describe('routing: { stateToRoute, routeToState }', () => {
+  // No widget declares `search`, yet it is adopted: a custom mapping bypasses the routable
+  // registry entirely and stays the escape hatch for adopt-everything routing.
   it('uses the supplied mapping in both directions', async () => {
     window.history.replaceState(null, '', '/search?search=beans');
     const { fetchFn, requests } = stubFetch();

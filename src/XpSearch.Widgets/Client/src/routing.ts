@@ -39,8 +39,26 @@ export function defaultStateToRoute(state: SearchState): Record<string, string |
   return route;
 }
 
-/** Default params -> state mapping; the inverse of {@link defaultStateToRoute}. */
-export function defaultRouteToState(route: Record<string, string[]>): Partial<SearchState> {
+/**
+ * The filter attributes the page can route, collected from the widgets on it. Sets are read at
+ * hydration time, so a widget added before `start()` counts; one added after does not.
+ */
+export interface RoutableAttributes {
+  facets: ReadonlySet<string>;
+  numeric: ReadonlySet<string>;
+}
+
+/**
+ * Default params -> state mapping; the inverse of {@link defaultStateToRoute}.
+ *
+ * With `routable` supplied, only filters on those attributes are adopted: a page carries foreign
+ * query params (Kentico's `uh`, `utm_*`, `gclid`) that are not filters and that the API rejects.
+ * Without it every non-reserved param is taken as a filter, as before.
+ */
+export function defaultRouteToState(
+  route: Record<string, string[]>,
+  routable?: RoutableAttributes
+): Partial<SearchState> {
   const values = new Map<string, string[]>();
   const operators = new Map<string, 'and' | 'or'>();
   const numeric: NumericFilter[] = [];
@@ -48,20 +66,25 @@ export function defaultRouteToState(route: Record<string, string[]>): Partial<Se
     if (RESERVED.has(key) || raw.length === 0) continue;
     const separator = key.lastIndexOf('_');
     const suffix = separator > 0 ? key.slice(separator + 1) : '';
+    const attribute = key.slice(0, separator);
     if (suffix === 'op') {
-      if (raw[0] === 'and' || raw[0] === 'or') operators.set(key.slice(0, separator), raw[0]);
+      if ((raw[0] === 'and' || raw[0] === 'or') && (routable?.facets.has(attribute) ?? true)) {
+        operators.set(attribute, raw[0]);
+      }
       continue;
     }
     if (OPERATORS.has(suffix) && raw.every((v) => v !== '' && !Number.isNaN(Number(v)))) {
+      if (routable && !routable.numeric.has(attribute)) continue;
       for (const value of raw) {
         numeric.push({
-          attribute: key.slice(0, separator),
+          attribute,
           operator: suffix as NumericOperator,
           value: Number(value),
         });
       }
       continue;
     }
+    if (routable && !routable.facets.has(key)) continue;
     const parsed = raw
       .flatMap((value) => value.split(','))
       .filter((value) => value !== '')
@@ -95,12 +118,17 @@ export interface Router {
 interface RouterOptions extends RoutingOptions {
   /** When false the router still builds URLs (for `urlFor`) but never touches history. */
   enabled: boolean;
+  /** Filters the default mapping may adopt. A custom `routeToState` bypasses it. */
+  routable?: RoutableAttributes;
 }
 
 export function createRouter(options: RouterOptions): Router {
   const win = options.windowRef ?? (typeof window === 'undefined' ? undefined : window);
   const stateToRoute = options.stateToRoute ?? defaultStateToRoute;
-  const routeToState = options.routeToState ?? defaultRouteToState;
+  const routeToState =
+    options.routeToState ??
+    ((route: Record<string, string[]>): Partial<SearchState> =>
+      defaultRouteToState(route, options.routable));
   // Params any mapping has produced so far. Anything else in the URL belongs to the page
   // (utm_*, tracking ids, ...) and is preserved across writes.
   const owned = new Set<string>(RESERVED);

@@ -167,8 +167,14 @@ on the document.
 | `filters.numeric` | `<attribute>_<lt\|lte\|eq\|ne\|gte\|gt>` | `price_lte=50` |
 
 Defaults are omitted, so an untouched search leaves the URL alone. Params the mapping does not own
-(`utm_source`, …) are preserved. A change to the query alone uses `history.replaceState` — typing must
-not fill the back stack — and anything else pushes.
+(`utm_source`, Kentico's `uh`, …) are preserved and never read as filters. A change to the query alone
+uses `history.replaceState` — typing must not fill the back stack — and anything else pushes.
+
+Only the attributes the page filters on are read back out of the URL: a facet param is adopted when a
+`facetList`, `categoryTree` or `toggleFilter` widget on the page declares that attribute, and a numeric
+one when a `rangeFilter` does. So a shared URL carrying a filter for an attribute no widget on the
+target page declares is ignored rather than applied invisibly. Widgets must be added before `start()`
+to be routable — the URL is read once, when the instance starts.
 
 Bring your own mapping when the defaults collide with your page:
 

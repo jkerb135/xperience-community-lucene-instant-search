@@ -30,6 +30,7 @@ export function withRange<TParams extends Record<string, unknown> = Record<strin
 ): WidgetFactory<TParams & RangeBehaviorParams> {
   return createBehavior<TParams & RangeBehaviorParams, RangeRenderState, never>({
     $$type: 'xps.range',
+    routable: 'numeric',
     getRenderState(base, params) {
       const on = (operator: 'gte' | 'lte'): number | undefined =>
         base.state.filters.numeric.find(

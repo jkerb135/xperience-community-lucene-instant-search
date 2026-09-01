@@ -75,6 +75,16 @@ and how to lift it.
 - **Upgrade path:** add a documented `routing.prefix` option that namespaces every param (`s1_q`,
   `s1_tags`) when a second instance needs the URL too.
 
+## Routable attributes are collected once, in `createSearch().start` (`XpSearch.Widgets/Client/src/instance.ts`)
+
+- **Simplified:** the routable registry is two `Set`s on the instance, filled by `addWidgets` from each
+  widget's `$$routable`, and the URL is hydrated once at `start()`. A widget added later (a facet list
+  mounted by a lazy tab, say) contributes to the registry but its param has already been skipped.
+- **Ceiling:** a deep link into a filter whose widget mounts after `start()` is dropped, silently. The
+  bootstrap never hits this: it adds every mount before starting.
+- **Upgrade path:** re-read the URL in `addWidgets` when the added widgets register an attribute that
+  the URL carries and nothing has moved the state since - or expose a `search.hydrateFromUrl()`.
+
 ## `mock/server.ts` in `XpSearch.Widgets/Client`
 
 - **Simplified:** the mock matches query terms as lowercase substrings over title, body and tags, scores

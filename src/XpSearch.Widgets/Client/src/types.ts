@@ -130,6 +130,12 @@ export interface RenderArgs {
 export interface Widget {
   /** Identifier used in error messages and by the mount bootstrap. */
   $$type?: string;
+  /**
+   * The filter attribute this widget owns. Only these are read out of the URL by the default
+   * routing mapping; every other query param on the page is left alone. Widgets added after
+   * `start()` are not routable — the URL is read once, at `start()`.
+   */
+  $$routable?: { attribute: string; kind: 'facet' | 'numeric' };
   /** Contributes to the outgoing state. Applied in widget-add order (spec 5.7). */
   prepareState?(state: SearchState): SearchState;
   /**
