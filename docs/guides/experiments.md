@@ -24,11 +24,16 @@ an experiment, *Update* to change its split, start it or conclude it.
 
 ### The whole walk, in six steps
 
+![The Experiments listing with the "One experiment per index at a time" quick tip and one concluded experiment showing its state, 50% traffic to B, start and end times and Discarded outcome](images/experiments--listing.png)
+
 1. **Create it.** Open **Experiments** → **New experiment**. Give it a name that says what you are
    testing ("Boost recent articles") and the share of traffic variant B should get (1–99, 50 is a
    sensible default). Creating it **copies the index's entire live tuning** — every rule, synonym,
    stopword and field weight — into variant B. Nothing is live yet, and nothing about the live tuning
    changed.
+
+   ![The New experiment form, with the read-only index, a required Name and Traffic to variant B (%) defaulting to 50](images/experiments--create.png)
+
 2. **Edit variant B.** Open the experiment and use the **Rules**, **Synonyms**, **Field weights** and
    **Stopwords** tabs inside it. They are the same editors as the live ones, with a
    *Variant B draft — <experiment>* banner on every page so you always know which set you are
@@ -47,6 +52,13 @@ an experiment, *Update* to change its split, start it or conclude it.
    confirmed first, both take effect immediately for every visitor, and neither can be undone.
 
 ### Reading the report honestly
+
+![The Overview of a concluded experiment: Concluded and "Variant B discarded" tags, the Variant A — live tuning and Variant B — draft tuning cards both at 0 searches, and the quick tip explaining what the numbers are](images/experiments--detail.png)
+
+The capture above is a concluded experiment that was started and ended within the same minute, so
+both variants report *0 searches* and every rate is blank — an honest report of nothing, rather than
+an invented one. Note the sidebar under the experiment: **Overview** plus variant B's own **Rules**,
+**Synonyms**, **Stopwords** and **Field weights**.
 
 The report shows **observed rates and the sample sizes they were observed over** — nothing else:
 

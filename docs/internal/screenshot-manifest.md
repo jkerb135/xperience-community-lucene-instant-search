@@ -39,3 +39,9 @@ deliberately): synonym group `espresso expresso`, stopword list `the a an of and
 | `experiments--listing.png` | `…/edit/2/experiments` | concluded experiment | `src/XpSearch.Admin/UIPages/Experiments/ExperimentPages.cs` | 2026-09-01 |
 | `experiments--create.png` | `…/edit/2/experiments/create` | no running experiment | `src/XpSearch.Admin/UIPages/Experiments/ExperimentPages.cs` | 2026-09-01 |
 | `experiments--detail.png` | `…/edit/2/experiments` → open experiment | concluded experiment | `src/XpSearch.Admin/UIPages/Experiments/ExperimentPages.cs`, `Client/src/experiments/ExperimentDetailTemplate.tsx` | 2026-09-01 |
+| `experiments--variant-rules-draft.png` | `…/edit/2/experiments/2/rules` | draft "Docs demo experiment" (left in place) | `ExperimentPages.cs`, `ExperimentScope.cs`, `Rules.cs` | **PENDING** — run `npm run capture -- experiments--variant-rules-draft experiments--variant-rules-readonly` while the capture profile is signed in (session was lost 2026-09-01; sign in once in the window it opens) |
+| `experiments--variant-rules-readonly.png` | `…/edit/2/experiments/1/rules` | concluded experiment 1 (read-only banner, empty after discard) | `ExperimentPages.cs`, `ExperimentScope.cs`, `Rules.cs` | **PENDING** — same run as above |
+
+Pending captures worth adding once data exists: `tuning--popularity-suggestions` and
+`tuning--synonym-suggestions` with ≥1 mined row (current captures show empty tables; recapture
+after a popularity-task run produces suggestions).

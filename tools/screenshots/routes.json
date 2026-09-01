@@ -25,6 +25,8 @@
     { "name": "tuning--field-weight-create", "url": "/admin/lucene/indexes/edit/2/weights/create" },
     { "name": "experiments--listing", "url": "/admin/lucene/indexes/edit/2/experiments" },
     { "name": "experiments--create", "url": "/admin/lucene/indexes/edit/2/experiments/create" },
-    { "name": "experiments--detail", "url": "/admin/lucene/indexes/edit/2/experiments", "steps": [{ "click": "Dancing Goat Experiment" }] }
+    { "name": "experiments--detail", "url": "/admin/lucene/indexes/edit/2/experiments", "steps": [{ "click": "Dancing Goat Experiment" }] },
+    { "name": "experiments--variant-rules-draft", "url": "/admin/lucene/indexes/edit/2/experiments/2/rules" },
+    { "name": "experiments--variant-rules-readonly", "url": "/admin/lucene/indexes/edit/2/experiments/1/rules" }
   ]
 }

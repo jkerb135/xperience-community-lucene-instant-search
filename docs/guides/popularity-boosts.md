@@ -41,8 +41,10 @@ every index, opted in or not.
 
 **2. Opt the index in.** Open **Lucene Search → indexes → your index → Edit index → Field weights**
 and select **Boost by popularity** in the page header. The callout above the table tells you which
-state you are in; selecting it again turns the boost back off. The setting belongs to the index, not
-to a rule or an experiment.
+state you are in; selecting it again turns the boost back off (the button then reads **Stop boosting
+by popularity**). The setting belongs to the index, not to a rule or an experiment.
+
+![The Field weights page with the callout reading "Boost by popularity: off" above the New field weight and Boost by popularity header buttons](images/tuning--field-weights.png)
 
 Until both steps are done, ranking is exactly what it was: text relevance and your own rules.
 
@@ -108,6 +110,8 @@ Open **Lucene Search → indexes → your index → Edit index → Suggestions**
 banner and a link when any are waiting). Each row shows the query, the result id, and the evidence —
 `7 clicks, 86% of the query's clicks`.
 
+![The Suggestions page, with the quick tip "Suggestions are never applied on their own" and, on a host whose popularity task has produced nothing yet, "There are no records to display"](images/tuning--popularity-suggestions.png)
+
 - **Approve** creates an ordinary rule named `Popular for 'grinder'`: *if the search is `grinder`,
   then boost that document by 2x*. From that moment it is a normal rule — edit it, disable it or
   delete it on the **Rules** page like any other.
@@ -134,6 +138,8 @@ Pairs are thrown away when
 Open **Lucene Search → indexes → your index → Edit index → Synonym suggestions** (the **Synonyms**
 page shows a banner and a link when any are waiting). Each row shows what was searched for, what found
 it, the evidence (`4 reformulations`) and when it last happened.
+
+![The Synonym suggestions page, with the quick tip explaining that pairs are found by timing rather than by visitor, above an empty table](images/tuning--synonym-suggestions.png)
 
 - **Approve** creates an ordinary **two-way** synonym group — `settee, sofa` — enabled straight away.
   From that moment it is a normal group on the **Synonyms** page: edit it, disable it or delete it like

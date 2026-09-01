@@ -13,6 +13,10 @@ Tuning belongs to one search index, so it lives inside the index:
 
 **Lucene Search → indexes → click the index → the *Edit index* sidebar**
 
+![The Lucene Search index listing, with one row per registered index and its entry count](images/lucene--index-listing.png)
+
+![The Settings page of index DancingGoatSample, with the tuning sidebar listing Settings, Rules, Suggestions, Synonyms, Synonym suggestions, Stopwords, Field weights, Query tester, Analytics, Experiments and Status](images/tuning--settings.png)
+
 The sidebar has one entry per kind of tuning:
 
 | Sidebar entry | URL | What it is |
@@ -32,6 +36,9 @@ index you clicked is the index you are editing, and it is shown read-only at the
 
 Two pages are **not** per-index and stay in their own application, **Search ingestion** (under
 *Development*): **API keys** and **Ingestion log**.
+
+A screenshot of every page in both applications, side by side with its URL, is in the
+[Administration UI tour](admin-ui-tour.md).
 
 **Permissions.** These pages are governed by the **Lucene Search** application, not by *Search
 ingestion*. A role needs *View* on Lucene Search to read them, *Create*/*Update*/*Delete* to change
@@ -63,6 +70,8 @@ usually immediately.
 
 The builder is one screen. Nothing is saved until you select **Save rule**, including anything you
 did in the side panel.
+
+![The rule builder open on a rule named Boost products for coffee searches: the settings strip with name, Enabled and Priority, the If column with one condition card, and the Then column with one numbered boost action](images/tuning--rule-builder.png)
 
 **The settings strip.** Rule name, Enabled, Priority, and **Runs** - one date-range picker for the
 validity window (UTC days; clear it and the rule runs forever; a migrated rule with an open-ended
@@ -182,6 +191,8 @@ rule clears it. You do not have to do anything about it.
 **The Rules listing** shows the same condition summary in its *Conditions* column, so you can read
 what every rule matches without opening it, next to *Contact group* (*Everyone* when the rule is not
 scoped), *Priority* and *Enabled*.
+
+![The Rules listing with one rule, its condition summary Query contains "coffee", priority 100 and Enabled True](images/tuning--rules.png)
 
 ### Personalise rules by contact group
 
@@ -378,6 +389,8 @@ The **Query tester** shows the rule as `rule:<name>` in the explanation, the sam
 
 A synonym tells search that different words mean the same thing.
 
+![The New synonym form, with Direction set to Two-way - every word finds every other, empty Words and Replacements fields and the Enabled checkbox](images/tuning--synonym-create.png)
+
 1. **Synonyms → New synonym** in the index's Edit index sidebar.
 2. **Direction**:
    - *Two-way* — every word finds every other. `sofa, couch, settee` means someone searching for
@@ -395,6 +408,8 @@ rather than the plain `sofa` group, because the longer phrase always wins.
 Synonyms widen a search. They never narrow it: *red sofa* with `sofa = couch` still requires
 something red.
 
+![The Synonyms listing with one two-way group, espresso expresso, and an empty Replacements column](images/tuning--synonyms.png)
+
 You do not have to think of every pair yourself. The **Synonym suggestions** page next to this one
 lists pairs mined from real searches that failed and were immediately retried with different words —
 approve one and it becomes an ordinary group here. See
@@ -405,10 +420,14 @@ approve one and it becomes an ordinary group here. See
 Stopwords are words that are ignored when someone searches — *the*, *a*, *of*, or your own noise
 words like *buy* on a shop.
 
+![The Stopwords listing with a single list whose Words to ignore column reads "the a an of and"](images/tuning--stopwords.png)
+
 1. **Stopwords → New stopword list** in the index's Edit index sidebar (one list per index; edit the
    existing one if there already is one).
 2. **Words to ignore** — one word per line.
 3. **Save**.
+
+![The New stopword list form, with the read-only index name and an empty Words to ignore text area](images/tuning--stopword-create.png)
 
 Two cautions. Removing a word makes searches *broader*, not better — if you make *free* a stopword,
 *free shipping* becomes *shipping*. And if a visitor searches for nothing but stopwords, the search
@@ -419,6 +438,8 @@ is left alone rather than turned into "show me everything".
 A field weight decides how much a match in one place counts compared to another. A match in a title
 usually deserves more than a match halfway down a body of text.
 
+![The Field weights listing: the Boost by popularity: off callout, the New field weight and Boost by popularity header buttons, and one row weighting ArticleTitle at 2.0](images/tuning--field-weights.png)
+
 1. **Field weights → New field weight** in the index's Edit index sidebar.
 2. **Field** — pick one from the list. It offers the index's searchable fields alphabetically, the
    only ones a weight can affect; a weight you saved earlier for a field the index no longer has
@@ -426,6 +447,8 @@ usually deserves more than a match halfway down a body of text.
 3. **Weight** — `1` is normal. `3` makes a match in that field count roughly three times as much.
    `0.5` halves it.
 4. **Save**.
+
+![The New field weight form, with a Field drop-down reading "Select a field" and a Weight of 1](images/tuning--field-weight-create.png)
 
 Start small. Move one field to `2` or `3`, look at the results, then adjust. Weights of 20 tend to
 turn search into "whatever has the word in the title", which is rarely what anyone wanted.
@@ -465,6 +488,8 @@ compare yet.
    [Personalise rules by contact group](#personalise-rules-by-contact-group).
 6. Press **Run**.
 
+![The Query tester after running the query coffee: the controls above, then With tuning and Without tuning columns, each reading 24 results and 0 changed, with per-result scores and Unchanged tags](images/tuning--query-tester.png)
+
 You get two cards holding the same search:
 
 - **With tuning** — exactly what a visitor gets right now: your rules, synonyms, stopwords and field
@@ -473,6 +498,13 @@ You get two cards holding the same search:
 
 Each card opens with a strip reading *N results · N ms · N changed*, so you can see at a glance
 whether the tuning moved anything at all.
+
+*N changed* counts results whose **position** differs, which is why the run captured above reports
+*0 changed* even though a rule fired. That rule boosts every `contentType:DancingGoat.ProductPage`
+document by ×2 and every hit for *coffee* is a product page, so all the scores rise together (`0.107`
+with tuning against `0.022` without, on the second row) and nothing overtakes anything. A boost that
+lifts every result equally changes no ranking — that is the tester telling you the rule is too broad
+to be earning its priority slot.
 
 Every result on both sides shows:
 
@@ -527,6 +559,8 @@ never shows up in **Analytics** — tester runs are not written to the query log
   runs, so do it out of hours. See [Reading the Status page](#reading-the-status-page).
 
 ### Reading the Status page
+
+![The Status page: a Healthy tag with 35 documents from 3 sources, the Documents by source breakdown for xperience, pim and kb, and the first Recent ingestion row](images/tuning--status.png)
 
 The page answers three questions, top to bottom.
 

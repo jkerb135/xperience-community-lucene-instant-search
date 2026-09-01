@@ -23,7 +23,8 @@ const ctx = await chromium.launchPersistentContext(resolve(here, '.profile'), {
 const page = ctx.pages()[0] ?? await ctx.newPage();
 
 // Sign-in gate: wait (up to 5 min) until no password field is on screen.
-await page.goto(cfg.baseUrl + '/admin', { waitUntil: 'networkidle' });
+await page.goto(cfg.baseUrl + '/admin', { waitUntil: 'domcontentloaded' });
+await page.waitForTimeout(2000);
 if (await page.locator('input[type="password"]').count()) {
   console.log('Please sign in in the browser window (tick "Keep me signed in")...');
   await page.waitForFunction(() => !document.querySelector('input[type="password"]'), null, { timeout: 300_000 });
@@ -36,7 +37,7 @@ const settle = async () => { await page.waitForLoadState('networkidle').catch(()
 let failed = 0;
 for (const shot of shots) {
   try {
-    await page.goto(cfg.baseUrl + shot.url);
+    await page.goto(cfg.baseUrl + shot.url, { waitUntil: 'domcontentloaded' });
     await settle();
     for (const step of shot.steps ?? []) {
       if (step.click) await page.getByText(step.click, { exact: false }).first().click();

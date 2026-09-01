@@ -111,6 +111,21 @@ Keys are created in the administration, in **Search ingestion → API keys** (un
 The plaintext is shown once, in the message at the top of the screen, and never again. You can also
 create them from code, once, and hand the plaintext to the integration.
 
+![The API keys listing with one key named dev-sample, showing its prefix xps_uzm_, its scopes, Enabled and Last used columns](images/ingestion--api-keys.png)
+
+The listing shows the key's **Prefix**, never the key: only its PBKDF2 hash is stored. **New API
+key** takes **Name**, **Indexes** (comma-separated code names or `*`, the default), **Operations**
+(comma-separated `write`, `delete`, `rebuild`, `read` or `*`; `write,delete` by default) and an
+optional **Expires**.
+
+![The New API key form, with Indexes defaulting to * and Operations defaulting to write,delete](images/ingestion--api-key-create.png)
+
+Every write those keys make is on the **Ingestion log** page next to them — when, which key prefix,
+which index, the operation, the document count and the outcome, newest first, filterable by index.
+Rebuilds triggered from an index's Status page are logged there too, under the key `admin-ui`.
+
+![The Ingestion log listing, with upsert, rebuild and clear rows against index DancingGoatSample, each with its key prefix, document count and outcome](images/ingestion--log.png)
+
 ### Schemas
 
 Each index declares what a pushed document may carry. Declare it on the index's indexing strategy:

@@ -222,6 +222,8 @@ index and one date range (`/admin/lucene/indexes/edit/{id}/analytics`). The inde
 clicked; it is shown above the date range and cannot be changed, so there is no "every index" view —
 open each index's dashboard in turn.
 
+![The Analytics dashboard of index DancingGoatSample over 30 days: the range controls, the four KPI tiles and the searches-over-time chart](images/tuning--analytics.png)
+
 The headline reads *Analytics*, and under it a line naming the index, the provider, the range and the
 total number of searches — *Index **ProductIndex** · Lucene · 1 Jul – 30 Jul 2026 · 4,812 searches*.
 
