@@ -1,0 +1,30 @@
+# Side navigation. One entry per guide page — update when pages are added or removed
+# (the /docs-ship link check will catch a page missing from here via index.md, but keep both in sync).
+- title: Getting started
+  items:
+    - { title: Overview, url: / }
+    - { title: Quick start, url: /quick-start.html }
+- title: Content editors
+  items:
+    - { title: Administration UI tour, url: /admin-ui-tour.html }
+    - { title: Relevance tuning, url: /relevance-tuning.html }
+    - { title: Search analytics, url: /analytics.html }
+    - { title: Popularity boosts, url: /popularity-boosts.html }
+    - { title: Experiments (A/B), url: /experiments.html }
+    - { title: Personalization, url: /search-personalization.html }
+- title: Developers
+  items:
+    - { title: Page Builder widgets, url: /page-builder-widgets.html }
+    - { title: Widget reference, url: /widget-reference.html }
+    - { title: JavaScript client, url: /js-client.html }
+    - { title: Bundler setup, url: /javascript-bundler-setup.html }
+    - { title: Custom widgets, url: /custom-widgets.html }
+    - { title: Theming, url: /theming.html }
+    - { title: Server rendering, url: /server-rendering.html }
+    - { title: Search API, url: /search-api.html }
+    - { title: Indexing strategy, url: /indexing-strategy.html }
+    - { title: Admin client development, url: /admin-client-development.html }
+- title: Administrators
+  items:
+    - { title: Ingestion, url: /ingestion.html }
+    - { title: Migrating from Algolia, url: /migrating-from-algolia.html }

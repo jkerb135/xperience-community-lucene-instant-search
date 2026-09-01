@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% if page.title %}{{ page.title }} — {% endif %}{{ site.title }}</title>
+  <meta name="description" content="{{ page.description | default: site.description }}">
+  <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
+  <style>
+    .xps-shell { display: flex; max-width: 1200px; margin: 0 auto; align-items: flex-start; }
+    .xps-sidebar { flex: 0 0 250px; position: sticky; top: 0; max-height: 100vh; overflow-y: auto;
+                   padding: 24px 16px 24px 24px; box-sizing: border-box; font-size: 14px; }
+    .xps-sidebar .site-name { display: block; font-weight: 600; font-size: 15px; margin-bottom: 16px;
+                              color: #24292f; text-decoration: none; }
+    .xps-sidebar h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .05em;
+                      color: #57606a; margin: 18px 0 6px; border: 0; padding: 0; }
+    .xps-sidebar ul { list-style: none; margin: 0; padding: 0; }
+    .xps-sidebar li a { display: block; padding: 4px 8px; border-radius: 6px;
+                        color: #24292f; text-decoration: none; }
+    .xps-sidebar li a:hover { background: #f3f4f6; }
+    .xps-sidebar li a.active { background: #ddf4ff; color: #0969da; font-weight: 600; }
+    .xps-content { flex: 1 1 auto; min-width: 0; padding: 24px 32px; box-sizing: border-box; }
+    .xps-content img { max-width: 100%; height: auto; border: 1px solid #d0d7de; border-radius: 6px; }
+    @media (max-width: 900px) {
+      .xps-shell { display: block; }
+      .xps-sidebar { position: static; max-height: none; width: auto; border-bottom: 1px solid #d0d7de; }
+    }
+  </style>
+</head>
+<body>
+  <div class="xps-shell">
+    <nav class="xps-sidebar" aria-label="Documentation">
+      <a class="site-name" href="{{ '/' | relative_url }}">{{ site.title }}</a>
+      {% for group in site.data.nav %}
+      <h2>{{ group.title }}</h2>
+      <ul>
+        {% for item in group.items %}
+        {% assign target = item.url | replace: '.html', '' %}
+        {% assign current = page.url | replace: '.html', '' | replace: 'index', '' %}
+        <li><a href="{{ item.url | relative_url }}" {% if current == target or current == item.url %}class="active" aria-current="page"{% endif %}>{{ item.title }}</a></li>
+        {% endfor %}
+      </ul>
+      {% endfor %}
+      <h2>Project</h2>
+      <ul>
+        <li><a href="https://github.com/jkerb135/xperience-community-lucene-instant-search">GitHub repository</a></li>
+      </ul>
+    </nav>
+    <main class="xps-content markdown-body">
+      {{ content }}
+    </main>
+  </div>
+</body>
+</html>
