@@ -166,7 +166,11 @@ export function searchBox(params: SearchBoxWidgetParams): Widget {
         bindCombobox({ input, panel, id }, () => suggest, () => submit(input?.value ?? ''));
       }
       root.classList.toggle('xps-suggestions--open', options.isOpen);
-      renderPanel({ input, panel, id }, options, popup.groupLabels);
+      // Searching in place means no "see all" link, but the keyboard hints are still worth showing.
+      renderPanel({ input, panel, id }, options, {
+        ...(popup.groupLabels === undefined ? {} : { groupLabels: popup.groupLabels }),
+        hints: true,
+      });
     },
     () => {
       // Drops a debounced call that has not fired yet and makes an in-flight answer stale.

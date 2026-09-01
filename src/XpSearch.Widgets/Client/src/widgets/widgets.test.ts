@@ -1681,24 +1681,52 @@ describe('searchBox with integrated suggestions', () => {
     await vi.waitFor(() => expect(assigned).toEqual(['/support']));
   });
 
-  it('renders the same panel as the standalone widget', async () => {
+  it('renders the same panel as the standalone widget, "see all" aside', async () => {
     const box = mount();
     const standalone = startSuggesting(
-      (host) => suggestions({ container: host, debounceMs: 0 }),
+      (host) => suggestions({ container: host, debounceMs: 0, resultsUrl: '/search' }),
       'standalone'
     );
     await type(box, 'esp');
     await type(standalone, 'esp');
 
-    /** The two widgets differ only in the id prefix MARKUP.md rule 4 gives them. */
+    /**
+     * The two differ only in the id prefix MARKUP.md rule 4 gives them and in the "see all" link,
+     * which an in-place search has nowhere to point at. The keyboard hints are in both.
+     */
     const panel = (host: HTMLElement): string =>
       host
         .querySelector('.xps-suggestions__panel')!
         .innerHTML.split(host.querySelector('input')!.id.replace(/-input$/, ''))
-        .join('xps-id');
+        .join('xps-id')
+        .replace(/<a class="xps-suggestions__see-all"[\s\S]*?<\/a>/, '');
 
     expect(panel(box)).toBe(panel(standalone));
     expect(panel(box)).toContain('xps-suggestions__option-meta');
+    expect(panel(box)).toContain('xps-suggestions__hints');
+  });
+
+  it('keeps the keyboard hints, without a "see all" link that leads nowhere', async () => {
+    const box = mount();
+    const inPlace = startSuggesting(
+      (host) => suggestions({ container: host, debounceMs: 0 }),
+      'standalone'
+    );
+    await type(box, 'esp');
+    await type(inPlace, 'esp');
+
+    const footer = box.querySelector('.xps-suggestions__footer')!;
+    expect(footer.children.length).toBe(1);
+    expect(classesOf(footer.firstElementChild)).toEqual(['xps-suggestions__hints']);
+    expect(footer.firstElementChild?.getAttribute('aria-hidden')).toBe('true');
+    expect([...footer.querySelectorAll('kbd')].map((kbd) => kbd.className)).toEqual(
+      Array(4).fill('xps-suggestions__key')
+    );
+    expect(box.querySelector('.xps-suggestions__see-all')).toBeNull();
+
+    // The standalone widget without a results page keeps its footerless panel, as before.
+    expect(inPlace.querySelector('.xps-suggestions__footer')).toBeNull();
+    expect(inPlace.querySelector('.xps-suggestions__hints')).toBeNull();
   });
 });
 

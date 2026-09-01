@@ -98,6 +98,16 @@ export function bindCombobox(
   input.addEventListener('blur', () => state()?.close());
 }
 
+export interface PanelOptions {
+  /** Group headings, used only when a response mixes query suggestions with documents. */
+  groupLabels?: { suggestions?: string; documents?: string };
+  /**
+   * Render the footer even without a "see all" link, for its keyboard hints. A consumer that
+   * searches in place — the search box — has no results page to link to but still shows them.
+   */
+  hints?: boolean;
+}
+
 /**
  * Renders the popup and the input's live combobox attributes. Everything else about the field —
  * its value, its reset button, the root modifier — belongs to the widget that renders it.
@@ -105,7 +115,7 @@ export function bindCombobox(
 export function renderPanel(
   parts: ComboboxParts,
   api: SuggestionsRenderState,
-  groupLabels?: { suggestions?: string; documents?: string }
+  { groupLabels, hints = false }: PanelOptions = {}
 ): void {
   const { input, panel, id } = parts;
   const { query, activeIndex, isOpen } = api;
@@ -156,8 +166,12 @@ export function renderPanel(
     ${isOpen && ordered.length === 0
       ? html`<p class="xps-suggestions__empty" role="status">No suggestions for &ldquo;${query}&rdquo;.</p>`
       : ''}
-    ${api.seeAllUrl !== null && ordered.length > 0
-      ? html`<div class="xps-suggestions__footer">${KEYBOARD_HINTS}<a class="xps-suggestions__see-all" href="${api.seeAllUrl}">See all results for &ldquo;${query}&rdquo;</a></div>`
+    ${(api.seeAllUrl !== null || hints) && ordered.length > 0
+      ? html`<div class="xps-suggestions__footer">${KEYBOARD_HINTS}${
+          api.seeAllUrl === null
+            ? ''
+            : html`<a class="xps-suggestions__see-all" href="${api.seeAllUrl}">See all results for &ldquo;${query}&rdquo;</a>`
+        }</div>`
       : ''}`,
     panel
   );

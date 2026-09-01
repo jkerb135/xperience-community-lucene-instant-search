@@ -40,7 +40,7 @@ cd src/XpSearch.Admin/Client && npm ci && npm run build
 cd src/XpSearch.Widgets/Client && npm run contract:gen && npm run contract:check
 ```
 
-Suite sizes (2026-09-01, after TH-3): Core 286, Admin 187, Ingestion 47, Widgets 76, JS 223 — if
+Suite sizes (2026-09-01, after TH-3): Core 286, Admin 187, Ingestion 47, Widgets 76, JS 224 — if
 your run shows fewer, you ran the wrong project. There is no solution file in the repo root; run each
 test project by path. The Admin C# suite needs `src/XpSearch.Admin/Client` built first, like the
 Widgets one.

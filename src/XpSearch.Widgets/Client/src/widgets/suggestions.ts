@@ -105,7 +105,8 @@ export function suggestions(params: SuggestionsWidgetParams): Widget {
       if (input.value !== query) input.value = query;
       reset.hidden = query === '';
 
-      renderPanel({ input, panel, id }, options, groupLabels);
+      // No `hints`: this widget shows the footer only when it has a "see all" link to put in it.
+      renderPanel({ input, panel, id }, options, { ...(groupLabels === undefined ? {} : { groupLabels }) });
     },
     () => {
       // Drops a debounced call that has not fired yet and makes an in-flight answer stale.

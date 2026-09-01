@@ -18,7 +18,9 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
   the field rather than next to it. New `searchBox({ suggestions: { … } })` param group
   (`debounceMs`, `minQueryLength`, `limit`, `language`, `groupLabels`) turns the widget's own input
   into the autocomplete combobox: `withSuggestions` drives it, the panel is rendered by the module
-  the standalone `suggestions` widget now also uses, and picking a suggestion searches in place
+  the standalone `suggestions` widget now also uses — keyboard-hints footer included, without the
+  "See all results" link an in-place search has nowhere to point at — and picking a suggestion
+  searches in place
   while `Enter` with no active option still goes through the search box's submit, redirect rules
   included. In the Page Builder: **Suggest as the visitor types** and **Maximum suggestions**,
   emitted as a nested `suggestions` group in `data-xps-config` only when enabled. One page, one

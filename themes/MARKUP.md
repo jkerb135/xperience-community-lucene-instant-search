@@ -134,9 +134,11 @@ input gains the combobox attributes described under [suggestions](#suggestions) 
 `role="combobox"`, `aria-expanded`, `aria-controls`, `aria-autocomplete="list"`,
 `aria-activedescendant` — and a `xps-suggestions__panel` becomes the last child of the form,
 below the field; the root takes `xps-suggestions--open` while the popup is shown. The panel is
-byte-for-byte the standalone widget's (same renderer), so the same styles apply. Selecting
-searches in place, so there is no `xps-suggestions__see-all` and therefore no footer. Use this
-*or* the standalone widget on a page, never both: two fields is two search boxes.
+byte-for-byte the standalone widget's (same renderer), so the same styles apply — including the
+`xps-suggestions__footer` and its `xps-suggestions__hints` keycaps. Selecting searches in place,
+so the footer carries the hints alone: there is no results page to put an
+`xps-suggestions__see-all` link in. Use this *or* the standalone widget on a page, never both:
+two fields is two search boxes.
 
 ## results
 
@@ -374,7 +376,7 @@ Implements the WAI-ARIA APG combobox-with-listbox pattern:
 | `xps-suggestions__option-title` | `<span>` | May contain `<mark class="xps-highlight">`. |
 | `xps-suggestions__option-meta` | `<span>` | Secondary line for a matching document. |
 | `xps-suggestions__empty` | `<p role="status">` | Open with no suggestions. |
-| `xps-suggestions__footer` | `<div>` | Holds `xps-suggestions__hints` and `xps-suggestions__see-all` (`<a href>`), in that order. |
+| `xps-suggestions__footer` | `<div>` | Holds `xps-suggestions__hints` and `xps-suggestions__see-all` (`<a href>`), in that order. The link is dropped when the widget searches in place; the standalone widget then drops the whole footer, the integrated search box keeps it for the hints. |
 | `xps-suggestions__hints` | `<span aria-hidden="true">` | Decorative keyboard hints. Hidden from assistive tech (the combobox roles already convey the model) and from coarse pointers. |
 | `xps-suggestions__key` | `<kbd>` | One keycap inside the hints cluster. |
 | `xps-suggestions__see-all` | `<a href>` | Link to the full results page. |

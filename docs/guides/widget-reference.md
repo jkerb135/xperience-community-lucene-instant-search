@@ -155,7 +155,8 @@ The panel is rendered by the same code as the standalone widget, so it looks and
 the root gains `xps-suggestions--open` while it is shown. Picking a suggestion searches in place
 (a document suggestion still navigates to its `url`), and `Enter` with no active option goes
 through the search box's own submit, so [redirect rules](relevance-tuning.md#redirect-rules) still
-apply. There is no "see all results" link, because this box *is* the results page.
+apply. The panel's footer keeps its keyboard hints but has no "See all results" link, because this
+box *is* the results page.
 
 **One page, one search field.** Use this on a results page, and the standalone
 [`suggestions`](#suggestions) widget on a landing page or in a header, where a `resultsUrl`

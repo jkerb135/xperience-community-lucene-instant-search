@@ -17,20 +17,6 @@ and how to lift it.
   is inferred from `resultsUrl === undefined`) so a caller that owns the query can take the popup
   without the search.
 
-## The integrated suggestions panel has no keyboard-hints footer (`renderPanel` in `Client/src/widgets/suggestionsPanel.ts`)
-
-- **Simplified:** the footer — TH-1's `xps-suggestions__hints` plus the "See all results" link — is
-  rendered only when `seeAllUrl !== null`, i.e. only for a standalone widget configured with
-  `resultsUrl`. A search box with integrated suggestions searches in place, so it never has one and
-  never shows the hints.
-- **Ceiling:** the two consumers show the same options with different affordances; a keyboard hint
-  that only appears on landing pages is arbitrary. Splitting the condition was out of scope here
-  because it would change the standalone widget's markup in its own no-`resultsUrl` mode, which TH-3
-  was told to leave byte-identical.
-- **Upgrade path:** render `xps-suggestions__footer` whenever there is at least one option, with the
-  see-all link as its optional second child, and update `themes/fixtures/suggestions.html` and the
-  standalone widget's tests in the same commit.
-
 ## `ServerRenderedResults.DefaultCard` in `XpSearch.Core/Rendering/ServerRenderedResults.cs`
 
 - **Simplified:** the fallback card a host without a result partial gets is emitted as string literals
