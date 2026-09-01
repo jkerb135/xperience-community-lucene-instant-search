@@ -145,6 +145,25 @@ public class XpSearchQueryLogInfo : AbstractInfo<XpSearchQueryLogInfo, IInfoProv
         set => SetValue(nameof(LogProcessingTimeMs), value);
     }
 
+    /// <summary>
+    /// Gets or sets the identifier of the experiment that answered the search, or <see langword="null"/>
+    /// when none was running (XP-1). Every metric built on these rows splits by it.
+    /// </summary>
+    [DatabaseField]
+    public virtual int? LogExperimentID
+    {
+        get => GetValue(nameof(LogExperimentID)) as int?;
+        set => SetValue(nameof(LogExperimentID), value);
+    }
+
+    /// <summary>Gets or sets the variant the visitor was bucketed into - <c>A</c> or <c>B</c> - or an empty string.</summary>
+    [DatabaseField]
+    public virtual string LogVariant
+    {
+        get => ValidationHelper.GetString(GetValue(nameof(LogVariant)), string.Empty, CultureInfo.InvariantCulture);
+        set => SetValue(nameof(LogVariant), value);
+    }
+
     /// <inheritdoc />
     protected override void DeleteObject() => Provider.Delete(this);
 

@@ -901,3 +901,32 @@ and how to lift it.
 - **Upgrade path:** keep a `[data-xps-server-rendered]` child in place while `results === null` and
   remove it on the first render that has results. That is a second rendering state in a widget that
   currently has three, so it waits for someone to complain about the flicker.
+
+## First paint buckets into A, in `ExperimentAssignmentResolver.BucketId`
+
+- **Simplified:** a visitor with no `xpsearch_bucket` cookie can only be given one while a
+  `Set-Cookie` header is still allowed. When the response has already started - DX-2's server-rendered
+  results widget, whose render runs the pipeline mid-stream - when there is no `HttpContext` at all, or
+  when the visitor's cookie level is below *Essential*, the request is bucketed into **variant A** and
+  nothing is written. The next API query assigns the cookie and the visitor becomes sticky from then
+  on. Bucketing on a throwaway id instead would flip the visitor's variant on every request.
+- **Ceiling:** the very first server-rendered paint of a brand new visitor always shows variant A, and
+  it is journaled as A, so A collects a few extra low-value impressions per new visitor. A visitor who
+  refuses Essential cookies is permanently in A. Both lean the numbers towards A by a small,
+  unmeasured amount; the owner accepted this in the amendment.
+- **Upgrade path:** assign the bucket cookie in middleware, before anything can write to the response
+  body - then the id exists by the time any render or query asks for it, and this whole branch is
+  unreachable.
+
+## Cloning and promoting tuning rows in `XpSearch.Admin.Tuning.ExperimentService`
+
+- **Simplified:** create / promote / discard walk the rows one info-provider call at a time, with no
+  transaction and no batching, and they are verified against the database only on a running instance -
+  the unit tests cover the state machine (`ExperimentRules`) and the row-scoping condition
+  (`VariantScope`), because an `Info` object cannot be constructed without Kentico's IoC container.
+- **Ceiling:** an index with thousands of tuning rows makes creating an experiment slow, and a crash
+  halfway through a promotion leaves some rows promoted while the experiment is still Running. The
+  operation is repeatable (the remaining live rows are deleted and the remaining variant rows cleared
+  on the next attempt), but a search in between sees a mixture of both tunings.
+- **Upgrade path:** wrap each operation in a `CMS.DataEngine.CMSTransactionScope` and replace the
+  row-by-row loops with bulk `UPDATE`/`DELETE` over the object query once the row counts justify it.

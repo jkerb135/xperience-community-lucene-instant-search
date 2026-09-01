@@ -11,8 +11,10 @@ using Kentico.Xperience.Lucene.Core.Indexing;
 
 using XpSearch.Admin.Forms;
 using XpSearch.Admin.Persistence;
+using XpSearch.Admin.Tuning;
 using XpSearch.Admin.UIPages;
 using XpSearch.Core;
+using XpSearch.Core.Tuning;
 
 [assembly: UIPage(
     parentType: typeof(IndexTuningSection),
@@ -152,7 +154,9 @@ public class FieldWeightListing : ListingPage
         PageConfiguration.AddEditRowAction<FieldWeightEdit>(parameters: IndexScope.Route(IndexIdentifier));
         PageConfiguration.TableActions.AddDeleteAction(nameof(Delete), "Delete");
         PageConfiguration.QueryModifiers.AddModifier((query, _) =>
-            query.WhereEquals(nameof(XpSearchFieldWeightInfo.WeightIndexName), indexName));
+            query
+                .WhereEquals(nameof(XpSearchFieldWeightInfo.WeightIndexName), indexName)
+                .Where(VariantScope.Condition(nameof(XpSearchFieldWeightInfo.WeightExperimentID), TuningVariant.Live)));
 
         return base.ConfigurePage();
     }

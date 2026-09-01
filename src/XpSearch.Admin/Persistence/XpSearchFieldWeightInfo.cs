@@ -97,6 +97,17 @@ public class XpSearchFieldWeightInfo : AbstractInfo<XpSearchFieldWeightInfo, IIn
         set => SetValue(nameof(WeightValue), value);
     }
 
+    /// <summary>
+    /// Gets or sets the experiment this weight is the variant-B draft of, or <see langword="null"/>
+    /// when it is live (XP-1). Every live read filters on it being null.
+    /// </summary>
+    [DatabaseField]
+    public virtual int? WeightExperimentID
+    {
+        get => GetValue(nameof(WeightExperimentID)) as int?;
+        set => SetValue(nameof(WeightExperimentID), value);
+    }
+
     /// <inheritdoc />
     protected override void DeleteObject() => Provider.Delete(this);
 

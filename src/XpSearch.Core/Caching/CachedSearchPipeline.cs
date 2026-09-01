@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using XpSearch.Core.Abstractions;
 using XpSearch.Core.Analytics;
 using XpSearch.Core.Contract;
+using XpSearch.Core.Experiments;
 using XpSearch.Core.Options;
 using XpSearch.Core.Personalization;
 using XpSearch.Core.Pipeline;
@@ -35,6 +36,7 @@ public sealed class CachedSearchPipeline : ISearchPipeline
     private readonly ISearchCache cache;
     private readonly XpSearchOptions options;
     private readonly IContactGroupResolver contactGroups;
+    private readonly IExperimentAssignmentResolver experiments;
     private readonly ISearchRequestJournal journal;
 
     /// <summary>Initializes a new instance of the <see cref="CachedSearchPipeline"/> class.</summary>
@@ -46,24 +48,32 @@ public sealed class CachedSearchPipeline : ISearchPipeline
     /// runs, because they belong in the cache key; the answer is memoized for the request, so the
     /// stage that puts them on the context costs no second query.
     /// </param>
+    /// <param name="experiments">
+    /// Answers which experiment and variant apply (XP-1). Asked here for the same reason as the
+    /// contact groups: the variant belongs in the cache key and in the journal, and a cache hit never
+    /// reaches the stage that resolves it. The answer is memoized for the request.
+    /// </param>
     /// <param name="journal">Records the answered search for analytics.</param>
     public CachedSearchPipeline(
         ISearchPipeline inner,
         ISearchCache cache,
         IOptions<XpSearchOptions> options,
         IContactGroupResolver contactGroups,
+        IExperimentAssignmentResolver experiments,
         ISearchRequestJournal journal)
     {
         ArgumentNullException.ThrowIfNull(inner);
         ArgumentNullException.ThrowIfNull(cache);
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(contactGroups);
+        ArgumentNullException.ThrowIfNull(experiments);
         ArgumentNullException.ThrowIfNull(journal);
 
         this.inner = inner;
         this.cache = cache;
         this.options = options.Value;
         this.contactGroups = contactGroups;
+        this.experiments = experiments;
         this.journal = journal;
     }
 
@@ -75,18 +85,22 @@ public sealed class CachedSearchPipeline : ISearchPipeline
         string queryText = NormalizeRequestStage.Normalize(request.Query, options.MaxQueryLength);
         long start = Stopwatch.GetTimestamp();
 
+        var experiment = await experiments
+            .GetAssignmentAsync(request.Index ?? string.Empty, cancellationToken)
+            .ConfigureAwait(false);
+
         if (options.CacheTtl <= TimeSpan.Zero || string.IsNullOrWhiteSpace(request.Index))
         {
             var uncached = await inner.ExecuteAsync(request, cancellationToken).ConfigureAwait(false);
 
-            Journal(uncached, uncached.QueryId ?? string.Empty, request, queryText, start);
+            Journal(uncached, uncached.QueryId ?? string.Empty, request, queryText, start, experiment);
 
             return uncached;
         }
 
         var groups = await contactGroups.GetContactGroupsAsync(cancellationToken).ConfigureAwait(false);
 
-        string key = SearchCacheKey.Compute(request, queryText, groups);
+        string key = SearchCacheKey.Compute(request, queryText, groups, experiment);
 
         var cached = await cache
             .GetOrAddAsync(request.Index, key, token => inner.ExecuteAsync(request, token), cancellationToken)
@@ -95,7 +109,7 @@ public sealed class CachedSearchPipeline : ISearchPipeline
         string queryId = string.IsNullOrWhiteSpace(request.QueryId) ? Guid.NewGuid().ToString() : request.QueryId;
         var response = cached.WithQueryId(queryId);
 
-        Journal(response, queryId, request, queryText, start);
+        Journal(response, queryId, request, queryText, start, experiment);
 
         return response;
     }
@@ -104,12 +118,19 @@ public sealed class CachedSearchPipeline : ISearchPipeline
     /// Journals the answered search once, hit or miss. The elapsed time is this decorator's own, so a
     /// cache hit truthfully reports the near-zero cost of the lookup.
     /// </summary>
-    private void Journal(SearchResponse response, string queryId, SearchRequest request, string queryText, long start) =>
+    private void Journal(
+        SearchResponse response,
+        string queryId,
+        SearchRequest request,
+        string queryText,
+        long start,
+        ExperimentAssignment experiment) =>
         journal.Record(
             queryId,
             queryText,
             request.Index ?? string.Empty,
             (int)response.Total,
             Stopwatch.GetElapsedTime(start),
-            request.Language ?? string.Empty);
+            request.Language ?? string.Empty,
+            experiment);
 }

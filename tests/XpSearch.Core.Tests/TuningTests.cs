@@ -17,13 +17,39 @@ internal sealed class FakeTuningSource : IRelevanceTuningSource
 
     internal IReadOnlyList<FieldWeight> Weights { get; set; } = [];
 
-    public Task<IReadOnlyList<TuningRule>> GetRulesAsync(string indexName, CancellationToken cancellationToken) => Task.FromResult(Rules);
+    /// <summary>The rules served for any variant that is not the live one (XP-1).</summary>
+    internal IReadOnlyList<TuningRule> VariantRules { get; set; } = [];
 
-    public Task<IReadOnlyList<TuningSynonym>> GetSynonymsAsync(string indexName, CancellationToken cancellationToken) => Task.FromResult(Synonyms);
+    /// <summary>The variant the last read asked for.</summary>
+    internal TuningVariant LastVariant { get; private set; }
 
-    public Task<IReadOnlyList<string>> GetStopwordsAsync(string indexName, CancellationToken cancellationToken) => Task.FromResult(Stopwords);
+    public Task<IReadOnlyList<TuningRule>> GetRulesAsync(string indexName, CancellationToken cancellationToken, TuningVariant variant = default)
+    {
+        LastVariant = variant;
 
-    public Task<IReadOnlyList<FieldWeight>> GetFieldWeightsAsync(string indexName, CancellationToken cancellationToken) => Task.FromResult(Weights);
+        return Task.FromResult(variant.IsLive ? Rules : VariantRules);
+    }
+
+    public Task<IReadOnlyList<TuningSynonym>> GetSynonymsAsync(string indexName, CancellationToken cancellationToken, TuningVariant variant = default)
+    {
+        LastVariant = variant;
+
+        return Task.FromResult(Synonyms);
+    }
+
+    public Task<IReadOnlyList<string>> GetStopwordsAsync(string indexName, CancellationToken cancellationToken, TuningVariant variant = default)
+    {
+        LastVariant = variant;
+
+        return Task.FromResult(Stopwords);
+    }
+
+    public Task<IReadOnlyList<FieldWeight>> GetFieldWeightsAsync(string indexName, CancellationToken cancellationToken, TuningVariant variant = default)
+    {
+        LastVariant = variant;
+
+        return Task.FromResult(Weights);
+    }
 }
 
 /// <summary>

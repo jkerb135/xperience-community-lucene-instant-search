@@ -18,6 +18,9 @@ public static class SearchStageOrder
     /// <summary>Resolve the contact groups of the visitor, so rules can be scoped to one (ADR-0021).</summary>
     public const int ResolveContactGroups = 150;
 
+    /// <summary>Resolve the running experiment and the visitor's variant, before any tuning is read (XP-1).</summary>
+    public const int ResolveExperiment = 160;
+
     /// <summary>Select the rules that fire and apply their query rewrites (ADR-0022).</summary>
     public const int QueryRewrite = 175;
 

@@ -35,10 +35,11 @@ public sealed class SynonymExpansionStage : ISearchStage
         ArgumentNullException.ThrowIfNull(context);
 
         string index = context.Request.Index;
+        var variant = context.Experiment.Tuning;
 
-        var synonyms = await source.GetSynonymsAsync(index, cancellationToken).ConfigureAwait(false);
-        var stopwords = await source.GetStopwordsAsync(index, cancellationToken).ConfigureAwait(false);
-        var weights = await source.GetFieldWeightsAsync(index, cancellationToken).ConfigureAwait(false);
+        var synonyms = await source.GetSynonymsAsync(index, cancellationToken, variant).ConfigureAwait(false);
+        var stopwords = await source.GetStopwordsAsync(index, cancellationToken, variant).ConfigureAwait(false);
+        var weights = await source.GetFieldWeightsAsync(index, cancellationToken, variant).ConfigureAwait(false);
 
         context.Tuning = context.Tuning with
         {

@@ -10,6 +10,7 @@ using XpSearch.Admin.Persistence;
 using XpSearch.Admin.Tuning;
 using XpSearch.Admin.UIPages;
 using XpSearch.Admin.UIPages.RuleBuilder;
+using XpSearch.Core.Tuning;
 
 [assembly: UIPage(
     parentType: typeof(IndexTuningSection),
@@ -126,7 +127,9 @@ public class RuleListing : ListingPage
         PageConfiguration.AddEditRowAction<RuleEdit>(parameters: IndexScope.Route(IndexIdentifier));
         PageConfiguration.TableActions.AddDeleteAction(nameof(Delete), "Delete");
         PageConfiguration.QueryModifiers.AddModifier((query, _) =>
-            query.WhereEquals(nameof(XpSearchRuleInfo.RuleIndexName), indexName));
+            query
+                .WhereEquals(nameof(XpSearchRuleInfo.RuleIndexName), indexName)
+                .Where(VariantScope.Condition(nameof(XpSearchRuleInfo.RuleExperimentID), TuningVariant.Live)));
 
         return base.ConfigurePage();
     }

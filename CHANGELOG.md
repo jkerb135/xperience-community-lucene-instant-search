@@ -8,6 +8,18 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Added (core, admin):** an index's relevance tuning can be **A/B tested** against real traffic
+  (ADR-0024). An experiment holds a traffic split and a variant-B draft of the index's rules, synonyms,
+  weights and stopwords, cloned from live when it is created; one experiment per index at a time, and
+  a draft can never leak into live results. Visitors are bucketed stickily by a first-party
+  `xpsearch_bucket` cookie, registered at the **Essential** cookie level, so anonymous visitors who
+  have not consented to tracking are tested too. Variant B swaps the tuning the pipeline reads, joins
+  the response cache key while the experiment runs, and stamps the query log with the experiment and
+  variant — which splits every existing metric (CTR, zero-result rate, clicked position, volume) by
+  variant. The JSON contract and `SearchResponse` are unchanged; the JS client knows nothing about it.
+  Concluding an experiment either promotes variant B to live or discards it, and applies without a
+  restart. The administration for all of this arrives in the next unit; there is no UI yet.
+
 - **Added (widgets):** the **Search - Results** widget renders the visitor's first page of results on
   the server, inside its own mount element. A shared result URL (`?q=espresso&page=2&tags=coffee`) now
   arrives with its results in the HTML — read with the same parameter mapping the client writes — so the

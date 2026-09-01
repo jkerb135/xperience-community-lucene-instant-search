@@ -190,35 +190,65 @@ public sealed record TuningSet(
 }
 
 /// <summary>
+/// Which set of an index's tuning rows is being read: the live one, or the draft of one experiment
+/// (XP-1). A tuning row carries the experiment it belongs to, or nothing at all when it is live.
+/// </summary>
+/// <param name="ExperimentId">Identifier of the experiment whose draft rows to read; zero for live.</param>
+/// <remarks>
+/// It is a reference to "a variant of an index's tuning", not to a set of rows, so the whole-index
+/// variant the amendment leaves open can be added here rather than to every signature that takes one.
+/// </remarks>
+public readonly record struct TuningVariant(int ExperimentId)
+{
+    /// <summary>Gets the variant every request reads unless an experiment bucketed it into B.</summary>
+    public static TuningVariant Live => default;
+
+    /// <summary>Gets a value indicating whether this is the live tuning.</summary>
+    public bool IsLive => ExperimentId <= 0;
+
+    /// <summary>Gets the part that separates this variant's cache entries from another's.</summary>
+    public string CacheKeyPart => IsLive ? "live" : ExperimentId.ToString(System.Globalization.CultureInfo.InvariantCulture);
+}
+
+/// <summary>
 /// Where the query pipeline reads relevance tuning from (spec §8.3). Core ships an empty
 /// implementation so search works without <c>XpSearch.Admin</c> installed (spec §2.2); the Admin
 /// package replaces it with the database-backed, cached one.
 /// </summary>
+/// <remarks>
+/// Every method reads one <see cref="TuningVariant"/>. The default is
+/// <see cref="TuningVariant.Live"/>, and an implementation must never let a variant's draft rows into
+/// that answer (XP-1).
+/// </remarks>
 public interface IRelevanceTuningSource
 {
     /// <summary>Gets every rule configured for an index, enabled or not.</summary>
     /// <param name="indexName">Code name of the index.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="variant">Which set of tuning rows to read.</param>
     /// <returns>The rules.</returns>
-    Task<IReadOnlyList<TuningRule>> GetRulesAsync(string indexName, CancellationToken cancellationToken);
+    Task<IReadOnlyList<TuningRule>> GetRulesAsync(string indexName, CancellationToken cancellationToken, TuningVariant variant = default);
 
     /// <summary>Gets the enabled synonym groups of an index.</summary>
     /// <param name="indexName">Code name of the index.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="variant">Which set of tuning rows to read.</param>
     /// <returns>The synonym groups.</returns>
-    Task<IReadOnlyList<TuningSynonym>> GetSynonymsAsync(string indexName, CancellationToken cancellationToken);
+    Task<IReadOnlyList<TuningSynonym>> GetSynonymsAsync(string indexName, CancellationToken cancellationToken, TuningVariant variant = default);
 
     /// <summary>Gets the stopwords of an index.</summary>
     /// <param name="indexName">Code name of the index.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="variant">Which set of tuning rows to read.</param>
     /// <returns>The stopwords, lowercased.</returns>
-    Task<IReadOnlyList<string>> GetStopwordsAsync(string indexName, CancellationToken cancellationToken);
+    Task<IReadOnlyList<string>> GetStopwordsAsync(string indexName, CancellationToken cancellationToken, TuningVariant variant = default);
 
     /// <summary>Gets the per-field score multipliers of an index.</summary>
     /// <param name="indexName">Code name of the index.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
+    /// <param name="variant">Which set of tuning rows to read.</param>
     /// <returns>The weights.</returns>
-    Task<IReadOnlyList<FieldWeight>> GetFieldWeightsAsync(string indexName, CancellationToken cancellationToken);
+    Task<IReadOnlyList<FieldWeight>> GetFieldWeightsAsync(string indexName, CancellationToken cancellationToken, TuningVariant variant = default);
 }
 
 /// <summary>
@@ -228,18 +258,18 @@ public interface IRelevanceTuningSource
 public sealed class EmptyRelevanceTuningSource : IRelevanceTuningSource
 {
     /// <inheritdoc />
-    public Task<IReadOnlyList<TuningRule>> GetRulesAsync(string indexName, CancellationToken cancellationToken) =>
+    public Task<IReadOnlyList<TuningRule>> GetRulesAsync(string indexName, CancellationToken cancellationToken, TuningVariant variant = default) =>
         Task.FromResult<IReadOnlyList<TuningRule>>([]);
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<TuningSynonym>> GetSynonymsAsync(string indexName, CancellationToken cancellationToken) =>
+    public Task<IReadOnlyList<TuningSynonym>> GetSynonymsAsync(string indexName, CancellationToken cancellationToken, TuningVariant variant = default) =>
         Task.FromResult<IReadOnlyList<TuningSynonym>>([]);
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<string>> GetStopwordsAsync(string indexName, CancellationToken cancellationToken) =>
+    public Task<IReadOnlyList<string>> GetStopwordsAsync(string indexName, CancellationToken cancellationToken, TuningVariant variant = default) =>
         Task.FromResult<IReadOnlyList<string>>([]);
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<FieldWeight>> GetFieldWeightsAsync(string indexName, CancellationToken cancellationToken) =>
+    public Task<IReadOnlyList<FieldWeight>> GetFieldWeightsAsync(string indexName, CancellationToken cancellationToken, TuningVariant variant = default) =>
         Task.FromResult<IReadOnlyList<FieldWeight>>([]);
 }

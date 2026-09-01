@@ -245,6 +245,7 @@ internal sealed class CachingTests
                 cache,
                 Microsoft.Extensions.Options.Options.Create(effective),
                 new StubContactGroupResolver(),
+                new StubExperimentResolver(),
                 Substitute.For<ISearchRequestJournal>()),
             inner,
             cache);
@@ -256,6 +257,7 @@ internal sealed class CachingTests
             new MemorySearchCache(),
             Microsoft.Extensions.Options.Options.Create(new XpSearchOptions()),
             new StubContactGroupResolver(),
+            new StubExperimentResolver(),
             Substitute.For<ISearchRequestJournal>());
 
     private sealed class FixedPipeline(SearchResponse response) : ISearchPipeline

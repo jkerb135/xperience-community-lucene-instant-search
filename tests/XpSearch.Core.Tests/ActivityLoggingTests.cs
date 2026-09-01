@@ -11,6 +11,7 @@ using NUnit.Framework;
 using XpSearch.Core.Analytics;
 using XpSearch.Core.Caching;
 using XpSearch.Core.Contract;
+using XpSearch.Core.Experiments;
 using XpSearch.Core.Options;
 using XpSearch.Core.Pipeline;
 using XpSearch.Core.Tests.Fixtures;
@@ -221,7 +222,32 @@ internal sealed class ActivityLoggingTests
         });
     }
 
-    private static JournaledPipeline BuildJournaled(XpSearchOptions? options = null)
+    /// <summary>
+    /// Stamping the query log is what splits every existing metric by variant (XP-1). The activity is
+    /// deliberately not stamped: it is consent-gated and carries no experiment.
+    /// </summary>
+    [Test]
+    public async Task TheQueryLogIsStampedWithTheExperimentOnlyWhileOneIsRunning()
+    {
+        var running = BuildJournaled(experiment: new ExperimentAssignment(7, SearchVariant.B));
+        var none = BuildJournaled();
+
+        await running.Pipeline.ExecuteAsync(TestHarness.Request("lucene"), CancellationToken.None);
+        await none.Pipeline.ExecuteAsync(TestHarness.Request("lucene"), CancellationToken.None);
+
+        var stamped = running.Queue.Items.Single().Entry!;
+        var plain = none.Queue.Items.Single().Entry!;
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(stamped.ExperimentId, Is.EqualTo(7));
+            Assert.That(stamped.Variant, Is.EqualTo("B"));
+            Assert.That(plain.ExperimentId, Is.Null);
+            Assert.That(plain.Variant, Is.Null);
+        });
+    }
+
+    private static JournaledPipeline BuildJournaled(XpSearchOptions? options = null, ExperimentAssignment? experiment = null)
     {
         var activities = Substitute.For<ISearchActivityLogger>();
         var contexts = new QueryContextMap();
@@ -235,6 +261,7 @@ internal sealed class ActivityLoggingTests
             new MemorySearchCache(),
             Microsoft.Extensions.Options.Options.Create(options ?? new XpSearchOptions()),
             new StubContactGroupResolver(),
+            new StubExperimentResolver(experiment),
             new SearchRequestJournal(activities, contexts, queue, channel, NullLogger<SearchRequestJournal>.Instance));
 
         return new JournaledPipeline(pipeline, inner, queue, contexts, activities);

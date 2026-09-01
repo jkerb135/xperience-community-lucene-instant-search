@@ -91,6 +91,17 @@ public class XpSearchStopwordListInfo : AbstractInfo<XpSearchStopwordListInfo, I
         set => SetValue(nameof(StopwordListWords), value);
     }
 
+    /// <summary>
+    /// Gets or sets the experiment this stopword list is the variant-B draft of, or
+    /// <see langword="null"/> when it is live (XP-1). Every live read filters on it being null.
+    /// </summary>
+    [DatabaseField]
+    public virtual int? StopwordListExperimentID
+    {
+        get => GetValue(nameof(StopwordListExperimentID)) as int?;
+        set => SetValue(nameof(StopwordListExperimentID), value);
+    }
+
     /// <inheritdoc />
     protected override void DeleteObject() => Provider.Delete(this);
 

@@ -39,7 +39,9 @@ public sealed class InfoQueryLogStore : IQueryLogStore
             LogChannelName = entry.ChannelName,
             LogLanguage = entry.Language,
             LogProcessingTimeMs = entry.ProcessingTimeMs,
-            LogClickedPosition = entry.ClickedPosition ?? 0
+            LogClickedPosition = entry.ClickedPosition ?? 0,
+            LogExperimentID = entry.ExperimentId,
+            LogVariant = entry.Variant ?? string.Empty
         });
 
         return Task.CompletedTask;
@@ -116,5 +118,7 @@ public sealed class InfoQueryLogStore : IQueryLogStore
             row.LogChannelName,
             row.LogLanguage,
             row.LogProcessingTimeMs,
-            row.LogClickedPosition > 0 ? row.LogClickedPosition : null);
+            row.LogClickedPosition > 0 ? row.LogClickedPosition : null,
+            row.LogExperimentID > 0 ? row.LogExperimentID : null,
+            string.IsNullOrEmpty(row.LogVariant) ? null : row.LogVariant);
 }

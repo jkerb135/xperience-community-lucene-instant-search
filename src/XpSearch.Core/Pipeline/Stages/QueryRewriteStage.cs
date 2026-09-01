@@ -51,9 +51,10 @@ public sealed class QueryRewriteStage : ISearchStage
         ArgumentNullException.ThrowIfNull(context);
 
         string index = context.Request.Index;
+        var variant = context.Experiment.Tuning;
 
-        var rules = await source.GetRulesAsync(index, cancellationToken).ConfigureAwait(false);
-        var synonyms = await source.GetSynonymsAsync(index, cancellationToken).ConfigureAwait(false);
+        var rules = await source.GetRulesAsync(index, cancellationToken, variant).ConfigureAwait(false);
+        var synonyms = await source.GetSynonymsAsync(index, cancellationToken, variant).ConfigureAwait(false);
 
         var active = RuleSelection.Active(rules, MatchContext(context, synonyms), time.GetUtcNow().UtcDateTime);
 
