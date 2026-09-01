@@ -330,7 +330,7 @@ and announced by screen readers with no extra code.
 | Class | Element | Notes |
 |---|---|---|
 | `xps-range-filter__title` | `<h3 id>` | Referenced by the track's `aria-labelledby`. |
-| `xps-range-filter__track` | `<div role="group" aria-labelledby>` | |
+| `xps-range-filter__track` | `<div role="group" aria-labelledby>` | The one rail. Both range inputs are overlaid on it and carry `pointer-events: none` with their thumbs restored to `auto`, so each handle stays draggable. Styles the fill from the two custom properties below. |
 | `xps-range-filter__range` | `<input type="range">` | Plus `xps-range-filter__range--min` / `xps-range-filter__range--max`. `aria-describedby` points at the values line. |
 | `xps-range-filter__inputs` | `<div>` | Numeric entry row. |
 | `xps-range-filter__input-label` | `<label for>` | Visible "From" / "To". |
@@ -339,6 +339,16 @@ and announced by screen readers with no extra code.
 | `xps-range-filter__unit` | `<span>` | The `unit` option ("USD"), last on the input row. Omitted when unset. |
 | `xps-range-filter__values` | `<p id>` | The bounds of the control ("0 to 500"), what the sliders are `aria-describedby`; carries the "no range in these results" sentence when disabled. |
 | `xps-range-filter--disabled` | root modifier | No refinable range; all four inputs are `disabled`. |
+
+The widget sets `--xps-range-from` and `--xps-range-to` on `xps-range-filter__track` on every
+render — the two ends as percentages of the bounds, clamped to `0%`–`100%` (both `0%` when the
+control is disabled). The default theme paints the rail with them: `--xps-color-border` outside the
+pair, `--xps-color-accent` between. A page composing this markup by hand has to set them too, or
+the rail reads as fully selected. Under `forced-colors: active` the two colours become
+`ButtonBorder` / `Highlight`; the RTL rail flips through `--xps-range-side`.
+
+`shell.css` alone overlays the two sliders but paints no rail, so a shell-only site sees the
+platform sliders stacked on one row and styles the rail itself.
 
 ## categoryTree
 

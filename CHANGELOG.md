@@ -12,6 +12,14 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Fixed (themes, widgets):** the range filter is one slider again, as the design has it. Both
+  native range inputs are overlaid on the single `xps-range-filter__track` rail instead of stacking
+  as two, and the segment between the handles is filled with the accent while the rest stays muted.
+  `rangeFilter` sets `--xps-range-from` / `--xps-range-to` (the two ends as percentages of the
+  bounds) on the track every render, which is what the default theme paints with — a page composing
+  the markup by hand has to set them too. Keyboard, screen-reader and number-input behaviour are
+  unchanged: only the thumbs take pointer events, so each handle stays draggable.
+
 - **Added (widgets):** `XpSearch.ActiveFilters` and `XpSearch.ClearFilters`, the Page Builder
   counterparts of the two chips/clear widgets that until now could only be mounted by hand. Active
   filters takes *Screen-reader heading* and *Keep the chips on one scrolling row* (`title`,

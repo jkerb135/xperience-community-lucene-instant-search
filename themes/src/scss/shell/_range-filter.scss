@@ -10,15 +10,31 @@
   gap: v.$half;
 }
 
+/* One rail, two thumbs: the wrapper reserves the height and both range inputs are overlaid on it.
+ * `--xps-range-from` / `--xps-range-to` (set per render by the widget, in %) are what the default
+ * theme paints the selected segment with. */
 .xps-range-filter__track {
-  display: flex;
-  flex-direction: column;
-  gap: v.$quarter;
+  position: relative;
+  height: 1.25rem;
 }
 
 .xps-range-filter__range {
+  position: absolute;
+  inset: 0;
   width: 100%;
+  height: 100%;
   margin: 0;
+  /* The inputs cover each other, so only the thumbs may take a pointer: without this the input
+   * that happens to be on top would swallow every drag meant for the other one. */
+  pointer-events: none;
+}
+
+.xps-range-filter__range::-webkit-slider-thumb {
+  pointer-events: auto;
+}
+
+.xps-range-filter__range::-moz-range-thumb {
+  pointer-events: auto;
 }
 
 .xps-range-filter__inputs {

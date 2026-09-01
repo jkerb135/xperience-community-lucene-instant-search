@@ -4,6 +4,8 @@
  * DOM events. Every assertion here is either "the contract says this class/attribute" or
  * "this interaction reaches the state".
  */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mountAll } from '../bootstrap';
 import { API_VERSION_HEADER, EVENTS_ROUTE, SUGGEST_ROUTE } from '../contract/constants';
@@ -1365,6 +1367,60 @@ describe('rangeFilter', () => {
     expect(max.value).toBe('500');
   });
 
+  it('publishes the selection as the two rail percentages, clamped to the bounds', async () => {
+    const host = mount({ min: 0, max: 500, step: 5 });
+    await settled(search!);
+    const root = host.firstElementChild!;
+    const track = root.querySelector<HTMLElement>('.xps-range-filter__track')!;
+    const vars = (): [string, string] => [
+      track.style.getPropertyValue('--xps-range-from'),
+      track.style.getPropertyValue('--xps-range-to'),
+    ];
+    expect(vars()).toEqual(['0%', '100%']);
+
+    const max = root.querySelector<HTMLInputElement>('.xps-range-filter__range--max')!;
+    max.value = '300';
+    max.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(vars()).toEqual(['0%', '60%']);
+
+    // Out of bounds on either end stays inside 0%-100%.
+    max.value = '900';
+    max.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(vars()).toEqual(['0%', '100%']);
+    const min = root.querySelector<HTMLInputElement>('.xps-range-filter__range--min')!;
+    min.value = '-40';
+    min.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(vars()).toEqual(['0%', '100%']);
+  });
+
+  it('keeps both overlaid sliders operable from the keyboard', async () => {
+    const host = mount({ min: 0, max: 500, step: 5 });
+    await settled(search!);
+    const root = host.firstElementChild!;
+    const track = root.querySelector<HTMLElement>('.xps-range-filter__track')!;
+    const max = root.querySelector<HTMLInputElement>('.xps-range-filter__range--max')!;
+    max.focus();
+    expect(document.activeElement).toBe(max);
+    // jsdom has no native range key handling, so step the value the way ArrowLeft does and fire
+    // the events the UA fires: the widget must mirror it and commit on `change`.
+    max.value = String(Number(max.value) - Number(max.step));
+    max.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+    max.dispatchEvent(new Event('input', { bubbles: true }));
+    max.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(track.style.getPropertyValue('--xps-range-to')).toBe('99%');
+    expect(root.querySelectorAll<HTMLInputElement>('.xps-range-filter__input')[1]?.value).toBe('495');
+    await vi.waitFor(() => expect(calls.length).toBe(2));
+
+    // Only the thumbs take a pointer, so the input on top cannot swallow the other one's drag.
+    const shell = readFileSync(join(import.meta.dirname, '../../../../../themes/src/shell.css'), 'utf8');
+    const rule = (selector: string): string =>
+      shell.slice(shell.indexOf(selector), shell.indexOf('}', shell.indexOf(selector)));
+    expect(rule('.xps-range-filter__range {')).toContain('pointer-events: none');
+    for (const thumb of ['::-webkit-slider-thumb', '::-moz-range-thumb']) {
+      expect(rule(`.xps-range-filter__range${thumb}`)).toContain('pointer-events: auto');
+    }
+  });
+
   it('renders disabled when it has no bounds to offer', async () => {
     const host = mount();
     await settled(search!);
@@ -1376,6 +1432,9 @@ describe('rangeFilter', () => {
     expect(text(root.querySelector('.xps-range-filter__values'))).toBe(
       'No price range in these results.'
     );
+    const track = root.querySelector<HTMLElement>('.xps-range-filter__track')!;
+    expect(track.style.getPropertyValue('--xps-range-from')).toBe('0%');
+    expect(track.style.getPropertyValue('--xps-range-to')).toBe('0%');
   });
 });
 

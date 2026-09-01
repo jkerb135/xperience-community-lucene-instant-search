@@ -293,27 +293,47 @@
 }
 
 /* --------------------------------------------------------------------------
- * rangeFilter — a thin rail with round handles instead of the OS slider.
+ * rangeFilter — one thin rail with two round handles instead of the OS slider.
  *
- * Only this file replaces the native control, so a site running shell.css alone keeps the
- * platform slider it already knows how to theme.
+ * The rail is painted on the wrapper (the shell overlays both inputs on it) so the segment
+ * between the handles can be filled: muted outside `--xps-range-from`/`--xps-range-to`, accent
+ * between them. Only this file paints it — a site running shell.css alone gets the overlaid
+ * platform sliders it already knows how to theme, on an unpainted rail.
  * ------------------------------------------------------------------------ */
+.xps-range-filter__track {
+  background-image: linear-gradient(to var(--xps-range-side, right), var(--xps-color-border) var(--xps-range-from, 0%), var(--xps-color-accent) var(--xps-range-from, 0%), var(--xps-color-accent) var(--xps-range-to, 100%), var(--xps-color-border) var(--xps-range-to, 100%));
+  background-repeat: no-repeat;
+  background-size: 100% 2px;
+  background-position: center;
+}
+
+.xps-range-filter__track:dir(rtl) {
+  --xps-range-side: left;
+}
+
+/* Windows High Contrast: the rail and the handles are one design, so switching the two tokens
+ * system-coloured covers both. */
+@media (forced-colors: active) {
+  .xps-range-filter__track {
+    --xps-color-border: ButtonBorder;
+    --xps-color-accent: Highlight;
+  }
+}
 .xps-range-filter__range {
   appearance: none;
   background-color: transparent;
-  height: 1rem;
 }
 
+/* Transparent, not unstyled: the wrapper's rail shows through both inputs, and the 2px height is
+ * what the thumb offsets below are centred against. */
 .xps-range-filter__range::-webkit-slider-runnable-track {
   height: 2px;
-  border-radius: 2px;
-  background-color: var(--xps-color-border);
+  background-color: transparent;
 }
 
 .xps-range-filter__range::-moz-range-track {
   height: 2px;
-  border-radius: 2px;
-  background-color: var(--xps-color-border);
+  background-color: transparent;
 }
 
 .xps-range-filter__range::-webkit-slider-thumb {
