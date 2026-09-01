@@ -504,7 +504,7 @@ and a scrolling chips row; above it, the sidebar is back and the trigger hides i
 
 ```css
 /* the page's half of the swap: the sidebar is desktop-only */
-@media (max-width: 1023px) {
+@media (max-width: 1023.98px) {
   .search-sidebar { display: none; }
 }
 ```
@@ -527,8 +527,55 @@ search.addWidgets([
 
 Keep the sidebar's `facetList` widgets mounted: they are what puts those attributes in the URL
 (a widget added to an instance declares one routable attribute, and the sheet is a composite).
-Below the results, `loadMore` usually replaces `pagination` on the same breakpoint — that is page
-composition, not something this widget does.
+Hide the sidebar, never unmount it.
+
+### The other half of the swap: `loadMore` instead of `pagination`
+
+Below the results the same breakpoint usually swaps numbered pages for a Load more button. That
+one is **not** CSS: `loadMore` renders the result list itself and owns `state.page`, so it replaces
+`results` **and** `pagination` rather than sitting beside them. Decide once, at mount time:
+
+```js
+const narrow = window.matchMedia('(max-width: 1023.98px)').matches;
+
+search.addWidgets(
+  narrow
+    ? [loadMore({ container: '#search-results' })]
+    : [results({ container: '#search-results' }), pagination({ container: '#search-pagination' })]
+);
+```
+
+Page Builder pages compose the same way, in the bundle rather than the page: a mount is rendered by
+whatever factory the bundle registered for its `data-xps-widget`, so registering `loadMore` under
+the `results` name makes the editor's Results widget render as a load-more list, and an inert
+factory under `pagination` leaves that mount empty.
+
+```js
+import { mountAll, registerWidgetType } from '@xperience-community/xperience-search';
+import { results } from '@xperience-community/xperience-search/widgets/results';
+import { loadMore } from '@xperience-community/xperience-search/widgets/load-more';
+import { pagination } from '@xperience-community/xperience-search/widgets/pagination';
+
+const narrow = window.matchMedia('(max-width: 1023.98px)').matches;
+
+if (narrow) {
+  // Both carry the same custom item template, so the cards do not change with the viewport.
+  registerWidgetType('results', (config) => loadMore({ ...config, templates: { item: card } }));
+  registerWidgetType('pagination', () => ({ $$type: 'pagination' })); // renders nothing
+}
+
+mountAll(document, { widgets: { results, pagination, /* … */ } });
+```
+
+Both mounts keep their `data-xps-instance-config`, which is merged per instance and not per widget,
+so `initialState.pageSize` and the server-rendered `initialQueryId` handoff reach the instance
+either way; `loadMore` clears the mount's server-rendered first paint on its first render exactly
+as `results` does, and the first query still spends the handed-over `queryId`.
+
+**The choice is made per page load.** There are no resize listeners and nothing remounts: resizing
+the window or rotating a tablet keeps the layout it booted with, and the other one appears on the
+next navigation. Live-swapping would mean unmounting the widget the visitor is scrolling and
+throwing away the accumulated list, which is worse than the stale layout.
 
 The apply button deliberately carries no result count. A live preview would mean a second query per
 tick, and every query the server answers is journaled as a search (there is no "do not journal"

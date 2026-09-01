@@ -270,12 +270,16 @@ when their plan ships; the others verify what should already work.
 
 80. **Sidebar collapses below 1024px.** Narrow the window under 1024px on `/search`: the facet
     sidebar disappears, leaving the Filter & Sort button (+ badge) and the scrolling chips row.
-    **KNOWN FAIL today** — the guide's `.search-sidebar { display:none }` half of the swap was
-    never applied to the host (plan 1.1-01 MB-1). The trigger/badge/chips themselves work.
+    **Walkable since MB-1** — the host's 25/75 side panel carries `dg-side-panel` and
+    `Search/client/main.scss` hides it below 1024px (`:has(> .xps-mount)`, so only search
+    sidebars collapse). Hidden, not unmounted, so the facet widgets keep owning the URL.
 81. **Load-more replaces pagination below 1024px.** Under 1024px the results append via a
-    Load more button; at desktop width numbered pagination returns. **KNOWN FAIL today** — and
+    Load more button; at desktop width numbered pagination returns. **Walkable since MB-1** —
     not a CSS swap: `loadMore` replaces `results`+`pagination` and owns `state.page`
-    (widget-reference §loadMore), so this needs a mount-time viewport decision (plan 1.1-01).
+    (widget-reference §loadMore), so `Search/client/main.ts` decides at mount time with
+    `matchMedia('(max-width: 1023.98px)')`: the `results` mount gets a `loadMore` factory and the
+    `pagination` mount an inert one. **The decision is per page load** — resizing the window does
+    not swap; reload after resizing.
 82. **Sheet apply button previews the pending count.** In the Filter & Sort sheet, tick a
     pending facet: the apply button reads "Show N results" with a live N. **KNOWN FAIL today**
     — TH-2 STOP clause: every server query is journaled, no probe flag in the contract
