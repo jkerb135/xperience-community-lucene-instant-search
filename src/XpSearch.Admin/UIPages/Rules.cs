@@ -193,19 +193,25 @@ public abstract class RuleListingBase : ListingPage
 public class RuleListing : RuleListingBase
 {
     private readonly IInfoProvider<XpSearchPopularitySuggestionInfo> suggestions;
+    private readonly IPageLinkGenerator pageLinkGenerator;
 
     /// <summary>Initializes a new instance of the <see cref="RuleListing"/> class.</summary>
     /// <param name="storageService">Reads the stored index configuration, to resolve the index in the URL.</param>
     /// <param name="contactGroups">Resolves a stored contact group code name to what the marketer named it.</param>
     /// <param name="provider">Provider of rule objects, to check what a delete would remove.</param>
     /// <param name="suggestions">Provider of suggested rules, counted for the banner that points at them (RK-1).</param>
+    /// <param name="pageLinkGenerator">Generates the banner button's link to the suggestions listing.</param>
     public RuleListing(
         ILuceneConfigurationStorageService storageService,
         IContactGroupCatalog contactGroups,
         IInfoProvider<XpSearchRuleInfo> provider,
-        IInfoProvider<XpSearchPopularitySuggestionInfo> suggestions)
-        : base(storageService, contactGroups, provider) =>
+        IInfoProvider<XpSearchPopularitySuggestionInfo> suggestions,
+        IPageLinkGenerator pageLinkGenerator)
+        : base(storageService, contactGroups, provider)
+    {
         this.suggestions = suggestions;
+        this.pageLinkGenerator = pageLinkGenerator;
+    }
 
     /// <summary>Deletes one live rule.</summary>
     /// <param name="id">The identifier of the row to delete.</param>
@@ -226,14 +232,18 @@ public class RuleListing : RuleListingBase
                 {
                     Headline = pending == 1 ? "1 suggested rule is waiting" : $"{pending} suggested rules are waiting",
                     Content = "The popularity task found queries where one result clearly wins the clicks. "
-                        + "Open Suggestions in the menu to approve or dismiss them; nothing is applied until you do.",
+                        + "Approve or dismiss the suggestions; nothing is applied until you do.",
                     ContentAsHtml = false,
+                    ActionButton = new CalloutRedirectButtonConfiguration
+                    {
+                        Text = "Suggestions",
+                        RedirectUrl = pageLinkGenerator.GetPath<PopularitySuggestionListing>(IndexScope.Route(IndexIdentifier)),
+                    },
                 }
             ];
         }
 
         PageConfiguration.HeaderActions.AddLink<RuleCreate>("New rule", parameters: IndexScope.Route(IndexIdentifier));
-        PageConfiguration.HeaderActions.AddLink<PopularitySuggestionListing>("Suggestions", parameters: IndexScope.Route(IndexIdentifier));
         PageConfiguration.AddEditRowAction<RuleEdit>(parameters: IndexScope.Route(IndexIdentifier));
         PageConfiguration.TableActions.AddDeleteAction(nameof(Delete), "Delete");
     }

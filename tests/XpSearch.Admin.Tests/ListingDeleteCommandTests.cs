@@ -85,7 +85,7 @@ internal sealed class ListingDeleteCommandTests
 
     [Test]
     public void Delete_RefusesARuleItCannotProveBelongsToTheIndexInTheUrl() =>
-        AssertRefused(new RuleListing(Storage(), Substitute.For<IContactGroupCatalog>(), Provider<XpSearchRuleInfo>(), Provider<XpSearchPopularitySuggestionInfo>())
+        AssertRefused(new RuleListing(Storage(), Substitute.For<IContactGroupCatalog>(), Provider<XpSearchRuleInfo>(), Provider<XpSearchPopularitySuggestionInfo>(), Substitute.For<IPageLinkGenerator>())
         {
             IndexIdentifier = IndexIdentifier
         });
