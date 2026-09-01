@@ -1,4 +1,5 @@
 using CMS.DataEngine;
+using CMS.Membership;
 
 using Kentico.Xperience.Admin.Base;
 using Kentico.Xperience.Admin.Base.FormAnnotations;
@@ -118,10 +119,19 @@ public class SynonymModel : IIndexScopedModel
 public class SynonymListing : ListingPage
 {
     private readonly ILuceneConfigurationStorageService storageService;
+    private readonly IInfoProvider<XpSearchSynonymInfo> provider;
+    private string? indexName;
 
     /// <summary>Initializes a new instance of the <see cref="SynonymListing"/> class.</summary>
     /// <param name="storageService">Reads the stored index configuration, to resolve the index in the URL.</param>
-    public SynonymListing(ILuceneConfigurationStorageService storageService) => this.storageService = storageService;
+    /// <param name="provider">Provider of synonym objects, to check what a delete would remove.</param>
+    public SynonymListing(
+        ILuceneConfigurationStorageService storageService,
+        IInfoProvider<XpSearchSynonymInfo> provider)
+    {
+        this.storageService = storageService;
+        this.provider = provider;
+    }
 
     /// <summary>Gets or sets the identifier of the index the listing is scoped to, taken from the URL.</summary>
     [PageParameter(typeof(IntPageModelBinder), typeof(IndexTuningSection))]
@@ -130,10 +140,25 @@ public class SynonymListing : ListingPage
     /// <inheritdoc />
     protected override string ObjectType => XpSearchSynonymInfo.OBJECT_TYPE;
 
+    /// <summary>Gets the code name of the index in the URL, or an empty string when it is not registered.</summary>
+    private string IndexName => indexName ??= IndexScope.Resolve(storageService, IndexIdentifier);
+
+    /// <summary>
+    /// Deletes one synonym group. The command carries only a row id, so the listing's index filter does
+    /// not reach it: a row of another index is refused rather than deleted (ADR-0017).
+    /// </summary>
+    /// <param name="id">The identifier of the row to delete.</param>
+    /// <returns>The row action result.</returns>
+    [PageCommand(Permission = SystemPermissions.DELETE)]
+    public override Task<ICommandResponse<RowActionResult>> Delete(int id) =>
+        IndexScope.Matches(provider.Get(id)?.SynonymIndexName, IndexName)
+            ? base.Delete(id)
+            : Task.FromResult(ResponseFrom(new RowActionResult(false)).AddErrorMessage(IndexScope.CrossIndexDeleteRefusal));
+
     /// <inheritdoc />
     public override Task ConfigurePage()
     {
-        string indexName = IndexScope.Resolve(storageService, IndexIdentifier);
+        string indexName = IndexName;
 
         PageConfiguration.ColumnConfigurations
             .AddColumn(nameof(XpSearchSynonymInfo.SynonymInput), "Words", searchable: true)

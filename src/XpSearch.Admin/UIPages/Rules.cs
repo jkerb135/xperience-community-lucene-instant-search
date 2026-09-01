@@ -50,14 +50,21 @@ public class RuleListing : ListingPage
 {
     private readonly ILuceneConfigurationStorageService storageService;
     private readonly IContactGroupCatalog contactGroups;
+    private readonly IInfoProvider<XpSearchRuleInfo> provider;
+    private string? indexName;
 
     /// <summary>Initializes a new instance of the <see cref="RuleListing"/> class.</summary>
     /// <param name="storageService">Reads the stored index configuration, to resolve the index in the URL.</param>
     /// <param name="contactGroups">Resolves a stored contact group code name to what the marketer named it.</param>
-    public RuleListing(ILuceneConfigurationStorageService storageService, IContactGroupCatalog contactGroups)
+    /// <param name="provider">Provider of rule objects, to check what a delete would remove.</param>
+    public RuleListing(
+        ILuceneConfigurationStorageService storageService,
+        IContactGroupCatalog contactGroups,
+        IInfoProvider<XpSearchRuleInfo> provider)
     {
         this.storageService = storageService;
         this.contactGroups = contactGroups;
+        this.provider = provider;
     }
 
     /// <summary>Gets or sets the identifier of the index the listing is scoped to, taken from the URL.</summary>
@@ -67,10 +74,26 @@ public class RuleListing : ListingPage
     /// <inheritdoc />
     protected override string ObjectType => XpSearchRuleInfo.OBJECT_TYPE;
 
+    /// <summary>Gets the code name of the index in the URL, or an empty string when it is not registered.</summary>
+    private string IndexName => indexName ??= IndexScope.Resolve(storageService, IndexIdentifier);
+
+    /// <summary>
+    /// Deletes one rule. The command carries only a row id, so the listing's index filter does not
+    /// reach it: a row of another index is refused rather than deleted, the same way the builder's own
+    /// delete does (ADR-0017).
+    /// </summary>
+    /// <param name="id">The identifier of the row to delete.</param>
+    /// <returns>The row action result.</returns>
+    [PageCommand(Permission = SystemPermissions.DELETE)]
+    public override Task<ICommandResponse<RowActionResult>> Delete(int id) =>
+        IndexScope.Matches(provider.Get(id)?.RuleIndexName, IndexName)
+            ? base.Delete(id)
+            : Task.FromResult(ResponseFrom(new RowActionResult(false)).AddErrorMessage(IndexScope.CrossIndexDeleteRefusal));
+
     /// <inheritdoc />
     public override Task ConfigurePage()
     {
-        string indexName = IndexScope.Resolve(storageService, IndexIdentifier);
+        string indexName = IndexName;
 
         PageConfiguration.ColumnConfigurations
             .AddColumn(nameof(XpSearchRuleInfo.RuleName), "Rule", searchable: true)

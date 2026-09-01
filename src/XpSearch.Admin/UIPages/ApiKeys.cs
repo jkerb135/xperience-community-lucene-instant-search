@@ -1,3 +1,5 @@
+using CMS.Membership;
+
 using Kentico.Xperience.Admin.Base;
 using Kentico.Xperience.Admin.Base.FormAnnotations;
 using Kentico.Xperience.Admin.Base.Forms;
@@ -30,6 +32,15 @@ public class ApiKeyListing : ListingPage
 {
     /// <inheritdoc />
     protected override string ObjectType => XpSearchApiKeyInfo.OBJECT_TYPE;
+
+    /// <summary>
+    /// Revokes one key. Keys are not index-scoped, so there is nothing to check beyond the permission:
+    /// deleting the row is what stops the key authenticating.
+    /// </summary>
+    /// <param name="id">The identifier of the row to delete.</param>
+    /// <returns>The row action result.</returns>
+    [PageCommand(Permission = SystemPermissions.DELETE)]
+    public override Task<ICommandResponse<RowActionResult>> Delete(int id) => base.Delete(id);
 
     /// <inheritdoc />
     public override Task ConfigurePage()
