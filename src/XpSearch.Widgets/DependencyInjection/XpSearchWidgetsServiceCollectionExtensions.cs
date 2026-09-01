@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 using XpSearch.Widgets.Mounting;
 using XpSearch.Widgets.Options;
+using XpSearch.Widgets.Rendering;
 using XpSearch.Widgets.Templates;
 
 namespace Microsoft.Extensions.DependencyInjection;
@@ -27,6 +28,8 @@ public static class XpSearchWidgetsServiceCollectionExtensions
         services.TryAddSingleton<IXpSearchEditorContext, KenticoEditorContext>();
         services.TryAddSingleton<IXpSearchIndexCatalog, LuceneIndexCatalog>();
         services.TryAddSingleton<ISearchResultTemplateRegistry, SearchResultTemplateRegistry>();
+        // Scoped: it runs a search through the pipeline, which is scoped.
+        services.TryAddScoped<ServerRenderedResults>();
 
         return services;
     }

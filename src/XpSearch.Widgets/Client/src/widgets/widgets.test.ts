@@ -329,6 +329,23 @@ describe('results', () => {
     expect(third.querySelector('.xps-result__link')?.textContent).toBe('Descaling <b>your</b> machine');
   });
 
+  it('takes over the server-rendered first paint on its first render', async () => {
+    const host = container('results');
+    // What the Page Builder widget renders inside its mount element (spec 5.8).
+    host.innerHTML =
+      '<div data-xps-server-rendered class="xps xps-results"><ol class="xps-results__list">' +
+      '<li class="xps-results__item">server</li></ol></div>';
+    search = start([results({ container: host })]);
+
+    // The first render empties the container, so the server block never coexists with the client's.
+    expect(host.querySelector('[data-xps-server-rendered]')).toBeNull();
+    expect(host.textContent).not.toContain('server');
+    expect(classesOf(host.firstElementChild)).toEqual(['xps', 'xps-results']);
+
+    await settled(search);
+    expect(host.querySelectorAll('.xps-results__item').length).toBe(3);
+  });
+
   it('reads the default attribute names the server projects, and honours the overrides', async () => {
     const root = mount();
     await settled(search!);

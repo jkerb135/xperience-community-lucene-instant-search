@@ -8,6 +8,25 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Added (widgets):** the **Search - Results** widget renders the visitor's first page of results on
+  the server, inside its own mount element. A shared result URL (`?q=espresso&page=2&tags=coffee`) now
+  arrives with its results in the HTML — read with the same parameter mapping the client writes — so the
+  first paint needs no JavaScript and a visitor without it still sees results. The search runs through
+  the same pipeline as `/api/xpsearch/query`, so rules, personalization and analytics apply; a failing
+  search logs a warning and leaves the mount empty rather than breaking the page. The client replaces
+  the block on its first render and owns every render after that. This also makes the **Result
+  template** property do something: the selected `RegisterSearchResultTemplate` view renders the first
+  paint, scoped by its content types, with the built-in card for everything else. A Razor template does
+  not apply to client re-renders — `templates.item` does. Nothing renders server-side inside the Page
+  Builder, where the widget still shows its static preview.
+
+- **Added (widgets):** the **Search - Results** widget has **Title attribute**, **Link attribute** and
+  **Snippet attributes** properties, which point the default card at fields other than `title`, `url`
+  and `summary`/`content`/`excerpt`. They are emitted as `titleAttribute`, `urlAttribute` and
+  `snippetAttributes` in `data-xps-config` — the client already accepted all three, no widget ever sent
+  them — and apply to the server-rendered first paint too. If **Fields to show** is restricted, it has
+  to include whatever these name, or the cards render empty.
+
 - **Added (widgets) — behaviour change:** the **Search - Search box** widget has a **Sync search state
   to the URL** property, on by default, which emits `"routing":true` into `data-xps-instance-config`.
   The query, filters, sort and page then live in the address bar: result pages are shareable and the

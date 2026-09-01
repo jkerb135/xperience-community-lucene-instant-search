@@ -163,6 +163,32 @@ internal sealed class MountMarkupTests
     }
 
     [Test]
+    public void Results_maps_the_title_link_and_snippet_attribute_overrides_to_display_options()
+    {
+        var component = new ResultsWidgetViewComponent(renderer, editor, catalog);
+
+        string markup = Render(component, new ResultsWidgetProperties
+        {
+            Index = Index,
+            TitleAttribute = " heading ",
+            UrlAttribute = "permalink",
+            SnippetAttributes = "teaser\r\n excerpt "
+        });
+
+        var config = Rendered.Json(markup, "data-xps-config");
+        Expect.Multiple(() =>
+        {
+            Assert.That(config.GetProperty("titleAttribute").GetString(), Is.EqualTo("heading"));
+            Assert.That(config.GetProperty("urlAttribute").GetString(), Is.EqualTo("permalink"));
+            Assert.That(
+                config.GetProperty("snippetAttributes").EnumerateArray().Select(name => name.GetString()),
+                Is.EqualTo(new[] { "teaser", "excerpt" }));
+            // They tell the template which attribute to show; they are not part of the search.
+            Assert.That(Rendered.Json(markup, "data-xps-instance-config").TryGetProperty("titleAttribute", out _), Is.False);
+        });
+    }
+
+    [Test]
     public void Results_leaves_the_defaults_alone_when_the_editor_set_nothing()
     {
         var component = new ResultsWidgetViewComponent(renderer, editor, catalog);

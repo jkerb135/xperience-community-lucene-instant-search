@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Html;
+
 namespace XpSearch.Widgets.Mounting;
 
 /// <summary>
@@ -33,4 +35,11 @@ public sealed class XpSearchMount
     /// <c>index</c> here, so every mount of one instance must name the same index.
     /// </summary>
     public IDictionary<string, object?> InstanceConfig { get; } = new Dictionary<string, object?>(StringComparer.Ordinal);
+
+    /// <summary>
+    /// Gets or sets markup rendered inside the mount element - the server-rendered first paint of the
+    /// results widget (spec §5.8). The JavaScript widget replaces the mount's contents on its first
+    /// render, so whatever is here is progressive enhancement only.
+    /// </summary>
+    public IHtmlContent? Content { get; set; }
 }

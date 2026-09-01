@@ -10,8 +10,9 @@ namespace XpSearch.Widgets.Templates;
 /// "~/Components/Search/_ProductCard.cshtml", contentTypes: ["MyCompany.Product"])]</c>
 /// </para>
 /// <para>
-/// Registration and selection only: the chosen identifier is written into <c>data-xps-config</c> as
-/// <c>template</c>. Applying the view server-side on the initial page load is not implemented yet.
+/// The view renders one <see cref="SearchResultViewModel"/> and is applied to the server-rendered
+/// first paint of the results widget. Once the JavaScript client hydrates, it owns the rendering: a
+/// Razor template does not apply to client re-renders, <c>templates.item</c> does.
 /// </para>
 /// </remarks>
 [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
