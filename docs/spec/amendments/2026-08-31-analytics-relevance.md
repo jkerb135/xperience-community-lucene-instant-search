@@ -10,7 +10,10 @@ API — agents are Kentico-hosted, configurable only via enable/disable and inst
 - A scheduled task (same registration pattern as the AN-1 retention task) aggregates the AN-2
   click/conversion activities and the AN-4 journal into a per-document signal per index:
   click count, conversion count, **position-bias damped** (a click at position 8 outweighs one at
-  position 1; use a simple 1/log2(position+1) discount — no fabricated ML).
+  position 1; weight each click by log2(position+1) — no fabricated ML).
+  *Correction 2026-09-01 (RK-1, ADR-0025): this line originally said "1/log2(position+1)", which
+  is the DCG discount and weights position 1 highest — the opposite of the stated intent. The
+  increasing form is what the intent requires and what shipped.*
 - Signal stored in a custom module class (module pattern of AD-1), refreshed on the task's
   cadence; empty table = stage is a no-op.
 - A new pipeline stage applies the signal as a bounded query-time boost (cap the multiplier so
