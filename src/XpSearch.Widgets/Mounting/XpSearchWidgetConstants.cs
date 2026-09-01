@@ -14,6 +14,9 @@ public static class XpSearchWidgetConstants
     /// <summary>Path of the shared mount view every widget renders.</summary>
     public const string MountViewPath = "~/Components/Widgets/XpSearch/_Mount.cshtml";
 
+    /// <summary>Path of the built-in result card rendered server-side when no template applies (spec §5.8).</summary>
+    public const string DefaultResultViewPath = "~/Components/Widgets/XpSearch/_Result.cshtml";
+
     /// <summary>Widget identifier of the search box widget.</summary>
     public const string SearchBoxIdentifier = "XpSearch.SearchBox";
 

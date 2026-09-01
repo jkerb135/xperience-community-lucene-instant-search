@@ -34,6 +34,11 @@ public sealed class XpSearchMountRenderer : IXpSearchMountRenderer
             tag.Attributes["data-xps-instance-config"] = JsonSerializer.Serialize(mount.InstanceConfig, JsonOptions);
         }
 
+        if (mount.Content is not null)
+        {
+            tag.InnerHtml.SetHtmlContent(mount.Content);
+        }
+
         return tag;
     }
 }

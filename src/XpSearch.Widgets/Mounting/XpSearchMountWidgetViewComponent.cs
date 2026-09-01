@@ -69,12 +69,41 @@ public abstract class XpSearchMountWidgetViewComponent<TProperties> : ViewCompon
     /// <summary>Renders the widget.</summary>
     /// <param name="widget">The Page Builder component model.</param>
     /// <returns>The rendered mount view.</returns>
-    public Task<IViewComponentResult> InvokeAsync(ComponentViewModel<TProperties> widget)
+    public async Task<IViewComponentResult> InvokeAsync(ComponentViewModel<TProperties> widget)
     {
         ArgumentNullException.ThrowIfNull(widget);
 
-        return Task.FromResult<IViewComponentResult>(
-            View(XpSearchWidgetConstants.MountViewPath, BuildModel(widget.Properties)));
+        var model = await BuildModelAsync(
+                widget.Properties,
+                ViewComponentContext.ViewContext?.HttpContext?.RequestAborted ?? CancellationToken.None)
+            .ConfigureAwait(false);
+
+        return View(XpSearchWidgetConstants.MountViewPath, model);
+    }
+
+    /// <summary>
+    /// Builds what the mount view renders, including any server-rendered content the widget puts
+    /// inside its mount element (see <see cref="BuildMountContentAsync"/>).
+    /// </summary>
+    /// <param name="properties">The configured properties.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The view model.</returns>
+    public async Task<XpSearchMountViewModel> BuildModelAsync(TProperties properties, CancellationToken cancellationToken)
+    {
+        var model = BuildModel(properties);
+
+        if (model.Mount is null)
+        {
+            // No mount element means the Page Builder preview or an unconfigured widget; neither
+            // renders search results server-side.
+            return model;
+        }
+
+        var content = await BuildMountContentAsync(properties, cancellationToken).ConfigureAwait(false);
+
+        // Building the model is pure and cheap, so the widget that has content re-runs it rather than
+        // every widget threading a mount object through the synchronous API.
+        return content is null ? model : BuildModel(properties, content);
     }
 
     /// <summary>
@@ -83,7 +112,9 @@ public abstract class XpSearchMountWidgetViewComponent<TProperties> : ViewCompon
     /// </summary>
     /// <param name="properties">The configured properties.</param>
     /// <returns>The view model.</returns>
-    public XpSearchMountViewModel BuildModel(TProperties properties)
+    public XpSearchMountViewModel BuildModel(TProperties properties) => BuildModel(properties, content: null);
+
+    private XpSearchMountViewModel BuildModel(TProperties properties, IHtmlContent? content)
     {
         ArgumentNullException.ThrowIfNull(properties);
 
@@ -101,7 +132,10 @@ public abstract class XpSearchMountWidgetViewComponent<TProperties> : ViewCompon
             return new XpSearchMountViewModel { Preview = Preview(properties) };
         }
 
-        var mount = new XpSearchMount(GetWidgetType(properties), ResolveInstanceId(properties.InstanceId));
+        var mount = new XpSearchMount(GetWidgetType(properties), ResolveInstanceId(properties.InstanceId))
+        {
+            Content = content
+        };
         BuildConfig(properties, mount.Config);
         mount.InstanceConfig["index"] = index;
         BuildInstanceConfig(properties, mount.InstanceConfig);
@@ -137,6 +171,18 @@ public abstract class XpSearchMountWidgetViewComponent<TProperties> : ViewCompon
     protected virtual void BuildInstanceConfig(TProperties properties, IDictionary<string, object?> instanceConfig)
     {
     }
+
+    /// <summary>
+    /// Builds markup rendered inside the mount element on a live or previewed page, or
+    /// <see langword="null"/> - the default - for nothing. The results widget uses this to render the
+    /// visitor's first page of results server-side (spec §5.8); the JavaScript widget replaces it on
+    /// its first render, so it must never be the only way the widget works.
+    /// </summary>
+    /// <param name="properties">The configured properties.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The markup, or <see langword="null"/>.</returns>
+    protected virtual Task<IHtmlContent?> BuildMountContentAsync(TProperties properties, CancellationToken cancellationToken) =>
+        Task.FromResult<IHtmlContent?>(null);
 
     /// <summary>
     /// Builds the body of the static preview an editor sees in the Page Builder instead of the mount

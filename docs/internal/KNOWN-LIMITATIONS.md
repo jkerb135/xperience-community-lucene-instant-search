@@ -873,3 +873,31 @@ and how to lift it.
   instance but the first (`q` -> `products_q`), or have the bootstrap warn when a second group
   arrives with routing enabled. Either is a contract change to shareable URLs, so it waits for a
   project that actually places two searches on a page.
+
+## The first search of a page load is journaled twice, in `ServerRenderedResults.RenderAsync`
+
+- **Simplified:** the results widget runs the visitor's initial search server-side through
+  `ISearchPipeline`, and the JavaScript client runs the same search again when it hydrates. Nothing
+  correlates the two.
+- **Ceiling:** `CachedSearchPipeline` journals every execution, hit or miss (that is deliberate - a
+  cached search is still a search someone made), so one page load produces two rows in the search
+  analytics with two different `queryId` values. Query volume on a page carrying a Results widget is
+  therefore roughly doubled, and the click-through rate is halved, because a click event is attributed
+  to the client's `queryId` only. Averages that are per-search - `tookMs`, zero-result rate - stay
+  honest; the counts do not.
+- **Upgrade path:** have the server render pass its `queryId` into `data-xps-instance-config` and let
+  the client send it as `SearchRequest.queryId` for its first search - the pipeline already reuses a
+  supplied `queryId` - then skip the journal entry when the id is already known, or make
+  `ISearchRequestJournal` idempotent per `queryId`. Not worth doing until the analytics numbers are
+  being used for something other than trends.
+
+## The server-rendered first paint is replaced by skeletons, in `Client/src/widgets/results.ts`
+
+- **Simplified:** the widget's first client render empties its container (`createRoot`), so the
+  server-rendered block goes at the moment the bundle hydrates - before the client's own response has
+  arrived, while the widget is in its loading state.
+- **Ceiling:** on a slow search, a visitor sees real results, then skeleton rows, then the same results
+  again. The content is never wrong, but the flicker is visible on a cold index.
+- **Upgrade path:** keep a `[data-xps-server-rendered]` child in place while `results === null` and
+  remove it on the first render that has results. That is a second rendering state in a widget that
+  currently has three, so it waits for someone to complain about the flicker.

@@ -75,7 +75,7 @@ Then, per widget:
 | Widget | Properties |
 |---|---|
 | Search box | Placeholder · Show reset button · Focus on page load · Sync search state to the URL — see [Shareable result URLs](#shareable-result-urls) |
-| Results | Results per page · Result template · Fields to show (one attribute name per line — `title`, `url`, `contentType`, `language` or any field of your content types) |
+| Results | Results per page · Result template · Fields to show (one attribute name per line — `title`, `url`, `contentType`, `language` or any field of your content types) · Title attribute · Link attribute · Snippet attributes — see [Pointing a card at other attributes](#pointing-a-card-at-other-attributes) |
 | Facet list | Attribute · Label · Operator (any / all of the selected values) · Values shown · Show a "show more" button |
 | Category tree | Attribute · Label · Nodes per level. Pick a **taxonomy** attribute: the tree comes from the tag hierarchy, and a flat attribute renders as one level. Selection is one value at a time, because a parent's count already includes its children |
 | Pagination | Style (numbered pages / load more button) — "load more" emits a `loadMore` mount instead of a `pagination` one, so place one or the other, never both |
@@ -97,6 +97,28 @@ The range filter's **Attribute** property works the same way, but lists the inde
 fields instead — the ones a `filters.numeric` comparison can be built from. An index with no numeric
 or date field leaves the drop-down hidden, which is the sign that a range filter has nothing to filter
 on there.
+
+#### Pointing a card at other attributes
+
+The default result card reads `title`, links to `url`, and takes its snippet from the first of
+`summary`, `content`, `excerpt` that has a value. Three Results properties re-point it without any
+code, for an index whose fields are named differently:
+
+| Property | Default | What it does |
+|---|---|---|
+| Title attribute | `title` | Attribute the heading of the card comes from |
+| Link attribute | `url` | Attribute the card links to. A result without it links to `#` |
+| Snippet attributes | `summary`, `content`, `excerpt` | One attribute name per line, tried in order; the first with a value is shown |
+
+They are display options, so they end up in `data-xps-config` (`titleAttribute`, `urlAttribute`,
+`snippetAttributes`) and apply to the server-rendered first paint and to the client's rendering alike.
+
+**They interact with Fields to show.** *Fields to show* is what the search asks the index to return: an
+attribute that is not in that list does not arrive, so a card that is told to read `heading` while
+*Fields to show* lists only `title` and `url` renders empty. If you restrict the fields, list every
+attribute the card needs — the title, the link, the snippet candidates, plus `contentType` and `image`
+if you want the meta line and the thumbnail. Leaving *Fields to show* empty avoids the problem
+entirely.
 
 #### The range filter's bounds are hand-configured
 
@@ -227,12 +249,27 @@ widget, so preview remains the way to see real results.
 `xps-editor-preview` is styled by `shell.css`, which `<xps-search-assets />` loads in the layout the
 Page Builder renders too. The classes are part of the markup contract (`themes/MARKUP.md`).
 
-### Result templates
+### Server-rendered result templates
+
+On a live or previewed page the Results widget runs the visitor's first search on the server and renders
+the cards inside its own mount element, wrapped in `<div data-xps-server-rendered>`. The first paint
+therefore needs no JavaScript: a shared result URL — `?q=espresso&page=2&tags=coffee` — arrives with its
+results in the HTML, and a visitor without JavaScript still sees them. The search runs through the same
+pipeline as `/api/xpsearch/query`, so rules, personalization and analytics apply. If it fails, the
+warning goes to the event log and the mount is left empty; a broken search never breaks the page.
+
+**The client takes over on its first render.** The server block is replaced the moment the bundle
+hydrates the widget, and every later render — a new query, a facet, page 2 — is the JavaScript client's.
+A Razor template controls the first paint and the no-JavaScript visitor, nothing else. To style the list
+after hydration, use the `results` widget's `templates.item` option, described in
+[Custom widgets](custom-widgets.md), and keep the two in step.
 
 A developer registers a result template with an assembly attribute; editors then pick it in the Results
 widget's **Result template** drop-down:
 
 ```csharp
+using XpSearch.Widgets.Templates;
+
 [assembly: RegisterSearchResultTemplate(
     identifier: "MyCompany.ProductCard",
     name: "Product card",
@@ -240,10 +277,49 @@ widget's **Result template** drop-down:
     contentTypes: ["MyCompany.Product"])]
 ```
 
-The chosen identifier is written into `data-xps-config` as `template`. Registration and selection are all
-that is implemented today — the server does not yet render the view for the initial page load. Until it
-does, style the result item on the JavaScript side with the `results` widget's `templates.item` option,
-described in [Custom widgets](custom-widgets.md).
+`contentTypes` scopes the template: a result whose `contentType` is not listed falls back to the built-in
+card, so one selection can cover a mixed result list. Pass an empty array to apply it to everything. The
+identifier is also written into `data-xps-config` as `template`.
+
+The view is a partial over `SearchResultViewModel`:
+
+```cshtml
+@using XpSearch.Widgets.Templates
+@model SearchResultViewModel
+
+<article class="xps-result xps-result--product">
+    <div class="xps-result__body">
+        <h3 class="xps-result__title">
+            <a class="xps-result__link" href="@Model.Url">@Model.Title</a>
+        </h3>
+        @if (Model.Attribute("price") is { Length: > 0 } price)
+        {
+            <p class="xps-result__price">@price</p>
+        }
+        @if (Model.Snippet is not null)
+        {
+            <p class="xps-result__snippet">@Model.Snippet</p>
+        }
+    </div>
+</article>
+```
+
+| Member | Type | What it gives you |
+|---|---|---|
+| `Result` | `XpSearch.Core.Contract.Result` | The result exactly as the search API returned it |
+| `Title` | `IHtmlContent` | The title attribute, highlighted when the response highlighted it |
+| `Url` | `string` | The link attribute, or `#` |
+| `Snippet` | `IHtmlContent?` | The first snippet attribute with a value, highlighted; `null` when there is none |
+| `ContentType` / `Image` | `string?` | `contentType` and `image`, or `null` |
+| `Attribute(name)` | `string?` | Any attribute as text |
+| `Highlight(name)` | `IHtmlContent` | Any attribute as HTML: the highlighted form if there is one, else the encoded value |
+
+`Title`, `Snippet` and `Highlight` honour the **Title attribute**, **Link attribute** and **Snippet
+attributes** properties, and the same *Fields to show* caveat applies — an attribute your view reads has
+to be one the search returns.
+
+An identifier that is not registered, or a view name that does not resolve, logs a warning and renders
+the built-in card instead.
 
 ### Static assets
 

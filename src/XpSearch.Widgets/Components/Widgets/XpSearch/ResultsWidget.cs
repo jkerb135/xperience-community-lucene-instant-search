@@ -9,6 +9,7 @@ using XpSearch.Widgets;
 using XpSearch.Widgets.Components.Widgets.XpSearch;
 using XpSearch.Widgets.Mounting;
 using XpSearch.Widgets.Options;
+using XpSearch.Widgets.Rendering;
 using XpSearch.Widgets.Resources;
 
 [assembly: RegisterWidget(
@@ -46,6 +47,27 @@ public sealed class ResultsWidgetProperties : XpSearchMountWidgetProperties
         ExplanationText = "One index field name per line, for example title, url, summary, image. Leave empty for the defaults.",
         Order = OrderFirstWidgetProperty + 20)]
     public string Fields { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the attribute the default template reads the title from. Empty keeps <c>title</c>.</summary>
+    [TextInputComponent(
+        Label = "Title attribute",
+        ExplanationText = "Index field the card's heading comes from. Leave empty for title.",
+        Order = OrderFirstWidgetProperty + 30)]
+    public string TitleAttribute { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the attribute the default template links to. Empty keeps <c>url</c>.</summary>
+    [TextInputComponent(
+        Label = "Link attribute",
+        ExplanationText = "Index field the card links to. Leave empty for url.",
+        Order = OrderFirstWidgetProperty + 40)]
+    public string UrlAttribute { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the attributes tried, in order, for the snippet, one per line.</summary>
+    [TextAreaComponent(
+        Label = "Snippet attributes",
+        ExplanationText = "One index field name per line, tried in order; the first one with a value wins. Leave empty for summary, content, excerpt.",
+        Order = OrderFirstWidgetProperty + 50)]
+    public string SnippetAttributes { get; set; } = string.Empty;
 }
 
 /// <summary>Renders the <c>results</c> mount.</summary>
@@ -53,17 +75,22 @@ public sealed class ResultsWidgetViewComponent : XpSearchMountWidgetViewComponen
 {
     private static readonly char[] LineSeparators = ['\r', '\n'];
 
+    private readonly ServerRenderedResults? serverResults;
+
     /// <summary>Initializes a new instance of the <see cref="ResultsWidgetViewComponent"/> class.</summary>
     /// <param name="renderer">Renders the mount element.</param>
     /// <param name="editorContext">The current editing mode.</param>
     /// <param name="indexCatalog">The registered indexes.</param>
+    /// <param name="serverResults">
+    /// Renders the first page of results server-side (spec §5.8). Optional: without it - a host that
+    /// registered the widgets but not <c>AddXpSearch()</c> - the mount is left empty for the client.
+    /// </param>
     public ResultsWidgetViewComponent(
         IXpSearchMountRenderer renderer,
         IXpSearchEditorContext editorContext,
-        IXpSearchIndexCatalog indexCatalog)
-        : base(renderer, editorContext, indexCatalog)
-    {
-    }
+        IXpSearchIndexCatalog indexCatalog,
+        ServerRenderedResults? serverResults = null)
+        : base(renderer, editorContext, indexCatalog) => this.serverResults = serverResults;
 
     /// <inheritdoc />
     protected override string WidgetType => "results";
@@ -77,6 +104,23 @@ public sealed class ResultsWidgetViewComponent : XpSearchMountWidgetViewComponen
         if (!string.IsNullOrWhiteSpace(properties.ResultTemplate))
         {
             config["template"] = properties.ResultTemplate.Trim();
+        }
+
+        // Which attribute a card shows is a display option of this list, not of the search.
+        if (!string.IsNullOrWhiteSpace(properties.TitleAttribute))
+        {
+            config["titleAttribute"] = properties.TitleAttribute.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(properties.UrlAttribute))
+        {
+            config["urlAttribute"] = properties.UrlAttribute.Trim();
+        }
+
+        var snippets = ParseLines(properties.SnippetAttributes);
+        if (snippets.Count > 0)
+        {
+            config["snippetAttributes"] = snippets;
         }
     }
 
@@ -103,6 +147,37 @@ public sealed class ResultsWidgetViewComponent : XpSearchMountWidgetViewComponen
         {
             instanceConfig["fields"] = fields;
         }
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The first paint of a shared result URL is rendered server-side, so results are there before
+    /// the bundle runs and a visitor without JavaScript still sees them (spec §5.8).
+    /// </remarks>
+    protected override Task<IHtmlContent?> BuildMountContentAsync(
+        ResultsWidgetProperties properties,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(properties);
+
+        var viewContext = ViewComponentContext.ViewContext;
+
+        if (serverResults is null || viewContext?.HttpContext is null)
+        {
+            return Task.FromResult<IHtmlContent?>(null);
+        }
+
+        return serverResults.RenderAsync(
+            viewContext,
+            new ServerResultsOptions(
+                CurrentIndex,
+                properties.ResultsPerPage,
+                ParseLines(properties.Fields),
+                properties.ResultTemplate,
+                properties.TitleAttribute,
+                properties.UrlAttribute,
+                ParseLines(properties.SnippetAttributes)),
+            cancellationToken);
     }
 
     /// <inheritdoc />

@@ -1,0 +1,31 @@
+@using XpSearch.Widgets.Templates
+@model SearchResultViewModel
+@*
+    The default server-rendered result card (spec 5.8). Same markup as the JavaScript default
+    template (`themes/fixtures/results.html`), so the first paint and the hydrated list look alike.
+    A project that wants different markup registers its own template with
+    [assembly: RegisterSearchResultTemplate] and points it at its own partial.
+*@
+<article class="xps-result">
+    @if (Model.Image is not null)
+    {
+        <div class="xps-result__media">
+            <img class="xps-result__image" src="@Model.Image" alt="" width="96" height="96">
+        </div>
+    }
+    <div class="xps-result__body">
+        <h3 class="xps-result__title">
+            <a class="xps-result__link" href="@Model.Url">@Model.Title</a>
+        </h3>
+        @if (Model.Snippet is not null)
+        {
+            <p class="xps-result__snippet">@Model.Snippet</p>
+        }
+        @if (Model.ContentType is not null)
+        {
+            <ul class="xps-result__meta">
+                <li class="xps-result__meta-item">@Model.ContentType</li>
+            </ul>
+        }
+    </div>
+</article>
