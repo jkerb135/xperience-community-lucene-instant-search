@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Xperience Search — the results page recipe</title>
+
+<!-- Structure, then the opt-in visual theme. Nothing else: this page has no CSS of its own
+     beyond the two-column grid below, and no JavaScript at all. -->
+<link rel="stylesheet" href="../themes/src/shell.css">
+<link rel="stylesheet" href="../themes/src/default.css">
+<style>
+  /* The page's own furniture — a header band and the two-column grid. The library owns
+     everything inside the columns. */
+  body { margin: 0; font: 16px/1.5 system-ui, sans-serif; background: #fff; color: #1f2430; }
+  .page { max-width: 68rem; margin: 0 auto; padding: 1.5rem; }
+  .layout { display: grid; grid-template-columns: 16rem 1fr; gap: 2.5rem; align-items: start; }
+  @media (max-width: 52rem) { .layout { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body class="xps">
+<div class="page">
+
+  <!-- SEARCH BOX — customize: `placeholder`, `showSubmit`, `suggestions` in data-xps-config.
+       In Page Builder, place the "Search - Search box" widget (XperienceCommunity.Search.Widgets). -->
+  <div class="xps-mount"
+       data-xps-widget="searchBox"
+       data-xps-instance-config='{"index":"site-content","routing":true,"searchOnInitialLoad":true,"debounceMs":150,"initialState":{"pageSize":6},"highlight":{"fields":["title","content"],"snippetLength":160}}'
+       data-xps-config='{"placeholder":"Search the coffee library…","label":"Search","suggestions":{"limit":5}}'></div>
+
+  <div class="layout">
+    <aside class="xps-stack">
+
+      <!-- SIDEBAR HEADER — `.xps-sidebar__header` is a composition class, not a widget: a heading
+           of your own plus a clearFilters mount. Customize: the heading text is yours;
+           `label` on the mount renames the button.
+           In Page Builder, place the "Search - Clear filters" widget next to your heading. -->
+      <div class="xps-sidebar__header">
+        <h2 class="xps-sidebar__title">Filters</h2>
+        <div class="xps-mount"
+             data-xps-widget="clearFilters"
+             data-xps-config='{}'></div>
+      </div>
+
+      <!-- FACET GROUPS — collapsible by default; the chevron is the widget's.
+           Customize: `label`, `limit`, `showMore`, `searchable`, `operator`,
+           `collapsible: false` for a group that never folds.
+           In Page Builder, place the "Search - Facet list" widget once per attribute. -->
+      <div class="xps-mount"
+           data-xps-widget="facetList"
+           data-xps-config='{"attribute":"contentType","label":"Content type","limit":10}'></div>
+
+      <div class="xps-mount"
+           data-xps-widget="facetList"
+           data-xps-config='{"attribute":"tags","label":"Tags","limit":4,"showMore":true,"searchable":true}'></div>
+
+      <!-- CATEGORY DRILL-DOWN — customize: `label`, `limit`, `collapsible`.
+           In Page Builder, place the "Search - Category tree" widget. -->
+      <div class="xps-mount"
+           data-xps-widget="categoryTree"
+           data-xps-config='{"attribute":"tags","label":"Categories"}'></div>
+
+      <!-- RANGE — customize: `min`, `max`, `step`, `unit`, `labels.from` / `labels.to`.
+           In Page Builder, place the "Search - Range filter" widget. -->
+      <div class="xps-mount"
+           data-xps-widget="rangeFilter"
+           data-xps-config='{"attribute":"price","label":"Price","min":0,"max":500,"step":5,"unit":"USD"}'></div>
+    </aside>
+
+    <main class="xps-stack">
+
+      <!-- TOOLBAR — `.xps-toolbar` is a composition class: stats on the left, sort on the right.
+           Customize: `textTemplate` on the stats mount, `items` on the sort mount.
+           In Page Builder, place "Search - Result stats" and "Search - Sort selector" inside a
+           section styled with `xps-toolbar`. -->
+      <div class="xps-toolbar">
+        <div class="xps-mount"
+             data-xps-widget="resultStats"
+             data-xps-config='{}'></div>
+
+        <div class="xps-mount"
+             data-xps-widget="sortSelect"
+             data-xps-config='{"hideLabel":true,"items":[{"label":"Relevance","value":"relevance"},{"label":"Newest first","value":"newest"},{"label":"Price, low to high","value":"price_asc"}]}'></div>
+      </div>
+
+      <!-- CHIPS ROW — the active refinements plus a second clear-all, on one scrolling row.
+           Customize: `attributeLabels`, `scroll: false` to let the chips wrap.
+           In Page Builder, place "Search - Active filters" and "Search - Clear filters" in a
+           section styled with `xps-toolbar`. -->
+      <div class="xps-toolbar">
+        <div class="xps-mount"
+             data-xps-widget="activeFilters"
+             data-xps-config='{"scroll":true,"attributeLabels":{"contentType":"Content type","tags":"Tag","price":"Price"}}'></div>
+
+        <div class="xps-mount"
+             data-xps-widget="clearFilters"
+             data-xps-config='{}'></div>
+      </div>
+
+      <!-- RESULTS — customize: `templates.item` / `templates.empty` in JavaScript, or a
+           server-rendered result template in Xperience.
+           In Page Builder, place the "Search - Results" widget. -->
+      <div class="xps-mount"
+           data-xps-widget="results"
+           data-xps-config='{}'></div>
+
+      <!-- PAGINATION — customize: `padding`, `showFirst`, `showLast`.
+           In Page Builder, place the "Search - Pagination" widget. -->
+      <div class="xps-mount"
+           data-xps-widget="pagination"
+           data-xps-config='{"padding":2,"showFirst":true,"showLast":true}'></div>
+    </main>
+  </div>
+</div>
+
+<!-- One script tag. It finds every .xps-mount above, groups them into one search and starts it. -->
+<script src="../dist/xpsearch.umd.js"></script>
+</body>
+</html>

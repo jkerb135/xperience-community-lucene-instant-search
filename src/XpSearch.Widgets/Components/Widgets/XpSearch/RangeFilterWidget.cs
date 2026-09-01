@@ -64,6 +64,10 @@ public sealed class RangeFilterWidgetProperties : XpSearchMountWidgetProperties
     /// <summary>Gets or sets the visible label of the upper number input. Empty leaves "To".</summary>
     [TextInputComponent(Label = "\"To\" label", Order = OrderFirstWidgetProperty + 60)]
     public string ToLabel { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the unit shown after the two number inputs, such as "USD" or "kg".</summary>
+    [TextInputComponent(Label = "Unit", Order = OrderFirstWidgetProperty + 70)]
+    public string Unit { get; set; } = string.Empty;
 }
 
 /// <summary>Renders the <c>rangeFilter</c> mount.</summary>
@@ -136,6 +140,11 @@ public sealed class RangeFilterWidgetViewComponent : XpSearchMountWidgetViewComp
         {
             config["labels"] = labels;
         }
+
+        if (!string.IsNullOrWhiteSpace(properties.Unit))
+        {
+            config["unit"] = properties.Unit.Trim();
+        }
     }
 
     /// <inheritdoc />
@@ -159,13 +168,7 @@ public sealed class RangeFilterWidgetViewComponent : XpSearchMountWidgetViewComp
                         .Add(
                             Bounded(EditorPreview.Input("xps-range-filter__range xps-range-filter__range--min", "range"), minimum, maximum, step, minimum),
                             Bounded(EditorPreview.Input("xps-range-filter__range xps-range-filter__range--max", "range"), minimum, maximum, step, maximum)),
-                    EditorPreview.El("div", "xps-range-filter__inputs")
-                        .Add(
-                            EditorPreview.El("label", "xps-range-filter__input-label", Label(properties.FromLabel, WidgetResources.Preview_From)),
-                            Bounded(EditorPreview.Input("xps-range-filter__input", "number"), minimum, maximum, step, minimum),
-                            EditorPreview.El("span", "xps-range-filter__separator", "–").Decorative(),
-                            EditorPreview.El("label", "xps-range-filter__input-label", Label(properties.ToLabel, WidgetResources.Preview_To)),
-                            Bounded(EditorPreview.Input("xps-range-filter__input", "number"), minimum, maximum, step, maximum)),
+                    Inputs(properties, minimum, maximum, step),
                     EditorPreview.El(
                         "p",
                         "xps-range-filter__values",
@@ -174,6 +177,26 @@ public sealed class RangeFilterWidgetViewComponent : XpSearchMountWidgetViewComp
                 CultureInfo.CurrentUICulture,
                 WidgetResources.Preview_Note_Attribute,
                 properties.Attribute.Trim())));
+    }
+
+    /// <summary>The one inline row: From, To and the unit.</summary>
+    private static TagBuilder Inputs(
+        RangeFilterWidgetProperties properties,
+        decimal minimum,
+        decimal maximum,
+        decimal step)
+    {
+        var row = EditorPreview.El("div", "xps-range-filter__inputs")
+            .Add(
+                EditorPreview.El("label", "xps-range-filter__input-label", Label(properties.FromLabel, WidgetResources.Preview_From)),
+                Bounded(EditorPreview.Input("xps-range-filter__input", "number"), minimum, maximum, step, minimum),
+                EditorPreview.El("span", "xps-range-filter__separator", "–").Decorative(),
+                EditorPreview.El("label", "xps-range-filter__input-label", Label(properties.ToLabel, WidgetResources.Preview_To)),
+                Bounded(EditorPreview.Input("xps-range-filter__input", "number"), minimum, maximum, step, maximum));
+
+        return string.IsNullOrWhiteSpace(properties.Unit)
+            ? row
+            : row.Add(EditorPreview.El("span", "xps-range-filter__unit", properties.Unit.Trim()));
     }
 
     private static string Label(string configured, string fallback) =>

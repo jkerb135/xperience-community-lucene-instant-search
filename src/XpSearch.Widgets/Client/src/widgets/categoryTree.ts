@@ -10,7 +10,7 @@
 import { withCategoryTree, type CategoryTreeItem } from '../behaviors/categoryTree';
 import { html, type Renderable } from '../templates/html';
 import type { Widget } from '../types';
-import { createRoot, renderKeepingFocus, resolveContainer } from './dom';
+import { chevron, createRoot, renderKeepingFocus, resolveContainer, widgetId } from './dom';
 
 export type CategoryTreeWidgetParams = {
   container: string | HTMLElement;
@@ -19,6 +19,12 @@ export type CategoryTreeWidgetParams = {
   limit?: number;
   /** Heading and `aria-label` text. Defaults to `attribute`. */
   label?: string;
+  /**
+   * The title is a disclosure button that folds the tree away. On by default; pass `false` for a
+   * tree that is always open. Collapsed state is local to the render — never persisted, never in
+   * the URL.
+   */
+  collapsible?: boolean;
 };
 
 const node = (item: CategoryTreeItem, level: number, urlFor: (value: string) => string): Renderable => {
@@ -51,10 +57,13 @@ export function categoryTree(params: CategoryTreeWidgetParams): Widget {
   const container = resolveContainer(params.container, 'categoryTree');
   let root: HTMLElement | undefined;
   let apply: (value: string) => void = () => {};
+  // Local to this render: a collapsed group is a viewing preference, not search state.
+  let collapsed = false;
 
   const widget = withCategoryTree<CategoryTreeWidgetParams>(
     (options, isFirstRender) => {
-      const { attribute, label = attribute } = options.params;
+      const { attribute, label = attribute, collapsible = true } = options.params;
+      const bodyId = widgetId(container, attribute, 'body');
       apply = options.apply;
 
       if (isFirstRender) {
@@ -63,6 +72,14 @@ export function categoryTree(params: CategoryTreeWidgetParams): Widget {
           if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey) return;
           const target = event.target;
           if (!(target instanceof Element)) return;
+          const toggle = target.closest<HTMLButtonElement>('.xps-category-tree__toggle');
+          if (toggle) {
+            collapsed = !collapsed;
+            toggle.setAttribute('aria-expanded', String(!collapsed));
+            const body = root?.querySelector<HTMLElement>('.xps-category-tree__body');
+            if (body) body.hidden = collapsed;
+            return;
+          }
           const value = target.closest<HTMLElement>('a[data-xps-value]')?.dataset['xpsValue'];
           if (value === undefined) return;
           event.preventDefault();
@@ -76,10 +93,17 @@ export function categoryTree(params: CategoryTreeWidgetParams): Widget {
       // heading behind (MARKUP.md rule 3).
       root.hidden = !options.canApply;
       renderKeepingFocus(
-        html`<h3 class="xps-category-tree__title">${label}</h3>
-  ${list(options.items, 0, options.urlFor)}`,
+        html`<h3 class="xps-category-tree__title">${
+          collapsible
+            ? html`<button class="xps-category-tree__toggle" type="button" aria-expanded="${String(!collapsed)}" aria-controls="${bodyId}"><span class="xps-category-tree__toggle-label">${label}</span>${chevron('xps-category-tree__chevron')}</button>`
+            : label
+        }</h3>
+  <div class="xps-category-tree__body" id="${bodyId}">${list(options.items, 0, options.urlFor)}</div>`,
         root
       );
+      // The body is rebuilt on every render, so the collapsed state is re-applied here.
+      const body = root.querySelector<HTMLElement>('.xps-category-tree__body');
+      if (body) body.hidden = collapsible && collapsed;
     },
     () => {
       container.textContent = '';

@@ -12,7 +12,7 @@ import {
 } from '../behaviors/facetList';
 import { escapeHtml, html, render, type Renderable } from '../templates/html';
 import type { Widget } from '../types';
-import { createRoot, resolveContainer, widgetId } from './dom';
+import { chevron, createRoot, resolveContainer, widgetId } from './dom';
 
 export type FacetListWidgetParams = {
   container: string | HTMLElement;
@@ -32,6 +32,12 @@ export type FacetListWidgetParams = {
   searchable?: boolean;
   searchablePlaceholder?: string;
   showMoreLabels?: { more?: string; less?: string };
+  /**
+   * The title is a disclosure button that folds the values away. On by default; pass `false`
+   * for a group that is always open. Collapsed state is local to the render — it is never
+   * persisted and never reaches the URL.
+   */
+  collapsible?: boolean;
 };
 
 /**
@@ -88,6 +94,7 @@ export function facetList(params: FacetListWidgetParams): Widget {
         searchablePlaceholder,
         showMore: withShowMore = false,
         showMoreLabels,
+        collapsible = true,
       } = options.params;
       apply = options.apply;
       toggleShowMore = options.toggleShowMore;
@@ -100,8 +107,12 @@ export function facetList(params: FacetListWidgetParams): Widget {
           `xps xps-facet-list${searchable ? ' xps-facet-list--searchable' : ''}`
         );
         render(
-          html`<h3 class="xps-facet-list__title" id="${id('title')}">${label}</h3>
-  ${searchable
+          html`<h3 class="xps-facet-list__title" id="${id('title')}">${
+            collapsible
+              ? html`<button class="xps-facet-list__toggle" type="button" aria-expanded="true" aria-controls="${id('body')}"><span class="xps-facet-list__toggle-label">${label}</span>${chevron('xps-facet-list__chevron')}</button>`
+              : label
+          }</h3>
+  <div class="xps-facet-list__body" id="${id('body')}">${searchable
     ? html`<div class="xps-facet-list__search">
       <label class="xps-sr-only" for="${id('search')}">Search in ${label}</label>
       <input class="xps-facet-list__search-input" id="${id('search')}" type="search" value="" placeholder="${searchablePlaceholder ?? `Search in ${label}`}" autocomplete="off">
@@ -111,7 +122,7 @@ export function facetList(params: FacetListWidgetParams): Widget {
   <p class="xps-facet-list__no-results" role="status" hidden>No matching filters.</p>
   ${withShowMore
     ? html`<button class="xps-button xps-facet-list__show-more" type="button" aria-expanded="false">${showMoreLabels?.more ?? 'Show more'}</button>`
-    : ''}`,
+    : ''}</div>`,
           root
         );
         listEl = root.querySelector<HTMLElement>('.xps-facet-list__list') ?? undefined;
@@ -129,6 +140,14 @@ export function facetList(params: FacetListWidgetParams): Widget {
           repaint();
         });
         showMore?.addEventListener('click', () => toggleShowMore());
+
+        const toggle = root.querySelector<HTMLButtonElement>('.xps-facet-list__toggle');
+        const body = root.querySelector<HTMLElement>('.xps-facet-list__body');
+        toggle?.addEventListener('click', () => {
+          const open = toggle.getAttribute('aria-expanded') !== 'true';
+          toggle.setAttribute('aria-expanded', String(open));
+          if (body) body.hidden = !open;
+        });
       }
 
       const paint = (): void => {

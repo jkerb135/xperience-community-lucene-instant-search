@@ -1,0 +1,51 @@
+// The values line and the input labels are muted by the shared block in _facet-list.scss.
+@use 'facet-list';
+
+/* --------------------------------------------------------------------------
+ * rangeFilter — a thin rail with round handles instead of the OS slider.
+ *
+ * Only this file replaces the native control, so a site running shell.css alone keeps the
+ * platform slider it already knows how to theme.
+ * ------------------------------------------------------------------------ */
+
+.xps-range-filter__range {
+  appearance: none;
+  background-color: transparent;
+  height: 1rem;
+}
+
+.xps-range-filter__range::-webkit-slider-runnable-track {
+  height: 2px;
+  border-radius: 2px;
+  background-color: var(--xps-color-border);
+}
+
+.xps-range-filter__range::-moz-range-track {
+  height: 2px;
+  border-radius: 2px;
+  background-color: var(--xps-color-border);
+}
+
+.xps-range-filter__range::-webkit-slider-thumb {
+  appearance: none;
+  width: 0.875rem;
+  height: 0.875rem;
+  /* half the handle minus half the 2px rail, so it rides centred on the track */
+  margin-top: -0.375rem;
+  border-radius: 50%;
+  background-color: var(--xps-color-accent);
+  border: 2px solid var(--xps-color-surface);
+}
+
+.xps-range-filter__range::-moz-range-thumb {
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 50%;
+  background-color: var(--xps-color-accent);
+  border: 2px solid var(--xps-color-surface);
+}
+
+.xps-range-filter__unit {
+  color: var(--xps-color-muted);
+  font-size: 0.875em;
+}

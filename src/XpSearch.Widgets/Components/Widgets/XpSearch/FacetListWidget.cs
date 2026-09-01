@@ -4,6 +4,7 @@ using Kentico.PageBuilder.Web.Mvc;
 using Kentico.Xperience.Admin.Base.FormAnnotations;
 
 using Microsoft.AspNetCore.Html;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 using XpSearch.Core;
 using XpSearch.Widgets;
@@ -55,6 +56,13 @@ public sealed class FacetListWidgetProperties : XpSearchMountWidgetProperties
     /// <summary>Gets or sets whether a "show more" button reveals the remaining values.</summary>
     [CheckBoxComponent(Label = "Show a \"show more\" button", Order = OrderFirstWidgetProperty + 40)]
     public bool ShowMore { get; set; }
+
+    /// <summary>Gets or sets whether the group's title folds the values away.</summary>
+    [CheckBoxComponent(
+        Label = "Title folds the group",
+        ExplanationText = "The title becomes a button with a chevron. The group starts open, and the state is not remembered between page loads.",
+        Order = OrderFirstWidgetProperty + 50)]
+    public bool Collapsible { get; set; } = true;
 }
 
 /// <summary>Renders the <c>facetList</c> mount.</summary>
@@ -96,13 +104,14 @@ public sealed class FacetListWidgetViewComponent : XpSearchMountWidgetViewCompon
                         EditorPreview.El("span", "xps-facet-list__count").Add(EditorPreview.Skeleton("text")))));
         }
 
-        var facet = EditorPreview.El("div", "xps-facet-list")
-            .Add(EditorPreview.El("h3", "xps-facet-list__title", Heading(properties)), list);
+        var body = EditorPreview.El("div", "xps-facet-list__body").Add(list);
 
         if (properties.ShowMore)
         {
-            facet.Add(EditorPreview.Button("xps-button xps-facet-list__show-more", WidgetResources.Preview_ShowMore));
+            body.Add(EditorPreview.Button("xps-button xps-facet-list__show-more", WidgetResources.Preview_ShowMore));
         }
+
+        var facet = EditorPreview.El("div", "xps-facet-list").Add(Title(properties), body);
 
         return new HtmlContentBuilder()
             .AppendHtml(facet)
@@ -110,6 +119,27 @@ public sealed class FacetListWidgetViewComponent : XpSearchMountWidgetViewCompon
                 CultureInfo.CurrentUICulture,
                 WidgetResources.Preview_Note_Attribute,
                 properties.Attribute.Trim())));
+    }
+
+    /// <summary>The title, as a disclosure button when the group folds and plain text when it does not.</summary>
+    private static TagBuilder Title(FacetListWidgetProperties properties)
+    {
+        var title = EditorPreview.El("h3", "xps-facet-list__title");
+
+        if (!properties.Collapsible)
+        {
+            return title.Add(EditorPreview.El("span", text: Heading(properties)));
+        }
+
+        var toggle = EditorPreview.El("button", "xps-facet-list__toggle")
+            .Attr("type", "button")
+            .Attr("aria-expanded", "true")
+            .Disabled()
+            .Add(
+                EditorPreview.El("span", "xps-facet-list__toggle-label", Heading(properties)),
+                EditorPreview.Chevron("xps-facet-list__chevron"));
+
+        return title.Add(toggle);
     }
 
     private static string Heading(FacetListWidgetProperties properties) =>

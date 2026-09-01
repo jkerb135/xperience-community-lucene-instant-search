@@ -47,6 +47,13 @@ public sealed class CategoryTreeWidgetProperties : XpSearchMountWidgetProperties
     /// <summary>Gets or sets how many nodes are listed at each level of the tree.</summary>
     [NumberInputComponent(Label = "Nodes per level", Order = OrderFirstWidgetProperty + 20)]
     public int Limit { get; set; } = 10;
+
+    /// <summary>Gets or sets whether the tree's title folds it away.</summary>
+    [CheckBoxComponent(
+        Label = "Title folds the tree",
+        ExplanationText = "The title becomes a button with a chevron. The tree starts open, and the state is not remembered between page loads.",
+        Order = OrderFirstWidgetProperty + 30)]
+    public bool Collapsible { get; set; } = true;
 }
 
 /// <summary>Renders the <c>categoryTree</c> mount.</summary>
@@ -88,15 +95,34 @@ public sealed class CategoryTreeWidgetViewComponent : XpSearchMountWidgetViewCom
         return new HtmlContentBuilder()
             .AppendHtml(EditorPreview.El("nav", "xps-category-tree")
                 .Add(
-                    EditorPreview.El(
-                        "h3",
-                        "xps-category-tree__title",
-                        string.IsNullOrWhiteSpace(properties.Label) ? properties.Attribute.Trim() : properties.Label),
-                    root))
+                    Title(properties),
+                    EditorPreview.El("div", "xps-category-tree__body").Add(root)))
             .AppendHtml(EditorPreview.Note(string.Format(
                 CultureInfo.CurrentUICulture,
                 WidgetResources.Preview_Note_Attribute,
                 properties.Attribute.Trim())));
+    }
+
+    /// <summary>The title, as a disclosure button when the tree folds and plain text when it does not.</summary>
+    private static TagBuilder Title(CategoryTreeWidgetProperties properties)
+    {
+        string heading = string.IsNullOrWhiteSpace(properties.Label)
+            ? properties.Attribute.Trim()
+            : properties.Label;
+        var title = EditorPreview.El("h3", "xps-category-tree__title");
+
+        if (!properties.Collapsible)
+        {
+            return title.Add(EditorPreview.El("span", text: heading));
+        }
+
+        return title.Add(EditorPreview.El("button", "xps-category-tree__toggle")
+            .Attr("type", "button")
+            .Attr("aria-expanded", "true")
+            .Disabled()
+            .Add(
+                EditorPreview.El("span", "xps-category-tree__toggle-label", heading),
+                EditorPreview.Chevron("xps-category-tree__chevron")));
     }
 
     private static TagBuilder Node() => EditorPreview.El("li", "xps-category-tree__item").Add(Link());

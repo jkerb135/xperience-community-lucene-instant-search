@@ -28,11 +28,13 @@ export type ActiveFiltersWidgetParams = Scope & {
   attributeLabels?: Record<string, string>;
   /** Heading text. Screen-reader only. */
   title?: string;
+  /** Keep the chips on one row that scrolls sideways instead of wrapping. */
+  scroll?: boolean;
 };
 
 export type ClearFiltersWidgetParams = Scope & {
   container: string | HTMLElement;
-  /** Button text. Defaults to "Clear filters". */
+  /** Button text. Defaults to "Clear all". */
   label?: string;
 };
 
@@ -47,11 +49,15 @@ export function activeFilters(params: ActiveFiltersWidgetParams): Widget {
 
   const widget = withActiveFilters<ActiveFiltersWidgetParams>(
     (options, isFirstRender) => {
-      const { attributeLabels, title = 'Active filters' } = options.params;
+      const { attributeLabels, title = 'Active filters', scroll = false } = options.params;
       items = options.items;
 
       if (isFirstRender) {
-        root = createRoot(container, 'div', 'xps xps-active-filters');
+        root = createRoot(
+          container,
+          'div',
+          `xps xps-active-filters${scroll ? ' xps-active-filters--scroll' : ''}`
+        );
         root.addEventListener('click', (event) => {
           const target = event.target;
           if (!(target instanceof Element)) return;
@@ -95,9 +101,9 @@ export function clearFilters(params: ClearFiltersWidgetParams): Widget {
         const root = createRoot(container, 'div', 'xps xps-clear-filters');
         // The button is never removed from the DOM, so pressing it does not destroy focus.
         button = container.ownerDocument.createElement('button');
-        button.className = 'xps-button xps-clear-filters__button';
+        button.className = 'xps-button xps-button--link xps-clear-filters__button';
         button.type = 'button';
-        button.textContent = options.params.label ?? 'Clear filters';
+        button.textContent = options.params.label ?? 'Clear all';
         button.addEventListener('click', () => clearAll());
         root.appendChild(button);
       }

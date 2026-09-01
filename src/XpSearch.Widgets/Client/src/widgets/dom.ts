@@ -2,7 +2,7 @@
  * The four DOM chores every default renderer shares. Nothing here is widget-specific.
  * The markup rules referenced below live in `themes/MARKUP.md`.
  */
-import { render, type Renderable } from '../templates/html';
+import { html, render, type Renderable } from '../templates/html';
 
 /** `container` accepts a CSS selector or an element (spec 5.2). */
 export function resolveContainer(
@@ -81,6 +81,15 @@ export function renderKeepingFocus(value: Renderable, root: HTMLElement): void {
       return;
     }
   }
+}
+
+/**
+ * The down-chevron every disclosure in the product draws: the collapsible facet and category
+ * group titles and the sort select. Inline, `currentColor`, no external asset; the rotation of
+ * the collapsed state is the stylesheet's job.
+ */
+export function chevron(className: string): Renderable {
+  return html`<svg class="${className}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"></path></svg>`;
 }
 
 /** Sets or removes a boolean attribute. */

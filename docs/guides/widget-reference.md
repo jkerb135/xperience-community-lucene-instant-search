@@ -294,11 +294,16 @@ facetList({
 | `searchablePlaceholder` | `Search in {label}` | Placeholder of that input. |
 | `sortBy` | `['isActive', 'count:desc', 'name:asc']` | Applied left to right. |
 | `transformItems` | — | `(items) => items`, after sorting and capping. |
+| `collapsible` | `true` | The title is a disclosure button that folds the group away. `false` for a group that is always open. |
 
-Markup: `<div class="xps xps-facet-list">` (plus `--searchable`) with `__title`, the optional
-`__search` block, `__list` (a `<ul>` labelled by the title), one `__item` per value — modifiers
-`--selected` and `--disabled` — and the `__show-more` button. When the facet search matches nothing,
-the list is `hidden` and `__no-results` is shown.
+Markup: `<div class="xps xps-facet-list">` (plus `--searchable`) with `__title`, then `__body`
+holding the optional `__search` block, `__list` (a `<ul>` labelled by the title), one `__item` per
+value — modifiers `--selected` and `--disabled` — and the `__show-more` button. When the facet
+search matches nothing, the list is `hidden` and `__no-results` is shown.
+
+**Folding.** By default the title is a `<button class="xps-facet-list__toggle" aria-expanded>` with
+a chevron, and pressing it sets `hidden` on `__body`. The fold is local to the page view: it is not
+persisted, never reaches the URL, and refines nothing.
 
 Accessibility: real `<input type="checkbox">` elements inside `<label>` (§5.6), so the whole row is
 the click target and no `for`/`id` pairing is needed. The show-more button carries `aria-expanded` and
@@ -330,6 +335,7 @@ categoryTree({
 | `attribute` | — | The facet attribute. Required; the widget asks the server to count it. |
 | `label` | the attribute name | Heading text and the `aria-label` of the `<nav>`. |
 | `limit` | `10` | Nodes kept per level, most documents first. |
+| `collapsible` | `true` | The title is a disclosure button that folds the tree away, exactly as on `facetList`. |
 
 The tree is built from `FacetValue.path` — the code names of a value's ancestors, root first
 (see the [search API guide](search-api.md#hierarchical-taxonomies)). A flat attribute has no paths
@@ -340,7 +346,7 @@ attribute; choosing the node that is already open clears the attribute. That is 
 the widget but of what the counts mean: the server rolls a parent's count up over its descendants,
 so filtering on *Coffee* already includes *Espresso*, and selecting both would say nothing new.
 
-Markup: `<nav class="xps xps-category-tree">` with `__title` and nested `__list` elements carrying
+Markup: `<nav class="xps xps-category-tree">` with `__title`, `__body` and nested `__list` elements carrying
 one depth modifier each (`--lvl0`, `--lvl1`, …). Each `__item` carries `--parent` when it has
 children, `--selected` on every node of the open path, and `--disabled` at count 0. Inside is
 `__link` with `__value` and `__count`. The whole root is `hidden` when there is nothing to navigate.
@@ -390,8 +396,8 @@ resultStats({
 | Option | Default | What it does |
 |---|---|---|
 | `container` | — | Selector or element. Required. |
-| `templates.text` | `46 results in 14 ms` | `(data, helpers) => Renderable`. `data` is the render state: `total`, `tookMs`, `query`, `page`, `totalPages`, `pageSize`, `hasResults`. |
-| `textTemplate` | — | A plain string with `{total}`, `{tookMs}`, `{query}`, `{page}` and `{totalPages}` placeholders, for callers that cannot pass a function — the Page Builder stats widget's **Text template** property. The template and every substituted value are escaped, so markup in it is shown rather than rendered. Numbers use `formatNumber`. `templates.text` wins when both are given. |
+| `templates.text` | `46 results for “espresso” (14 ms)` | `(data, helpers) => Renderable`. `data` is the render state: `total`, `tookMs`, `query`, `page`, `totalPages`, `pageSize`, `hasResults`. The built-in text drops the `for “…”` part while the query is empty. |
+| `textTemplate` | — | A plain string with `{total}`, `{tookMs}`, `{query}`, `{page}` and `{totalPages}` placeholders, for callers that cannot pass a function — the Page Builder stats widget's **Text template** property. The template and every substituted value are escaped, so markup in it is shown rather than rendered; the only element it produces is the `<strong class="xps-result-stats__total">` around `{total}`. Numbers use `formatNumber`. `templates.text` wins when both are given. |
 | `emptyText` | `'Type to search.'` | Shown before the first response. |
 
 ```js
@@ -401,9 +407,10 @@ resultStats({
 });
 ```
 
-Markup: `<div class="xps xps-result-stats">` (plus `--empty`) containing `xps-result-stats__text`, and
-in the default template `xps-result-stats__time` around the timing. **Not** a live region — `results`
-owns the announcement.
+Markup: `<div class="xps xps-result-stats">` (plus `--empty`) containing `xps-result-stats__text`,
+with `xps-result-stats__total` (a `<strong>`, the count the default theme sets in bold) and
+`xps-result-stats__time` around the timing inside it. **Not** a live region — `results` owns the
+announcement.
 
 ## `sortSelect`
 
@@ -426,10 +433,12 @@ sortSelect({
 | `hideLabel` | `false` | Adds `xps-sr-only` to the label; it stays associated. |
 
 Markup: `<div class="xps xps-sort-select xps-select">` — the widget adds only its identity class and
-renders the shared `xps-select` block, so it is the same `xps-select__label` (`<label for>`) and
-`xps-select__control` (a native `<select name="sort">`) a custom widget renders. The select is built
-once and only its `value` is patched, so changing the sort does not destroy the element you are
-using.
+renders the shared `xps-select` block: `xps-select__label` (`<label for>`) and `xps-select__field`
+holding `xps-select__control` (a native `<select name="sort">`) beside an `xps-select__chevron`
+`<svg>`. It stays a **native select** — the platform's keyboard handling and mobile picker are the
+accessible ones; only the arrow is replaced, and only when that wrapper is present, so a custom
+widget rendering the bare `xps-select` keeps the platform arrow. The select is built once and only
+its `value` is patched, so changing the sort does not destroy the element you are using.
 
 ## `filterSort`
 
@@ -535,11 +544,13 @@ clearFilters({ container: '#search-clear', label: 'Clear filters' });
 | Option | Default | What it does |
 |---|---|---|
 | `container` | — | Selector or element. Required. |
-| `label` | `'Clear filters'` | Button text. |
+| `label` | `'Clear all'` | Button text. |
 | `includedAttributes` / `excludedAttributes` | — | Which filters count towards "is there anything to clear". |
 
 Markup: `<div class="xps xps-clear-filters">` (plus `--disabled`) with
-`xps-clear-filters__button`. The button is `disabled` — never removed — when nothing is filtered,
+`xps-clear-filters__button`, a `<button class="xps-button xps-button--link">` — the muted-link look
+the design uses beside a sidebar heading or a chips row. Drop `xps-button--link` in your own CSS (or
+override it) for a boxed button. The button is `disabled` — never removed — when nothing is filtered,
 so pressing it repeatedly does not throw focus to the body. It clears facet *and* numeric filters; it
 does not clear the query.
 
@@ -559,8 +570,9 @@ activeFilters({
 | `title` | `'Active filters'` | Screen-reader-only heading that labels the list. |
 | `includedAttributes` / `excludedAttributes` | — | Which filters to show. |
 | `transformItems` | — | `(items) => items`. |
+| `scroll` | `false` | Keeps the chips on one row that scrolls sideways (adds `xps-active-filters--scroll`) instead of wrapping. |
 
-Markup: `<div class="xps xps-active-filters">` (plus `--empty`) with an `xps-sr-only` `__title`,
+Markup: `<div class="xps xps-active-filters">` (plus `--empty`, plus `--scroll`) with an `xps-sr-only` `__title`,
 `__list` and one `__item` per filter, each holding an `xps-chip` with `xps-chip__attribute`,
 `xps-chip__label` and `xps-chip__remove`.
 
@@ -600,6 +612,7 @@ rangeFilter({ container: '#filter-price', attribute: 'price', label: 'Price', mi
 | `step` | `1` | Step of the sliders and the number inputs. |
 | `label` | the attribute name | Heading text. |
 | `labels` | `{ from: 'From', to: 'To' }` | Visible labels of the two number inputs. |
+| `unit` | — | Unit shown at the end of the input row: `'USD'`, `'kg'`. |
 
 The bounds are configuration, not data: the JSON contract carries no numeric facet statistics, so
 there is nowhere for a server-computed min/max to arrive. With no `min`/`max` the widget renders the
@@ -608,14 +621,17 @@ whole control `disabled` with "No … range in these results." rather than prete
 widget takes the same bounds as editor properties and refuses to render without them; see
 [Page Builder widgets](page-builder-widgets.md#the-range-filters-bounds-are-hand-configured).
 
-Dragging updates the numbers and the values line; the search runs on `change` (mouse release, or the
+Dragging updates the numbers; the search runs on `change` (mouse release, or the
 commit of a held arrow key), so a drag is one request and not one per pixel. Neither end can cross
 the other, and both are clamped to the bounds. Applying a bound equal to `min`/`max` removes that
 filter instead of sending a no-op comparison, so a pristine control adds nothing to the request.
 
 Markup: `<div class="xps xps-range-filter">` (plus `--disabled`) with `__title`, a
-`__track` (`role="group"`) holding two `xps-range-filter__range` sliders (`--min`, `--max`), a
-`__inputs` row of two `xps-range-filter__input` number fields, and the `__values` line.
+`__track` (`role="group"`) holding two `xps-range-filter__range` sliders (`--min`, `--max`), one
+`__inputs` row — From, To and the optional `__unit` — and the `__values` line, which states the
+**bounds** of the control ("0 to 500"); the two number fields are where the current selection reads.
+The default theme replaces the platform slider with a thin rail and round accent handles; shell
+alone keeps the native control.
 
 Accessibility: two native `<input type="range">` controls rather than a custom drag widget, so the
 control is keyboard-operable and announced with no extra code. Every one of the four inputs has a
@@ -730,6 +746,96 @@ automatically. Use `` html`…` `` and it inherits the same guarantees; use a st
 and every interpolation is yours to `escapeHtml`. The untrusted values are facet labels and values
 (index content) and anything an editor typed into a widget dialog, which arrives through
 `data-xps-config` already attribute-decoded. `textContent` and `setAttribute` are always safe.
+
+## Composing the results page
+
+This is the whole design, assembled: **plain HTML plus the npm bundle**, no framework, no Xperience,
+no overrides. Everything below is the shipped default — the facet groups fold because they fold out
+of the box, the count is bold because the widget emits it that way, the sort select carries the
+chevron the theme draws. Anything you want to change has a hook named in the comment beside it.
+
+Three composition classes hold the widgets: `xps-toolbar` (one row, first child left, last child
+right, wrapping when narrow), `xps-sidebar__header` (heading plus a trailing clear-all) and the
+`xps-stack` / `xps-cluster` utilities. They are colourless structure — they hold mounts, they are
+not widgets.
+
+The runnable file is `src/XpSearch.Widgets/Client/demo/results-page.html`; `npm run repo:demo` in
+the client serves it against the mock search server at `/demo/results-page.html`, and
+`e2e-widgets.test.ts` boots that exact file and asserts the skeleton below. Abridged here:
+
+```html
+<link rel="stylesheet" href="/css/shell.css">
+<link rel="stylesheet" href="/css/default.css">
+
+<!-- customize: placeholder / suggestions — in Page Builder, place "Search - Search box" -->
+<div class="xps-mount"
+     data-xps-widget="searchBox"
+     data-xps-instance-config='{"index":"site-content","routing":true,"searchOnInitialLoad":true,"initialState":{"pageSize":6}}'
+     data-xps-config='{"placeholder":"Search…","suggestions":{"limit":5}}'></div>
+
+<div class="layout">                          <!-- your own two-column grid -->
+  <aside class="xps-stack">
+
+    <!-- customize: the heading is yours; `label` renames the button
+         in Page Builder, place "Search - Clear filters" beside your heading -->
+    <div class="xps-sidebar__header">
+      <h2 class="xps-sidebar__title">Filters</h2>
+      <div class="xps-mount" data-xps-widget="clearFilters" data-xps-config='{}'></div>
+    </div>
+
+    <!-- customize: label / limit / showMore / searchable / collapsible
+         in Page Builder, place "Search - Facet list" once per attribute -->
+    <div class="xps-mount" data-xps-widget="facetList"
+         data-xps-config='{"attribute":"contentType","label":"Content type","limit":10}'></div>
+
+    <!-- customize: label / limit / collapsible — in Page Builder, "Search - Category tree" -->
+    <div class="xps-mount" data-xps-widget="categoryTree"
+         data-xps-config='{"attribute":"tags","label":"Categories"}'></div>
+
+    <!-- customize: min / max / step / unit / labels — in Page Builder, "Search - Range filter" -->
+    <div class="xps-mount" data-xps-widget="rangeFilter"
+         data-xps-config='{"attribute":"price","label":"Price","min":0,"max":500,"step":5,"unit":"USD"}'></div>
+  </aside>
+
+  <main class="xps-stack">
+
+    <!-- customize: textTemplate on the stats, items on the sort
+         in Page Builder, place "Search - Result stats" and "Search - Sort selector" in a
+         section styled with xps-toolbar -->
+    <div class="xps-toolbar">
+      <div class="xps-mount" data-xps-widget="resultStats" data-xps-config='{}'></div>
+      <div class="xps-mount" data-xps-widget="sortSelect"
+           data-xps-config='{"hideLabel":true,"items":[{"label":"Relevance","value":"relevance"},{"label":"Newest first","value":"newest"}]}'></div>
+    </div>
+
+    <!-- customize: attributeLabels / scroll — in Page Builder, "Search - Active filters"
+         and a second "Search - Clear filters" -->
+    <div class="xps-toolbar">
+      <div class="xps-mount" data-xps-widget="activeFilters"
+           data-xps-config='{"scroll":true,"attributeLabels":{"contentType":"Content type"}}'></div>
+      <div class="xps-mount" data-xps-widget="clearFilters" data-xps-config='{}'></div>
+    </div>
+
+    <!-- customize: templates.item in JavaScript, or a server-rendered result template
+         in Page Builder, place "Search - Results" -->
+    <div class="xps-mount" data-xps-widget="results" data-xps-config='{}'></div>
+
+    <!-- customize: padding / showFirst / showLast — in Page Builder, "Search - Pagination" -->
+    <div class="xps-mount" data-xps-widget="pagination"
+         data-xps-config='{"padding":2,"showFirst":true,"showLast":true}'></div>
+  </main>
+</div>
+
+<!-- One script tag: it finds every .xps-mount, groups them into one search and starts it. -->
+<script src="/js/xpsearch.umd.js"></script>
+```
+
+Through a bundler the same page is `mountAll(document, { widgets })` with the widgets you imported
+(see [JavaScript bundler setup](javascript-bundler-setup.md)), or `createSearch(...).addWidgets([...])`
+with `container` selectors instead of mounts — the markup the widgets produce is identical either way.
+
+The NuGet Page Builder widgets are an *optional* wrapper over exactly these mounts: each one renders
+the same `data-xps-widget` element from editor properties. Nothing in the page above needs Xperience.
 
 ## Page Builder mounts
 

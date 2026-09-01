@@ -110,6 +110,29 @@
   gap: var(--xps-space);
 }
 
+/* Results-page composition (docs/guides/widget-reference.md, "Composing the results page"):
+   the row above the results — stats on the left, sort on the right — and the sidebar heading
+   that carries a trailing clear-all. Both wrap onto two rows when the column is narrow. */
+.xps-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: v.$half var(--xps-space);
+}
+
+.xps-sidebar__title {
+  margin: 0;
+}
+
+.xps-sidebar__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: v.$half;
+}
+
 .xps-button {
   display: inline-flex;
   align-items: center;

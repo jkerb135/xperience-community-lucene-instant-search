@@ -3,11 +3,15 @@
  * The demo page's widget set against the mock server over real HTTP: type, refine, sort,
  * paginate, clear — asserting the rendered DOM each time, not the state.
  */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { startMockServer } from '../../mock/server.ts';
+import { mountAll } from '../bootstrap';
 import { QUERY_ROUTE, SUGGEST_ROUTE } from '../contract/constants';
 import { createSearch } from '../instance';
 import type { SearchInstance } from '../types';
+import { DEFAULT_WIDGETS } from './index';
 import {
   categoryTree,
   clearFilters,
@@ -255,5 +259,58 @@ describe('the demo widget set against the mock server', () => {
     expect(assign).toHaveBeenCalledWith(expect.stringContaining('/docs/espresso-basics'));
 
     search.dispose();
+  }, 20_000);
+});
+
+describe('the results-page recipe (demo/results-page.html)', () => {
+  it('boots from its hand-written mounts alone and produces the whole skeleton', async () => {
+    // The file documented in docs/guides/widget-reference.md, byte for byte: plain HTML, no
+    // author JavaScript, no overrides. Only the endpoint is pointed at the test server.
+    const file = readFileSync(
+      join(import.meta.dirname, '../../demo/results-page.html'),
+      'utf8'
+    ).replace('"index":"site-content"', `"index":"site-content","endpoint":"${server.url}${QUERY_ROUTE}"`);
+    document.body.innerHTML = file.slice(file.indexOf('<body'), file.indexOf('</body>'));
+
+    const [search] = mountAll(document, { widgets: DEFAULT_WIDGETS });
+    expect(search).toBeDefined();
+    await settled(search!, () => document.querySelectorAll('.xps-results__item').length === 6);
+
+    const one = (selector: string): Element => {
+      const found = document.querySelectorAll(selector);
+      expect(found.length, selector).toBeGreaterThan(0);
+      return found[0]!;
+    };
+
+    // Sidebar: heading row with its clear-all, three collapsible groups, the range.
+    expect(one('.xps-sidebar__header .xps-clear-filters__button').textContent).toBe('Clear all');
+    expect(document.querySelectorAll('.xps-facet-list__toggle').length).toBe(2);
+    expect(one('.xps-category-tree__toggle').getAttribute('aria-expanded')).toBe('true');
+    expect(one('.xps-range-filter__unit').textContent).toBe('USD');
+
+    // Toolbar: the emphasised count on the left, the styled native select on the right.
+    const toolbar = one('.xps-toolbar');
+    expect(toolbar.querySelector('.xps-result-stats__total')?.textContent).toBe('54');
+    expect(toolbar.querySelector('.xps-select__field > select')).not.toBeNull();
+    expect(toolbar.querySelector('.xps-select__chevron')).not.toBeNull();
+
+    // Chips row: refining fills it, and the row is the scrolling variant.
+    expect(one('.xps-active-filters--scroll')).not.toBeNull();
+    (one('.xps-facet-list__checkbox') as HTMLInputElement).click();
+    await settled(search!, () => document.querySelectorAll('.xps-chip').length === 1);
+    expect(one('.xps-chip__attribute').textContent).toBe('Content type');
+
+    // …and the second clear-all empties it again.
+    const clears = [...document.querySelectorAll('.xps-clear-filters__button')];
+    (clears[clears.length - 1] as HTMLButtonElement).click();
+    await settled(search!, () => document.querySelectorAll('.xps-chip').length === 0);
+
+    // Collapsing a group is view state only: it does not search.
+    (one('.xps-facet-list__toggle') as HTMLButtonElement).click();
+    expect(one('.xps-facet-list__body').hasAttribute('hidden')).toBe(true);
+    expect(search!.state.filters.facets).toEqual([]);
+
+    expect(document.querySelectorAll('.xps-pagination__item--page').length).toBeGreaterThan(1);
+    search!.dispose();
   }, 20_000);
 });

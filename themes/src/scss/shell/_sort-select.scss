@@ -14,9 +14,33 @@
   gap: v.$half;
 }
 
+/* The field is the positioning context of the chevron. The native arrow is turned off here
+   rather than in the theme, so a site running shell alone gets our chevron, not two. */
+.xps-select__field {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
 .xps-select__control {
   min-height: v.$control-min-height;
   padding: v.$quarter v.$half;
+}
+
+/* Only a select that ships its own chevron drops the platform arrow — a custom widget that
+   renders the bare xps-select block keeps the native one. */
+.xps-select__field .xps-select__control {
+  appearance: none;
+  width: 100%;
+  padding-inline-end: calc(var(--xps-space) * 1.75);
+}
+
+.xps-select__chevron {
+  position: absolute;
+  inset-inline-end: v.$half;
+  width: 1rem;
+  height: 1rem;
+  pointer-events: none;
 }
 
 .xps-select--disabled {

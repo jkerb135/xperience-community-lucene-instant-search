@@ -175,9 +175,11 @@ surface:
 | `xps-sr-only` | Visually hidden, still announced — labels, live-region status text. |
 | `xps-stack` | Vertical flex, `gap: var(--xps-space)`. |
 | `xps-cluster` | Horizontal flex that wraps, `gap: var(--xps-space)`. |
-| `xps-button` | Button box with a `2.25rem` minimum height. `xps-button--primary` for the accent fill. |
+| `xps-button` | Button box with a `2.25rem` minimum height. `xps-button--primary` for the accent fill, `xps-button--link` for the muted-link look (what `clearFilters` renders). |
 | `xps-chip` | Removable token: `xps-chip__label`, `xps-chip__attribute`, `xps-chip__remove`. |
-| `xps-select` | Labelled select: `xps-select__label` (a real `<label for>`) and `xps-select__control` (the native `<select>`), plus `xps-select--disabled`. The only themed `<select>` in the product — `sortSelect` renders this same block, and so should your drop-down. |
+| `xps-select` | Labelled select: `xps-select__label` (a real `<label for>`) and `xps-select__control` (the native `<select>`), plus `xps-select--disabled`. Wrap the control in `xps-select__field` with an `xps-select__chevron` `<svg>` for the design's own arrow; without that wrapper the platform arrow stays. The only themed `<select>` in the product — `sortSelect` renders this same block, and so should your drop-down. |
+| `xps-toolbar` | One row, first child left, last child right, wrapping when narrow — the stats/sort row above the results. |
+| `xps-sidebar__header` | The filter column's heading row: `xps-sidebar__title` plus a trailing clear-all, under the same rule a facet-group title carries. |
 | `xps-skeleton` | Loading placeholder, with `--title`, `--text` and `--block` sizes. |
 | `xps-highlight` | The class on `<mark>` elements emitted by the `highlight` template helper. |
 

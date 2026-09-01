@@ -54,7 +54,11 @@ internal sealed class EditorPreviewTests
         yield return ("suggestions", Render(new SuggestionsWidgetViewComponent(renderer, editor, catalog),
             new SuggestionsWidgetProperties { Index = Index, MaxItems = 7 }, mode));
         yield return ("rangeFilter", Render(new RangeFilterWidgetViewComponent(renderer, editor, catalog),
-            new RangeFilterWidgetProperties { Index = Index, Attribute = "price", Label = "Price", Minimum = 0m, Maximum = 500m, Step = 5m }, mode));
+            new RangeFilterWidgetProperties { Index = Index, Attribute = "price", Label = "Price", Minimum = 0m, Maximum = 500m, Step = 5m, Unit = "USD" }, mode));
+        yield return ("activeFilters", Render(new ActiveFiltersWidgetViewComponent(renderer, editor, catalog),
+            new ActiveFiltersWidgetProperties { Index = Index, Scroll = true }, mode));
+        yield return ("clearFilters", Render(new ClearFiltersWidgetViewComponent(renderer, editor, catalog),
+            new ClearFiltersWidgetProperties { Index = Index, Label = "Start over" }, mode));
     }
 
     private static string Render<TProperties>(
@@ -146,7 +150,13 @@ internal sealed class EditorPreviewTests
             Assert.That(previews["resultStats"], Does.Contain("{total} hits in {tookMs} ms"));
             Assert.That(previews["sortSelect"], Does.Contain("Most relevant").And.Contain("Newest first"));
             Assert.That(previews["suggestions"], Does.Contain("documents").And.Contain("7"));
-            Assert.That(previews["rangeFilter"], Does.Contain("Price").And.Contain("max=\"500\"").And.Contain("step=\"5\""));
+            Assert.That(previews["rangeFilter"], Does.Contain("Price").And.Contain("max=\"500\"").And.Contain("step=\"5\"")
+                .And.Contain("xps-range-filter__unit"));
+            // The chevroned disclosure of the live widget is part of the picture.
+            Assert.That(previews["facetList"], Does.Contain("xps-facet-list__toggle").And.Contain("aria-expanded=\"true\""));
+            Assert.That(previews["categoryTree"], Does.Contain("xps-category-tree__toggle"));
+            Assert.That(previews["activeFilters"], Does.Contain("xps-active-filters--scroll").And.Contain("xps-chip__remove"));
+            Assert.That(previews["clearFilters"], Does.Contain("Start over").And.Contain("xps-button--link"));
             Assert.That(previews["loadMore"], Does.Contain("xps-load-more__load-more"));
             Assert.That(previews["pagination"], Does.Contain("xps-pagination__item--current"));
         });

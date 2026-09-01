@@ -288,6 +288,68 @@ internal sealed class MountMarkupTests
             Assert.That(config.GetProperty("operator").GetString(), Is.EqualTo("and"));
             Assert.That(config.GetProperty("limit").GetInt32(), Is.EqualTo(5));
             Assert.That(config.GetProperty("showMore").GetBoolean(), Is.True);
+            // Folding is on out of the box; the editor's opt-out reaches the JavaScript as false.
+            Assert.That(config.GetProperty("collapsible").GetBoolean(), Is.True);
+        });
+
+        string fixedOpen = Render(component, new FacetListWidgetProperties
+        {
+            Index = Index,
+            Attribute = "contentType",
+            Collapsible = false
+        });
+        Assert.That(
+            Rendered.Json(fixedOpen, "data-xps-config").GetProperty("collapsible").GetBoolean(),
+            Is.False);
+    }
+
+    [Test]
+    public void ActiveFilters_emits_its_heading_and_the_scrolling_row_option()
+    {
+        var component = new ActiveFiltersWidgetViewComponent(renderer, editor, catalog);
+
+        string markup = Render(component, new ActiveFiltersWidgetProperties
+        {
+            Index = Index,
+            Title = "Your filters",
+            Scroll = true
+        });
+
+        var config = Rendered.Json(markup, "data-xps-config");
+        Expect.Multiple(() =>
+        {
+            Assert.That(markup, Does.StartWith("<div class=\"xps-mount\""));
+            Assert.That(Rendered.Attribute(markup, "data-xps-widget"), Is.EqualTo("activeFilters"));
+            Assert.That(config.GetProperty("title").GetString(), Is.EqualTo("Your filters"));
+            Assert.That(config.GetProperty("scroll").GetBoolean(), Is.True);
+        });
+
+        // An untouched widget leaves both to the JavaScript defaults.
+        var plain = Rendered.Json(
+            Render(component, new ActiveFiltersWidgetProperties { Index = Index }),
+            "data-xps-config");
+        Expect.Multiple(() =>
+        {
+            Assert.That(plain.TryGetProperty("title", out _), Is.False);
+            Assert.That(plain.GetProperty("scroll").GetBoolean(), Is.False);
+        });
+    }
+
+    [Test]
+    public void ClearFilters_emits_its_label_only_when_the_editor_typed_one()
+    {
+        var component = new ClearFiltersWidgetViewComponent(renderer, editor, catalog);
+
+        string labelled = Render(component, new ClearFiltersWidgetProperties { Index = Index, Label = "Start over" });
+        string plain = Render(component, new ClearFiltersWidgetProperties { Index = Index });
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(Rendered.Attribute(labelled, "data-xps-widget"), Is.EqualTo("clearFilters"));
+            Assert.That(
+                Rendered.Json(labelled, "data-xps-config").GetProperty("label").GetString(),
+                Is.EqualTo("Start over"));
+            Assert.That(Rendered.Json(plain, "data-xps-config").TryGetProperty("label", out _), Is.False);
         });
     }
 
@@ -321,6 +383,7 @@ internal sealed class MountMarkupTests
             Assert.That(config.GetProperty("label").GetString(), Is.EqualTo("Price"));
             Assert.That(config.GetProperty("labels").GetProperty("from").GetString(), Is.EqualTo("Cheapest"));
             Assert.That(config.GetProperty("labels").GetProperty("to").GetString(), Is.EqualTo("Dearest"));
+            Assert.That(config.TryGetProperty("unit", out _), Is.False);
         });
 
         TestContext.Out.WriteLine(markup);
@@ -348,6 +411,18 @@ internal sealed class MountMarkupTests
             Assert.That(config.TryGetProperty("label", out _), Is.False);
             Assert.That(config.TryGetProperty("labels", out _), Is.False);
         });
+
+        string withUnit = Render(component, new RangeFilterWidgetProperties
+        {
+            Index = Index,
+            Attribute = "price",
+            Minimum = 0m,
+            Maximum = 500m,
+            Unit = " USD "
+        });
+        Assert.That(
+            Rendered.Json(withUnit, "data-xps-config").GetProperty("unit").GetString(),
+            Is.EqualTo("USD"));
     }
 
     [Test]
@@ -370,6 +445,7 @@ internal sealed class MountMarkupTests
             Assert.That(config.GetProperty("attribute").GetString(), Is.EqualTo("category"));
             Assert.That(config.GetProperty("label").GetString(), Is.EqualTo("Categories"));
             Assert.That(config.GetProperty("limit").GetInt32(), Is.EqualTo(5));
+            Assert.That(config.GetProperty("collapsible").GetBoolean(), Is.True);
         });
     }
 
@@ -426,6 +502,12 @@ internal sealed class MountMarkupTests
             Assert.That(config.GetProperty("textTemplate").GetString(), Is.EqualTo("{total} hits in {tookMs} ms"));
             Assert.That(config.GetProperty("emptyText").GetString(), Is.EqualTo("Start typing."));
         });
+
+        // A freshly placed widget already carries the design's wording - no editing needed.
+        string untouched = Render(component, new ResultStatsWidgetProperties { Index = Index });
+        Assert.That(
+            Rendered.Json(untouched, "data-xps-config").GetProperty("textTemplate").GetString(),
+            Is.EqualTo("{total} results for “{query}” ({tookMs} ms)"));
     }
 
     [Test]

@@ -153,6 +153,26 @@ describe('accessibility (axe-core)', () => {
     search.dispose();
   }, 20_000);
 
+  it('reports no violations with the facet and category groups collapsed', async () => {
+    const search = page();
+    await vi.waitFor(() => expect(search.results).not.toBeNull(), { timeout: 3000 });
+
+    const toggles = [
+      document.querySelector<HTMLButtonElement>('.xps-facet-list__toggle')!,
+      document.querySelector<HTMLButtonElement>('.xps-category-tree__toggle')!,
+    ];
+    for (const toggle of toggles) toggle.click();
+    // Folded away means `hidden`, so nothing inside is a focusable orphan.
+    expect(toggles.map((toggle) => toggle.getAttribute('aria-expanded'))).toEqual([
+      'false',
+      'false',
+    ]);
+    expect((document.querySelector('.xps-facet-list__body') as HTMLElement).hidden).toBe(true);
+    expect((document.querySelector('.xps-category-tree__body') as HTMLElement).hidden).toBe(true);
+    expect(await violations()).toEqual([]);
+    search.dispose();
+  }, 20_000);
+
   it('reports no violations with refinements applied and with no results', async () => {
     const search = page();
     search.actions

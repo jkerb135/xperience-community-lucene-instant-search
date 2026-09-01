@@ -11,8 +11,15 @@
   }
 }
 
+/* Three lines, whatever the host's snippet field holds: a card of body copy is a wall of text.
+   `max-height` is the fallback for engines without the clamp. */
 .xps-result__snippet {
   color: var(--xps-color-text);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  max-height: calc(3 * 1.5em);
 }
 
 .xps-result__meta,

@@ -118,4 +118,7 @@
   <data name="Preview_To" xml:space="preserve">
     <value>To</value>
   </data>
+  <data name="Preview_ClearAll" xml:space="preserve">
+    <value>Clear all</value>
+  </data>
 </root>

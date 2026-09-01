@@ -83,6 +83,28 @@ and how to lift it.
   over the analytics store, which today is admin-only; until then a host can render its own list
   next to the widget.
 
+## Collapsed facet groups in `facetList`/`categoryTree` (`Client/src/widgets/{facetList,categoryTree}.ts`)
+
+- **Simplified:** the fold is a closure variable plus `hidden` on the `__body` element. It is not
+  persisted anywhere — not in the URL, not in `sessionStorage` — and each widget instance folds
+  independently.
+- **Ceiling:** a visitor who folds three groups, opens a result and comes back finds them all open
+  again; on a page with a hundred facet values that is a scroll each time. Nothing shares "the
+  sidebar is folded" between the sheet (`filterSort`) and the sidebar either.
+- **Upgrade path:** an opt-in `persist: 'session'` param writing one `sessionStorage` key per
+  `widgetId`, read on the first render. It stays out of the URL deliberately: a shared link must
+  reproduce the *search*, not the reader's chrome.
+
+## Snippet clamp in `themes/src/scss/default/_results.scss`
+
+- **Simplified:** `.xps-result__snippet` is clamped with `-webkit-line-clamp: 3` plus
+  `max-height: calc(3 * 1.5em)` as the fallback for an engine without the clamp.
+- **Ceiling:** the fallback assumes a `1.5` line-height. A host that sets a taller line-height on
+  the card sees the third line cut through its middle in engines using the fallback path (the clamp
+  itself is correct everywhere it exists, which is every current browser).
+- **Upgrade path:** a `--xps-snippet-lines` / `--xps-line-height` token pair used by both
+  declarations, once there is a reason to make the line count configurable at all.
+
 ## Per-widget stylesheets in `themes/src/scss/widgets/*` and `Client/styles/widgets/*.css`
 
 - **Simplified:** a widget partial carries the *whole* rule a shared selector list belongs to, so a

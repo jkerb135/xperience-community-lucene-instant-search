@@ -26,6 +26,8 @@ export type RangeFilterWidgetParams = {
   label?: string;
   /** Visible labels of the two number inputs. */
   labels?: { from?: string; to?: string };
+  /** Unit shown at the end of the input row: "USD", "kg", "€". */
+  unit?: string;
 };
 
 export function rangeFilter(params: RangeFilterWidgetParams): Widget {
@@ -39,7 +41,7 @@ export function rangeFilter(params: RangeFilterWidgetParams): Widget {
 
   const widget = withRange<RangeFilterWidgetParams>(
     (options, isFirstRender) => {
-      const { attribute, label = options.params.attribute, step = 1, labels } = options.params;
+      const { attribute, label = options.params.attribute, step = 1, labels, unit } = options.params;
       const { min, max } = options.range;
       const enabled = options.canApply;
 
@@ -60,6 +62,7 @@ export function rangeFilter(params: RangeFilterWidgetParams): Widget {
     <span class="xps-range-filter__separator" aria-hidden="true">&ndash;</span>
     <label class="xps-range-filter__input-label" for="${id('input-max')}">${labels?.to ?? 'To'}</label>
     <input class="xps-range-filter__input" id="${id('input-max')}" type="number" inputmode="numeric">
+    ${unit ? html`<span class="xps-range-filter__unit">${unit}</span>` : ''}
   </div>
   <p class="xps-range-filter__values" id="${id('values')}"></p>`,
           root
@@ -120,8 +123,10 @@ export function rangeFilter(params: RangeFilterWidgetParams): Widget {
 
       paint = (): void => {
         if (!values) return;
+        // The bounds of the control, not the current selection: the two number inputs already
+        // show that, and this line is what the sliders are `aria-describedby`.
         const text = enabled
-          ? `${formatNumber(Number(controls[0]?.value))} to ${formatNumber(Number(controls[1]?.value))}`
+          ? `${formatNumber(Number(min))} to ${formatNumber(Number(max))}`
           : `No ${label.toLowerCase()} range in these results.`;
         if (values.textContent !== text) values.textContent = text;
       };

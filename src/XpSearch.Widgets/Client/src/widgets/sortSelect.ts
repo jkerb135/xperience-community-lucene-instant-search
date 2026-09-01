@@ -8,7 +8,7 @@
 import { withSortSelect, type SortSelectItem } from '../behaviors/sortSelect';
 import { html, render } from '../templates/html';
 import type { Widget } from '../types';
-import { createRoot, resolveContainer, widgetId } from './dom';
+import { chevron, createRoot, resolveContainer, widgetId } from './dom';
 
 export type SortSelectWidgetParams = {
   container: string | HTMLElement;
@@ -34,9 +34,9 @@ export function sortSelect(params: SortSelectWidgetParams): Widget {
         const root = createRoot(container, 'div', 'xps xps-sort-select xps-select');
         render(
           html`<label class="xps-select__label${hideLabel ? ' xps-sr-only' : ''}" for="${id}">${label}</label>
-  <select class="xps-select__control" id="${id}" name="sort">${options.options.map(
+  <span class="xps-select__field"><select class="xps-select__control" id="${id}" name="sort">${options.options.map(
     (item) => html`<option value="${item.value}">${item.label}</option>`
-  )}</select>`,
+  )}</select>${chevron('xps-select__chevron')}</span>`,
           root
         );
         select = root.querySelector<HTMLSelectElement>('.xps-select__control') ?? undefined;
