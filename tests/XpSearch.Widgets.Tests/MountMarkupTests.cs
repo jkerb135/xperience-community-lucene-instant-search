@@ -67,6 +67,23 @@ internal sealed class MountMarkupTests
     }
 
     [Test]
+    public void SearchBox_turns_URL_syncing_on_by_default_and_off_when_the_editor_unticks_it()
+    {
+        string synced = Render(SearchBox(), new SearchBoxWidgetProperties { Index = Index });
+        string secondary = Render(SearchBox(), new SearchBoxWidgetProperties { Index = Index, SyncStateToUrl = false });
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(Rendered.Json(synced, "data-xps-instance-config").GetProperty("routing").GetBoolean(), Is.True);
+            Assert.That(Rendered.Json(secondary, "data-xps-instance-config").GetProperty("routing").GetBoolean(), Is.False);
+            // The option belongs to the search, not to the input widget.
+            Assert.That(Rendered.Json(synced, "data-xps-config").TryGetProperty("syncStateToUrl", out _), Is.False);
+        });
+
+        TestContext.Out.WriteLine(synced);
+    }
+
+    [Test]
     public void Empty_editor_fields_are_left_out_so_the_JavaScript_default_wins()
     {
         string markup = Render(SearchBox(), new SearchBoxWidgetProperties { Index = Index });

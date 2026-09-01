@@ -858,3 +858,18 @@ and how to lift it.
   columns stay, which is the right way round but is not reported anywhere.
 - **Upgrade path:** wrap the loop in `CMSTransactionScope` and log a warning per row that will not
   convert. Worth doing the first time a real upgrade fails.
+
+## Two routed instances share one set of query params, in `XpSearch.Widgets/Client/src/routing.ts`
+
+- **Simplified:** `defaultStateToRoute`/`defaultRouteToState` map state onto unprefixed params -
+  `q`, `page`, `sort`, and the facet attribute names - and `createRouter` is created per instance with
+  no knowledge of the instance id. Nothing detects a second routed instance on the page.
+- **Ceiling:** two instances with `routing: true` on one page write the same params, so each
+  `setState` overwrites the other's (`router.write` also deletes every param the mapping owns before
+  re-appending), and on load both hydrate from the same `q`. It fails silently - no warning. The
+  `XpSearch.SearchBox` widget's *Sync search state to the URL* property (default on) is the way out:
+  untick it on the secondary search. The Page Builder guide states the one-per-page rule.
+- **Upgrade path:** pass the instance id into `createRouter` and namespace the params of every
+  instance but the first (`q` -> `products_q`), or have the bootstrap warn when a second group
+  arrives with routing enabled. Either is a contract change to shareable URLs, so it waits for a
+  project that actually places two searches on a page.
