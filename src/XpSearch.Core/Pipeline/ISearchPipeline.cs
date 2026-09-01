@@ -42,6 +42,9 @@ public static class SearchStageOrder
     /// <summary>Apply the admin-configured boost and filter rules to the query.</summary>
     public const int BoostRules = 700;
 
+    /// <summary>Boost the documents visitors click, for an index that opted in (RK-1).</summary>
+    public const int PopularityBoost = 750;
+
     /// <summary>Execute the search and collect documents and facet counts.</summary>
     public const int Execute = 800;
 

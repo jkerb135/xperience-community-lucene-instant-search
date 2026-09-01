@@ -15,6 +15,7 @@ using XpSearch.Admin.Tuning;
 using XpSearch.Admin.UIPages;
 using XpSearch.Admin.UIPages.Experiments;
 using XpSearch.Core;
+using XpSearch.Core.Popularity;
 using XpSearch.Core.Tuning;
 
 [assembly: UIPage(
@@ -218,15 +219,18 @@ public abstract class FieldWeightListingBase : ListingPage
 /// <summary>Lists the live field weights of one index (spec §8.1).</summary>
 public class FieldWeightListing : FieldWeightListingBase
 {
+    private readonly IInfoProvider<XpSearchPopularityIndexInfo> popularity;
+
     /// <summary>Initializes a new instance of the <see cref="FieldWeightListing"/> class.</summary>
     /// <param name="storageService">Reads the stored index configuration, to resolve the index in the URL.</param>
     /// <param name="provider">Provider of field weight objects, to check what a delete would remove.</param>
+    /// <param name="popularity">Provider of the index's popularity settings, behind the opt-in toggle (RK-1).</param>
     public FieldWeightListing(
         ILuceneConfigurationStorageService storageService,
-        IInfoProvider<XpSearchFieldWeightInfo> provider)
-        : base(storageService, provider)
-    {
-    }
+        IInfoProvider<XpSearchFieldWeightInfo> provider,
+        IInfoProvider<XpSearchPopularityIndexInfo> popularity)
+        : base(storageService, provider) =>
+        this.popularity = popularity;
 
     /// <summary>Deletes one live weight.</summary>
     /// <param name="id">The identifier of the row to delete.</param>
@@ -234,13 +238,64 @@ public class FieldWeightListing : FieldWeightListingBase
     [PageCommand(Permission = SystemPermissions.DELETE)]
     public override Task<ICommandResponse<RowActionResult>> Delete(int id) => DeleteScoped(id);
 
+    /// <summary>
+    /// Turns the popularity boost of this index on or off (RK-1). It is an index-wide setting, not a
+    /// tuning row: an experiment tests tuning, and both of its variants see the same boost (ADR-0025).
+    /// </summary>
+    /// <returns>The row action result, which reloads the listing.</returns>
+    [PageCommand(Permission = SystemPermissions.UPDATE)]
+    public Task<ICommandResponse<RowActionResult>> TogglePopularityBoost()
+    {
+        if (string.IsNullOrEmpty(IndexName))
+        {
+            return Task.FromResult(ResponseFrom(new RowActionResult(false)).AddErrorMessage(IndexScope.CrossIndexDeleteRefusal));
+        }
+
+        var row = Settings() ?? new XpSearchPopularityIndexInfo
+        {
+            PopularityIndexGuid = Guid.NewGuid(),
+            PopularityIndexName = IndexName
+        };
+
+        row.PopularityIndexEnabled = !row.PopularityIndexEnabled;
+        popularity.Set(row);
+
+        return Task.FromResult(ResponseFrom(new RowActionResult(true)).AddSuccessMessage(
+            row.PopularityIndexEnabled
+                ? "Popular results are now boosted for this index."
+                : "Popularity no longer affects this index's ranking."));
+    }
+
     /// <inheritdoc />
     protected override void ConfigureActions()
     {
+        bool enabled = Settings()?.PopularityIndexEnabled ?? false;
+
+        PageConfiguration.Callouts =
+        [
+            new CalloutConfiguration
+            {
+                Headline = enabled ? "Boost by popularity: on" : "Boost by popularity: off",
+                Content = enabled
+                    ? "Results this index's visitors click most are boosted by up to 2x, from the signal the popularity task computes."
+                    : "Ranking uses text relevance and your rules only. Turn the boost on to also favour the results visitors click.",
+                ContentAsHtml = false,
+            }
+        ];
+
         PageConfiguration.HeaderActions.AddLink<FieldWeightCreate>("New field weight", parameters: IndexScope.Route(IndexIdentifier));
+        PageConfiguration.HeaderActions.AddCommand(
+            enabled ? "Stop boosting by popularity" : "Boost by popularity",
+            nameof(TogglePopularityBoost));
         PageConfiguration.AddEditRowAction<FieldWeightEdit>(parameters: IndexScope.Route(IndexIdentifier));
         PageConfiguration.TableActions.AddDeleteAction(nameof(Delete), "Delete");
     }
+
+    private XpSearchPopularityIndexInfo? Settings() =>
+        popularity.Get()
+            .WhereEquals(nameof(XpSearchPopularityIndexInfo.PopularityIndexName), IndexName)
+            .TopN(1)
+            .FirstOrDefault();
 }
 
 /// <summary>Lists the field weights of an experiment's variant B (XP-1).</summary>
@@ -562,3 +617,4 @@ public class VariantFieldWeightCreate : VariantFieldWeightPage
     /// <inheritdoc />
     protected override Type? RedirectTo => typeof(VariantFieldWeightListing);
 }
+

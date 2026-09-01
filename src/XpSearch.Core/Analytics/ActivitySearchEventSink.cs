@@ -60,7 +60,7 @@ public sealed class ActivitySearchEventSink : ISearchEventSink
                 int position = (int)Math.Clamp(request.Position ?? 1, 1, int.MaxValue);
 
                 activityLogger.LogClick(query, request.ResultId, position);
-                queue.Enqueue(QueryLogWorkItem.Click(request.QueryId, position));
+                queue.Enqueue(QueryLogWorkItem.Click(request.QueryId, position, request.ResultId ?? string.Empty));
             }
             else
             {

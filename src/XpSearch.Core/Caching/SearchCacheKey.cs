@@ -31,6 +31,11 @@ public static class SearchCacheKey
     /// entry with A. Nothing is added to the key while no experiment runs, so cache efficiency is
     /// untouched in the normal case.
     /// </param>
+    /// <param name="popularityVersion">
+    /// Version of the popularity signal the request is answered with (RK-1), or zero when the index
+    /// has not opted in. Non-zero only for an opted-in index, so a task run invalidates those
+    /// responses and nothing else changes.
+    /// </param>
     /// <returns>A hex SHA-256 of the canonical request.</returns>
     /// <remarks>
     /// <c>queryId</c> is deliberately excluded: it correlates analytics events with one search and
@@ -40,7 +45,8 @@ public static class SearchCacheKey
         SearchRequest request,
         string normalizedQuery,
         IReadOnlySet<string>? contactGroups = null,
-        ExperimentAssignment? experiment = null)
+        ExperimentAssignment? experiment = null,
+        long popularityVersion = 0)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -76,7 +82,8 @@ public static class SearchCacheKey
                 : contactGroups.OrderBy(group => group, StringComparer.OrdinalIgnoreCase).ToArray(),
             Experiment = experiment is { IsActive: true }
                 ? $"{experiment.ExperimentId}:{experiment.Variant}"
-                : null
+                : null,
+            Popularity = popularityVersion == 0 ? null : popularityVersion.ToString(System.Globalization.CultureInfo.InvariantCulture)
         };
 
         byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(canonical, KeyOptions)));

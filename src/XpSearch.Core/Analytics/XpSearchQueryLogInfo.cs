@@ -137,6 +137,17 @@ public class XpSearchQueryLogInfo : AbstractInfo<XpSearchQueryLogInfo, IInfoProv
         set => SetValue(nameof(LogClickedPosition), value);
     }
 
+    /// <summary>
+    /// Gets or sets the result id of the clicked document, or an empty string when nothing was clicked
+    /// (RK-1). Anonymous like the rest of the row: it identifies a document, not a visitor.
+    /// </summary>
+    [DatabaseField]
+    public virtual string LogClickedResultID
+    {
+        get => ValidationHelper.GetString(GetValue(nameof(LogClickedResultID)), string.Empty, CultureInfo.InvariantCulture);
+        set => SetValue(nameof(LogClickedResultID), value);
+    }
+
     /// <summary>Gets or sets the server-side processing time of the search, in milliseconds.</summary>
     [DatabaseField]
     public virtual int LogProcessingTimeMs

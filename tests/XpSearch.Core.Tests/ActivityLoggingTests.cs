@@ -262,7 +262,8 @@ internal sealed class ActivityLoggingTests
             Microsoft.Extensions.Options.Options.Create(options ?? new XpSearchOptions()),
             new StubContactGroupResolver(),
             new StubExperimentResolver(experiment),
-            new SearchRequestJournal(activities, contexts, queue, channel, NullLogger<SearchRequestJournal>.Instance));
+            new SearchRequestJournal(activities, contexts, queue, channel, NullLogger<SearchRequestJournal>.Instance),
+            new FakePopularitySignalStore());
 
         return new JournaledPipeline(pipeline, inner, queue, contexts, activities);
     }

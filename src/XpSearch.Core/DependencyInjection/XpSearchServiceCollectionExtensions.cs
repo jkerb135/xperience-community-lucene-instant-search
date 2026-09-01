@@ -18,6 +18,7 @@ using XpSearch.Core.Options;
 using XpSearch.Core.Personalization;
 using XpSearch.Core.Pipeline;
 using XpSearch.Core.Pipeline.Stages;
+using XpSearch.Core.Popularity;
 using XpSearch.Core.Search;
 using XpSearch.Core.Tuning;
 
@@ -103,6 +104,10 @@ public static class XpSearchServiceCollectionExtensions
         services.TryAddSingleton<XpSearchActivityTypeInstaller>();
         services.TryAddSingleton<XpSearchContactGroupRuleInstaller>();
 
+        // Popularity boosts (RK-1). Storage and the aggregation task live here rather than in
+        // XpSearch.Admin, because the boost stage and the response cache need them without it.
+        services.TryAddSingleton<IPopularitySignalStore, InfoPopularitySignalStore>();
+
         services.AddXpSearchStage<NormalizeRequestStage>();
         services.AddXpSearchStage<ResolveContactGroupsStage>();
         services.AddXpSearchStage<ResolveExperimentStage>();
@@ -113,6 +118,7 @@ public static class XpSearchServiceCollectionExtensions
         services.AddXpSearchStage<FacetFilterStage>();
         services.AddXpSearchStage<NumericFilterStage>();
         services.AddXpSearchStage<BoostRulesStage>();
+        services.AddXpSearchStage<PopularityBoostStage>();
         services.AddXpSearchStage<ExecuteSearchStage>();
         services.AddXpSearchStage<PinnedAndBuriedStage>();
         services.AddXpSearchStage<CollectFacetsStage>();
@@ -126,7 +132,8 @@ public static class XpSearchServiceCollectionExtensions
             provider.GetRequiredService<Options.IOptions<XpSearchOptions>>(),
             provider.GetRequiredService<IContactGroupResolver>(),
             provider.GetRequiredService<IExperimentAssignmentResolver>(),
-            provider.GetRequiredService<ISearchRequestJournal>()));
+            provider.GetRequiredService<ISearchRequestJournal>(),
+            provider.GetRequiredService<IPopularitySignalStore>()));
 
         services.DecorateLuceneClient<CacheEvictingLuceneClient>(
             (provider, inner) => new CacheEvictingLuceneClient(

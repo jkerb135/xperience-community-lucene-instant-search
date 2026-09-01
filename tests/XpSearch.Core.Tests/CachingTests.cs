@@ -17,6 +17,7 @@ using XpSearch.Core.Caching;
 using XpSearch.Core.Contract;
 using XpSearch.Core.Options;
 using XpSearch.Core.Pipeline;
+using XpSearch.Core.Popularity;
 using XpSearch.Core.Tests.Fixtures;
 
 namespace XpSearch.Core.Tests;
@@ -233,7 +234,9 @@ internal sealed class CachingTests
         });
     }
 
-    private static (ISearchPipeline Pipeline, CountingPipeline Inner, MemorySearchCache Cache) Build(XpSearchOptions? options = null)
+    private static (ISearchPipeline Pipeline, CountingPipeline Inner, MemorySearchCache Cache) Build(
+        XpSearchOptions? options = null,
+        IPopularitySignalStore? popularity = null)
     {
         var effective = options ?? new XpSearchOptions();
         var inner = new CountingPipeline();
@@ -246,7 +249,8 @@ internal sealed class CachingTests
                 Microsoft.Extensions.Options.Options.Create(effective),
                 new StubContactGroupResolver(),
                 new StubExperimentResolver(),
-                Substitute.For<ISearchRequestJournal>()),
+                Substitute.For<ISearchRequestJournal>(),
+                popularity ?? new FakePopularitySignalStore()),
             inner,
             cache);
     }
@@ -258,7 +262,8 @@ internal sealed class CachingTests
             Microsoft.Extensions.Options.Options.Create(new XpSearchOptions()),
             new StubContactGroupResolver(),
             new StubExperimentResolver(),
-            Substitute.For<ISearchRequestJournal>());
+            Substitute.For<ISearchRequestJournal>(),
+            new FakePopularitySignalStore());
 
     private sealed class FixedPipeline(SearchResponse response) : ISearchPipeline
     {

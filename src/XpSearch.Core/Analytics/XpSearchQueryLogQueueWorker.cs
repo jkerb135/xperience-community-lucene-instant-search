@@ -7,7 +7,8 @@ namespace XpSearch.Core.Analytics;
 /// <param name="Entry">The row to append, or <see langword="null"/> for a click.</param>
 /// <param name="ClickedQueryId">Correlation id of the search that was clicked, or <see langword="null"/>.</param>
 /// <param name="ClickedPosition">One-based position of the clicked result.</param>
-public sealed record QueryLogWorkItem(QueryLogEntry? Entry, string? ClickedQueryId, int ClickedPosition)
+/// <param name="ClickedResultId">Result id of the clicked document (RK-1), or an empty string.</param>
+public sealed record QueryLogWorkItem(QueryLogEntry? Entry, string? ClickedQueryId, int ClickedPosition, string ClickedResultId = "")
 {
     /// <summary>Work that appends one logged search.</summary>
     /// <param name="entry">The row to append.</param>
@@ -17,8 +18,10 @@ public sealed record QueryLogWorkItem(QueryLogEntry? Entry, string? ClickedQuery
     /// <summary>Work that records a click on an already logged search.</summary>
     /// <param name="queryId">Correlation id of the search.</param>
     /// <param name="position">One-based position of the clicked result.</param>
+    /// <param name="resultId">Result id of the clicked document.</param>
     /// <returns>The work item.</returns>
-    public static QueryLogWorkItem Click(string queryId, int position) => new(null, queryId, position);
+    public static QueryLogWorkItem Click(string queryId, int position, string resultId = "") =>
+        new(null, queryId, position, resultId ?? string.Empty);
 }
 
 /// <summary>Hands query log work to the background worker so a search never waits for the database.</summary>
@@ -84,7 +87,7 @@ public class XpSearchQueryLogQueueWorker : ThreadQueueWorker<QueryLogWorkItem, X
 
         if (!string.IsNullOrWhiteSpace(item.ClickedQueryId))
         {
-            await store.SetClickedPositionAsync(item.ClickedQueryId, item.ClickedPosition, cancellationToken).ConfigureAwait(false);
+            await store.SetClickAsync(item.ClickedQueryId, item.ClickedPosition, item.ClickedResultId, cancellationToken).ConfigureAwait(false);
         }
     }
 

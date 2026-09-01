@@ -167,6 +167,7 @@ installed on first start:
 | `LogChannelName` | website channel, when the request came from one |
 | `LogLanguage` | requested language |
 | `LogClickedPosition` | one-based position of the clicked result, `0` when nothing was clicked |
+| `LogClickedResultID` | result id of the clicked document, empty when nothing was clicked — the evidence [popularity boosts](popularity-boosts.md) are computed from |
 | `LogProcessingTimeMs` | server-side processing time |
 | `LogExperimentID` | the experiment that answered the search, `NULL` when none was running |
 | `LogVariant` | `A` or `B` — the variant the visitor was bucketed into, empty when no experiment ran |
@@ -192,6 +193,9 @@ actually run it, and that can only be created in the administration:
 
 The *Last result* column shows how many rows the run deleted. Until the configuration exists the query
 log grows without bound — this is the one manual step of the feature.
+
+A second, optional task turns the same log into ranking: see
+[Popularity boosts](popularity-boosts.md).
 
 ### Query suggestions
 

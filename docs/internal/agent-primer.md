@@ -5,7 +5,9 @@ contradicts it, fix the file in your commit.
 
 ## Layout
 
-- `src/XpSearch.Core` — contract, pipeline stages, tuning rules, analytics, contact groups.
+- `src/XpSearch.Core` — contract, pipeline stages, tuning rules, analytics, contact groups, and the
+  popularity signal (`Popularity/`: module classes, aggregation task, store) the Admin UI only
+  toggles and lists.
 - `src/XpSearch.Widgets` — Page Builder widgets (`Components/Widgets/XpSearch/`), mount
   infrastructure (`Mounting/`), and the **JS client at `src/XpSearch.Widgets/Client`**
   (vitest, strict TS, UMD bundle).
@@ -37,8 +39,8 @@ cd src/XpSearch.Admin/Client && npm ci && npm run build
 cd src/XpSearch.Widgets/Client && npm run contract:gen && npm run contract:check
 ```
 
-Suite sizes (2026-09-01): Core 220, Admin 130, Ingestion 47, Widgets 78, JS 191 — if your run
-shows fewer, you ran the wrong project.
+Suite sizes (2026-09-01, after RK-1): Core 240, Admin 183, Ingestion 47, Widgets 83, JS 191 — if your
+run shows fewer, you ran the wrong project.
 
 ## Patterns to copy (don't invent parallel ones)
 

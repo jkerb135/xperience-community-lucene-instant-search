@@ -51,6 +51,56 @@ public sealed class XpSearchAnalyticsModuleInstaller
         Add(form, nameof(XpSearchQueryLogInfo.LogExperimentID), FieldDataType.Integer, allowEmpty: true);
         Add(form, nameof(XpSearchQueryLogInfo.LogVariant), FieldDataType.Text, size: 1, allowEmpty: true);
 
+        // RK-1, nullable for the same reason: rows logged before the upgrade have no clicked document.
+        Add(form, nameof(XpSearchQueryLogInfo.LogClickedResultID), FieldDataType.Text, size: 200, allowEmpty: true);
+
+        return form;
+    }
+
+    /// <summary>The form definition of <see cref="Popularity.XpSearchPopularityIndexInfo"/> (RK-1).</summary>
+    /// <returns>The fields, on top of the primary key the basic definition creates.</returns>
+    public static FormInfo PopularityIndexForm()
+    {
+        var form = FormHelper.GetBasicFormDefinition(nameof(Popularity.XpSearchPopularityIndexInfo.PopularityIndexID));
+
+        Add(form, nameof(Popularity.XpSearchPopularityIndexInfo.PopularityIndexGuid), FieldDataType.Guid);
+        Add(form, nameof(Popularity.XpSearchPopularityIndexInfo.PopularityIndexName), FieldDataType.Text, size: 100);
+        Add(form, nameof(Popularity.XpSearchPopularityIndexInfo.PopularityIndexEnabled), FieldDataType.Boolean);
+        Add(form, nameof(Popularity.XpSearchPopularityIndexInfo.PopularityIndexComputed), FieldDataType.DateTime, allowEmpty: true);
+
+        return form;
+    }
+
+    /// <summary>The form definition of <see cref="Popularity.XpSearchPopularityScoreInfo"/> (RK-1).</summary>
+    /// <returns>The fields, on top of the primary key the basic definition creates.</returns>
+    public static FormInfo PopularityScoreForm()
+    {
+        var form = FormHelper.GetBasicFormDefinition(nameof(Popularity.XpSearchPopularityScoreInfo.ScoreID));
+
+        Add(form, nameof(Popularity.XpSearchPopularityScoreInfo.ScoreGuid), FieldDataType.Guid);
+        Add(form, nameof(Popularity.XpSearchPopularityScoreInfo.ScoreIndexName), FieldDataType.Text, size: 100);
+        Add(form, nameof(Popularity.XpSearchPopularityScoreInfo.ScoreDocumentID), FieldDataType.Text, size: 200);
+        Add(form, nameof(Popularity.XpSearchPopularityScoreInfo.ScoreValue), FieldDataType.Double);
+        Add(form, nameof(Popularity.XpSearchPopularityScoreInfo.ScoreComputed), FieldDataType.DateTime);
+
+        return form;
+    }
+
+    /// <summary>The form definition of <see cref="Popularity.XpSearchPopularitySuggestionInfo"/> (RK-1).</summary>
+    /// <returns>The fields, on top of the primary key the basic definition creates.</returns>
+    public static FormInfo PopularitySuggestionForm()
+    {
+        var form = FormHelper.GetBasicFormDefinition(nameof(Popularity.XpSearchPopularitySuggestionInfo.SuggestionID));
+
+        Add(form, nameof(Popularity.XpSearchPopularitySuggestionInfo.SuggestionGuid), FieldDataType.Guid);
+        Add(form, nameof(Popularity.XpSearchPopularitySuggestionInfo.SuggestionIndexName), FieldDataType.Text, size: 100);
+        Add(form, nameof(Popularity.XpSearchPopularitySuggestionInfo.SuggestionQuery), FieldDataType.Text, size: 450);
+        Add(form, nameof(Popularity.XpSearchPopularitySuggestionInfo.SuggestionDocumentID), FieldDataType.Text, size: 200);
+        Add(form, nameof(Popularity.XpSearchPopularitySuggestionInfo.SuggestionClicks), FieldDataType.Integer);
+        Add(form, nameof(Popularity.XpSearchPopularitySuggestionInfo.SuggestionSharePercent), FieldDataType.Integer);
+        Add(form, nameof(Popularity.XpSearchPopularitySuggestionInfo.SuggestionComputed), FieldDataType.DateTime);
+        Add(form, nameof(Popularity.XpSearchPopularitySuggestionInfo.SuggestionState), FieldDataType.Integer);
+
         return form;
     }
 
@@ -63,7 +113,7 @@ public sealed class XpSearchAnalyticsModuleInstaller
 
         resource.ResourceDisplayName = "Kentico Integration - Xperience Search analytics";
         resource.ResourceName = ResourceName;
-        resource.ResourceDescription = "Storage for the anonymous aggregate search query log.";
+        resource.ResourceDescription = "Storage for the anonymous aggregate search query log and the popularity signal computed from it.";
         resource.ResourceIsInDevelopment = false;
 
         if (resource.HasChanged)
@@ -72,6 +122,9 @@ public sealed class XpSearchAnalyticsModuleInstaller
         }
 
         InstallClass(resource, XpSearchQueryLogInfo.TYPEINFO, "XpSearch query log", QueryLogForm());
+        InstallClass(resource, Popularity.XpSearchPopularityIndexInfo.TYPEINFO, "XpSearch popularity index", PopularityIndexForm());
+        InstallClass(resource, Popularity.XpSearchPopularityScoreInfo.TYPEINFO, "XpSearch popularity score", PopularityScoreForm());
+        InstallClass(resource, Popularity.XpSearchPopularitySuggestionInfo.TYPEINFO, "XpSearch popularity suggestion", PopularitySuggestionForm());
     }
 
     private static void Add(FormInfo form, string name, string dataType, int size = 0, bool allowEmpty = false)

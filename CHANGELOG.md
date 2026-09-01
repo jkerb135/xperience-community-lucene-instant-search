@@ -8,6 +8,36 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Added (core, admin):** **popularity boosts** — the results your visitors click can raise their own
+  ranking, bounded and opt-in (ADR-0025). A new scheduled task (`XpSearch.PopularitySignal`) aggregates
+  the last 30 days of query log clicks into a per-document signal per index, weighting each click by
+  `log2(position + 1)` so a click eight rows down counts for more than a click on the result the
+  ranking already put first. A pipeline stage after the rules (order 750) applies it as a bounded
+  boost: 2x for the most clicked document, scaling linearly down to no change, and nothing at all for
+  an index that has not opted in or has no evidence yet. The opt-in is per index, on the **Field
+  weights** page header, and is deliberately not part of an experiment's variant tuning — both
+  variants see the same boost. While the boost is on, the signal version joins the response cache key,
+  so a task run invalidates exactly the responses it changed and nothing else. New guide:
+  `docs/guides/popularity-boosts.md`.
+
+- **Added (admin):** **suggested boost rules**. The same task lists the frequent queries where one
+  document clearly wins the clicks (at least 5 clicks and at least 50 % of the query's click weight)
+  on a **Suggestions** page next to *Rules*, which links to it when any are waiting. **Approve**
+  creates an ordinary rule — query condition plus a 2x boost — that you can then edit or delete like
+  any other; **Dismiss** turns it down. Either answer is remembered, so a recomputation never brings
+  the same query and document back. No rule is ever created without a person approving it.
+
+- **Added (core) — storage:** the query log gains `LogClickedResultID`, the result id of the clicked
+  document, written by the click event that already recorded the position. It is nullable, so an
+  upgraded installation needs no backfill, and it is as anonymous as the rest of the row. Three module
+  classes join the analytics module: `XpSearch.PopularityIndex`, `XpSearch.PopularityScore` and
+  `XpSearch.PopularitySuggestion`.
+
+- **Changed (core) — source-breaking for custom implementations:** `IQueryLogStore.SetClickedPositionAsync`
+  is now `SetClickAsync(queryId, position, resultId, cancellationToken)`, and `CachedSearchPipeline`
+  takes an `IPopularitySignalStore`. Hosts that only call `AddXpSearch()` are unaffected; the JSON
+  contract is unchanged.
+
 - **Fixed (widgets, js) — behaviour change:** URL routing no longer treats every query parameter as a
   filter. A page carrying a foreign parameter — Kentico's own `uh` preview parameter, `utm_*`, `gclid` —
   made every search fail with `400 'uh' is not an attribute of index '…'`. The client now adopts a facet

@@ -12,6 +12,7 @@ using NUnit.Framework;
 using XpSearch.Admin.Persistence;
 using XpSearch.Admin.Tuning;
 using XpSearch.Admin.UIPages;
+using XpSearch.Core.Popularity;
 using XpSearch.Ingestion.Persistence;
 
 namespace XpSearch.Admin.Tests;
@@ -72,7 +73,7 @@ internal sealed class ListingDeleteCommandTests
     /// </summary>
     [Test]
     public void Delete_RefusesAWeightItCannotProveBelongsToTheIndexInTheUrl() =>
-        AssertRefused(new FieldWeightListing(Storage(), Provider<XpSearchFieldWeightInfo>()) { IndexIdentifier = IndexIdentifier });
+        AssertRefused(new FieldWeightListing(Storage(), Provider<XpSearchFieldWeightInfo>(), Provider<XpSearchPopularityIndexInfo>()) { IndexIdentifier = IndexIdentifier });
 
     [Test]
     public void Delete_RefusesASynonymItCannotProveBelongsToTheIndexInTheUrl() =>
@@ -84,7 +85,7 @@ internal sealed class ListingDeleteCommandTests
 
     [Test]
     public void Delete_RefusesARuleItCannotProveBelongsToTheIndexInTheUrl() =>
-        AssertRefused(new RuleListing(Storage(), Substitute.For<IContactGroupCatalog>(), Provider<XpSearchRuleInfo>())
+        AssertRefused(new RuleListing(Storage(), Substitute.For<IContactGroupCatalog>(), Provider<XpSearchRuleInfo>(), Provider<XpSearchPopularitySuggestionInfo>())
         {
             IndexIdentifier = IndexIdentifier
         });
@@ -92,7 +93,7 @@ internal sealed class ListingDeleteCommandTests
     /// <summary>An identifier the URL no longer resolves scopes to nothing, so nothing may be deleted through it.</summary>
     [Test]
     public void Delete_RefusesEveryRowWhenTheUrlsIndexIsNotRegistered() =>
-        AssertRefused(new FieldWeightListing(Storage(), Provider<XpSearchFieldWeightInfo>()) { IndexIdentifier = 999 });
+        AssertRefused(new FieldWeightListing(Storage(), Provider<XpSearchFieldWeightInfo>(), Provider<XpSearchPopularityIndexInfo>()) { IndexIdentifier = 999 });
 
     /// <summary>The refusal must not reach the platform's delete: the provider is asked to read, never to write.</summary>
     [Test]
@@ -100,7 +101,7 @@ internal sealed class ListingDeleteCommandTests
     {
         var provider = Provider<XpSearchFieldWeightInfo>();
 
-        _ = new FieldWeightListing(Storage(), provider) { IndexIdentifier = IndexIdentifier }.Delete(1);
+        _ = new FieldWeightListing(Storage(), provider, Provider<XpSearchPopularityIndexInfo>()) { IndexIdentifier = IndexIdentifier }.Delete(1);
 
         provider.DidNotReceiveWithAnyArgs().Delete(default(XpSearchFieldWeightInfo)!);
     }
@@ -128,3 +129,4 @@ internal sealed class ListingDeleteCommandTests
         where TInfo : AbstractInfoBase<TInfo>, IInfoWithId, new() =>
         Substitute.For<IInfoProvider<TInfo>, IInfoByIdProvider<TInfo>>();
 }
+

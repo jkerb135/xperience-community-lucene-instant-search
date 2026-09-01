@@ -18,4 +18,22 @@ public sealed class XpSearchAnalyticsOptions
     /// Gets or sets how far back query suggestions count query volume, in days. Defaults to 30.
     /// </summary>
     public int QuerySuggestionDays { get; set; } = 30;
+
+    /// <summary>
+    /// Gets or sets how many days of clicks the popularity signal is computed from (RK-1). Defaults to
+    /// 30: popularity outside the window decays by being left out of the next run.
+    /// </summary>
+    public int PopularityLookbackDays { get; set; } = 30;
+
+    /// <summary>
+    /// Gets or sets how many documents per index the popularity signal keeps, strongest first.
+    /// Defaults to 100, which bounds both the stored rows and the boosted query.
+    /// </summary>
+    public int PopularityDocumentLimit { get; set; } = 100;
+
+    /// <summary>
+    /// Gets or sets how many of the window's most frequent queries are examined for a suggested boost
+    /// rule. Defaults to 10.
+    /// </summary>
+    public int PopularitySuggestionQueries { get; set; } = 10;
 }
