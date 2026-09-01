@@ -35,6 +35,18 @@ test('a half-filled row is left out rather than written as rubbish', () => {
   assert.equal(composeExpression([]), '');
 });
 
+/*
+ * CR-6: the expression cannot hold a blank or half-filled row, so an editor that keeps its rows only
+ * as an expression loses every row the marketer has not finished - which is what made Add row inert
+ * in the action panel. Whoever makes rows derived state again fails here first.
+ */
+test('a blank row does not survive the expression round trip, so rows are not derived from it', () => {
+  const rows = [{ attribute: 'Category', value: 'coffee' }];
+
+  assert.deepEqual(parseExpression(composeExpression([...rows, { attribute: '', value: '' }])), rows);
+  assert.deepEqual(parseExpression(composeExpression([...rows, { attribute: 'Tags', value: '' }])), rows);
+});
+
 test('a value may contain a colon, which is what a URL value needs', () => {
   assert.deepEqual(parseExpression('url:https://example.com'), [{ attribute: 'url', value: 'https://example.com' }]);
 });
