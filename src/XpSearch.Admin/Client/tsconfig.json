@@ -16,5 +16,8 @@
     "noUnusedLocals": true,
     "lib": ["DOM", "DOM.Iterable", "ES2022"]
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*"],
+  // The *.test.ts files run under node's own runner (npm test), which strips the types; they
+  // import with a .ts extension and use node typings the shipped bundle has neither of.
+  "exclude": ["src/**/*.test.ts"]
 }

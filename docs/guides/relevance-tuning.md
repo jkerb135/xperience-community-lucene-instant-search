@@ -48,9 +48,10 @@ Say the search *espresso machine* should always show your flagship machine first
 4. Under **Condition(s) — If**, select **Add condition**. A panel slides in from the right. Turn
    **Query** on, leave the operator at *Contains*, type `espresso machine`, and select **Apply**. The
    panel closes and the condition reads back as `Query contains “espresso machine”`.
-5. Under **Action(s) — Then**, select **Add action** and pick **Pin an item**. Fill in the
-   **Item** (the id of the product, for example `f3c1…:en` — see *Finding a result id* below) and
-   **Position** `1`. Select **Save rule**.
+5. Under **Action(s) — Then**, select **Add action** and pick **Pin an item**. A panel slides in.
+   Type a few letters of the machine's name in **Find the item**, select it in the result list, set
+   **Position** to `1`, and select **Apply**. The action reads back as
+   `1 · Pin an item — Pin Flagship Machine to position 1`. Select **Save rule**.
 
 Search for *espresso machine* on the site. Your flagship machine is first.
 
@@ -85,7 +86,8 @@ fields appear under it.
 - **Query** — the operator (*Contains*, *Is exactly*, *Starts with*), the words, and
   **Match plurals & synonyms** (this is the *analyzed* comparison described below).
 - **Filters** — one or more `attribute is value` rows, all of which must be selected on the request.
-  Type the attribute name; the same names that appear in your search results.
+  The same attribute rows the action panel uses: attribute and value are both drop-downs fed by the
+  index, with **Edit as text** behind them.
 - **Context** — **Contact group** (*Everyone* by default) and **Language** (*Any* by default).
 
 **Apply** writes your changes back to the card's summary and closes the panel — it does not save
@@ -97,9 +99,48 @@ A rule matches **one** query pattern and has **one** contact group and language,
 own the Query switch and only one can own Context. Turning a second one on is refused with a message
 rather than silently overwriting the first. Filters add up across cards.
 
-**The Then column.** One card per action, applied top to bottom. **Add action** opens a
-menu of the ten kinds listed below; a kind already used stays available, because a rule may pin
-several items or chain rewrites. Each card has its own fields and a **Remove**.
+**The Then column.** One read-only row per action, applied top to bottom, numbered so the order is
+on screen:
+
+```
+1 · Pin an item        Pin Hario Skerton Plus to position 1
+2 · Filter results     Filter results to Category:Grinders
+```
+
+The order is not cosmetic. Query rewrites chain, and custom data merges in order, so the last rule to
+set a key wins it. **Move up** and **Move down** on a row change it; each button announces which
+action it moves and where it currently sits, so the change is followable without seeing the screen.
+
+You do not edit an action on this screen either. **Edit** on a row opens its side panel; **Add
+action** opens the menu of the ten kinds listed below and then opens the panel on a blank one of that
+kind. A kind already used stays available, because a rule may pin several items or chain rewrites.
+An action you discard before filling anything in is not added at all.
+
+**The action panel.** The same panel as a condition's — **Apply** writes back to the row and closes,
+**Discard**, the close button, `Esc` and a click outside throw the changes away, the keyboard stays
+inside it while it is open, and it covers the page on a narrow screen. Its body depends on the kind:
+
+- **Pin**, **Hide**, **Boost** and **Bury** get the **item picker**: type into **Find the item** and
+  the index is searched as you stop typing. Select a result, or walk the list with the `↑` and
+  `↓` keys and press `Enter`. The chosen item is shown by title and URL — the stored result id
+  lives behind **Details**, because it is not something anyone should have to read. Pin adds
+  **Position**; Boost adds **Multiplier**.
+- **Filter results**, and the "everything matching" half of **Boost** and **Bury**, get **attribute
+  rows**: **Attribute** is a drop-down of the fields this index can facet on, and **Value** a
+  drop-down of the values the index really holds right now, each with the number of documents
+  carrying it. Nothing is typed from memory. An attribute the index cannot facet falls back to a
+  plain text value.
+- **Remove word**, **Replace word**, **Replace query**, **Redirect** and **Return custom data** keep
+  their single fields.
+
+**Edit as text.** Under any set of attribute rows — including a condition's **Filters** — is an
+**Edit as text** button. It swaps the rows for the raw expression the rule stores
+(`Category:coffee, Tags:brewing`), and **Back to rows** swaps back. It is the same string either way,
+so you lose nothing by using whichever is faster.
+
+**An item that has left the index.** A rule that pins something you have since deleted or
+unpublished does not quietly forget it: the row keeps the stored id and marks it *no longer in the
+index*. Fix it by picking a new item, or remove the action. Nothing is dropped behind your back.
 
 **What stops a save.** **Save rule** is disabled while the rule has no condition at all. Anything
 else is checked when you select it: the page shows a *Friendly warning* summary at the top and puts
@@ -111,10 +152,13 @@ the specific message on the field that has to change. The checks are:
 | The rule has no condition at all | The If column |
 | **Query** is on but the words are blank | The words field |
 | A filter row has an attribute but no value, or the other way round | The filters |
-| **Pin** has no item, or a position below 1 | That card |
-| **Boost** has neither an item nor an expression, or a multiplier of 0 or less | That card |
-| **Hide**, **Bury**, **Filter results**, a rewrite or **Redirect** has an empty required field | That card |
-| **Return custom data** is not valid JSON, or is not a JSON **object** | That card |
+| **Pin** has no item, or a position below 1 | That action |
+| **Boost** has neither an item nor an expression, or a multiplier of 0 or less | That action |
+| **Hide**, **Bury**, **Filter results**, a rewrite or **Redirect** has an empty required field | That action |
+| **Return custom data** is not valid JSON, or is not a JSON **object** | That action |
+
+The action checks also run when you select **Apply** in its panel, so you find out there rather than
+after a refused save.
 
 Nothing is written when a save is refused.
 
@@ -151,8 +195,8 @@ their search.
    - **Add condition** → turn **Query** on, *Contains*, `coffee`; turn **Context** on and select
      *Grinder shoppers* as the **Contact group** → **Apply**. Both live on one card, whose summary
      reads `Query contains "coffee" · Contact group Grinder shoppers · any language`.
-   - **Add action** → **Boost matching results**. Put the id of the grinder you want lifted
-     in **Item** and `2` in **Multiplier**.
+   - **Add action** → **Boost matching results**. Find the grinder you want lifted in
+     **Find the item**, select it, and put `2` in **Multiplier** → **Apply**.
 3. **Save rule.**
 
 The rule is now live for members of *Grinder shoppers* and invisible to everybody else. It obeys the
@@ -227,11 +271,11 @@ matters, add it as a synonym or write a second rule for it.
 
 | Then… | What happens | What you fill in |
 |---|---|---|
-| **Pin a result to a position** | The result is moved to the position you name. If the search did not find it at all, it is added there — as long as it still matches the filters the visitor has selected. | **Result id**, **Pin to position** |
-| **Boost a result** | The result is pushed up, but the search still decides the final order. A very relevant result can still beat it. | **Result id** (or **Filter**), **Boost multiplier** |
-| **Bury a result** | The result is dropped from the page that comes back. | **Result id** |
-| **Hide a result** | The result is taken out of the search entirely — it is on no page, and the result count does not include it. | **Result id** |
-| **Filter the results** | Only results matching the filter are shown. | **Filter** |
+| **Pin a result to a position** | The result is moved to the position you name. If the search did not find it at all, it is added there — as long as it still matches the filters the visitor has selected. | **Item**, **Position** |
+| **Boost a result** | The result is pushed up, but the search still decides the final order. A very relevant result can still beat it. | **Item** (or attribute rows), **Multiplier** |
+| **Bury a result** | The result is dropped from the page that comes back. | **Item** (or attribute rows) |
+| **Hide a result** | The result is taken out of the search entirely — it is on no page, and the result count does not include it. | **Item** |
+| **Filter the results** | Only results matching the filter are shown. | Attribute rows |
 | **Remove a word** | The word is dropped from the search before it runs: *cheap espresso machine* searched as *espresso machine*. | **Word** |
 | **Replace a word** | One word is swapped for another before the search runs. | **Word**, **Replacement** |
 | **Search for something else** | The whole query is replaced before the search runs. | **Query** |
@@ -247,11 +291,10 @@ overrules it. If you are unsure, use boost first: it degrades gracefully when yo
 counted it. Hide is a removal: the search never sees it, the total goes down by one, and nothing —
 not even a pin in another rule — can bring it back for that query.
 
-**Filter** is written as `Field:value` pairs, separated by commas — for example
-`Category:coffee, Tags:brewing`. Both must match. The field names are the attribute names that appear
-in your search results — the same ones the facet **Attribute** drop-down lists, including the four every
-document has (`title`, `url`, `contentType`, `language`); ask your developer for the list once and keep
-it somewhere.
+**Filter** is edited as attribute rows and stored as `Field:value` pairs separated by commas — for
+example `Category:coffee, Tags:brewing`. All of them must match. The **Attribute** drop-down lists
+the fields this index can facet on, including the ones every document carries (`contentType`,
+`language`); **Edit as text** shows you the stored form if you want it.
 
 **The three rewrites** — remove a word, replace a word, search for something else — change the query
 *before* it runs, so synonyms, the results, the facet counts and the highlighted snippets all follow
@@ -371,10 +414,13 @@ turn search into "whatever has the word in the title", which is rarely what anyo
 
 ### Finding a result id
 
-Pin, bury and boost all need the **result id** of the thing you are pointing at. It is the `id` in
-the search response — a developer can read it from the browser's network tab in a few seconds, or
-your site can be configured to expose it. Ask once for the ids of the pages you care about and keep
-the list; they are stable and do not change when you edit the page.
+You should not have to. Pin, hide, bury and boost point at an item through the panel's item picker,
+which searches this index and stores the id for you; the id itself is behind **Details**.
+
+It is still worth knowing what it is. The id is the `id` field of the search response, stable across
+edits to the item, and it is what the rule stores — which is why a rule survives a rename but not a
+delete. If you are reading a rule someone else wrote and a row says *no longer in the index*, the
+item behind that id is gone; pick a new one.
 
 ### Checking your work: the Query tester
 
@@ -524,10 +570,14 @@ opening the index's configuration form first.
   the page that contains position 3, not the others.
 - A rule is scoped to **one** contact group and **one** language. Two audiences means two rules, or
   one group whose condition covers both.
-- The **attribute** box on a filter condition is free text — it does not offer the attributes your
-  index actually has. Copy the name from a search result or from the facet **Attribute** drop-down on
-  the index settings page. A wrong name simply never matches.
-- Actions are reordered by removing and re-adding a card; there is no drag handle.
+- The **Attribute** drop-down offers the fields the index can *facet* on. A filter on any other
+  field has to be typed, and a wrong name simply never matches.
+- **Value** offers the values the index holds right now. A value that no documents currently carry —
+  a category you have prepared but not published into — is not in the list; use **Edit as text** to
+  write it.
+- Actions are reordered with the **Move up** and **Move down** buttons; there is no drag handle.
+- The item picker searches the index the rule belongs to. It cannot find something that was never
+  indexed, which is the same reason a rule pointing at it would not have worked anyway.
 
 ### Appendix: how a rule is stored
 

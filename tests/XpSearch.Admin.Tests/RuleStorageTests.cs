@@ -534,6 +534,10 @@ internal sealed class RuleSummaryTests
             Assert.That(RuleSummary.Describe(new RuleAction.Hide("doc-1")), Is.EqualTo("Hide doc-1"));
             Assert.That(RuleSummary.Describe(new RuleAction.Boost("doc-1", string.Empty, 2)), Is.EqualTo("Boost doc-1 ×2"));
             Assert.That(RuleSummary.Describe(new RuleAction.Boost(string.Empty, "Category:coffee", 1.5)), Is.EqualTo("Boost Category:coffee ×1.5"));
+            Assert.That(
+                RuleSummary.Describe(new RuleAction.Bury(string.Empty, "Category:tea")),
+                Is.EqualTo("Bury Category:tea"),
+                "a bury by expression reads as the expression, like a boost by one does");
             Assert.That(RuleSummary.Describe(new RuleAction.RemoveWord("cheap")), Is.EqualTo("Remove the word “cheap”"));
             Assert.That(RuleSummary.Describe(new RuleAction.CustomData("{}")), Is.EqualTo("Return custom data"));
             Assert.That(RuleSummary.Describe((IReadOnlyList<RuleAction>)[]), Is.EqualTo("Nothing"));
@@ -644,6 +648,84 @@ internal sealed class RuleBuilderModelTests
             Assert.That(seeded.Conditions.QueryEnabled, Is.False);
             Assert.That(seeded.ToModel().Conditions.IsEmpty, Is.True, "and so Save is refused until a condition is added");
         });
+    }
+
+    /// <summary>
+    /// The order of the actions is behaviour - rewrites chain and custom data merges in order - so
+    /// the up/down buttons of design canvas 5g have to survive the save.
+    /// </summary>
+    [Test]
+    public void ActionsAreStoredInTheOrderTheBuilderListsThem()
+    {
+        var reordered = new RuleDto
+        {
+            Actions =
+            [
+                new RuleActionDto { Type = "replaceWord", Word = "mill", Replacement = "grinder" },
+                new RuleActionDto { Type = "pin", TargetId = "doc-1", Position = 1 },
+                new RuleActionDto { Type = "removeWord", Word = "cheap" }
+            ],
+        };
+
+        (_, var actions) = reordered.ToModel();
+
+        Assert.That(
+            actions,
+            Is.EqualTo(new RuleAction[]
+            {
+                new RuleAction.ReplaceWord("mill", "grinder"),
+                new RuleAction.Pin("doc-1", 1),
+                new RuleAction.RemoveWord("cheap")
+            }).AsCollection);
+    }
+
+    /// <summary>
+    /// The Load DTO carries what each targeted id points at, so a summary row reads as a title. An id
+    /// the index no longer holds keeps a null title and is never dropped (design canvas 5h).
+    /// </summary>
+    [Test]
+    public void ResolvedItemsAreWrittenOntoTheActionsThatNameThem()
+    {
+        var rule = new RuleDto
+        {
+            Actions =
+            [
+                new RuleActionDto { Type = "pin", TargetId = "doc-1:en", Position = 1 },
+                new RuleActionDto { Type = "hide", TargetId = "doc-gone:en" },
+                new RuleActionDto { Type = "bury", TargetId = "doc-1:en" },
+                new RuleActionDto { Type = "removeWord", Word = "cheap" }
+            ],
+        };
+
+        Assert.That(rule.TargetIds(), Is.EqualTo(new[] { "doc-1:en", "doc-gone:en" }).AsCollection, "each id is asked about once");
+
+        rule.ApplyResolvedItems(
+        [
+            new PickedItemDto { Id = "doc-1:en", Title = "Espresso Basics", Url = "/articles/espresso-basics" },
+            new PickedItemDto { Id = "doc-gone:en" }
+        ]);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(rule.Actions[0].TargetTitle, Is.EqualTo("Espresso Basics"));
+            Assert.That(rule.Actions[0].TargetUrl, Is.EqualTo("/articles/espresso-basics"));
+            Assert.That(rule.Actions[1].TargetTitle, Is.Null, "the id is kept and the builder warns; the action is not dropped");
+            Assert.That(rule.Actions[1].TargetId, Is.EqualTo("doc-gone:en"));
+            Assert.That(rule.Actions[2].TargetTitle, Is.EqualTo("Espresso Basics"), "two actions on the same item both read as it");
+            Assert.That(rule.Actions[3].TargetTitle, Is.Null);
+        });
+    }
+
+    /// <summary>
+    /// The attribute rows and the "Edit as text" box are the same string seen two ways, so whichever
+    /// the marketer last touched is stored in one canonical form.
+    /// </summary>
+    [Test]
+    public void AFilterExpressionIsStoredInItsCanonicalForm()
+    {
+        var stored = new RuleActionDto { Type = "filterResults", FilterExpression = "  Category :  Grinders , rubbish ,Tags:brewing" }.ToModel();
+
+        Assert.That(stored, Is.EqualTo(new RuleAction.FilterResults("Category:Grinders, Tags:brewing")));
     }
 
     /// <summary>

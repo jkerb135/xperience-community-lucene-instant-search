@@ -70,6 +70,7 @@ public static class XpSearchServiceCollectionExtensions
         services.TryAddSingleton<IHighlighter, LuceneHighlighter>();
         services.TryAddSingleton<ISearchCache, ProgressiveSearchCache>();
         services.TryAddSingleton<ISuggestService, DocumentSuggestService>();
+        services.TryAddSingleton<IIndexDocumentLookup, IndexDocumentLookup>();
         services.TryAddSingleton<ISearchEventSink, ActivitySearchEventSink>();
         services.TryAddSingleton<XpSearchIndexingStrategy>();
 

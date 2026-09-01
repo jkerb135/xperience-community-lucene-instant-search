@@ -738,26 +738,67 @@ and how to lift it.
   cards become real. That is a Core model change and a second storage migration, so it waits until
   someone asks for OR.
 
-## The condition summary is written twice, in `XpSearch.Admin/Tuning/RuleSummary.cs` and `Client/src/rule-builder/summary.ts`
+## A comma cannot appear in a filter value, in `XpSearch.Core/Tuning/RuleFilterExpression.cs`
 
-- **Simplified:** the same formatting rules exist in C# (for the Rules listing column) and in
-  TypeScript (for the builder's summary rows).
-- **Ceiling:** they can drift - a wording change has to be made in both, and only the C# side has
-  tests. The two already differ slightly on purpose: the listing leaves the contact group out because
-  it has a column of its own, and the panel's "any language" only appears when Context is on.
+- **Simplified:** the expression grammar is `field:value` pairs separated by commas, with no escape
+  and no quoting. `Compose` writes such a value as typed, and `Parse` then reads it back as two
+  malformed pairs and drops them.
+- **Ceiling:** a facet value that genuinely contains a comma ("Coffee, whole bean") cannot be filtered
+  on by a rule. Nothing warns: the row composes, saves, and the rule matches nothing. The value
+  drop-down offers it, because the index really holds it.
+- **Upgrade path:** allow `field:"value"` with a doubled quote as the escape, in `Parse` first (old
+  expressions keep parsing), then in `Compose` for any value holding a comma or a quote. Both twins —
+  `expression.ts` — have to move together. Not done because no Xperience taxonomy tag code name can
+  contain a comma; only a pushed external document could.
+
+## Three pieces of rule text logic are written twice, in C# and in `Client/src/rule-builder/`
+
+- **Simplified:** the same rules exist on both sides of the wire, because each of them has to run
+  while the marketer is still typing, with nothing saved:
+  - the summary sentences — `XpSearch.Admin/Tuning/RuleSummary.cs` and `summary.ts` (conditions for
+    the listing column and the builder's rows; CR-5 added the action sentences, worded identically);
+  - what refuses a save — `XpSearch.Admin/Tuning/RuleValidation.cs` and `wrongWith` in `model.ts`.
+    The C# one is the check that guards the save; the TS one only saves a round trip, and its
+    messages are copied word for word;
+  - the filter expression grammar — `XpSearch.Core/Tuning/RuleFilterExpression.cs` and
+    `expression.ts`, which the attribute rows and the "Edit as text" box parse and compose with.
+- **Ceiling:** they can drift — a wording or grammar change has to be made in both. The summaries
+  already differ slightly on purpose: the listing leaves the contact group out because it has a column
+  of its own, and the panel's "any language" only appears when Context is on. The builder shows an
+  item's title where the listing shows its stored id, because only the builder resolves ids.
+- **Checks:** each side has its own. C#: `RuleSummaryTests`, `RuleValidationTests` and
+  `TuningTests.FilterExpression_*`. TypeScript: `expression.test.ts` (`npm test` in
+  `src/XpSearch.Admin/Client`, node's own runner, no framework) — deliberately the same cases as the
+  C# ones. `wrongWith` and `describeAction` have no TypeScript check; their C# twins do, and the
+  server refuses anything the client wrongly lets through.
 - **Upgrade path:** either have the builder ask a `Describe` page command for each summary (a round
-  trip per Apply, for a string), or generate the TypeScript from the C# the way
-  `Client/scripts/contract.mjs` generates the contract types. Neither is worth it for one sentence.
+  trip per keystroke, for a string), or generate the TypeScript from the C# the way
+  `Client/scripts/contract.mjs` generates the contract types. Worth doing only if a fourth twin
+  appears.
 
-## Attribute names on a filter condition are free text, in `XpSearch.Admin/Client/src/rule-builder/ConditionPanel.tsx`
+## Attribute rows only offer facetable fields, in `XpSearch.Admin/Client/src/rule-builder/AttributeRows.tsx`
 
-- **Simplified:** the **Attribute** box of an `attribute is value` row is a plain input. The builder
-  knows the index from the URL but does not ask it for its schema.
-- **Ceiling:** a typo produces a condition that simply never fires, with nothing on screen to say so;
-  the marketer has to copy the name from a search result or from the facet configurator.
-- **Upgrade path:** the page already has the index identifier and `ISearchSchemaProvider` is
-  registered - hand the schema's facetable field names to the client template as a property and turn
-  the input into a `Select`, the way the facet attribute configurator already does.
+- **Simplified:** the **Attribute** drop-down is `FacetAttributeOptions.BuildOptionsAsync`'s list —
+  the fields the index can facet on — and **Value** is a facet query over the chosen one. A field that
+  is filterable but not facetable is not offered, and a value no document currently carries is not in
+  the list. Both fall back to a plain text box, and "Edit as text" writes anything.
+- **Ceiling:** a marketer preparing a rule for a category that has no published content yet cannot
+  pick its value from the list; nothing on screen explains why it is missing. A filter on a non-facet
+  field is still typed, so a typo still produces a condition that never fires.
+- **Upgrade path:** the value list would have to come from the taxonomy rather than from the index
+  (the tag exists before anything is tagged with it), which means a second source behind
+  `GetAttributeValues` keyed on the field kind.
+
+## The item picker reads the index one id at a time, in `XpSearch.Core/Search/IndexDocumentLookup.cs`
+
+- **Simplified:** resolving the ids a rule's actions name is one `TermQuery` per id inside one
+  searcher lease, and one round trip to the index per rule load.
+- **Ceiling:** O(n) queries in the number of item-targeting actions on the rule being opened. A rule
+  with fifty pins costs fifty term lookups; each is a single-term match on an indexed keyword field,
+  so this is cheap, but it is not one query.
+- **Upgrade path:** a single `BooleanQuery` of `SHOULD` term clauses over the id field, taking the
+  top `ids.Count` hits. Not done because the loop is what makes "this id resolved, that one did not"
+  obvious, which is the whole point of the orphan warning.
 
 ## Flat rule columns are dropped, not archived, in `XpSearch.Admin/Persistence/RuleStorageMigration.cs`
 

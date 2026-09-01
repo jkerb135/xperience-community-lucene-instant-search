@@ -1,4 +1,4 @@
-using CMS.DataEngine;
+﻿using CMS.DataEngine;
 using CMS.Membership;
 
 using Kentico.Xperience.Admin.Base;
@@ -9,6 +9,7 @@ using Kentico.Xperience.Lucene.Core.Indexing;
 using XpSearch.Admin.Persistence;
 using XpSearch.Admin.Tuning;
 using XpSearch.Admin.UIPages;
+using XpSearch.Core.Abstractions;
 
 namespace XpSearch.Admin.UIPages.RuleBuilder;
 
@@ -32,27 +33,32 @@ public abstract class RuleBuilderPage : Page<RuleBuilderClientProperties>
     private readonly IInfoProvider<XpSearchRuleInfo> provider;
     private readonly IContactGroupCatalog contactGroups;
     private readonly IPageLinkGenerator pageLinkGenerator;
+    private readonly IRulePicker picker;
 
     /// <summary>Initializes a new instance of the <see cref="RuleBuilderPage"/> class.</summary>
     /// <param name="storageService">Reads the stored index configuration, to resolve the index in the URL.</param>
     /// <param name="provider">Provider of rule objects.</param>
     /// <param name="contactGroups">Supplies the contact groups the Context toggle offers.</param>
     /// <param name="pageLinkGenerator">Generates the URL Cancel, Save and Delete navigate back to.</param>
+    /// <param name="picker">Reads the index behind the item and attribute pickers.</param>
     protected RuleBuilderPage(
         ILuceneConfigurationStorageService storageService,
         IInfoProvider<XpSearchRuleInfo> provider,
         IContactGroupCatalog contactGroups,
-        IPageLinkGenerator pageLinkGenerator)
+        IPageLinkGenerator pageLinkGenerator,
+        IRulePicker picker)
     {
         ArgumentNullException.ThrowIfNull(storageService);
         ArgumentNullException.ThrowIfNull(provider);
         ArgumentNullException.ThrowIfNull(contactGroups);
         ArgumentNullException.ThrowIfNull(pageLinkGenerator);
+        ArgumentNullException.ThrowIfNull(picker);
 
         this.storageService = storageService;
         this.provider = provider;
         this.contactGroups = contactGroups;
         this.pageLinkGenerator = pageLinkGenerator;
+        this.picker = picker;
     }
 
     /// <summary>Gets or sets the identifier of the index the page is scoped to, taken from the URL.</summary>
@@ -78,6 +84,7 @@ public abstract class RuleBuilderPage : Page<RuleBuilderClientProperties>
         properties.IndexName = index?.IndexName ?? string.Empty;
         properties.Languages = [.. index?.LanguageNames ?? []];
         properties.ContactGroups = await contactGroups.GetAllAsync(CancellationToken.None).ConfigureAwait(false);
+        properties.Attributes = await AttributesAsync(properties.IndexName, CancellationToken.None).ConfigureAwait(false);
 
         var row = EditedRow;
 
@@ -94,20 +101,91 @@ public abstract class RuleBuilderPage : Page<RuleBuilderClientProperties>
         }
         else
         {
-            properties.Rule = RuleDto.From(InfoRelevanceTuningSource.Read(row));
+            properties.Rule = await ResolvedAsync(RuleDto.From(InfoRelevanceTuningSource.Read(row)), CancellationToken.None).ConfigureAwait(false);
         }
 
         return properties;
     }
 
     /// <summary>Reads the rule again, which is what the builder does after a failed save or a reload.</summary>
-    /// <returns>The rule.</returns>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The rule, with the items its actions name resolved.</returns>
     [PageCommand(Permission = SystemPermissions.VIEW)]
-    public Task<ICommandResponse<RuleDto>> Load()
+    public async Task<ICommandResponse<RuleDto>> Load(CancellationToken cancellationToken)
     {
         var row = EditedRow;
 
-        return Task.FromResult(ResponseFrom(row is null ? SeedRule() : RuleDto.From(InfoRelevanceTuningSource.Read(row))));
+        return ResponseFrom(
+            row is null
+                ? SeedRule()
+                : await ResolvedAsync(RuleDto.From(InfoRelevanceTuningSource.Read(row)), cancellationToken).ConfigureAwait(false));
+    }
+
+    /// <summary>Searches the index for an item to pin, hide, boost or bury (design canvas 5h).</summary>
+    /// <param name="request">What the marketer typed.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The matches, or why there are none.</returns>
+    [PageCommand(Permission = SystemPermissions.VIEW)]
+    public async Task<ICommandResponse<ItemSearchResult>> SearchItems(ItemSearchRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        // The index is the one the URL points at, never one the client asked for.
+        string indexName = IndexName;
+
+        if (string.IsNullOrEmpty(indexName))
+        {
+            return ResponseFrom(ItemSearchResult.Failed("This index is not registered."));
+        }
+
+        try
+        {
+            return ResponseFrom(new ItemSearchResult
+            {
+                Items = await picker.SearchAsync(indexName, request.Query ?? string.Empty, cancellationToken).ConfigureAwait(false),
+            });
+        }
+        catch (IndexNotFoundException)
+        {
+            return ResponseFrom(ItemSearchResult.Failed($"The index '{indexName}' is not registered."));
+        }
+        catch (SearchValidationException exception)
+        {
+            return ResponseFrom(ItemSearchResult.Failed(exception.Message));
+        }
+    }
+
+    /// <summary>Lists the values an attribute really holds, with their counts (design canvas 5h).</summary>
+    /// <param name="request">The attribute.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The values, or why there are none.</returns>
+    [PageCommand(Permission = SystemPermissions.VIEW)]
+    public async Task<ICommandResponse<AttributeValuesResult>> GetAttributeValues(AttributeValuesRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        string indexName = IndexName;
+
+        if (string.IsNullOrEmpty(indexName))
+        {
+            return ResponseFrom(AttributeValuesResult.Failed("This index is not registered."));
+        }
+
+        try
+        {
+            return ResponseFrom(new AttributeValuesResult
+            {
+                Values = await picker.ValuesAsync(indexName, request.Attribute ?? string.Empty, cancellationToken).ConfigureAwait(false),
+            });
+        }
+        catch (IndexNotFoundException)
+        {
+            return ResponseFrom(AttributeValuesResult.Failed($"The index '{indexName}' is not registered."));
+        }
+        catch (SearchValidationException exception)
+        {
+            return ResponseFrom(AttributeValuesResult.Failed(exception.Message));
+        }
     }
 
     /// <summary>Leaves the builder without saving.</summary>
@@ -123,7 +201,7 @@ public abstract class RuleBuilderPage : Page<RuleBuilderClientProperties>
     /// errors that refused the save, or the rule as it was stored.
     /// </returns>
     [PageCommand(Permission = SystemPermissions.UPDATE)]
-    public Task<ICommandResponse> Save(RuleDto submitted, CancellationToken cancellationToken)
+    public async Task<ICommandResponse> Save(RuleDto submitted, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(submitted);
 
@@ -171,12 +249,13 @@ public abstract class RuleBuilderPage : Page<RuleBuilderClientProperties>
 
         if (creating)
         {
-            return Task.FromResult<ICommandResponse>(NavigateTo(ListingPath()));
+            return NavigateTo(ListingPath());
         }
 
-        return Task.FromResult<ICommandResponse>(
-            ResponseFrom(new RuleSaveResult { Rule = RuleDto.From(InfoRelevanceTuningSource.Read(row)) })
-                .AddSuccessMessage($"Rule '{row.RuleName}' saved."));
+        var stored = await ResolvedAsync(RuleDto.From(InfoRelevanceTuningSource.Read(row)), cancellationToken).ConfigureAwait(false);
+
+        return ResponseFrom(new RuleSaveResult { Rule = stored })
+            .AddSuccessMessage($"Rule '{row.RuleName}' saved.");
     }
 
     /// <summary>Deletes the edited rule.</summary>
@@ -196,8 +275,50 @@ public abstract class RuleBuilderPage : Page<RuleBuilderClientProperties>
     /// <returns>The rule.</returns>
     protected virtual RuleDto SeedRule() => new();
 
-    private Task<ICommandResponse> Refuse(RuleSaveResult result) =>
-        Task.FromResult<ICommandResponse>(ResponseFrom(result));
+    /// <summary>
+    /// Fills in what each item-targeting action points at, so a summary row reads as a title. An id
+    /// the index no longer holds keeps a null title and the builder warns about it (design canvas 5h).
+    /// </summary>
+    private async Task<RuleDto> ResolvedAsync(RuleDto rule, CancellationToken cancellationToken)
+    {
+        var ids = rule.TargetIds();
+
+        if (ids.Count == 0)
+        {
+            return rule;
+        }
+
+        try
+        {
+            rule.ApplyResolvedItems(await picker.ResolveAsync(IndexName, ids, cancellationToken).ConfigureAwait(false));
+        }
+        catch (IndexNotFoundException)
+        {
+            // An unregistered index is a page-level problem the builder already reports; leaving the
+            // titles unresolved shows the ids, which is what a deleted item looks like anyway.
+        }
+
+        return rule;
+    }
+
+    private async Task<IReadOnlyList<string>> AttributesAsync(string indexName, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(indexName))
+        {
+            return [];
+        }
+
+        try
+        {
+            return await picker.AttributesAsync(indexName, cancellationToken).ConfigureAwait(false);
+        }
+        catch (IndexNotFoundException)
+        {
+            return [];
+        }
+    }
+
+    private ICommandResponse Refuse(RuleSaveResult result) => ResponseFrom(result);
 
     private string ListingPath() => pageLinkGenerator.GetPath<RuleListing>(IndexScope.Route(IndexIdentifier));
 }

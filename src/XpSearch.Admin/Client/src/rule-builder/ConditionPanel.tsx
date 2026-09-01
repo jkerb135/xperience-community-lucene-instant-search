@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import {
   Button,
   ButtonColor,
-  ButtonSize,
   Input,
   MenuItem,
   Select,
@@ -12,6 +11,7 @@ import {
   SwitchSize,
 } from '@kentico/xperience-admin-components';
 
+import { AttributeRows } from './AttributeRows';
 import type { ContactGroup, Fragment, QueryOperator } from './model';
 import styles from './RuleBuilderTemplate.module.scss';
 
@@ -30,6 +30,8 @@ interface ConditionPanelProps {
   /** The card being edited, or undefined when the panel is closed. */
   readonly editing?: Fragment;
   readonly index: number;
+  /** The facetable attributes of the index, for the Filters rows (design canvas 5h). */
+  readonly attributes: string[];
   readonly contactGroups: ContactGroup[];
   readonly languages: string[];
   readonly onApply: (fragment: Fragment) => void;
@@ -42,18 +44,13 @@ const operators: { readonly id: QueryOperator; readonly label: string }[] = [
   { id: 'startsWith', label: 'Starts with' },
 ];
 
-export const ConditionPanel = ({ editing, index, contactGroups, languages, onApply, onDiscard }: ConditionPanelProps) => {
+export const ConditionPanel = ({ editing, index, attributes, contactGroups, languages, onApply, onDiscard }: ConditionPanelProps) => {
   const [draft, setDraft] = useState<Fragment | undefined>(editing);
 
   // The panel edits a copy: Discard and Esc have to leave the card exactly as it was.
   useEffect(() => setDraft(editing === undefined ? undefined : { ...editing, filters: editing.filters.map((f) => ({ ...f })) }), [editing]);
 
   const change = (values: Partial<Fragment>) => setDraft((current) => (current === undefined ? current : { ...current, ...values }));
-
-  const changeFilter = (at: number, values: Partial<Fragment['filters'][number]>) =>
-    setDraft((current) =>
-      current === undefined ? current : { ...current, filters: current.filters.map((filter, i) => (i === at ? { ...filter, ...values } : filter)) },
-    );
 
   return (
     <SidePanel
@@ -114,44 +111,7 @@ export const ConditionPanel = ({ editing, index, contactGroups, languages, onApp
               onChange={(value) => change({ filtersEnabled: value, filters: value && draft.filters.length === 0 ? [{ attribute: '', value: '' }] : draft.filters })}
             />
             {draft.filtersEnabled ? (
-              <div className={styles.toggleFields}>
-                {draft.filters.map((filter, at) => (
-                  <div key={at} className={styles.filterRow}>
-                    <div className={styles.fieldGrow}>
-                      <Input
-                        label={at === 0 ? 'Attribute' : undefined}
-                        value={filter.attribute}
-                        placeholder="e.g. contentType"
-                        onChange={(event) => changeFilter(at, { attribute: event.target.value })}
-                      />
-                    </div>
-                    <span className={styles.filterIs}>is</span>
-                    <div className={styles.fieldGrow}>
-                      <Input
-                        label={at === 0 ? 'Value' : undefined}
-                        value={filter.value}
-                        onChange={(event) => changeFilter(at, { value: event.target.value })}
-                      />
-                    </div>
-                    <Button
-                      label="Remove"
-                      title={`Remove filter ${at + 1}`}
-                      icon="xp-times"
-                      color={ButtonColor.Quinary}
-                      size={ButtonSize.XS}
-                      onClick={() => change({ filters: draft.filters.filter((_, i) => i !== at) })}
-                    />
-                  </div>
-                ))}
-                <div>
-                  <Button
-                    label="Add"
-                    color={ButtonColor.Tertiary}
-                    size={ButtonSize.XS}
-                    onClick={() => change({ filters: [...draft.filters, { attribute: '', value: '' }] })}
-                  />
-                </div>
-              </div>
+              <AttributeRows rows={draft.filters} attributes={attributes} onChange={(filters) => change({ filters })} />
             ) : null}
           </div>
 

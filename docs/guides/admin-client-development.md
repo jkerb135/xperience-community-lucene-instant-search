@@ -21,8 +21,10 @@ dotnet build src/XpSearch.Admin
 output is gitignored, so this is the first thing to run on a fresh clone — the same rule as
 `src/XpSearch.Widgets/Client` for `XpSearch.Widgets`.
 
-Other scripts: `npm run typecheck` (`tsc --noEmit`, strict) and `npm run start` (webpack dev server on
-port 3010, see *Serving* below).
+Other scripts: `npm run typecheck` (`tsc --noEmit`, strict), `npm run test` (node's own runner over
+`src/**/*.test.ts` — no framework, and the only place a `.test.ts` file may live; they are excluded
+from `tsconfig.json` and never bundled) and `npm run start` (webpack dev server on port 3010, see
+*Serving* below).
 
 ### Layout
 
@@ -98,7 +100,7 @@ Then run `npm run start` in `src/XpSearch.Admin/Client`. Remove the setting befo
    `Permission` from the set the *owning application* declares — for a page inside
    `IndexTuningSection` that is the Lucene integration's application (`View`, `Create`, `Update`,
    `Delete`, `Rebuild`); for a page under `SearchTuningApplication` it is `View`, `Create`, `Delete`.
-4. `npm run typecheck`, `npm run build`, `dotnet build src/XpSearch.Admin`.
+4. `npm run typecheck`, `npm test`, `npm run build`, `dotnet build src/XpSearch.Admin`.
 
 #### Pages inside an index
 

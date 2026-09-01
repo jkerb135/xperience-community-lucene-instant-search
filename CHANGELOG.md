@@ -8,6 +8,32 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Changed (admin):** a rule's actions are edited in a side panel, and its items and attribute
+  values are picked instead of typed. Each action is a numbered read-only row — `1 · Pin an item ·
+  Pin Hario Skerton Plus to position 1` — with **Edit**, **Move up**, **Move down** and **Remove**;
+  the move buttons name the action and its position, because the order is behaviour (rewrites chain,
+  custom data merges in order). **Add action** keeps the same ten-type menu and opens the panel on a
+  blank action of the chosen type; an action discarded before anything is filled in is not added.
+  **Pin**, **Hide**, **Boost** and **Bury** get an item picker that searches the index as you stop
+  typing (`↑`/`↓` walk the results, `Enter` picks, the stored result id is behind **Details**).
+  **Filter results**, the matching halves of **Boost** and **Bury**, and a condition's **Filters**
+  rows all get one attribute+value row set: **Attribute** from the index's facetable fields,
+  **Value** from a live facet query with document counts, and **Edit as text** for the raw
+  expression. **Nothing about the storage changed** — the same `FilterExpression` strings and
+  `AttributeIs` lists, so no migration and no rule needs re-saving.
+
+- **Added (admin):** an action pointing at an item the index no longer holds is marked *no longer in
+  the index* and keeps its stored id, instead of showing a bare id or being silently dropped.
+
+- **Added:** `RuleFilterExpression.Compose`, the inverse of `Parse`, and
+  `IIndexDocumentLookup`/`IndexDocumentLookup` in `XpSearch.Core.Search`, which resolves stored result
+  ids into their title and URL. Both are public: a custom admin screen holding rule data can use them.
+  A submitted filter expression is now stored in the canonical form `Compose(Parse(x))` gives —
+  spacing settled, half-filled pairs dropped — whichever editor wrote it.
+
+- **Changed (admin, minor):** the rule listing reads a bury by expression as `Bury Category:tea`
+  rather than `Bury `, matching how it already reads a boost by one.
+
 - **Changed — BREAKING for custom `IRelevanceTuningSource` implementations and for anything reading
   `RuleConsequences`:** a rule's `then` is called an **action** everywhere, not a *consequence*.
   `RuleConsequence` is now `RuleAction` (with the same ten nested records), `TuningRule.Consequences`
