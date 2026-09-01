@@ -1,5 +1,7 @@
 > [!WARNING] 
 > Preview feature - this is currently in active development expect changes in the functionality, potentially including breaking changes. Feel free to try out the features and leave feedback.
+> [View Docs](https://jkerb135.github.io/xperience-community-lucene-instant-search/)
+
 
 # Xperience Search - Currently In Development
 
