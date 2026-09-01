@@ -72,3 +72,16 @@ sidebar label **Edit index** — old `/tuning/` bookmarks 500.
     (default-on is retroactive).
 24. Search box widget dialog shows "Sync search state to the URL" ticked by default; unticking it
     and saving stops the URL from changing.
+
+## G. DX-2 server-rendered results (added 2026-09-01)
+25. View-source of /search?q=coffee (before JS runs) shows result cards inside the results mount
+    (`data-xps-server-rendered`); with JS disabled the cards remain and links work.
+26. With JS on, hydration replaces the server block without visible duplication; brief skeleton
+    flicker on a cold index is the recorded limitation, not a defect.
+27. Register a test template on the host (RegisterSearchResultTemplate + partial per the guide
+    sample), select it in the Results widget dialog, confirm the first paint uses it and
+    content-type scoping falls back to the default card.
+28. Results widget dialog: Title/Link/Snippet attribute fields present; restricted "Fields to
+    show" plus a matching Title attribute no longer paints blank cards.
+29. Awareness: first load journals TWO query-log rows (server + hydration; different queryIds) —
+    known limitation with recorded upgrade path, verify it does not distort the Analytics page.
