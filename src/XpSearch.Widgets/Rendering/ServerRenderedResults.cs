@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
+using XpSearch.Core.Abstractions;
 using XpSearch.Core.Contract;
 using XpSearch.Core.Pipeline;
 using XpSearch.Widgets.Templates;
@@ -48,17 +49,20 @@ public sealed class ServerRenderedResults
     private readonly ICompositeViewEngine viewEngine;
     private readonly ISearchResultTemplateRegistry templates;
     private readonly ILogger<ServerRenderedResults> logger;
+    private readonly IIndexSchemaProvider? schemas;
 
     /// <summary>Initializes a new instance of the <see cref="ServerRenderedResults"/> class.</summary>
     /// <param name="pipeline">The query pipeline the public endpoint uses; the same rules, personalization and journaling apply.</param>
     /// <param name="viewEngine">Resolves the result partial.</param>
     /// <param name="templates">The registered result templates.</param>
     /// <param name="logger">Records a failed search or an unresolvable template.</param>
+    /// <param name="schemas">Tells which query-string parameters are attributes of the index; without it every parameter is read as a filter.</param>
     public ServerRenderedResults(
         ISearchPipeline pipeline,
         ICompositeViewEngine viewEngine,
         ISearchResultTemplateRegistry templates,
-        ILogger<ServerRenderedResults> logger)
+        ILogger<ServerRenderedResults> logger,
+        IIndexSchemaProvider? schemas = null)
     {
         ArgumentNullException.ThrowIfNull(pipeline);
         ArgumentNullException.ThrowIfNull(viewEngine);
@@ -69,6 +73,7 @@ public sealed class ServerRenderedResults
         this.viewEngine = viewEngine;
         this.templates = templates;
         this.logger = logger;
+        this.schemas = schemas;
     }
 
     /// <summary>
@@ -91,7 +96,8 @@ public sealed class ServerRenderedResults
         SearchResponse response;
         try
         {
-            response = await pipeline.ExecuteAsync(BuildRequest(viewContext, options), cancellationToken).ConfigureAwait(false);
+            var request = await BuildRequestAsync(viewContext, options, cancellationToken).ConfigureAwait(false);
+            response = await pipeline.ExecuteAsync(request, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
@@ -158,7 +164,10 @@ public sealed class ServerRenderedResults
         return template;
     }
 
-    private SearchRequest BuildRequest(ViewContext viewContext, ServerResultsOptions options)
+    private async Task<SearchRequest> BuildRequestAsync(
+        ViewContext viewContext,
+        ServerResultsOptions options,
+        CancellationToken cancellationToken)
     {
         var request = new SearchRequest { Index = options.Index };
 
@@ -172,9 +181,36 @@ public sealed class ServerRenderedResults
             request.Fields = [.. options.Fields];
         }
 
-        SearchQueryState.Apply(request, viewContext.HttpContext.Request.Query);
+        SearchQueryState.Apply(
+            request,
+            viewContext.HttpContext.Request.Query,
+            await ResolveSchemaAsync(options.Index, cancellationToken).ConfigureAwait(false));
 
         return request;
+    }
+
+    /// <summary>
+    /// The schema of the index, or <see langword="null"/> when it cannot be resolved - an
+    /// unresolvable schema falls back to reading every parameter as a filter, which the pipeline
+    /// then rejects into an empty mount rather than a broken page.
+    /// </summary>
+    private async Task<IndexSchema?> ResolveSchemaAsync(string index, CancellationToken cancellationToken)
+    {
+        if (schemas is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            return await schemas.GetSchemaAsync(index, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            logger.LogWarning(exception, "The schema of index '{Index}' could not be read; every query-string parameter is read as a filter.", index);
+
+            return null;
+        }
     }
 
     private static async Task<IHtmlContent> RenderViewAsync(ViewContext viewContext, IView view, SearchResultViewModel model)

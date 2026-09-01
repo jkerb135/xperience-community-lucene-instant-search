@@ -60,6 +60,14 @@ describe('SearchState', () => {
     expect(state.filters.facets[0]).toEqual({ attribute: 'tags', values: ['coffee'], operator: 'and' });
   });
 
+  it('keeps the page when an operator declaration changes nothing, resets it otherwise', () => {
+    let state = setPage(toggleFacet(createState(), 'tags', 'coffee'), 3);
+    expect(setFacetOperator(state, 'tags', 'or').page).toBe(3);
+    expect(setFacetOperator(state, 'contentType', 'and').page).toBe(3);
+    state = setFacetOperator(state, 'tags', 'and');
+    expect(state.page).toBe(1);
+  });
+
   it('clears one attribute, facet and numeric alike', () => {
     let state = toggleFacet(createState(), 'tags', 'coffee');
     state = toggleFacet(state, 'contentType', 'Article');

@@ -8,6 +8,19 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Fixed (widgets, js) — behaviour change:** URL routing no longer treats every query parameter as a
+  filter. A page carrying a foreign parameter — Kentico's own `uh` preview parameter, `utm_*`, `gclid` —
+  made every search fail with `400 'uh' is not an attribute of index '…'`. The client now adopts a facet
+  param only when a widget on the page declares that attribute (`facetList`, `categoryTree`,
+  `toggleFilter`), and a numeric one only for a `rangeFilter`; everything else is ignored and left
+  untouched in the URL. The server-side mapping behind the results widget's first paint restricts
+  itself the same way, to the attributes the index's schema actually has. **This changes what a shared
+  URL does:** a filter for an attribute that no widget on the target page declares is now ignored,
+  where before it applied invisibly. A custom `routing: { routeToState }` is unaffected and remains the
+  way to adopt everything. A custom widget that filters on an attribute makes it routable by declaring
+  `$$routable: { attribute, kind }`. Widgets added after `start()` are not routable — the URL is read
+  once, when the instance starts.
+
 - **Added (core, admin):** an index's relevance tuning can be **A/B tested** against real traffic
   (ADR-0024). An experiment holds a traffic split and a variant-B draft of the index's rules, synonyms,
   weights and stopwords, cloned from live when it is created; one experiment per index at a time, and

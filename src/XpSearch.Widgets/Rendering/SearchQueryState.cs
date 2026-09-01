@@ -2,6 +2,7 @@ using System.Globalization;
 
 using Microsoft.AspNetCore.Http;
 
+using XpSearch.Core.Abstractions;
 using XpSearch.Core.Contract;
 
 namespace XpSearch.Widgets.Rendering;
@@ -38,7 +39,13 @@ public static class SearchQueryState
     /// </summary>
     /// <param name="request">The request to fill in.</param>
     /// <param name="query">The request's query string.</param>
-    public static void Apply(SearchRequest request, IQueryCollection query)
+    /// <param name="schema">
+    /// The schema of the index being searched. When supplied, only attributes the index actually has
+    /// become filters: a page URL carries foreign parameters (Kentico's <c>uh</c>, <c>utm_*</c>) that
+    /// the query endpoint would reject. When <see langword="null"/> every parameter is read as a
+    /// filter, as before.
+    /// </param>
+    public static void Apply(SearchRequest request, IQueryCollection query, IndexSchema? schema = null)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(query);
@@ -76,6 +83,11 @@ public static class SearchQueryState
             // falls through to reading it as a facet, and a shared URL must mean the same thing here.
             if (Operators.TryGetValue(suffix, out var comparison) && raw.All(IsNumber))
             {
+                if (schema is not null && schema.Find(attribute) is null)
+                {
+                    continue;
+                }
+
                 numeric.AddRange(raw.Select(value => new NumericFilter
                 {
                     Attribute = attribute,
@@ -83,6 +95,11 @@ public static class SearchQueryState
                     Value = ToNumber(value!)
                 }));
 
+                continue;
+            }
+
+            if (schema is not null && schema.Find(key) is null)
+            {
                 continue;
             }
 

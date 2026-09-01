@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.WebUtilities;
 
+using XpSearch.Core.Abstractions;
 using XpSearch.Core.Contract;
 using XpSearch.Widgets.Rendering;
 
@@ -109,6 +110,50 @@ internal sealed class SearchQueryStateTests
             // Not a number, so it means what the client makes of it: a facet named `size_gte`.
             Assert.That(request.Filters.Facets!.Single().Attribute, Is.EqualTo("size_gte"));
         });
+    }
+
+    [Test]
+    public void Only_attributes_the_index_has_become_filters_when_a_schema_is_supplied()
+    {
+        var request = new SearchRequest { Index = "site-content" };
+        var schema = new IndexSchema(
+            "site-content",
+            [
+                new SchemaField("tags", SearchFieldKind.Taxonomy, false, true, false, true),
+                new SchemaField("price", SearchFieldKind.Number, false, false, true, true)
+            ]);
+
+        SearchQueryState.Apply(
+            request,
+            // `uh` is Kentico's own preview parameter; `weight` is not a field of this index.
+            new QueryCollection(QueryHelpers.ParseQuery("?q=beans&uh=abc123&tags=coffee&price_lte=50&weight_gte=5")),
+            schema);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(request.Query, Is.EqualTo("beans"));
+            Assert.That(request.Filters!.Facets!.Single().Attribute, Is.EqualTo("tags"));
+            Assert.That(request.Filters.Numeric!.Single().Attribute, Is.EqualTo("price"));
+        });
+    }
+
+    [Test]
+    public void An_index_without_filterable_params_leaves_the_filters_unset()
+    {
+        var request = new SearchRequest { Index = "site-content" };
+        var schema = new IndexSchema("site-content", [new SchemaField("title", SearchFieldKind.Text, true, false, false, true)]);
+
+        SearchQueryState.Apply(request, new QueryCollection(QueryHelpers.ParseQuery("?q=beans&uh=abc123")), schema);
+
+        Assert.That(request.Filters, Is.Null);
+    }
+
+    [Test]
+    public void Without_a_schema_every_param_is_still_read_as_a_filter()
+    {
+        // The graceful fallback when the schema cannot be resolved: the old behaviour, which the
+        // pipeline turns into an empty mount rather than a broken page.
+        Assert.That(Parse("?uh=abc123").Filters!.Facets!.Single().Attribute, Is.EqualTo("uh"));
     }
 
     [Test]

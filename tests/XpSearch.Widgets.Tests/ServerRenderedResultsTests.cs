@@ -16,6 +16,7 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
+using XpSearch.Core.Abstractions;
 using XpSearch.Core.Contract;
 using XpSearch.Core.Pipeline;
 using XpSearch.Widgets.Components.Widgets.XpSearch;
@@ -94,6 +95,41 @@ internal sealed class ServerRenderedResultsTests
             Assert.That(request.Query, Is.EqualTo("espresso"));
             Assert.That(request.Page, Is.EqualTo(3));
             Assert.That(request.Filters!.Facets!.Single().Values, Is.EqualTo(new[] { "coffee" }));
+        });
+    }
+
+    [Test]
+    public async Task A_query_param_that_is_not_an_attribute_of_the_index_is_not_a_filter()
+    {
+        var pipeline = new FakePipeline(TwoResults());
+        var schema = new IndexSchema(
+            "site-content",
+            [new SchemaField("tags", SearchFieldKind.Taxonomy, false, true, false, true)]);
+
+        // `uh` is Kentico's preview parameter: adopting it made the query endpoint answer 400.
+        await RenderAsync(pipeline, queryString: "?q=espresso&uh=abc123&tags=coffee", schemas: new FakeSchemas(schema));
+
+        var filters = pipeline.Requests.Single().Filters!;
+        Assert.That(filters.Facets!.Single().Attribute, Is.EqualTo("tags"));
+    }
+
+    [Test]
+    public async Task An_unreadable_schema_still_renders_and_logs_a_warning()
+    {
+        var log = new CapturingLogger();
+        var pipeline = new FakePipeline(TwoResults());
+
+        string? html = await RenderAsync(
+            pipeline,
+            logger: log,
+            queryString: "?tags=coffee",
+            schemas: new FakeSchemas(new InvalidOperationException("no such index")));
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(log.Warnings.Single(), Does.Contain("schema of index"));
+            Assert.That(pipeline.Requests.Single().Filters!.Facets!.Single().Attribute, Is.EqualTo("tags"));
+            Assert.That(html, Does.Contain("<article class=\"xps-result\">"));
         });
     }
 
@@ -264,14 +300,16 @@ internal sealed class ServerRenderedResultsTests
         Func<ServerResultsOptions, ServerResultsOptions>? configure = null,
         CapturingLogger? logger = null,
         ISearchResultTemplateRegistry? registry = null,
-        string queryString = "")
+        string queryString = "",
+        IIndexSchemaProvider? schemas = null)
     {
         var viewContext = ViewContext(queryString);
         var renderer = new ServerRenderedResults(
             pipeline,
             provider.GetRequiredService<ICompositeViewEngine>(),
             registry ?? new FakeTemplateRegistry(),
-            logger ?? new CapturingLogger());
+            logger ?? new CapturingLogger(),
+            schemas);
 
         var blank = new ServerResultsOptions("site-content", 0, [], null, null, null, []);
         var options = configure is null ? blank : configure(blank);
@@ -319,6 +357,20 @@ internal sealed class ServerRenderedResultsTests
 
             return failure is null ? Task.FromResult(response!) : Task.FromException<SearchResponse>(failure);
         }
+    }
+
+    /// <summary>A schema provider that answers with a fixed schema, or throws.</summary>
+    private sealed class FakeSchemas : IIndexSchemaProvider
+    {
+        private readonly IndexSchema? schema;
+        private readonly Exception? failure;
+
+        public FakeSchemas(IndexSchema schema) => this.schema = schema;
+
+        public FakeSchemas(Exception failure) => this.failure = failure;
+
+        public Task<IndexSchema> GetSchemaAsync(string indexName, CancellationToken cancellationToken) =>
+            failure is null ? Task.FromResult(schema!) : Task.FromException<IndexSchema>(failure);
     }
 
     private sealed class FakeTemplateRegistry : ISearchResultTemplateRegistry

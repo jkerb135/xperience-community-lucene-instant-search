@@ -291,6 +291,10 @@ search.addWidgets([{
   prepareState(state) { return { ...state, pageSize: 5 }; },
   prepareRequest(request) { return { ...request, facets: [...(request.facets ?? []), 'tags'] }; },
 
+  // Optional: makes `?tags=coffee` in the URL routable (`kind: 'numeric'` for `?price_lte=50`).
+  // Widgets built on a behaviour declare this from their `attribute` param already.
+  $$routable: { attribute: 'tags', kind: 'facet' },
+
   init({ state, actions, search }) { /* once, before the first search */ },
   render({ results, state, actions, isFirstRender }) { /* after every response and state change */ },
   dispose() { /* remove listeners */ },

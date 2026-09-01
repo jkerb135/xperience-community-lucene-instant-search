@@ -133,7 +133,13 @@ export function setFacetOperator(
   attribute: string,
   operator: FacetOperator
 ): SearchState {
-  return withFacet(state, attribute, facetValues(state, attribute), operator);
+  const values = facetValues(state, attribute);
+  const next = withFacet(state, attribute, values, operator);
+  // Only a declaration that changes how existing values combine refines anything; recording the
+  // default on an attribute must not throw away the page the URL asked for, because facet
+  // widgets declare their operator on init, after the URL has been read.
+  const refines = values.length > 0 && facetOperator(state, attribute) !== operator;
+  return refines ? next : createState({ ...next, page: state.page });
 }
 
 /** Clears every filter, or every filter on one attribute (facet and numeric alike). */
