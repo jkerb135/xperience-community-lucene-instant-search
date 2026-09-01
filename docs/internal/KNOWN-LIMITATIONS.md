@@ -480,6 +480,23 @@ and how to lift it.
 - **Upgrade path:** stand up Kentico's IoC container in the test fixture, or move the mapping onto
   plain records that the pages then copy field-by-field.
 
+## The index-scope check of `Delete` in `XpSearch.Admin/UIPages/{FieldWeights,Synonyms,Stopwords,Rules}.cs`
+
+- **Simplified:** the same four-line guard — read the row, compare its index to the URL's, refuse or
+  hand off to `base.Delete` — is repeated in each of the four index-scoped listings rather than
+  factored into a shared `IndexScopedListingPage<TInfo>` base. Only the message string
+  (`IndexScope.CrossIndexDeleteRefusal`) and the decision (`IndexScope.Matches`) are shared. Its
+  accepting branch has no unit test either: `base.Delete` is platform code that needs the admin
+  request pipeline, and a foreign-index row cannot be constructed offline (see *Model to row mapping*
+  above), so only the refusal branch runs in CI.
+- **Ceiling:** a fifth index-scoped listing can be added without the guard and nothing fails; and a
+  guard reading the wrong row property would only be caught by a human, not by CI — though the
+  compiler already limits the choice to the one index-name column each `*Info` has.
+- **Upgrade path:** if a fifth listing appears, lift the four into an `IndexScopedListingPage<TInfo>`
+  taking a `Func<TInfo, string>` for the index column, mirroring the existing
+  `IndexScopedEditPage<TModel>`. For the accepting branch, the same IoC-container fixture that would
+  unblock the model-to-row mapping test unblocks this one.
+
 ## `IndexSettingsPage` in `XpSearch.Admin/UIPages/IndexTuning.cs`
 
 - **Simplified:** it duplicates the model getter and `ProcessFormData` of the integration's

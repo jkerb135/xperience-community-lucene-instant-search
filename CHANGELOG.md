@@ -8,6 +8,13 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Fixed (admin):** **Delete** now works on all five listings — field weights, synonyms, stopwords,
+  rules and API keys. Each listing offered the action but none registered a `Delete` page command
+  behind it, so every click failed with *command not found*. Deleting a tuning row needs *Delete* on
+  **Lucene Search**, an API key *Delete* on **Search ingestion**. A delete request naming a row of
+  another index — the row action only carries a row id — is refused with *This record belongs to a
+  different search index and was not deleted*, matching how editing such a row is already refused.
+
 - **Changed (admin):** an action row is reordered by dragging its **grip** — the six dots at its left
   edge — instead of the **Move up** / **Move down** buttons, which are gone. The grip is not
   mouse-only: `Space` or `Enter` lifts the row, `↑`/`↓` move it, `Space`/`Enter` drop it and `Esc`

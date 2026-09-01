@@ -73,6 +73,12 @@ public class IndexTuningSection : SecondaryMenuSectionPage
 /// </summary>
 public static class IndexScope
 {
+    /// <summary>
+    /// The message a delete of a row belonging to another index is refused with. Shared so the four
+    /// index-scoped listings cannot drift apart on it.
+    /// </summary>
+    public const string CrossIndexDeleteRefusal = "This record belongs to a different search index and was not deleted.";
+
     /// <summary>Turns the index identifier carried by the URL into the index code name the tuning tables key on.</summary>
     /// <param name="storageService">Reads the stored index configuration.</param>
     /// <param name="indexIdentifier">The identifier from the URL.</param>
