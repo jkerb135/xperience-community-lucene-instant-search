@@ -1,0 +1,6 @@
+// active-filters: structure + theme for this widget alone. Load a base partial (or themes/shell.css)
+// once per page as well — these files carry no reset and no design tokens.
+//
+// Includes clearFilters, which renders the same chips. The chip and button rules themselves are
+// in the base partials, which every page loads.
+@use '../shell/active-filters' as structure-active-filters;

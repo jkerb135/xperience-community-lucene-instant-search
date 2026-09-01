@@ -1,0 +1,14 @@
+// loadMore renders the result list, so it carries the shared list rules with it.
+@use 'results';
+
+/* --------------------------------------------------------------------------
+ * loadMore
+ * ------------------------------------------------------------------------ */
+
+.xps-load-more__sentinel {
+  height: 1px;
+}
+
+.xps-load-more__load-more {
+  align-self: flex-start;
+}

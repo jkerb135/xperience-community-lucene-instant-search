@@ -100,8 +100,10 @@ is set up exactly this way; `samples/pack-and-build.mjs` runs it.
 The npm client is not on a public registry yet (see
 [KNOWN-LIMITATIONS](../internal/KNOWN-LIMITATIONS.md)). Install the tarball by path:
 `npm install ./xperience-community-xperience-search-0.1.0.tgz`. Every documented entry point — the root, the
-`/behaviors` subpath, `/themes/*.css` and `/mock/server.mjs` — resolves the same way it will from a
-registry.
+`/behaviors`, `/widgets` and `/widgets/<name>` subpaths, `/scss/*`, `/styles/*`, `/themes/*.css` and
+`/mock/server.mjs` — resolves the same way it will from a registry. See
+[JavaScript bundler setup](javascript-bundler-setup.md) for what to do with it, and keep the npm
+version equal to the `XperienceCommunity.Search.Core` version you installed above.
 
 ### 2. Register the services
 
@@ -239,6 +241,8 @@ See [Relevance tuning](relevance-tuning.md) and [Analytics](analytics.md).
 
 ### 9. The UI
 
-The JavaScript widgets that bind to these endpoints ship separately — see the JS client guide. Nothing on
+The JavaScript widgets that bind to these endpoints ship separately — see the
+[JS client guide](js-client.md) for the API and
+[JavaScript bundler setup](javascript-bundler-setup.md) for the recommended npm install. Nothing on
 this page depends on them: the endpoints are a plain JSON API and are equally usable from your own
 front end.

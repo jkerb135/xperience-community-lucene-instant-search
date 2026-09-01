@@ -27,7 +27,7 @@ documented class names — see [using shell on its own](#using-shell-on-its-own)
 | Consumer | Path |
 |---|---|
 | Xperience site | `<xps-search-assets />` emits both `<link>` tags; the `XperienceCommunity.Search.Widgets` package serves them as static web assets from `/_content/XperienceCommunity.Search.Widgets/xpsearch/`. |
-| npm | `@xperience-community/xperience-search/themes/shell.css` and `.../themes/default.css` are package exports: `import '@xperience-community/xperience-search/themes/shell.css'` from a bundler, or copy the two files into the folder your site serves CSS from. |
+| npm | `@xperience-community/xperience-search/themes/shell.css` and `.../themes/default.css` are package exports: `import '@xperience-community/xperience-search/themes/shell.css'` from a bundler, or copy the two files into the folder your site serves CSS from. The package also ships the SCSS sources (`.../scss/shell`, `.../scss/default`, `.../scss/widgets/<name>`) and per-widget compiled CSS (`.../styles/base.css`, `.../styles/widgets/<name>.css`) — see [JavaScript bundler setup](javascript-bundler-setup.md#build-time-theming-with-scss). |
 | In this repository | `themes/src/shell.css` and `themes/src/default.css` — the shipped files. Both packages ship those exact two files; they are compiled from `themes/src/scss/` and committed, see [Working on the stylesheets](#working-on-the-stylesheets). |
 
 `node_modules` is not usually web-served, so the `<link>` snippet above points at wherever your build
@@ -188,7 +188,9 @@ The two stylesheets are authored in Sass and compiled into the CSS the packages 
 
 | File | Role |
 |---|---|
-| `themes/src/scss/shell.scss`, `themes/src/scss/default.scss` | Authoring source. Edit these. |
+| `themes/src/scss/shell/*.scss`, `themes/src/scss/default/*.scss` | Authoring source, one partial per widget per layer (`shell/_results.scss` is the structure of the results widget, `default/_results.scss` its theme). Edit these. |
+| `themes/src/scss/shell.scss`, `themes/src/scss/default.scss` | The two bundles: a `@forward` of the layer's `!default` variables and the partials in cascade order. Adding a widget means adding a partial and a `@use` line here. |
+| `themes/src/scss/widgets/_<name>.scss`, `themes/src/scss/base.scss` | The à la carte entries the npm package exposes as `scss/widgets/<name>` and `scss/base`. |
 | `themes/src/shell.css`, `themes/src/default.css` | Generated **and committed** — the files the RCL and the npm tarball copy. Do not edit by hand. |
 
 ```
@@ -199,8 +201,13 @@ npm run build      # src/scss/*.scss -> src/{shell,default}.css
 
 `npm run check` recompiles to a temporary folder and fails if the committed CSS has drifted from the
 Sass, so a forgotten `npm run build` cannot ship. The Sass is a convenience for us — nesting for
-state rules, `$half`/`$quarter` for the `--xps-space` fractions — and deliberately nothing more: the
-compiled output is still plain, readable CSS whose custom properties are the theming API.
+state rules, `$half`/`$quarter` for the `--xps-space` fractions, `!default` variables that only
+supply the default *values* of the custom properties — and deliberately nothing more: the compiled
+output is still plain, readable CSS whose custom properties are the theming API.
+
+`src/XpSearch.Widgets/Client`'s build compiles the same sources again for the npm package
+(`themes/*.css`, `styles/base.css`, `styles/widgets/*.css`) and fails if its output does not match
+the committed CSS rule for rule, so the two packages can never ship different rules.
 
 ### The verification page
 

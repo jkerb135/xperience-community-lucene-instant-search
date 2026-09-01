@@ -1,0 +1,26 @@
+/* --------------------------------------------------------------------------
+ * results (shared with loadMore, which renders the same items)
+ * ------------------------------------------------------------------------ */
+
+.xps-result__link {
+  color: var(--xps-color-accent);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.xps-result__snippet {
+  color: var(--xps-color-text);
+}
+
+.xps-result__meta,
+.xps-results__empty {
+  color: var(--xps-color-muted);
+  font-size: 0.875em;
+}
+
+.xps-result__image {
+  border-radius: var(--xps-radius);
+}

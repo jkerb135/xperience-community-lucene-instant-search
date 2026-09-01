@@ -8,6 +8,36 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Added (js):** per-widget subpath exports —
+  `@xperience-community/xperience-search/widgets/<kebab-name>` for each of the twelve widget modules
+  (`clearFilters` ships with `active-filters`), plus `.../widgets` for the barrel. Every subpath
+  resolves for `import` and for `types`; `npm run build` fails if a target in the `exports` map is
+  missing from the tarball.
+
+- **Added (js):** explicit widget registration for bundler consumers.
+  `mountAll(root, { widgets })` takes the widget factories a page bundled, and `bootstrap.ts` no
+  longer imports the widget implementations, so importing `createSearch` plus one widget no longer
+  drags in all thirteen (a bundler pass in `npm run package:check` asserts it: 15.9 KB instead of
+  45.4 KB for `createSearch` + `searchBox`). `registerWidgetType` still overrides a widget of the
+  same name. **The UMD bundle is unchanged** — it registers all first-party widgets on load and
+  auto-mounts as before, so the `<xps-search-assets />` path is unaffected. `getWidgetType(id)` now
+  answers only for what was registered, which under the UMD bundle is still every built-in.
+
+- **Added (js, themes):** the SCSS sources ship in the package. `scss/shell`, `scss/default`,
+  `scss/base` and `scss/widgets/<kebab-name>` are exports, so a page can `@use` the base once and
+  then only the widgets it mounted, and `@use … with (…)` sets the default values of the `--xps-*`
+  custom properties at build time. The custom properties themselves are emitted under the same
+  names, so runtime theming is unchanged. For pipelines without sass the same layer ships compiled
+  as `styles/base.css` and `styles/widgets/<kebab-name>.css`. `themes/shell.css` and
+  `themes/default.css` keep their paths and their rules — the build fails if they stop matching the
+  CSS the NuGet package serves.
+
+- **Added (docs):** [JavaScript bundler setup](docs/guides/javascript-bundler-setup.md) — npm-first
+  install, Vite example, SCSS configuration, Page Builder mounts from a bundle, and the version
+  pairing table (the npm package version must match the installed `XperienceCommunity.Search.Core`).
+  The tag helper is now documented as the quick start for a site with no build pipeline, with the
+  rule that one page runs one runtime, never both.
+
 - **Fixed (admin):** in the rule builder's action side panel, **Add row** in the attribute + value
   editor did nothing, and picking an attribute erased the row again (Filter results, and the
   "matching" variant of Boost and Bury). The panel kept its rows only as the stored

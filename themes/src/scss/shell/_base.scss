@@ -1,0 +1,176 @@
+@use '../variables' as v;
+
+/* xperience-search — shell.css
+ * Generated from themes/src/scss/shell.scss — run `npm run build` in themes/, do not edit by hand.
+ * Structure only: layout, spacing rhythm, focus rings, screen-reader utilities, skeletons.
+ * No colours beyond currentColor, no fonts, no borders. A site with its own design system
+ * loads this file and nothing else. Every selector is scoped to an xps- token so nothing
+ * in the stylesheet can reach the host page.
+ * Markup contract: themes/MARKUP.md
+ */
+
+/* --------------------------------------------------------------------------
+ * Scoped reset
+ * ------------------------------------------------------------------------ */
+
+.xps {
+  /* The one structural variable. default.css re-declares it with the same value;
+     a site using shell alone still gets a spacing rhythm. */
+  --xps-space: #{v.$space};
+}
+
+.xps,
+.xps *,
+.xps *::before,
+.xps *::after {
+  box-sizing: border-box;
+}
+
+/* Widgets toggle optional parts with the `hidden` attribute; the display rules
+   below would otherwise win over the UA default. */
+.xps [hidden] {
+  display: none !important;
+}
+
+.xps ul,
+.xps ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.xps h3,
+.xps p {
+  margin: 0;
+}
+
+.xps input,
+.xps button,
+.xps select,
+.xps textarea {
+  font: inherit;
+  color: inherit;
+}
+
+.xps button {
+  cursor: pointer;
+}
+
+.xps :disabled,
+.xps [aria-disabled="true"] {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.xps img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* --------------------------------------------------------------------------
+ * Focus. Never removed, only replaced — the ring is drawn in the inherited
+ * text colour so it is visible on any host background.
+ * ------------------------------------------------------------------------ */
+
+.xps:focus-visible,
+.xps :focus-visible {
+  outline: v.$focus-width solid currentColor;
+  outline-offset: v.$focus-offset;
+}
+
+/* --------------------------------------------------------------------------
+ * Utilities (documented for custom widgets, spec 5.7)
+ * ------------------------------------------------------------------------ */
+
+.xps-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Vertical rhythm: children separated by one --xps-space. */
+.xps-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--xps-space);
+}
+
+/* Horizontal rhythm: inline row that wraps. */
+.xps-cluster {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--xps-space);
+}
+
+.xps-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: v.$half;
+  min-height: v.$control-min-height;
+  padding: v.$half var(--xps-space);
+}
+
+.xps-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: v.$half;
+  padding: v.$quarter v.$half;
+}
+
+.xps-chip__label {
+  display: inline-flex;
+  gap: v.$quarter;
+}
+
+.xps-chip__remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  line-height: 1;
+}
+
+.xps-skeleton {
+  display: block;
+  width: 100%;
+  height: 1em;
+  background-color: currentColor;
+  opacity: 0.12;
+  animation: xps-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.xps-skeleton--title {
+  height: 1.4em;
+  width: 60%;
+}
+
+.xps-skeleton--text {
+  height: 0.9em;
+}
+
+.xps-skeleton--block {
+  height: 6rem;
+}
+
+@keyframes xps-skeleton-pulse {
+  50% {
+    opacity: 0.05;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .xps-skeleton {
+    animation: none;
+  }
+}

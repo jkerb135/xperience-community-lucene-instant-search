@@ -1,0 +1,24 @@
+@use '../variables' as v;
+
+/* --------------------------------------------------------------------------
+ * sortSelect
+ *
+ * The shared labelled-select block. Available to custom widgets; sortSelect uses it too, so
+ * there is one themed <select> in the product rather than one per widget.
+ * ------------------------------------------------------------------------ */
+
+.xps-select {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: v.$half;
+}
+
+.xps-select__control {
+  min-height: v.$control-min-height;
+  padding: v.$quarter v.$half;
+}
+
+.xps-select--disabled {
+  opacity: 0.6;
+}

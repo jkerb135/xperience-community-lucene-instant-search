@@ -1,0 +1,59 @@
+@use '../variables' as v;
+
+/* --------------------------------------------------------------------------
+ * results (the list rules are shared with loadMore, which renders the same items)
+ * ------------------------------------------------------------------------ */
+
+.xps-results,
+.xps-load-more {
+  display: flex;
+  flex-direction: column;
+  gap: var(--xps-space);
+}
+
+.xps-results__list,
+.xps-load-more__list {
+  display: flex;
+  flex-direction: column;
+  gap: v.$double;
+}
+
+.xps-results__empty {
+  display: flex;
+  flex-direction: column;
+  gap: v.$half;
+}
+
+.xps-result {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--xps-space);
+}
+
+.xps-result__media {
+  flex: 0 0 auto;
+  width: 6rem;
+}
+
+.xps-result__image {
+  display: block;
+}
+
+.xps-result__body {
+  display: flex;
+  flex-direction: column;
+  gap: v.$half;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.xps-result__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--xps-space);
+}
+
+.xps-result--skeleton .xps-result__body {
+  gap: v.$half;
+  width: 100%;
+}

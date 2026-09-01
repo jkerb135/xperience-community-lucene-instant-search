@@ -65,6 +65,12 @@ registering themselves as an import side effect that `"sideEffects": false` allo
 `registerWidgetType('hits', …)` therefore still overrides a built-in, and the dotted-namespace rule
 for third-party identifiers is unchanged.
 
+> **Amended by PK-1 (npm-first packaging).** The fallback table cost the main entry every widget, so
+> `bootstrap.ts` no longer imports it: the UMD bundle registers `DEFAULT_WIDGETS` on load (unchanged
+> behaviour for the tag-helper path), and an ESM consumer passes the widgets it bundled as
+> `mountAll(root, { widgets })`. Resolution order — registry first, then the caller's map — and the
+> namespace rule are the same; only the source of the built-ins moved out of the shared module.
+
 ## Consequences
 
 - Custom templates are ordinary functions returning `TemplateResult | string | number | array`, with

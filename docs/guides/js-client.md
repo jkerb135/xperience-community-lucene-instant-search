@@ -11,6 +11,12 @@ shared parent and no order requirement.
 > `results`, `facetList`, `categoryTree`, `pagination`, `resultStats`, `sortSelect`,
 > `clearFilters`, `activeFilters`, `toggleFilter`, `rangeFilter`, `loadMore`, `suggestions`.
 
+> **Installing it:** the recommended setup is npm plus your own bundler — see
+> [JavaScript bundler setup](javascript-bundler-setup.md) for install, subpath imports, SCSS and
+> the version-pairing rule. The `<xps-search-assets />` tag helper and the prebuilt UMD bundle
+> shown below are the quick start for a site with no build pipeline. A page uses one or the other,
+> never both.
+
 ### A working search page
 
 ```html
@@ -54,7 +60,7 @@ const myResults = xpsearch.withResults(({ items, sendEvent, params }) => {
 });
 ```
 
-The same thing through a bundler:
+The same thing through a bundler ([full guide](javascript-bundler-setup.md)):
 
 ```js
 import createSearch, { searchBox, results } from '@xperience-community/xperience-search';
@@ -69,9 +75,13 @@ search.start();
 
 `dist/xpsearch.umd.js` defines the global `xpsearch`: the factory function itself, with every named
 export, every widget and every behaviour hanging off it (`xpsearch.createSearch`, `xpsearch.searchBox`,
-`xpsearch.html`, `xpsearch.withResults`, `xpsearch.registerWidgetType`, `xpsearch.QUERY_ROUTE`, …). The
-ESM build is `dist/xpsearch.mjs` plus `dist/behaviors.mjs`, and the package `exports` map points `.` and
-`./behaviors` at them, with TypeScript declarations for both.
+`xpsearch.html`, `xpsearch.withResults`, `xpsearch.registerWidgetType`, `xpsearch.QUERY_ROUTE`, …). It is
+also the only build that registers all thirteen widgets for the `.xps-mount` bootstrap by itself; an ESM
+consumer passes the ones it bundled to `mountAll(root, { widgets })`.
+
+The ESM build is `dist/xpsearch.mjs`, `dist/behaviors.mjs` and one module per widget, reachable through
+the `exports` map as `.`, `./behaviors`, `./widgets` and `./widgets/<kebab-name>`, with TypeScript
+declarations for every entry — see [JavaScript bundler setup](javascript-bundler-setup.md).
 
 ### Options
 

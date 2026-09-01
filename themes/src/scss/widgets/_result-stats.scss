@@ -1,0 +1,4 @@
+// result-stats: structure + theme for this widget alone. Load a base partial (or themes/shell.css)
+// once per page as well — these files carry no reset and no design tokens.
+@use '../shell/result-stats' as structure-result-stats;
+@use '../default/result-stats' as theme-result-stats;

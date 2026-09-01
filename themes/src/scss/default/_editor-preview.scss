@@ -1,0 +1,14 @@
+/* --------------------------------------------------------------------------
+ * Page Builder editor preview
+ * ------------------------------------------------------------------------ */
+
+.xps-editor-preview {
+  border: 1px dashed var(--xps-color-border);
+  border-radius: var(--xps-radius);
+}
+
+.xps-editor-preview__badge,
+.xps-editor-preview__note {
+  color: var(--xps-color-muted);
+  font-size: 0.875em;
+}

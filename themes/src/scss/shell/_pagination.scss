@@ -1,0 +1,27 @@
+@use '../variables' as v;
+
+/* --------------------------------------------------------------------------
+ * pagination
+ * ------------------------------------------------------------------------ */
+
+.xps-pagination__list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: v.$half;
+}
+
+.xps-pagination__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: v.$control-min-height;
+  min-height: v.$control-min-height;
+  padding: 0 v.$half;
+}
+
+.xps-pagination__ellipsis {
+  display: inline-flex;
+  justify-content: center;
+  min-width: 1.5rem;
+}

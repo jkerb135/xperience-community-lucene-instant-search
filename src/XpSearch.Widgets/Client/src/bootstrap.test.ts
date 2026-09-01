@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { mountAll, readMountConfig, registerWidgetType } from './bootstrap';
-import type { MountConfig } from './bootstrap';
+import { getWidgetType, mountAll, readMountConfig, registerWidgetType } from './bootstrap';
+import type { MountConfig, MountWidgetFactory } from './bootstrap';
 import { withFacetList } from './behaviors/facetList';
 import { API_VERSION_HEADER } from './contract/constants';
 import type { SearchRequest, SearchResponse } from './contract/generated';
@@ -237,6 +237,46 @@ describe('mountAll (spec 7.1)', () => {
     });
     started.push(...mountAll());
     expect(mountAll()).toEqual([]);
+  });
+});
+
+describe('explicit widget registration (PK-1: no implicit built-ins outside the UMD bundle)', () => {
+  const mount = (type: string): HTMLElement => {
+    const element = document.createElement('div');
+    element.className = 'xps-mount';
+    element.dataset['xpsWidget'] = type;
+    element.dataset['xpsInstanceConfig'] = '{"index":"site-content"}';
+    element.dataset['xpsConfig'] = '{}';
+    document.body.append(element);
+    return element;
+  };
+
+  const stub = (text: string): MountWidgetFactory => (config) => ({
+    render: () => {
+      (config['container'] as HTMLElement).textContent = text;
+    },
+  });
+
+  it('does not resolve a first-party name the consumer never passed in', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mount('results');
+    expect(getWidgetType('results')).toBeUndefined();
+    started.push(...mountAll());
+    expect(consoleError.mock.calls[0]?.[0]).toMatch(/unknown widget type "results"/);
+  });
+
+  it('mounts the widgets passed as mountAll(root, { widgets })', async () => {
+    const element = mount('results');
+    started.push(...mountAll(document, { widgets: { results: stub('from the option') } }));
+    await vi.waitFor(() => expect(element.textContent).toBe('from the option'));
+  });
+
+  it('lets registerWidgetType override a widget of the same name', async () => {
+    registerWidgetType('results', stub('from the registry'));
+    const element = mount('results');
+    started.push(...mountAll(document, { widgets: { results: stub('from the option') } }));
+    await vi.waitFor(() => expect(element.textContent).toBe('from the registry'));
+    expect(getWidgetType('results')).toBeTypeOf('function');
   });
 });
 

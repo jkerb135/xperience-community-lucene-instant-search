@@ -1,0 +1,22 @@
+// Build-time knobs for the visual layer:
+//
+//   @use "@xperience-community/xperience-search/scss/default" with ($color-accent: #b8005c);
+//
+// Each one only supplies the DEFAULT value of the custom property of the same name. The
+// --xps-* properties are still emitted, so overriding them in a plain stylesheet at runtime
+// (the tag-helper path) works exactly as before — with no build step and no sass.
+$color-accent: #0b5fff !default;
+$color-text: #111 !default;
+$color-muted: #666 !default;
+$color-surface: #fff !default;
+$color-border: #e2e2e2 !default;
+$radius: 6px !default;
+$space: 0.75rem !default;
+$font: inherit !default;
+
+// Opt-in dark mode (data-xps-theme="auto"); values only, no new rules.
+$dark-color-accent: #6f9dff !default;
+$dark-color-text: #f2f2f2 !default;
+$dark-color-muted: #a9a9a9 !default;
+$dark-color-surface: #16181d !default;
+$dark-color-border: #33363d !default;

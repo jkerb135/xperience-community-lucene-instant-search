@@ -1,0 +1,108 @@
+@use '../theme-variables' as t;
+
+/* xperience-search — default.css
+ * Generated from themes/src/scss/default.scss — run `npm run build` in themes/, do not edit by hand.
+ * The opt-in visual theme. Load it after shell.css. Every visual value in this file goes
+ * through one of the custom properties below, so a site re-skins the whole widget set by
+ * overriding variables in its own stylesheet — no build step, no fork.
+ *
+ *   .xps { --xps-color-accent: #b8005c; --xps-radius: 0; }
+ *
+ * Colour literals appear only in the variable blocks. `themes/scripts/check.mjs` enforces that.
+ */
+
+.xps {
+  --xps-color-accent: #{t.$color-accent};
+  --xps-color-text: #{t.$color-text};
+  --xps-color-muted: #{t.$color-muted};
+  --xps-color-surface: #{t.$color-surface};
+  --xps-color-border: #{t.$color-border};
+  --xps-radius: #{t.$radius};
+  --xps-space: #{t.$space};
+  --xps-font: #{t.$font};
+
+  font-family: var(--xps-font);
+  color: var(--xps-color-text);
+}
+
+/* Opt-in dark mode: add data-xps-theme="auto" to the same element that carries `xps`.
+   It is opt-in because the widgets sit inside a host page whose background this file does not
+   control — following the OS unasked would put light text on a site that stayed light.
+   Only variable values change here: no new rules, no new selectors. */
+@media (prefers-color-scheme: dark) {
+  .xps[data-xps-theme="auto"] {
+    --xps-color-accent: #{t.$dark-color-accent};
+    --xps-color-text: #{t.$dark-color-text};
+    --xps-color-muted: #{t.$dark-color-muted};
+    --xps-color-surface: #{t.$dark-color-surface};
+    --xps-color-border: #{t.$dark-color-border};
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * Shared primitives
+ * ------------------------------------------------------------------------ */
+
+.xps a {
+  color: var(--xps-color-accent);
+}
+
+.xps :focus-visible {
+  outline-color: var(--xps-color-accent);
+}
+
+.xps-highlight {
+  background-color: color-mix(in srgb, var(--xps-color-accent) 18%, transparent);
+  color: inherit;
+  border-radius: calc(var(--xps-radius) / 3);
+}
+
+.xps-skeleton {
+  color: var(--xps-color-muted);
+  border-radius: calc(var(--xps-radius) / 2);
+}
+
+.xps-button {
+  background-color: var(--xps-color-surface);
+  color: var(--xps-color-text);
+  border: 1px solid var(--xps-color-border);
+  border-radius: var(--xps-radius);
+
+  &:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--xps-color-accent) 8%, var(--xps-color-surface));
+    border-color: color-mix(in srgb, var(--xps-color-accent) 40%, var(--xps-color-border));
+  }
+}
+
+.xps-button--primary {
+  background-color: var(--xps-color-accent);
+  border-color: var(--xps-color-accent);
+  color: var(--xps-color-surface);
+
+  &:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--xps-color-text) 15%, var(--xps-color-accent));
+    border-color: color-mix(in srgb, var(--xps-color-text) 15%, var(--xps-color-accent));
+  }
+}
+
+.xps-chip {
+  background-color: color-mix(in srgb, var(--xps-color-accent) 8%, var(--xps-color-surface));
+  border: 1px solid color-mix(in srgb, var(--xps-color-accent) 30%, var(--xps-color-border));
+  border-radius: var(--xps-radius);
+}
+
+.xps-chip__attribute {
+  color: var(--xps-color-muted);
+}
+
+.xps-chip__remove {
+  background-color: transparent;
+  border: 0;
+  border-radius: var(--xps-radius);
+  color: var(--xps-color-muted);
+
+  &:hover {
+    color: var(--xps-color-text);
+    background-color: color-mix(in srgb, var(--xps-color-accent) 15%, transparent);
+  }
+}

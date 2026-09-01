@@ -1,0 +1,37 @@
+/* --------------------------------------------------------------------------
+ * suggestions
+ * ------------------------------------------------------------------------ */
+
+.xps-suggestions__panel {
+  background-color: var(--xps-color-surface);
+  border: 1px solid var(--xps-color-border);
+  border-radius: var(--xps-radius);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--xps-color-text) 15%, transparent);
+}
+
+.xps-suggestions__group-title {
+  color: var(--xps-color-muted);
+  font-size: 0.75em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.xps-suggestions__option--active,
+.xps-suggestions__option:hover {
+  background-color: color-mix(in srgb, var(--xps-color-accent) 10%, transparent);
+}
+
+.xps-suggestions__option-meta,
+.xps-suggestions__empty {
+  color: var(--xps-color-muted);
+  font-size: 0.875em;
+}
+
+.xps-suggestions__footer {
+  border-top: 1px solid var(--xps-color-border);
+}
+
+.xps-suggestions__see-all {
+  color: var(--xps-color-accent);
+}

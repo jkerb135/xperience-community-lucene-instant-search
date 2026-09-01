@@ -1,0 +1,51 @@
+@use '../variables' as v;
+
+/* --------------------------------------------------------------------------
+ * suggestions — combobox with a listbox popup
+ * https://www.w3.org/WAI/ARIA/apg/patterns/combobox/
+ * ------------------------------------------------------------------------ */
+
+.xps-suggestions {
+  position: relative;
+  display: block;
+}
+
+.xps-suggestions__field {
+  display: flex;
+  align-items: center;
+  gap: v.$half;
+}
+
+.xps-suggestions__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: v.$control-min-height;
+  padding: v.$half;
+}
+
+.xps-suggestions__panel {
+  position: absolute;
+  inset-inline: 0;
+  top: 100%;
+  z-index: 20;
+  max-height: 60vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.xps-suggestions__group-title {
+  padding: v.$half var(--xps-space);
+}
+
+.xps-suggestions__option {
+  display: flex;
+  flex-direction: column;
+  gap: v.$quarter;
+  padding: v.$half var(--xps-space);
+  cursor: pointer;
+}
+
+.xps-suggestions__empty,
+.xps-suggestions__footer {
+  padding: v.$half var(--xps-space);
+}

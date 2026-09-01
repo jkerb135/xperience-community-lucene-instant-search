@@ -17,6 +17,7 @@ export {
   registerWidgetType,
 } from './bootstrap';
 export type {
+  MountAllOptions,
   MountConfig,
   MountConfigOf,
   MountConfigSpec,

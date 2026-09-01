@@ -1,0 +1,10 @@
+// .xps-result-stats itself is muted by the shared rule in _pagination.scss.
+@use 'pagination';
+
+/* --------------------------------------------------------------------------
+ * resultStats
+ * ------------------------------------------------------------------------ */
+
+.xps-result-stats__time {
+  color: var(--xps-color-muted);
+}

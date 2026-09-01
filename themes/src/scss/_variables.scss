@@ -1,0 +1,18 @@
+// Build-time knobs for the structural layer:
+//
+//   @use "@xperience-community/xperience-search/scss/shell" with ($space: 1rem);
+//
+// They only feed the *default* values of the --xps-* custom properties and the handful of fixed
+// lengths in the structural rules. The custom properties keep their names whatever these are set
+// to — they are the runtime theming contract and the tag-helper path's only override surface.
+$space: 0.75rem !default;
+$control-min-height: 2.25rem !default;
+$focus-width: 2px !default;
+$focus-offset: 2px !default;
+
+// Fractions of the one structural variable. These compile to the literal calc() they name —
+// the shipped CSS still reads calc(var(--xps-space) / 2), so overriding --xps-space at runtime
+// keeps working.
+$half: calc(var(--xps-space) / 2);
+$quarter: calc(var(--xps-space) / 4);
+$double: calc(var(--xps-space) * 2);

@@ -1,0 +1,5 @@
+// The rules every page needs, both layers: the scoped reset, focus ring, utilities and skeletons
+// from shell, plus the design tokens and shared primitives from default. Load this once and then
+// only the widget partials you mounted. Compiled for non-sass pipelines as styles/base.css.
+@use 'shell/base' as structure;
+@use 'default/base' as theme;

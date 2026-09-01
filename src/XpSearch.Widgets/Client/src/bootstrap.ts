@@ -12,10 +12,15 @@
  * The group's `data-xps-instance-config` objects are merged, so an option only one widget knows -
  * the Page Builder results widget's page size and fields - applies wherever the editor placed it.
  * Nothing here throws: a misconfigured mount is a console error and a skipped widget.
+ *
+ * This module deliberately imports no widget implementation: the UMD bundle registers all
+ * first-party widgets for the no-build path, while an ESM consumer passes the ones it wants as
+ * `mountAll(root, { widgets })` or registers them with `registerWidgetType`. That is what keeps
+ * `import { createSearch } from '@xperience-community/xperience-search'` from dragging in all
+ * thirteen renderers.
  */
 import { createSearch } from './instance';
 import type { SearchInstance, Widget, XpSearchOptions } from './types';
-import { DEFAULT_WIDGETS } from './widgets';
 
 /** Config from `data-xps-config`, plus the mount element the widget renders into. */
 export type MountConfig = Record<string, unknown> & { container: HTMLElement };
@@ -136,19 +141,44 @@ export function registerWidgetType(id: string, factory: MountWidgetFactory): voi
   registry.set(id, factory);
 }
 
-/** The factory that `id` resolves to — a registered one, or the built-in of that name. */
+/**
+ * The factory `id` currently resolves to, or `undefined` if nothing registered it.
+ * The UMD bundle registers every first-party widget on load, so under a `<script>` tag this
+ * answers for the built-ins too.
+ */
 export function getWidgetType(id: string): MountWidgetFactory | undefined {
-  return registry.get(id) ?? DEFAULT_WIDGETS[id];
+  return registry.get(id);
 }
 
 const MOUNTED = 'xpsMounted';
+
+/** Options for one {@link mountAll} pass. */
+export interface MountAllOptions {
+  /**
+   * Widget factories this pass may resolve `data-xps-widget` to, keyed by type identifier —
+   * how an ESM consumer says which widgets it bundled:
+   *
+   * ```ts
+   * import { mountAll } from '@xperience-community/xperience-search';
+   * import { searchBox, results } from '@xperience-community/xperience-search/widgets';
+   * mountAll(document, { widgets: { searchBox, results } });
+   * ```
+   *
+   * A factory passed to {@link registerWidgetType} wins over one of the same name here, so an
+   * override registered by page code still beats the map the bootstrap was handed.
+   */
+  widgets?: Record<string, MountWidgetFactory>;
+}
 
 /**
  * Scans `root` for `.xps-mount` elements and starts one search instance per
  * `data-xps-instance` group. Already-mounted elements are skipped, so calling it again after
  * inserting markup mounts only what is new.
  */
-export function mountAll(root: ParentNode | undefined = globalThis.document): SearchInstance[] {
+export function mountAll(
+  root: ParentNode | undefined = globalThis.document,
+  mountOptions: MountAllOptions = {}
+): SearchInstance[] {
   if (!root) return [];
   const groups = new Map<string, HTMLElement[]>();
   for (const element of root.querySelectorAll<HTMLElement>('.xps-mount')) {
@@ -165,7 +195,7 @@ export function mountAll(root: ParentNode | undefined = globalThis.document): Se
     if (!options) continue;
     const widgets: Widget[] = [];
     for (const element of elements) {
-      const widget = buildWidget(element);
+      const widget = buildWidget(element, mountOptions.widgets);
       if (widget) {
         widgets.push(widget);
         element.dataset[MOUNTED] = 'true';
@@ -214,18 +244,21 @@ function readInstanceOptions(id: string, elements: HTMLElement[]): XpSearchOptio
   return undefined;
 }
 
-function buildWidget(element: HTMLElement): Widget | undefined {
+function buildWidget(
+  element: HTMLElement,
+  provided: Record<string, MountWidgetFactory> | undefined
+): Widget | undefined {
   const type = element.dataset['xpsWidget'];
   if (!type) {
     console.error('[xpsearch] .xps-mount element without data-xps-widget; skipping.', element);
     return undefined;
   }
-  // A registered factory wins over the built-in of the same name, which is what makes
-  // `registerWidgetType('results', …)` a supported override rather than a collision.
-  const factory = registry.get(type) ?? DEFAULT_WIDGETS[type];
+  // A registered factory wins over the one of the same name passed to mountAll, which is what
+  // makes `registerWidgetType('results', …)` a supported override rather than a collision.
+  const factory = registry.get(type) ?? provided?.[type];
   if (!factory) {
     console.error(
-      `[xpsearch] unknown widget type "${type}"; skipping. Register it with registerWidgetType("${type}", factory) before the bootstrap runs.`,
+      `[xpsearch] unknown widget type "${type}"; skipping. Register it with registerWidgetType("${type}", factory), or pass it as mountAll(root, { widgets: { "${type}": factory } }).`,
       element
     );
     return undefined;

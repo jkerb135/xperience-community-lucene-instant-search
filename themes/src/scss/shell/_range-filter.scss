@@ -1,0 +1,35 @@
+@use '../variables' as v;
+
+/* --------------------------------------------------------------------------
+ * rangeSlider
+ * ------------------------------------------------------------------------ */
+
+.xps-range-filter {
+  display: flex;
+  flex-direction: column;
+  gap: v.$half;
+}
+
+.xps-range-filter__track {
+  display: flex;
+  flex-direction: column;
+  gap: v.$quarter;
+}
+
+.xps-range-filter__range {
+  width: 100%;
+  margin: 0;
+}
+
+.xps-range-filter__inputs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: v.$half;
+}
+
+.xps-range-filter__input {
+  width: 6rem;
+  min-height: v.$control-min-height;
+  padding: v.$quarter v.$half;
+}
