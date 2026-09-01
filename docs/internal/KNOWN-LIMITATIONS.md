@@ -789,6 +789,24 @@ and how to lift it.
   (the tag exists before anything is tagged with it), which means a second source behind
   `GetAttributeValues` keyed on the field kind.
 
+## Action reorder has no touch drag, in `XpSearch.Admin/Client/src/rule-builder/ActionRow.tsx`
+
+- **Simplified:** the pointer half of the reorder is the browser's own HTML5 drag events
+  (`dragstart` on the grip, `dragover`/`drop` on the row wrapper), with no dependency and no pointer
+  fallback. The keyboard half is hand-rolled in `reorder.ts` to the WAI-ARIA drag pattern and is the
+  only path that does not need a drag: space or enter lifts, the arrows move, escape cancels.
+- **Ceiling:** most touch browsers never raise the drag events for a finger, so on a tablet without a
+  keyboard the actions cannot be reordered at all — the grip looks draggable and does nothing.
+  Deleting and re-adding an action in the wanted order is the only way round it. A second, smaller
+  gap: a lifted row stays lifted if focus leaves the grip (clicking elsewhere on the page), because
+  the grip has no blur handler — the rows re-render under a keyboard move, so a blur handler would
+  drop the row mid-move. Focus back on the grip and escape or space still resolves it.
+- **Upgrade path:** add a pointer-events path beside the drag one — `pointerdown` on the grip with
+  `setPointerCapture`, `pointermove` picking the gap from the row rectangles (the same arithmetic
+  `landing` already does), `pointerup` dropping — and `touch-action: none` on the grip. That covers
+  touch and mouse in one handler and lets the HTML5 drag events go. For the stuck lift, track whether
+  focus went to *another* grip before treating a blur as a drop.
+
 ## The item picker reads the index one id at a time, in `XpSearch.Core/Search/IndexDocumentLookup.cs`
 
 - **Simplified:** resolving the ids a rule's actions name is one `TermQuery` per id inside one

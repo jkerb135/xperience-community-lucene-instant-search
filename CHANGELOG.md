@@ -8,11 +8,17 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Changed (admin):** an action row is reordered by dragging its **grip** — the six dots at its left
+  edge — instead of the **Move up** / **Move down** buttons, which are gone. The grip is not
+  mouse-only: `Space` or `Enter` lifts the row, `↑`/`↓` move it, `Space`/`Enter` drop it and `Esc`
+  puts it back, with every step announced through a live region and focus staying on the grip. Touch
+  reorder is not supported — the browser drag events most touch browsers do not raise are what the
+  pointer path is built on. Nothing about the storage changed.
+
 - **Changed (admin):** a rule's actions are edited in a side panel, and its items and attribute
   values are picked instead of typed. Each action is a numbered read-only row — `1 · Pin an item ·
-  Pin Hario Skerton Plus to position 1` — with **Edit**, **Move up**, **Move down** and **Remove**;
-  the move buttons name the action and its position, because the order is behaviour (rewrites chain,
-  custom data merges in order). **Add action** keeps the same ten-type menu and opens the panel on a
+  Pin Hario Skerton Plus to position 1` — with a reorder grip, **Edit** and **Remove**; the order is
+  behaviour (rewrites chain, custom data merges in order). **Add action** keeps the same ten-type menu and opens the panel on a
   blank action of the chosen type; an action discarded before anything is filled in is not added.
   **Pin**, **Hide**, **Boost** and **Bury** get an item picker that searches the index as you stop
   typing (`↑`/`↓` walk the results, `Enter` picks, the stored result id is behind **Details**).

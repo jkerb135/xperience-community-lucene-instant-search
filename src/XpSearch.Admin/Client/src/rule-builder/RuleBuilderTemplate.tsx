@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Button,
   ButtonColor,
@@ -25,7 +25,7 @@ import { usePageCommand } from '@kentico/xperience-admin-base';
 import { muted } from '../theme';
 import { ConditionPanel } from './ConditionPanel';
 import { ActionPanel } from './ActionPanel';
-import { ActionRow } from './ActionRow';
+import { ActionRow, gripId } from './ActionRow';
 import {
   conflicts,
   actionLabels,
@@ -38,6 +38,8 @@ import {
   split,
 } from './model';
 import type { Action, ActionType, ContactGroup, Fragment, Rule, RuleError, SaveResult } from './model';
+import { announce, landing, lift, step } from './reorder';
+import type { Grab } from './reorder';
 import { describe } from './summary';
 import styles from './RuleBuilderTemplate.module.scss';
 
@@ -95,6 +97,25 @@ export const RuleBuilderTemplate = ({ indexName, rule, contactGroups, languages,
   const [errors, setErrors] = useState<RuleError[]>([]);
   const [saving, setSaving] = useState(false);
   const [noticeDismissed, setNoticeDismissed] = useState(false);
+  /** The row lifted by the keyboard grab, and the one held by a pointer drag; never both. */
+  const [grab, setGrab] = useState<Grab | undefined>(undefined);
+  const [dragFrom, setDragFrom] = useState<number | undefined>(undefined);
+  /** Where a drop would land the dragged row: the gap before row `gap`, 0..actions.length. */
+  const [gap, setGap] = useState<number | undefined>(undefined);
+  const [reorderSaid, setReorderSaid] = useState('');
+  /** The grip to put focus back on once the moved rows have re-rendered. */
+  const [refocus, setRefocus] = useState<number | undefined>(undefined);
+
+  // A move re-renders the rows in place, which would leave focus on whatever now sits where the
+  // grabbed row was. Put it back on the row the marketer is still holding.
+  useEffect(() => {
+    if (refocus === undefined) {
+      return;
+    }
+
+    document.getElementById(gripId(refocus))?.focus();
+    setRefocus(undefined);
+  }, [refocus]);
 
   const { execute: save } = usePageCommand<SaveResult, Rule>(Commands.Save, {
     after: (response) => {
@@ -153,6 +174,81 @@ export const RuleBuilderTemplate = ({ indexName, rule, contactGroups, languages,
   const discardAction = () => {
     setActions((current) => current.filter((action, i) => i !== editingAction || !isBlank(action)));
     setEditingAction(undefined);
+  };
+
+  const labelAt = (index: number): string => actionLabels[actions[index].type].label;
+
+  /*
+   * The keyboard grab (WAI-ARIA drag pattern). The list really re-orders on every arrow key rather
+   * than only on the drop, so the screen shows what the live region is saying.
+   */
+  const toggleGrab = (index: number) => {
+    if (grab === undefined) {
+      setGrab(lift(index));
+      setReorderSaid(announce.grabbed(labelAt(index), index, actions.length));
+      return;
+    }
+
+    setReorderSaid(announce.dropped(labelAt(grab.at), grab.at, actions.length));
+    setGrab(undefined);
+    setRefocus(grab.at);
+  };
+
+  const moveGrab = (by: 1 | -1) => {
+    if (grab === undefined) {
+      return;
+    }
+
+    const next = step(grab, by, actions.length);
+
+    if (next.at === grab.at) {
+      return;
+    }
+
+    setActions((current) => move(current, grab.at, next.at));
+    setGrab(next);
+    setReorderSaid(announce.moved(labelAt(grab.at), next.at, actions.length));
+    setRefocus(next.at);
+  };
+
+  const cancelGrab = () => {
+    if (grab === undefined) {
+      return;
+    }
+
+    setActions((current) => move(current, grab.at, grab.from));
+    setGrab(undefined);
+    setReorderSaid(announce.cancelled(labelAt(grab.at), grab.from, actions.length));
+    setRefocus(grab.from);
+  };
+
+  const endDrag = () => {
+    setDragFrom(undefined);
+    setGap(undefined);
+  };
+
+  const dropDragged = () => {
+    if (dragFrom !== undefined && gap !== undefined) {
+      const to = landing(dragFrom, gap);
+
+      setActions((current) => move(current, dragFrom, to));
+      setReorderSaid(announce.dropped(labelAt(dragFrom), to, actions.length));
+    }
+
+    endDrag();
+  };
+
+  /** Which edge of a row shows the insertion line while something is being dragged over it. */
+  const insertionAt = (index: number): 'before' | 'after' | undefined => {
+    if (dragFrom === undefined || gap === undefined || landing(dragFrom, gap) === dragFrom) {
+      return undefined;
+    }
+
+    if (gap === index) {
+      return 'before';
+    }
+
+    return gap === actions.length && index === actions.length - 1 ? 'after' : undefined;
   };
 
   const pageErrors = messagesFor(errors, 'page');
@@ -375,11 +471,23 @@ export const RuleBuilderTemplate = ({ indexName, rule, contactGroups, languages,
                 index={index}
                 count={actions.length}
                 errors={messagesFor(errors, actionField(index))}
+                lifted={grab?.at === index || dragFrom === index}
+                insertion={insertionAt(index)}
                 onEdit={() => setEditingAction(index)}
-                onMove={(by) => setActions((current) => move(current, index, by))}
                 onRemove={() => setActions((current) => current.filter((_, i) => i !== index))}
+                onToggleGrab={() => toggleGrab(index)}
+                onGrabMove={moveGrab}
+                onGrabCancel={cancelGrab}
+                onDragStart={() => setDragFrom(index)}
+                onDragOver={(after) => setGap(after ? index + 1 : index)}
+                onDrop={dropDragged}
+                onDragEnd={endDrag}
               />
             ))}
+
+            <div className={styles.visuallyHidden} role="status" aria-live="polite">
+              {reorderSaid}
+            </div>
 
             <div className={styles.addArea}>
               <DropDownActionMenu
