@@ -190,3 +190,37 @@ sidebar label **Edit index** — old `/tuning/` bookmarks 500.
     and the opt-in toggle on Field weights still flips that row on and off.
 67. Approve a popularity suggestion (Suggestions -> Approve): the rule is created without a
     RuleMigrated NULL error and appears on Rules.
+
+## N. HW-13 host bundle — the sample now ships its own Vite build (added 2026-09-01)
+
+The host no longer emits `<xps-search-assets />`; `src/Search/client/main.ts` imports seven widget
+subpaths from the npm package and hydrates the Page Builder mounts. Rebuild order for this section:
+`npm run build` in `libraries/.../XpSearch.Widgets/Client`, then `npm install && npm run build` in
+`src/`, then `dotnet build CommProjects.sln`, then start. These are the HW-11 §F/§G behaviours
+re-observed under the host bundle.
+
+68. **No second runtime.** View source on `/search`: no `xpsearch.umd.js`, no
+    `/_content/XperienceCommunity.Search.Widgets/xpsearch/*.css`; exactly one
+    `~/dist/search/search.js` (`type="module"`) and one `~/dist/search/search.css`, both 200 in the
+    network panel.
+69. **SSR first paint, then hydration.** `/search?q=coffee` raw HTML still carries
+    `data-xps-server-rendered` with product cards; after hydration the DOM has zero server blocks and
+    one result list (no duplication), and the console is clean — in particular no
+    `[xpsearch] unknown widget type` error, which would mean a `data-xps-widget` the bundle did not
+    import.
+70. **The product card survives the migration.** Hydrated result cards are the Dancing Goat product
+    card (product name as the title, description snippet, `$18.50`-style price meta), identical to
+    the server-rendered first paint — the `registerWidgetType('results', …)` override that used to
+    live in `wwwroot/Scripts/xpsearchResults.js` now runs from the bundle.
+71. **Facets, sort, stats, suggestions, pagination.** Tick a `ProductFieldCategory` facet, change the
+    sort, page forward, type into the search box for the suggestions popup: each re-renders results,
+    updates the "N results" line, and is styled (per-widget SCSS only — an unstyled control means a
+    missing `scss/widgets/<name>` partial).
+72. **URL routing and Back.** Typing writes `?q=…`, a facet click adds its param, Back restores URL +
+    box + results; pasting the URL into a fresh tab reproduces the page server-side (HW-11 item 23).
+73. **Only journaled once.** One search on page load in the query log for a shared result URL (the
+    server `QueryId` is reused by the hydration query), as in HW-11 item 26.
+74. **Adding a widget needs a rebuild.** Optional: place a widget the bundle does not import (e.g.
+    Category tree, or switch Pagination's style to *load more*) → that one mount logs a
+    `console.error` and is skipped while the rest of the page keeps working. Documented in
+    `src/Search/README.md`; revert the page afterwards.

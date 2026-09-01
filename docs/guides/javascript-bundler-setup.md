@@ -70,6 +70,16 @@ With Vite that is the whole configuration — no plugin, no alias. `npm install 
 the SCSS entry; import `@xperience-community/xperience-search/styles/base.css` and
 `.../styles/widgets/results.css` instead if you would rather not.
 
+Two things to know about what a per-widget import carries:
+
+- A widget partial ships the whole rule a shared selector list belongs to, so a grep of your CSS
+  can find another widget's *class name* as a co-selector (e.g. `.xps-load-more` inside the
+  results rules). That widget's own rule sets are still absent — importing only your widgets means
+  none of the others' rules, not zero bytes of their selectors.
+- `.../widgets/results` also exports `defaultResultItem`, the default card as a `templates.item`
+  function — hand your `templates.item` override the hits it does not specialise instead of
+  re-implementing the card. It is exported from the subpath only, not from the root entry.
+
 The full stylesheets are still one import away when you want every widget styled at once:
 
 ```js
