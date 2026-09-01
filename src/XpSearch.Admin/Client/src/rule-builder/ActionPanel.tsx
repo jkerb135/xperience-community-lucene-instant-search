@@ -15,7 +15,7 @@ import { AttributeRows } from './AttributeRows';
 import { ItemPicker } from './ItemPicker';
 import { composeExpression, parseExpression } from './expression';
 import { actionLabels, wrongWith } from './model';
-import type { Action } from './model';
+import type { Action, Filter } from './model';
 import styles from './RuleBuilderTemplate.module.scss';
 
 /*
@@ -49,11 +49,18 @@ const notes: Partial<Record<Action['type'], string>> = {
 export const ActionPanel = ({ editing, index, attributes, errors, onApply, onDiscard }: ActionPanelProps) => {
   const [draft, setDraft] = useState<Action | undefined>(editing);
   const [refused, setRefused] = useState<string[]>([]);
+  /*
+   * The rows being edited live here, not in draft.filterExpression: a blank row - the one Add row
+   * appends, and every row between picking its attribute and picking its value - has no
+   * representation in the expression, so rows read back out of the string would lose it.
+   */
+  const [rows, setRows] = useState<Filter[]>([]);
 
   // The panel edits a copy: Discard and Esc have to leave the row exactly as it was.
   useEffect(() => {
     setDraft(editing === undefined ? undefined : { ...editing });
     setRefused([]);
+    setRows(parseExpression(editing?.filterExpression ?? ''));
   }, [editing]);
 
   const change = (values: Partial<Action>) => setDraft((current) => (current === undefined ? current : { ...current, ...values }));
@@ -81,11 +88,14 @@ export const ActionPanel = ({ editing, index, attributes, errors, onApply, onDis
       />
     );
 
-    const rows = (
+    const attributeRows = (
       <AttributeRows
-        rows={parseExpression(action.filterExpression)}
+        rows={rows}
         attributes={attributes}
-        onChange={(next) => change({ filterExpression: composeExpression(next) })}
+        onChange={(next) => {
+          setRows(next);
+          change({ filterExpression: composeExpression(next) });
+        }}
       />
     );
 
@@ -113,7 +123,7 @@ export const ActionPanel = ({ editing, index, attributes, errors, onApply, onDis
           <>
             {item('Find the item')}
             <p style={muted}>…or bury everything matching:</p>
-            {rows}
+            {attributeRows}
           </>
         );
 
@@ -122,7 +132,7 @@ export const ActionPanel = ({ editing, index, attributes, errors, onApply, onDis
           <>
             {item('Find the item')}
             <p style={muted}>…or boost everything matching:</p>
-            {rows}
+            {attributeRows}
             <div className={styles.fieldSmall}>
               <Input
                 label="Multiplier"
@@ -135,7 +145,7 @@ export const ActionPanel = ({ editing, index, attributes, errors, onApply, onDis
         );
 
       case 'filterResults':
-        return rows;
+        return attributeRows;
 
       case 'removeWord':
         return (

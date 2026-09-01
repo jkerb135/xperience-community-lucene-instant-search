@@ -8,6 +8,13 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Fixed (admin):** in the rule builder's action side panel, **Add row** in the attribute + value
+  editor did nothing, and picking an attribute erased the row again (Filter results, and the
+  "matching" variant of Boost and Bury). The panel kept its rows only as the stored
+  `attribute:value` expression, which by design cannot hold a blank or half-filled row, so every
+  unfinished row was thrown away as it was typed. The panel now keeps the rows it is editing and
+  composes the expression from them. The condition panel's Filters rows were unaffected.
+
 - **Fixed (core, admin):** the `XpSearch.PopularitySignal` scheduled task failed with *Cannot insert
   the value NULL into column 'PopularityIndexEnabled'* the first time it ran for an index. A Kentico
   Info object only writes the fields that were set, so the settings row it creates now sets the
