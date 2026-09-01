@@ -91,3 +91,25 @@ sidebar label **Edit index** — old `/tuning/` bookmarks 500.
     paint, and `uh` stays in the address bar while q/filters/page update around it.
 31. Deep link with page + facet (e.g. ?q=coffee&page=2 plus a facet param) still hydrates fully —
     page 2 preserved, facet applied.
+
+## I. XP-1 experiments (added 2026-09-01)
+32. Startup after rebuild: event log clean; XpSearch_Experiment table exists and the four tuning
+    tables gained their nullable ...ExperimentID columns.
+33. Experiments listing under index tuning (after Analytics): Create (name + split) works; second
+    create for the same index is refused with a message.
+34. Draft: the four variant-B editors open under the experiment route, show the draft banner, and
+    edits there do NOT change live /search results; live tuning pages show no draft rows.
+35. Start: confirmation dialog; after starting, an anonymous browser gets the xpsearch_bucket
+    cookie (Essential level - present WITHOUT accepting tracking) and is sticky across reloads;
+    two different browsers/profiles can land in different variants (split 50).
+36. Variant B actually differs: give B an obvious rule (e.g. pin an item), confirm a B-bucketed
+    browser sees it and an A-bucketed one does not; response cache does not leak across variants.
+37. Report: per-variant searches/zero-result/CTR with visible sample sizes; no winner/significance
+    language anywhere. Query log rows carry experiment + variant.
+38. Query tester: Variant select appears while the experiment is unfinished; B simulation applies
+    the draft rule without a cookie.
+39. Conclude: Promote B - live pages now show B's rows, /search reflects them, draft editors gone
+    read-only/concluded; OR Discard - B rows deleted, live unchanged. (The clone/promote/discard
+    DB round trip is the XP-1a logic that unit tests could not cover - this is its verification.)
+40. Started experiment: variant-B editors are read-only (listings show rows, no actions; direct
+    save/delete attempts refused).
