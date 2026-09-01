@@ -186,6 +186,61 @@ internal sealed class IndexingStrategyTests
         });
     }
 
+    /// <summary>
+    /// IX-1 gap 4: a contributed field the schema does not declare is indexed but never projected,
+    /// so it is warned about - once per field name, whatever the rebuild size.
+    /// </summary>
+    [Test]
+    public async Task ContributeAsync_WarnsOncePerUndeclaredFieldAndNamesTheFix()
+    {
+        var logger = new RecordingLogger();
+        var strategy = Contributing(new XpSearchIndexingOptions(), logger);
+
+        var first = await strategy.MapToLuceneDocumentOrNull(Item(ProductCoffee));
+        await strategy.MapToLuceneDocumentOrNull(Item(ProductCoffee));
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(Values(first!, Name.Name), Is.EqualTo(new[] { "Cortado" }), "the value is still written; only the schema is missing");
+            Assert.That(logger.Warnings, Has.Count.EqualTo(2), "one per field name, not per document");
+            Assert.That(logger.Warnings, Has.Exactly(1).Contains(Name.Name).And.Exactly(1).Contains(Tags.Name));
+            Assert.That(logger.Warnings, Has.All.Contains("AddField"), "the warning has to name the fix");
+        });
+    }
+
+    [Test]
+    public async Task ContributeAsync_IsSilentWhenTheFieldsAreDeclaredWithAddField()
+    {
+        var logger = new RecordingLogger();
+        var options = new XpSearchIndexingOptions()
+            .AddField(ProductCoffee, Name)
+            .AddField(ProductCoffee, Tags);
+
+        await Contributing(options, logger).MapToLuceneDocumentOrNull(Item(ProductCoffee));
+
+        Assert.That(logger.Warnings, Is.Empty);
+    }
+
+    [Test]
+    public async Task ContributeAsync_IsSilentForADetectedFieldItOverwrites()
+    {
+        var logger = new RecordingLogger();
+
+        await new ContributingStrategy(
+                Executor(Container(ProductCoffee, values: [])),
+                Substitute.For<IWebPageUrlRetriever>(),
+                TaxonomyRetriever(),
+                new FlatAncestry(),
+                Fields(ProductCoffee, Name, Tags),
+                Substitute.For<ILuceneIndexAccessor>(),
+                Substitute.For<IIndexSchemaProvider>(),
+                new XpSearchIndexingOptions(),
+                logger)
+            .MapToLuceneDocumentOrNull(Item(ProductCoffee));
+
+        Assert.That(logger.Warnings, Is.Empty, "a detected field is already in the schema");
+    }
+
     [Test]
     public async Task FlattenLinkedItems_IndexesTheLinkedItemsFieldsOnTheParentDocument()
     {
@@ -279,6 +334,19 @@ internal sealed class IndexingStrategyTests
             Assert.That(config.GetDimConfig(Name.Name).IsMultiValued, Is.False, "a field that is not facetable is not a dimension");
         });
     }
+
+    /// <summary>A strategy whose hook contributes <see cref="Name"/> and <see cref="Tags"/>, detecting nothing.</summary>
+    private static XpSearchIndexingStrategy Contributing(XpSearchIndexingOptions options, ILogger<XpSearchIndexingStrategy> logger) =>
+        new ContributingStrategy(
+            Executor(Container(ProductCoffee, values: [])),
+            Substitute.For<IWebPageUrlRetriever>(),
+            TaxonomyRetriever(),
+            new FlatAncestry(),
+            Fields(ProductCoffee),
+            Substitute.For<ILuceneIndexAccessor>(),
+            Substitute.For<IIndexSchemaProvider>(),
+            options,
+            logger);
 
     private static XpSearchIndexingStrategy Strategy(
         IContentQueryDataContainer data,

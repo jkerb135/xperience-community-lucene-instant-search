@@ -360,10 +360,22 @@ in every mode, so a client can group a mixed response without inferring the sour
 (The shipped widgets add their own client-side recent searches under `group: "recent"`; the server
 never sends that value.)
 
-For document suggestions, `text` is the result's `title` — which for Xperience content is the content
-item's *name*, often a slug with a generated suffix (`CoffeePlunger-p2e57tss`). `/suggest` has no
-equivalent of the results widget's `titleAttribute`: read `result.attributes` and render your own
-label if the item name is not what you want a user to see.
+**Set `SuggestField` on every index that serves document suggestions.** It defaults to `title`, which
+for Xperience content is the content item's *name* — on a real site a slug with a generated suffix
+(`CoffeePlunger-p2e57tss`), not something to show a visitor. Point it at a human-readable attribute
+instead:
+
+```csharp
+services.AddXpSearch(o => o.Indexes["ProductIndex"].SuggestField = "ProductFieldName");
+```
+
+The field must be an attribute the index schema reports (a detected field, a flattened one, or one
+declared with `indexing.AddField`), and it is both what the prefix is matched against and what the
+suggestion's `text` carries. Leaving it at the default logs a warning once per index the first time
+that index serves a document suggestion.
+
+`/suggest` has no equivalent of the results widget's `titleAttribute`: `SuggestField` is the setting,
+or read `result.attributes` and render your own label client-side.
 
 ### `POST /api/xpsearch/events`
 

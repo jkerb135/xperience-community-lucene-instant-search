@@ -203,6 +203,104 @@ internal sealed class SchemaDetectionTests
         Expect.ThrowsAsync<IndexNotFoundException>(() => provider.GetSchemaAsync("Nope", CancellationToken.None));
     }
 
+    /// <summary>
+    /// IX-1 gap 4: a field written from the contribution hook is only projected onto results if the
+    /// schema declares it, and <c>AddField</c> is how it is declared.
+    /// </summary>
+    [Test]
+    public async Task AddField_PutsAContributedFieldInTheSchemaOfItsOwnContentTypeOnly()
+    {
+        var summary = new SchemaField("Summary", SearchFieldKind.Text, Searchable: true, Facetable: false, Sortable: false, Retrievable: true);
+        var options = new XpSearchIndexingOptions().AddField(ContentTypeName, summary);
+
+        var detected = FormInfoContentTypeFieldSource.Detect(ClassFormDefinition(), ContentTypeName, options);
+        var provider = new IndexSchemaProvider(
+            new TestSearchIndex(TestCorpus.IndexName, []),
+            new StaticContentTypeSource([ContentTypeName, "DancingGoat.Other"]),
+            new ByTypeFieldSource(new() { [ContentTypeName] = detected }),
+            options);
+
+        var schema = await provider.GetSchemaAsync(TestCorpus.IndexName, CancellationToken.None);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(schema.Find("Summary"), Is.EqualTo(summary));
+            Assert.That(
+                schema.Fields.Select(field => field.Name).ToList().IndexOf("Summary"),
+                Is.GreaterThan(schema.Fields.Select(field => field.Name).ToList().IndexOf("ProductFieldTags")),
+                "contributed fields come after the detected ones, so they can never shadow a real field");
+        });
+    }
+
+    [Test]
+    public async Task AddField_YieldsToADetectedFieldOfTheSameName()
+    {
+        var options = new XpSearchIndexingOptions().AddField(
+            ContentTypeName,
+            new SchemaField("ProductFieldTags", SearchFieldKind.Text, Searchable: true, Facetable: false, Sortable: false, Retrievable: true));
+
+        var detected = FormInfoContentTypeFieldSource.Detect(ClassFormDefinition(), ContentTypeName, options);
+        var provider = new IndexSchemaProvider(
+            new TestSearchIndex(TestCorpus.IndexName, []),
+            new StaticContentTypeSource([ContentTypeName]),
+            new ByTypeFieldSource(new() { [ContentTypeName] = detected }),
+            options);
+
+        var schema = await provider.GetSchemaAsync(TestCorpus.IndexName, CancellationToken.None);
+
+        Assert.That(
+            schema.Find("ProductFieldTags")!.Kind,
+            Is.EqualTo(SearchFieldKind.Taxonomy),
+            "the schema keeps the first definition, which is the detected one");
+    }
+
+    /// <summary>You wrote the definition, so you edit the call - overrides never see it.</summary>
+    [Test]
+    public async Task AddField_IsExemptFromConfigureAndExclude()
+    {
+        var summary = new SchemaField("Summary", SearchFieldKind.Text, Searchable: true, Facetable: false, Sortable: false, Retrievable: true);
+        var options = new XpSearchIndexingOptions()
+            .AddField(ContentTypeName, summary)
+            .Exclude(ContentTypeName, "Summary")
+            .Configure(ContentTypeName, "Summary", field => field with { Boost = 9f });
+
+        var provider = new IndexSchemaProvider(
+            new TestSearchIndex(TestCorpus.IndexName, []),
+            new StaticContentTypeSource([ContentTypeName]),
+            new StaticFieldSource([]),
+            options);
+
+        var schema = await provider.GetSchemaAsync(TestCorpus.IndexName, CancellationToken.None);
+
+        Assert.That(schema.Find("Summary"), Is.EqualTo(summary));
+    }
+
+    [Test]
+    public void AddField_RejectsTheSameFieldNameTwiceOnOneContentType()
+    {
+        var options = new XpSearchIndexingOptions().AddField(
+            ContentTypeName,
+            new SchemaField("Summary", SearchFieldKind.Text, Searchable: true, Facetable: false, Sortable: false, Retrievable: true));
+
+        Expect.Throws<ArgumentException>(() =>
+            _ = options.AddField(
+                ContentTypeName,
+                new SchemaField("summary", SearchFieldKind.Keyword, Searchable: false, Facetable: true, Sortable: false, Retrievable: true)));
+
+        // The same name on another content type is a different registration.
+        options.AddField(
+            "DancingGoat.Other",
+            new SchemaField("Summary", SearchFieldKind.Text, Searchable: true, Facetable: false, Sortable: false, Retrievable: true));
+
+        Assert.That(options.ContributedFieldsOf("DancingGoat.Other"), Has.Exactly(1).Items);
+    }
+
+    private sealed class ByTypeFieldSource(Dictionary<string, IReadOnlyList<SchemaField>> byContentType) : IContentTypeFieldSource
+    {
+        public IReadOnlyList<SchemaField> GetFields(string contentTypeName) =>
+            byContentType.TryGetValue(contentTypeName, out var fields) ? fields : [];
+    }
+
     private sealed class RecordingLogger : ILogger
     {
         public List<string> Warnings { get; } = [];

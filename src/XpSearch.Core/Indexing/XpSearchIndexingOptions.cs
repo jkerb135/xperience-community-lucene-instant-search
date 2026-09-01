@@ -17,6 +17,7 @@ public sealed class XpSearchIndexingOptions
 {
     private readonly List<Func<string, SchemaField, SchemaField?>> overrides = [];
     private readonly List<FlattenedLink> flattened = [];
+    private readonly List<(string ContentTypeName, SchemaField Field)> contributed = [];
 
     /// <summary>Gets the depth <c>WithLinkedItems</c> is configured with when an item is loaded for indexing.</summary>
     /// <remarks>One by default; raised by <see cref="FlattenLinkedItems"/>.</remarks>
@@ -67,6 +68,49 @@ public sealed class XpSearchIndexingOptions
     /// <returns>The registrations, empty when the type flattens nothing.</returns>
     public IReadOnlyList<FlattenedLink> FlattenedLinksOf(string contentTypeName) =>
         [.. flattened.Where(link => string.Equals(link.ContentTypeName, contentTypeName, StringComparison.OrdinalIgnoreCase))];
+
+    /// <summary>
+    /// Declares a field auto-detection cannot know about, so that a value written for it from
+    /// <see cref="XpSearchIndexingStrategy.ContributeAsync"/> is part of the index schema - and
+    /// therefore projected onto results, offered by the ingestion schema endpoint and listed in the
+    /// admin attribute selectors. Declaring the field does not write it: the hook still has to.
+    /// </summary>
+    /// <param name="contentTypeName">Class name of the content type whose documents carry the field.</param>
+    /// <param name="field">The field definition, exactly as the schema should report it.</param>
+    /// <returns>The same instance, for chaining.</returns>
+    /// <remarks>
+    /// A contributed field is NOT subject to <see cref="Configure"/> or <see cref="Exclude"/> - you
+    /// authored the definition, so change this call rather than override it. A contributed field whose
+    /// name the content type itself defines is dropped by the schema, which keeps the detected
+    /// definition. Registering the same content type and field name twice throws.
+    /// </remarks>
+    /// <exception cref="ArgumentException">The same field name is already contributed to that content type.</exception>
+    public XpSearchIndexingOptions AddField(string contentTypeName, SchemaField field)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(contentTypeName);
+        ArgumentNullException.ThrowIfNull(field);
+
+        if (ContributedFieldsOf(contentTypeName).Any(existing => string.Equals(existing.Name, field.Name, StringComparison.OrdinalIgnoreCase)))
+        {
+            throw new ArgumentException(
+                $"Field '{field.Name}' is already contributed to content type '{contentTypeName}'. Register it once.",
+                nameof(field));
+        }
+
+        contributed.Add((contentTypeName, field));
+
+        return this;
+    }
+
+    /// <summary>Gets the fields contributed to one content type, in registration order.</summary>
+    /// <param name="contentTypeName">Class name of the content type being indexed.</param>
+    /// <returns>The contributed fields, empty when the type contributes none.</returns>
+    public IReadOnlyList<SchemaField> ContributedFieldsOf(string contentTypeName) =>
+    [
+        .. contributed
+            .Where(entry => string.Equals(entry.ContentTypeName, contentTypeName, StringComparison.OrdinalIgnoreCase))
+            .Select(entry => entry.Field)
+    ];
 
     /// <summary>Drops a field from the schema, so it is neither indexed nor returned.</summary>
     /// <param name="contentTypeName">Class name of the content type the field belongs to.</param>

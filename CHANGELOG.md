@@ -12,6 +12,22 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Added (core):** `indexing.AddField(contentTypeName, field)` declares a field auto-detection
+  cannot know about, so a value written from `ContributeAsync` is part of the index schema and
+  therefore reaches `result.attributes`, the ingestion schema endpoint and the admin attribute
+  selectors (IX-1). Until now a contributed field landed in the Lucene document and nowhere else —
+  indexed, searchable, and silently never returned — which the indexing guide's own example fell
+  into. Declaring is now half of a documented two-step (declare once at startup, write per document),
+  and writing an undeclared field logs one warning per field name naming the `AddField` call that
+  fixes it. Contributed fields are appended after a content type's detected and flattened fields, so
+  a name clash keeps the detected definition, and they are exempt from `Configure`/`Exclude` — you
+  authored the definition, so you edit the registration. Registering the same content type and field
+  name twice throws at startup.
+- **Added (core):** `/suggest` logs one warning per index when document suggestions are served from
+  an unconfigured `SuggestField` (IX-1). The default, `title`, is the item display name, which on
+  most Kentico sites is the web page item name — a slug with a generated suffix
+  (`CoffeePlunger-p2e57tss`). No smarter default is guessed: the warning names the setting and the
+  guide section, and the quick start and search API guides now say to set it before shipping.
 - **Added (contract, core, widgets, themes):** three additive contract members and the three
   recovery features they carry (SG-1). `Suggestion.group` says where an autocomplete entry came from
   (`"query"`, `"document"`, or `"recent"` for the client-side entries the widgets add themselves —

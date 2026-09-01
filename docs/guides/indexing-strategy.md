@@ -199,15 +199,39 @@ indexing
 and applied in registration order.
 
 Do not change `Name`: it is both the content type field the value is read from and the Lucene field it is
-written to, so renaming it breaks the read. Project a different name in your own code, or add a second
-field from the contribution hook below.
+written to, so renaming it breaks the read. Project a different name in your own code, or declare a second
+field with `AddField` and write it from the contribution hook below.
 
 ### Adding fields of your own
 
-To add fields the detector cannot know about, override `ContributeAsync`. It runs once per document,
-after the item's own fields and after any flattening, with everything the mapping used:
+A field the detector cannot know about — an asset path, a computed summary, anything you assemble
+yourself — takes **two steps**, and both are required:
+
+1. **Declare it once**, at startup, with `indexing.AddField`. The declaration is what puts the field in
+   the index schema, and the schema is what result attributes, the ingestion schema endpoint and the
+   admin attribute selectors are projected from.
+2. **Write its value per document**, in an override of `ContributeAsync`.
+
+Declaring without writing gives you an attribute that is never populated. Writing without declaring is
+worse: the value is in the Lucene index, so it is searchable, but no result ever carries it — which is
+why the library logs a warning naming the missing `AddField` call the first time it happens.
 
 ```csharp
+// Program.cs — step 1: declare.
+builder.Services.AddXpSearch(
+    options => { },
+    indexing => indexing
+        .AddField(
+            "DancingGoat.ArticlePage",
+            new SchemaField("Summary", SearchFieldKind.Text, Searchable: true, Facetable: false, Sortable: false, Retrievable: true))
+        .AddField(
+            "DancingGoat.ProductPage",
+            new SchemaField("ProductImage", SearchFieldKind.Keyword, Searchable: false, Facetable: false, Sortable: false, Retrievable: true)));
+```
+
+```csharp
+// Step 2: write. ContributeAsync runs once per document, after the item's own fields and after any
+// flattening, with everything the mapping used.
 protected override async Task ContributeAsync(
     IndexingContext context,
     Document document,
@@ -223,15 +247,29 @@ protected override async Task ContributeAsync(
         summary,
         cancellationToken);
 
-    // Or straight into the document, when the encoding is yours.
+    // Or straight into the document, when the encoding is yours. Nothing added this way is in the
+    // schema, so it is searchable but never returned — deliberately, for fields only your own
+    // queries look at.
     document.Add(new StringField("Source", "cms", Field.Store.YES));
 }
 ```
+
+`Summary` now comes back in `result.attributes` alongside the detected fields, and `curl`ing
+`/api/xpsearch/query` shows it.
 
 `context.AddFieldAsync(field, value)` takes the raw value as a content query data container returns it —
 including the raw JSON of a taxonomy column, which it converts through the field's registered data type.
 `context.AddTaxonomyAsync(field, tags)` takes `TagReference`s you already hold. Neither duplicates any of
 the mapping code: both are the same calls the base mapping makes.
+
+Two rules about `AddField`:
+
+- **A detected field of the same name wins.** The schema keeps the first definition it sees, and
+  contributed fields are appended after the content type's own and flattened fields, so a contributed
+  field can never shadow a real one — it is silently dropped. Give it a name of its own.
+- **`Configure` and `Exclude` do not apply to it.** They rewrite *detected* fields. You wrote the
+  definition you passed to `AddField`, so edit that call instead. Registering the same content type and
+  field name twice throws at startup.
 
 An item that throws while it is mapped — from your hook or from a field — is logged as an error naming
 the item and the field, and skipped. It never escapes `MapToLuceneDocumentOrNull`, because the Lucene

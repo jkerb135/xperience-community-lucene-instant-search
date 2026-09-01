@@ -19,15 +19,21 @@ public sealed class IndexingContext
     private readonly XpSearchIndexingStrategy strategy;
     private readonly Document document;
 
+    // Names the index schema will report for this item's content type, so that a write of anything
+    // else can be reported instead of silently never reaching the wire.
+    private readonly IReadOnlySet<string> declared;
+
     internal IndexingContext(
         XpSearchIndexingStrategy strategy,
         Document document,
         IIndexEventItemModel item,
         IContentQueryDataContainer data,
-        IReadOnlyList<SchemaField> fields)
+        IReadOnlyList<SchemaField> fields,
+        IReadOnlySet<string> declared)
     {
         this.strategy = strategy;
         this.document = document;
+        this.declared = declared;
 
         Item = item;
         Data = data;
@@ -58,15 +64,33 @@ public sealed class IndexingContext
     /// </param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A task that completes when the value has been written.</returns>
-    /// <remarks>Asynchronous because a taxonomy value has its tag titles resolved before it is written.</remarks>
-    public Task AddFieldAsync(SchemaField field, object? value, CancellationToken cancellationToken) =>
-        strategy.AddValue(document, field, value, LanguageName, cancellationToken);
+    /// <remarks>
+    /// Asynchronous because a taxonomy value has its tag titles resolved before it is written.
+    /// A field the index schema does not declare is still written, but it is logged once as a
+    /// warning: result attributes are projected from the schema, so nothing undeclared reaches the
+    /// wire. Declare it with <see cref="XpSearchIndexingOptions.AddField"/>.
+    /// </remarks>
+    public Task AddFieldAsync(SchemaField field, object? value, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(field);
+
+        strategy.ReportUndeclaredField(Item.ContentTypeName, field.Name, declared);
+
+        return strategy.AddValue(document, field, value, LanguageName, cancellationToken);
+    }
 
     /// <summary>Adds resolved tag references to the document as a facet dimension.</summary>
     /// <param name="field">The taxonomy field to write.</param>
     /// <param name="tags">The tag references.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A task that completes when the tags have been written.</returns>
-    public Task AddTaxonomyAsync(SchemaField field, IEnumerable<TagReference> tags, CancellationToken cancellationToken) =>
-        strategy.AddTags(document, field, tags, LanguageName, cancellationToken);
+    /// <remarks>Warns once about an undeclared field, like <see cref="AddFieldAsync"/>.</remarks>
+    public Task AddTaxonomyAsync(SchemaField field, IEnumerable<TagReference> tags, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(field);
+
+        strategy.ReportUndeclaredField(Item.ContentTypeName, field.Name, declared);
+
+        return strategy.AddTags(document, field, tags, LanguageName, cancellationToken);
+    }
 }

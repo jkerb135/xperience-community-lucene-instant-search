@@ -51,6 +51,9 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
     // One warning per colliding (content type, field) pair, however many documents hit it.
     private readonly HashSet<string> reportedCollisions = new(StringComparer.OrdinalIgnoreCase);
 
+    // Likewise for a contributed field the schema does not declare.
+    private readonly HashSet<string> reportedUndeclared = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Initializes a new instance of the <see cref="XpSearchIndexingStrategy"/> class.</summary>
     /// <param name="executor">Executes the untyped content query that loads the item's field values.</param>
     /// <param name="urlRetriever">Resolves the web page URL stored on the document.</param>
@@ -336,9 +339,40 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
             return null;
         }
 
-        await ContributeAsync(new IndexingContext(this, document, item, data, fields), document, cancellationToken).ConfigureAwait(false);
+        // What the schema will report for this content type: its detected fields, whatever was
+        // flattened onto it, the fields declared with AddField, and the base fields every document
+        // carries. Anything else the hook writes is indexed but never projected.
+        written.UnionWith(options.ContributedFieldsOf(item.ContentTypeName).Select(field => field.Name));
+
+        foreach (var field in IndexSchemaProvider.BaseFields())
+        {
+            written.Add(field.Name);
+            written.Add(field.LuceneName);
+        }
+
+        await ContributeAsync(new IndexingContext(this, document, item, data, fields, written), document, cancellationToken).ConfigureAwait(false);
 
         return document;
+    }
+
+    /// <summary>
+    /// Warns once about a field written from the contribution hook that the index schema does not
+    /// declare: it reaches the Lucene document but no result attribute, because attributes are
+    /// projected from the schema.
+    /// </summary>
+    internal void ReportUndeclaredField(string contentTypeName, string fieldName, IReadOnlySet<string> declared)
+    {
+        if (declared.Contains(fieldName) || !reportedUndeclared.Add(contentTypeName + "." + fieldName))
+        {
+            return;
+        }
+
+        logger.LogWarning(
+            "Field {FieldName} is written to the documents of {ContentType} by a contribution hook but is not part of the index schema, " +
+            "so it is indexed and never returned. Declare it at startup: {Registration}",
+            fieldName,
+            contentTypeName,
+            $"indexing.AddField(\"{contentTypeName}\", new SchemaField(\"{fieldName}\", ...))");
     }
 
     /// <summary>Adds one detected field, reporting the field by name when it is what failed.</summary>
