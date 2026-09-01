@@ -139,7 +139,7 @@ verified live — "There are 2 results without them / Clear filters and show 2 r
 - [ ] 04-01: §10.5 typed clients unit
 - [ ] 04-02: §10.7 example 2 unit
 - [ ] 04-03: §12 performance unit
-- [ ] 04-04: SG-1 mixed suggestion sources + recent searches (spec to write; contract change)
+- [x] 04-04: SG-1 mixed suggestion sources + recent searches — merged b2d5234 (2026-09-01); checklist §S 95–100 = owner browser items
 - [ ] 04-05: IX-1 AddField indexing API + suggest-field default/docs (spec to write)
 
 ### Phase 5: Packaging & release (spec Phase 8)
