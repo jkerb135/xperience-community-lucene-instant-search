@@ -884,22 +884,44 @@ and how to lift it.
   arrives with routing enabled. Either is a contract change to shareable URLs, so it waits for a
   project that actually places two searches on a page.
 
-## The first search of a page load is journaled twice, in `ServerRenderedResults.RenderAsync`
+## The first-load journal handoff is per application instance, in `SearchRequestJournal.Record`
 
-- **Simplified:** the results widget runs the visitor's initial search server-side through
-  `ISearchPipeline`, and the JavaScript client runs the same search again when it hydrates. Nothing
-  correlates the two.
-- **Ceiling:** `CachedSearchPipeline` journals every execution, hit or miss (that is deliberate - a
-  cached search is still a search someone made), so one page load produces two rows in the search
-  analytics with two different `queryId` values. Query volume on a page carrying a Results widget is
-  therefore roughly doubled, and the click-through rate is halved, because a click event is attributed
-  to the client's `queryId` only. Averages that are per-search - `tookMs`, zero-result rate - stay
-  honest; the counts do not.
-- **Upgrade path:** have the server render pass its `queryId` into `data-xps-instance-config` and let
-  the client send it as `SearchRequest.queryId` for its first search - the pipeline already reuses a
-  supplied `queryId` - then skip the journal entry when the id is already known, or make
-  `ISearchRequestJournal` idempotent per `queryId`. Not worth doing until the analytics numbers are
-  being used for something other than trends.
+- **Simplified:** the results widget hands its server-rendered `queryId` to the client
+  (`initialQueryId`), the client sends it on its first query, and the journal drops a `queryId` it has
+  already recorded - the check is `IQueryContextMap.Get`, the same in-process map clicks resolve their
+  query text through (10 000 entries, 30 minutes).
+- **Ceiling:** behind a load balancer, or after an application restart between the two requests, the
+  hydration query lands where the id was never recorded and the page load produces its second query
+  log row again - the pre-PB-6 behaviour for that request. An id that has aged out of the map (a page
+  left open for over 30 minutes before the bundle ran) does the same.
+- **Upgrade path:** make the write idempotent in the database instead: have `InfoQueryLogStore.
+  AppendAsync` update the row with that `LogQueryID` when one exists rather than insert. It costs a
+  SELECT per logged search on the queue worker, which is why the in-memory check came first.
+
+## The Results widget's field selectors list every index, in `IndexFieldSelectorDataProvider`
+
+- **Simplified:** *Fields to show*, *Title attribute* and *Link attribute* are general selectors, and a
+  general selector's data provider is resolved from the container without the dialog's other values -
+  unlike the facet attribute drop-down, which is a `FormComponentConfigurator` and can read `Index`.
+  The options are therefore the union of the retrievable fields of every registered index.
+- **Ceiling:** with more than one index an editor can pick a field the selected index does not have;
+  that field simply comes back empty, exactly as typing it did before. With one index - the usual case
+  - the list is already exact.
+- **Upgrade path:** an index-scoped `FormComponentConfigurator<GeneralSelectorComponent>` in
+  `XpSearch.Admin` (where the configurator base class lives; `XpSearch.Widgets` deliberately does not
+  reference `Kentico.Xperience.Admin`), registered under an identifier the way
+  `XpSearchConstants.FacetAttributeConfiguratorIdentifier` is, setting the option list from the
+  `Index` value.
+
+## Snippet attributes stayed a text area, in `ResultsWidgetProperties.SnippetAttributes`
+
+- **Simplified:** the other field properties became selectors; this one did not, because the order of
+  its values decides which attribute wins and the general selector is not documented as preserving the
+  order values were selected in.
+- **Ceiling:** the editor types field names here and gets no schema help or validation.
+- **Upgrade path:** confirm the ordering behaviour of the selector on a host (or ship a small custom
+  form component with explicit reordering) and move the property over with the same
+  new-property-plus-fallback scheme `FieldNames`/`Fields` uses.
 
 ## The server-rendered first paint is replaced by skeletons, in `Client/src/widgets/results.ts`
 

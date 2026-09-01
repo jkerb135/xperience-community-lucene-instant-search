@@ -183,6 +183,33 @@ internal sealed class ActivityLoggingTests
         });
     }
 
+    /// <summary>
+    /// The first-load handoff (PB-6): the results widget renders the first paint server-side and the
+    /// hydrating client repeats it under the same <c>queryId</c>. One page load must stay one row.
+    /// </summary>
+    [Test]
+    public async Task ASearchRepeatedUnderAQueryIdThatWasAlreadyJournaled_IsNotJournaledTwice()
+    {
+        var journaled = BuildJournaled();
+        var request = TestHarness.Request("lucene");
+        request.QueryId = "server-1";
+
+        var first = await journaled.Pipeline.ExecuteAsync(request, CancellationToken.None);
+        var second = await journaled.Pipeline.ExecuteAsync(request, CancellationToken.None);
+
+        journaled.Activities.Received(1).LogSearch("lucene", StubPipeline.Total);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(first.QueryId, Is.EqualTo("server-1"));
+            Assert.That(second.QueryId, Is.EqualTo("server-1"), "the caller still gets the id it sent");
+            Assert.That(
+                journaled.Queue.Items.Select(item => item.Entry!.QueryId),
+                Is.EqualTo(new[] { "server-1" }),
+                "the repeat of an already journaled search must not add a second query log row");
+        });
+    }
+
     [Test]
     public async Task ClickAfterACacheHit_ResolvesTheQueryTextOfTheActivity()
     {

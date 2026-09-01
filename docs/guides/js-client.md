@@ -85,6 +85,7 @@ ESM build is `dist/xpsearch.mjs` plus `dist/behaviors.mjs`, and the package `exp
 | `eventsEndpoint` | `'/api/xpsearch/events'` | Analytics endpoint. |
 | `routing` | `false` | `true` for the default URL mapping, or `{ stateToRoute, routeToState }`. |
 | `initialState` | `{}` | Partial state: `query`, `page`, `filters`, `sort`, `pageSize`. |
+| `initialQueryId` | — | `queryId` of a search the page was already rendered from server-side. The first query sends it, so that page load is logged once rather than twice; later queries get their own id. |
 | `searchOnInitialLoad` | `true` | `false` renders the widgets once with `results: null` and waits for the first filter. |
 | `debounceMs` | `150` | Trailing debounce on searches. |
 | `facets` | — | Facet attributes to always count, on top of those the widgets ask for. |

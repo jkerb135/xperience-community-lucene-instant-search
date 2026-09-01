@@ -255,11 +255,62 @@ internal sealed class ServerRenderedResultsTests
         });
     }
 
+    [Test]
+    public async Task The_first_paint_hands_its_query_id_and_the_page_size_it_used_to_the_client()
+    {
+        var component = ResultsWidget(new FakePipeline(TwoResults()));
+
+        var model = await component
+            .BuildModelAsync(new ResultsWidgetProperties { Index = "site-content" }, CancellationToken.None)
+            .ConfigureAwait(false);
+
+        var instance = Rendered.Json(Rendered.Html(model.Mount!), "data-xps-instance-config");
+        Expect.Multiple(() =>
+        {
+            Assert.That(instance.GetProperty("initialQueryId").GetString(), Is.EqualTo("server-query-1"));
+            // Parity: the widget left the page size unset, so the client must ask for the page size
+            // the pipeline actually applied rather than fall back to its own default.
+            Assert.That(instance.GetProperty("initialState").GetProperty("pageSize").GetInt32(), Is.EqualTo(10));
+        });
+    }
+
+    [Test]
+    public async Task A_search_that_did_not_render_hands_nothing_over()
+    {
+        var component = ResultsWidget(new FakePipeline(new InvalidOperationException("index is gone")));
+
+        var model = await component
+            .BuildModelAsync(new ResultsWidgetProperties { Index = "site-content" }, CancellationToken.None)
+            .ConfigureAwait(false);
+
+        var instance = Rendered.Json(Rendered.Html(model.Mount!), "data-xps-instance-config");
+        Expect.Multiple(() =>
+        {
+            Assert.That(instance.TryGetProperty("initialQueryId", out _), Is.False);
+            Assert.That(instance.TryGetProperty("initialState", out _), Is.False);
+        });
+    }
+
+    private ResultsWidgetViewComponent ResultsWidget(ISearchPipeline pipeline) =>
+        new(
+            new XpSearchMountRenderer(),
+            new FakeEditorContext(XpSearchEditorMode.Live),
+            new FakeIndexCatalog("site-content"),
+            new ServerRenderedResults(
+                pipeline,
+                provider.GetRequiredService<ICompositeViewEngine>(),
+                new FakeTemplateRegistry(),
+                new CapturingLogger()))
+        {
+            ViewComponentContext = new ViewComponentContext { ViewContext = ViewContext("?q=espresso") }
+        };
+
     private static SearchResponse TwoResults() => new()
     {
         Total = 2,
         Page = 1,
         PageSize = 10,
+        QueryId = "server-query-1",
         TotalPages = 1,
         Results =
         [
@@ -313,9 +364,9 @@ internal sealed class ServerRenderedResultsTests
 
         var blank = new ServerResultsOptions("site-content", 0, [], null, null, null, []);
         var options = configure is null ? blank : configure(blank);
-        var content = await renderer.RenderAsync(viewContext, options, CancellationToken.None).ConfigureAwait(false);
+        var render = await renderer.RenderAsync(viewContext, options, CancellationToken.None).ConfigureAwait(false);
 
-        return content is null ? null : Rendered.Html(content);
+        return render is null ? null : Rendered.Html(render.Content);
     }
 
     private ViewContext ViewContext(string queryString)

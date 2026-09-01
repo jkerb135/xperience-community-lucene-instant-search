@@ -91,6 +91,10 @@ export function createSearch(options: XpSearchOptions): SearchInstance {
     onError: (error) => report(error, 'contract'),
   });
 
+  // Handed over by the server-rendered first paint and spent on the first query only: reusing it
+  // twice would attribute two different searches to one id.
+  let handoffQueryId = typeof options.initialQueryId === 'string' ? options.initialQueryId : '';
+
   const buildRequest = (): SearchRequest => {
     let state = store.get();
     widgets.forEach((widget, at) => {
@@ -112,6 +116,10 @@ export function createSearch(options: XpSearchOptions): SearchInstance {
       if (next) request = next;
     });
     if (request.facets) request.facets = [...new Set(request.facets)];
+    if (handoffQueryId) {
+      request = { ...request, queryId: handoffQueryId };
+      handoffQueryId = '';
+    }
     return request;
   };
 

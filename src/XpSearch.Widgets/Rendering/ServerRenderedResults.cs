@@ -30,6 +30,15 @@ public sealed record ServerResultsOptions(
     string? UrlAttribute,
     IReadOnlyList<string> SnippetAttributes);
 
+/// <summary>The server-rendered first paint and the search that produced it.</summary>
+/// <param name="Content">The markup that goes inside the mount element.</param>
+/// <param name="QueryId">
+/// Correlation id of the search, which the widget hands to the client so its hydration query is
+/// journaled as the same search rather than a second one.
+/// </param>
+/// <param name="PageSize">The page size the pipeline applied, after its own defaults and clamping.</param>
+public sealed record ServerResultsRender(IHtmlContent Content, string? QueryId, int PageSize);
+
 /// <summary>
 /// Runs the visitor's initial search and renders the result cards on the server, so a shared result
 /// URL paints before the client bundle runs and a visitor without JavaScript still sees results
@@ -84,8 +93,8 @@ public sealed class ServerRenderedResults
     /// <param name="viewContext">The widget's view context; supplies the request and the view engine's search paths.</param>
     /// <param name="options">What to search and how to render it.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The markup, or <see langword="null"/>.</returns>
-    public async Task<IHtmlContent?> RenderAsync(
+    /// <returns>The markup and the search behind it, or <see langword="null"/>.</returns>
+    public async Task<ServerResultsRender?> RenderAsync(
         ViewContext viewContext,
         ServerResultsOptions options,
         CancellationToken cancellationToken)
@@ -106,9 +115,11 @@ public sealed class ServerRenderedResults
             return null;
         }
 
+        var render = (IHtmlContent content) => new ServerResultsRender(content, response.QueryId, (int)response.PageSize);
+
         if (response.Results is not { Length: > 0 })
         {
-            return new HtmlString(Empty);
+            return render(new HtmlString(Empty));
         }
 
         var template = ResolveTemplate(options.TemplateIdentifier);
@@ -138,7 +149,7 @@ public sealed class ServerRenderedResults
                 .AppendHtml(ItemClose);
         }
 
-        return content.AppendHtml(ListClose);
+        return render(content.AppendHtml(ListClose));
     }
 
     private static bool Applies(SearchResultTemplate template, string? contentType) =>

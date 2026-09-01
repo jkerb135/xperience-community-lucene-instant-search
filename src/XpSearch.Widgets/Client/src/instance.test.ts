@@ -97,6 +97,19 @@ describe('widget lifecycle', () => {
     });
   });
 
+  it('spends the server-rendered queryId on the first query and never again', async () => {
+    const { fetchFn, requests } = stubFetch();
+    const search = create({ index: 'site-content', fetchFn, initialQueryId: 'server-1' });
+    search.start();
+    await vi.waitFor(() => expect(requests).toHaveLength(1));
+
+    search.actions.setQuery('espresso').search();
+    await vi.waitFor(() => expect(requests).toHaveLength(2));
+
+    expect(requests[0]?.queryId).toBe('server-1');
+    expect(requests[1]?.queryId).toBeUndefined();
+  });
+
   it('does not search on initial load when asked not to, but still renders', async () => {
     const { fetchFn, requests } = stubFetch();
     const rendered: Array<unknown> = [];

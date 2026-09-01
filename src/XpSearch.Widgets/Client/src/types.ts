@@ -211,6 +211,12 @@ export interface XpSearchOptions {
   eventsEndpoint?: string;
   routing?: boolean | RoutingOptions;
   initialState?: Partial<SearchState>;
+  /**
+   * `queryId` of a search the page was already rendered from server-side. The first query after
+   * hydration sends it, so that page load is journaled once instead of twice; later queries get
+   * their own id. Emitted by the Results widget as `initialQueryId` when it server-rendered.
+   */
+  initialQueryId?: string;
   /** Defaults to `true`. */
   searchOnInitialLoad?: boolean;
   /** Defaults to `150`. */
