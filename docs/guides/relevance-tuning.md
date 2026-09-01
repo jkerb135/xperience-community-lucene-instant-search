@@ -288,8 +288,9 @@ The query condition can be compared two ways.
   endings line up (*shoe* matches *shoes*), your synonyms count (*sofa* matches a search for *couch*),
   and *shoehorn* no longer matches *shoe*, because it is a different word.
 
-**Neither one tolerates typos.** *esspresso* matches no rule about *espresso*. If a misspelling
-matters, add it as a synonym or write a second rule for it.
+**Neither one tolerates typos**, even with [typo tolerance](#typo-tolerance) turned on: that setting
+widens what a search *finds*, not what a rule *fires on*. *esspresso* matches no rule about
+*espresso*. If a misspelling matters to a rule, add it as a synonym or write a second rule for it.
 
 ### The ten things a rule can do
 
@@ -414,6 +415,44 @@ You do not have to think of every pair yourself. The **Synonym suggestions** pag
 lists pairs mined from real searches that failed and were immediately retried with different words —
 approve one and it becomes an ordinary group here. See
 [Popularity boosts and mined suggestions](popularity-boosts.md#suggested-synonyms).
+
+### Typo tolerance
+
+The header of the **Synonyms** page also carries **Turn typo tolerance on** — the index-wide opt-in
+that lets misspelled searches find the right results. It sits here because it is the same kind of
+setting as a synonym: both decide what a typed word is allowed to mean.
+
+![The Synonyms listing with the Typo tolerance: off callout and the Turn typo tolerance on header button](images/tuning--typo-tolerance.png)
+
+With it on, every word of a search also matches near-spellings — *grinderr* finds the grinder,
+*machne* finds the machine. How far a word may be off depends on how long it is, and the rule is
+fixed; there is nothing to configure beyond the one button.
+
+| Word length | What also matches |
+| --- | --- |
+| 1–2 letters | nothing but the word itself |
+| 3–5 letters | one letter added, removed, changed or swapped |
+| 6 letters or more | up to two such changes |
+
+Two more rules that are not negotiable: the **first letter always has to match** (*expresso* finds
+*espresso*, *xpresso* does not), and a word made only of digits is never fuzzy — `2024` and `2025`
+are different values, not a misspelling.
+
+Exactly spelled matches still come first. A near-spelling scores lower the further it is from the
+word in the document, so turning this on adds results at the bottom rather than reshuffling the top.
+Every word is still required: *espresso machne* needs both positions, and a page that only says
+*espresso* stays out.
+
+It is **off by default**, because turning it on changes what an existing site finds. Turn it on, run
+a few real searches through the [Query tester](#checking-your-work-the-query-tester), and leave it on
+if you like what you see.
+
+Two things it does not change: rule conditions (a rule that fires on *espresso* still needs that
+exact word — see [Things that do not work yet](#things-that-do-not-work-yet)) and the suggestions
+that drop down as someone types, which are prefix matches on what they have typed so far.
+
+If the index is running an [experiment](experiments.md), both variants see the same typo tolerance:
+an experiment tests tuning, and this is not a tuning row.
 
 ### Stopwords
 
@@ -637,6 +676,8 @@ opening the index's configuration form first.
   grab from an attached keyboard — there is no touch drag.
 - The item picker searches the index the rule belongs to. It cannot find something that was never
   indexed, which is the same reason a rule pointing at it would not have worked anyway.
+- Typo tolerance is one setting for the whole index, with a fixed policy. There is no per-field or
+  per-search override, no "did you mean", and rule conditions stay exact.
 
 ### Appendix: how a rule is stored
 

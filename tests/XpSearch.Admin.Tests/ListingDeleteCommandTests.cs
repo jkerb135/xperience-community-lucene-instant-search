@@ -12,6 +12,7 @@ using NUnit.Framework;
 using XpSearch.Admin.Persistence;
 using XpSearch.Admin.Tuning;
 using XpSearch.Admin.UIPages;
+using XpSearch.Core.Fuzzy;
 using XpSearch.Core.Popularity;
 using XpSearch.Ingestion.Persistence;
 
@@ -77,7 +78,7 @@ internal sealed class ListingDeleteCommandTests
 
     [Test]
     public void Delete_RefusesASynonymItCannotProveBelongsToTheIndexInTheUrl() =>
-        AssertRefused(new SynonymListing(Storage(), Provider<XpSearchSynonymInfo>(), Provider<XpSearchSynonymSuggestionInfo>(), Substitute.For<IPageLinkGenerator>()) { IndexIdentifier = IndexIdentifier });
+        AssertRefused(new SynonymListing(Storage(), Provider<XpSearchSynonymInfo>(), Provider<XpSearchSynonymSuggestionInfo>(), Provider<XpSearchFuzzyIndexInfo>(), Substitute.For<IPageLinkGenerator>()) { IndexIdentifier = IndexIdentifier });
 
     [Test]
     public void Delete_RefusesAStopwordListItCannotProveBelongsToTheIndexInTheUrl() =>

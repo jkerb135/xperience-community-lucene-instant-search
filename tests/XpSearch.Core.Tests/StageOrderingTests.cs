@@ -38,7 +38,7 @@ internal sealed class StageOrderingTests
         ISearchStage[] stages =
         [
             new ProjectResponseStage(),
-            new BuildQueryStage(),
+            new BuildQueryStage(new Fuzzy.DisabledTypoToleranceSource()),
             new FacetFilterStage(),
             new NumericFilterStage()
         ];

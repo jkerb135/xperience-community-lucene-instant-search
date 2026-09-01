@@ -8,6 +8,7 @@ using Lucene.Net.Search;
 using Lucene.Net.Util;
 
 using XpSearch.Core.Abstractions;
+using XpSearch.Core.Fuzzy;
 using XpSearch.Core.Indexing;
 
 namespace XpSearch.Core.Pipeline.Stages;
@@ -18,21 +19,41 @@ namespace XpSearch.Core.Pipeline.Stages;
 /// </summary>
 public sealed class BuildQueryStage : ISearchStage
 {
+    private readonly ITypoToleranceSource typoTolerance;
+
+    /// <summary>Initializes a new instance of the <see cref="BuildQueryStage"/> class.</summary>
+    /// <param name="typoTolerance">Answers whether this index matches near-spellings (FZ-1). One cache read.</param>
+    public BuildQueryStage(ITypoToleranceSource typoTolerance)
+    {
+        ArgumentNullException.ThrowIfNull(typoTolerance);
+
+        this.typoTolerance = typoTolerance;
+    }
+
     /// <inheritdoc />
     public int Order => SearchStageOrder.BuildQuery;
 
     /// <inheritdoc />
-    public Task ExecuteAsync(SearchContext context, CancellationToken cancellationToken)
+    public async Task ExecuteAsync(SearchContext context, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        var textQuery = BuildTextQuery(context);
+        bool fuzzy = await typoTolerance
+            .IsEnabledAsync(context.Request.Index ?? string.Empty, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (fuzzy && (context.Request.Explain ?? false))
+        {
+            context.QueryExplanations.Add("fuzzy:on");
+        }
+
+        var textQuery = BuildTextQuery(context, fuzzy);
         string? language = context.Request.Language;
 
         if (string.IsNullOrWhiteSpace(language))
         {
             context.BaseQuery = textQuery;
-            return Task.CompletedTask;
+            return;
         }
 
         // One index holds every language and the integration writes the language into every document
@@ -48,10 +69,9 @@ public sealed class BuildQueryStage : ISearchStage
 
         context.ActiveFilters.Add(languageFilter, Occur.MUST);
         context.BaseQuery = filtered;
-        return Task.CompletedTask;
     }
 
-    private static Query BuildTextQuery(SearchContext context)
+    private static Query BuildTextQuery(SearchContext context, bool fuzzy)
     {
         string[] fields = [.. context.Schema.Fields
             .Where(field => field.Searchable)
@@ -64,14 +84,15 @@ public sealed class BuildQueryStage : ISearchStage
 
         var parser = new MultiFieldQueryParser(LuceneVersion.LUCENE_48, fields, context.Analyzer, Boosts(context))
         {
-            DefaultOperator = Operator.AND
+            DefaultOperator = Operator.AND,
+            FuzzyPrefixLength = FuzzyPolicy.PrefixLength
         };
 
         if (context.QuerySlots.Count == 0)
         {
             // The query is user input, so every operator character is escaped before parsing: the
             // endpoint exposes relevance, not the Lucene query syntax.
-            return parser.Parse(QueryParserBase.Escape(context.QueryText));
+            return parser.Parse(Prepare(context.QueryText, fuzzy));
         }
 
         // Synonyms were applied (spec §8.3): each slot is one position of the query, its alternatives
@@ -84,13 +105,38 @@ public sealed class BuildQueryStage : ISearchStage
 
             foreach (string term in slot)
             {
-                alternatives.Add(parser.Parse(QueryParserBase.Escape(term)), Occur.SHOULD);
+                alternatives.Add(parser.Parse(Prepare(term, fuzzy)), Occur.SHOULD);
             }
 
             expanded.Add(alternatives, Occur.MUST);
         }
 
         return expanded;
+    }
+
+    /// <summary>
+    /// Escapes user text for the parser and, with typo tolerance on, appends each token's <c>~N</c>
+    /// suffix so the parser builds a per-field <see cref="FuzzyQuery"/> for it (FZ-1).
+    /// </summary>
+    /// <remarks>
+    /// The suffix is appended <em>after</em> escaping and never escaped itself, so a tilde the visitor
+    /// typed stays a literal character and only the policy decides the edit distance. Escaping leaves
+    /// whitespace alone, so escaping each token is the same as escaping the whole string. The tokens
+    /// are still ANDed by <see cref="Operator.AND"/>: fuzzy widens what fills a position, not how many
+    /// positions a document has to fill.
+    /// </remarks>
+    private static string Prepare(string text, bool fuzzy)
+    {
+        if (!fuzzy)
+        {
+            return QueryParserBase.Escape(text);
+        }
+
+        string[] tokens = text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+
+        return tokens.Length == 0
+            ? QueryParserBase.Escape(text)
+            : string.Join(' ', tokens.Select(token => QueryParserBase.Escape(token) + FuzzyPolicy.Suffix(token)));
     }
 
     /// <summary>

@@ -36,6 +36,11 @@ public static class SearchCacheKey
     /// has not opted in. Non-zero only for an opted-in index, so a task run invalidates those
     /// responses and nothing else changes.
     /// </param>
+    /// <param name="typoTolerance">
+    /// Whether the index answers with typo tolerance (FZ-1). Part of the key because flipping the
+    /// toggle changes what matches and how it ranks; nothing is added to the key while it is off, so a
+    /// host that never turns it on keys exactly as before.
+    /// </param>
     /// <returns>A hex SHA-256 of the canonical request.</returns>
     /// <remarks>
     /// <c>queryId</c> is deliberately excluded: it correlates analytics events with one search and
@@ -46,7 +51,8 @@ public static class SearchCacheKey
         string normalizedQuery,
         IReadOnlySet<string>? contactGroups = null,
         ExperimentAssignment? experiment = null,
-        long popularityVersion = 0)
+        long popularityVersion = 0,
+        bool typoTolerance = false)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -83,7 +89,8 @@ public static class SearchCacheKey
             Experiment = experiment is { IsActive: true }
                 ? $"{experiment.ExperimentId}:{experiment.Variant}"
                 : null,
-            Popularity = popularityVersion == 0 ? null : popularityVersion.ToString(System.Globalization.CultureInfo.InvariantCulture)
+            Popularity = popularityVersion == 0 ? null : popularityVersion.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            Fuzzy = typoTolerance ? "on" : null
         };
 
         byte[] hash = SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(canonical, KeyOptions)));

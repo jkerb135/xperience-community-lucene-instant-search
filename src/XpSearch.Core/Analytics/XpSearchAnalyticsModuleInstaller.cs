@@ -71,6 +71,19 @@ public sealed class XpSearchAnalyticsModuleInstaller
         return form;
     }
 
+    /// <summary>The form definition of <see cref="Fuzzy.XpSearchFuzzyIndexInfo"/> (FZ-1).</summary>
+    /// <returns>The fields, on top of the primary key the basic definition creates.</returns>
+    public static FormInfo FuzzyIndexForm()
+    {
+        var form = FormHelper.GetBasicFormDefinition(nameof(Fuzzy.XpSearchFuzzyIndexInfo.FuzzyIndexID));
+
+        Add(form, nameof(Fuzzy.XpSearchFuzzyIndexInfo.FuzzyIndexGuid), FieldDataType.Guid);
+        Add(form, nameof(Fuzzy.XpSearchFuzzyIndexInfo.FuzzyIndexName), FieldDataType.Text, size: 100);
+        Add(form, nameof(Fuzzy.XpSearchFuzzyIndexInfo.FuzzyIndexEnabled), FieldDataType.Boolean);
+
+        return form;
+    }
+
     /// <summary>The form definition of <see cref="Popularity.XpSearchPopularityScoreInfo"/> (RK-1).</summary>
     /// <returns>The fields, on top of the primary key the basic definition creates.</returns>
     public static FormInfo PopularityScoreForm()
@@ -143,6 +156,7 @@ public sealed class XpSearchAnalyticsModuleInstaller
         InstallClass(resource, Popularity.XpSearchPopularityScoreInfo.TYPEINFO, "XpSearch popularity score", PopularityScoreForm());
         InstallClass(resource, Popularity.XpSearchPopularitySuggestionInfo.TYPEINFO, "XpSearch popularity suggestion", PopularitySuggestionForm());
         InstallClass(resource, Popularity.XpSearchSynonymSuggestionInfo.TYPEINFO, "XpSearch synonym suggestion", SynonymSuggestionForm());
+        InstallClass(resource, Fuzzy.XpSearchFuzzyIndexInfo.TYPEINFO, "XpSearch typo tolerance", FuzzyIndexForm());
     }
 
     private static void Add(FormInfo form, string name, string dataType, int size = 0, bool allowEmpty = false)

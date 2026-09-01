@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using XpSearch.Core.Abstractions;
 using XpSearch.Core.Contract;
 using XpSearch.Core.Facets;
+using XpSearch.Core.Fuzzy;
 using XpSearch.Core.Highlighting;
 using XpSearch.Core.Options;
 using XpSearch.Core.Pipeline;
@@ -22,6 +23,16 @@ internal sealed class StaticSchemaProvider : IIndexSchemaProvider
         Task.FromResult(schema);
 }
 
+/// <summary>Answers one fixed typo tolerance setting for every index (FZ-1).</summary>
+internal sealed class FixedTypoToleranceSource : ITypoToleranceSource
+{
+    private readonly bool enabled;
+
+    internal FixedTypoToleranceSource(bool enabled) => this.enabled = enabled;
+
+    public Task<bool> IsEnabledAsync(string indexName, CancellationToken cancellationToken) => Task.FromResult(enabled);
+}
+
 /// <summary>
 /// Wires the production stages around <see cref="TestSearchIndex"/> so tests run the whole pipeline,
 /// not a mock of it.
@@ -33,6 +44,7 @@ internal sealed class TestHarness : IDisposable
         bool withTaxonomy = true,
         IRelevanceTuningSource? tuning = null,
         TimeProvider? time = null,
+        bool typoTolerance = false,
         params ISearchStage[] extraStages)
     {
         Options = options ?? new XpSearchOptions();
@@ -48,7 +60,7 @@ internal sealed class TestHarness : IDisposable
                 new QueryRewriteStage(tuning ?? new EmptyRelevanceTuningSource(), time ?? TimeProvider.System),
                 new SynonymExpansionStage(tuning ?? new EmptyRelevanceTuningSource()),
                 new StopwordRemovalStage(),
-                new BuildQueryStage(),
+                new BuildQueryStage(new FixedTypoToleranceSource(typoTolerance)),
                 new FacetFilterStage(),
                 new NumericFilterStage(),
                 new BoostRulesStage(),

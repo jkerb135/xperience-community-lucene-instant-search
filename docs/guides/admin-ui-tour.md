@@ -131,7 +131,12 @@ One row per synonym group, with **Words**, **Replacements** (filled only for a o
 one-way), **Words**, **Replacements (one-way only)** and **Enabled**. The index is shown read-only
 at the top, as on every form in this section.
 
-Depth: [Relevance tuning → Synonyms](relevance-tuning.md#synonyms).
+The header also carries **Turn typo tolerance on/off**, the index-wide opt-in that lets misspelled
+searches match, with a callout above the table saying which state the index is in. It is off by
+default.
+
+Depth: [Relevance tuning → Synonyms](relevance-tuning.md#synonyms) and
+[→ Typo tolerance](relevance-tuning.md#typo-tolerance).
 
 ### Synonym suggestions
 

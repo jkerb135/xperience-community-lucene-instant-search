@@ -51,7 +51,7 @@ internal sealed class EndpointTests
         builder.Services.AddSingleton<ILuceneIndexAccessor>(index);
         builder.Services.AddSingleton<IIndexSchemaProvider>(new StaticSchemaProvider(TestCorpus.Schema));
         builder.Services.AddSingleton<ISearchStage>(new NormalizeRequestStage(options));
-        builder.Services.AddSingleton<ISearchStage, BuildQueryStage>();
+        builder.Services.AddSingleton<ISearchStage>(new BuildQueryStage(new XpSearch.Core.Fuzzy.DisabledTypoToleranceSource()));
         builder.Services.AddSingleton<ISearchStage, FacetFilterStage>();
         builder.Services.AddSingleton<ISearchStage, NumericFilterStage>();
         builder.Services.AddSingleton<ISearchStage>(new ExecuteSearchStage(index));

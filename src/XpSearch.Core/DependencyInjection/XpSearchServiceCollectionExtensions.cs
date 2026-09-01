@@ -12,6 +12,7 @@ using XpSearch.Core.ContactGroups;
 using XpSearch.Core.Endpoints;
 using XpSearch.Core.Experiments;
 using XpSearch.Core.Facets;
+using XpSearch.Core.Fuzzy;
 using XpSearch.Core.Highlighting;
 using XpSearch.Core.Indexing;
 using XpSearch.Core.Options;
@@ -113,6 +114,10 @@ public static class XpSearchServiceCollectionExtensions
         // XpSearch.Admin, because the boost stage and the response cache need them without it.
         services.TryAddSingleton<IPopularitySignalStore, InfoPopularitySignalStore>();
 
+        // Typo tolerance (FZ-1). Same shape: the setting is stored here, the query stage and the
+        // response cache read it, and an index nobody turned it on for reads as off.
+        services.TryAddSingleton<ITypoToleranceSource, InfoTypoToleranceSource>();
+
         // Server-rendered first paint (spec §5.8). In Core rather than XpSearch.Widgets so a host that
         // builds its search UI itself, against the npm package alone, can render one too.
         services.TryAddSingleton<ISearchResultTemplateRegistry, SearchResultTemplateRegistry>();
@@ -147,7 +152,8 @@ public static class XpSearchServiceCollectionExtensions
             provider.GetRequiredService<IContactGroupResolver>(),
             provider.GetRequiredService<IExperimentAssignmentResolver>(),
             provider.GetRequiredService<ISearchRequestJournal>(),
-            provider.GetRequiredService<IPopularitySignalStore>()));
+            provider.GetRequiredService<IPopularitySignalStore>(),
+            provider.GetRequiredService<ITypoToleranceSource>()));
 
         services.DecorateLuceneClient<CacheEvictingLuceneClient>(
             (provider, inner) => new CacheEvictingLuceneClient(
