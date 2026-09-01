@@ -67,8 +67,12 @@ run shows fewer, you ran the wrong project.
 - Lazy senior dev (global CLAUDE.md): minimum code, no unrequested abstractions; intentional
   shortcuts go in `docs/internal/KNOWN-LIMITATIONS.md` (symbol+file / simplified / ceiling /
   upgrade path), never as code comments.
-- Every unit: CHANGELOG.md `[Unreleased]` entry; guide page updated with a verified sample if
-  editor/dev-facing; non-trivial logic leaves one runnable check (test in the existing suite).
+- Every unit: CHANGELOG.md `[Unreleased]` entry (breaking entries lead with `**Breaking (scope):**`);
+  guide page updated with a verified sample if editor/dev-facing; non-trivial logic leaves one
+  runnable check (test in the existing suite).
+- Units that change admin UI, widget properties, or JS client options: update the affected guide
+  page AND mark the affected rows in `docs/internal/screenshot-manifest.md` stale (note it in your
+  report) — the lead recaptures screenshots at the host pass / next `/docs-ship`.
 - Kentico/Lucene API questions: use the Kentico docs MCP; Lucene-integration APIs are on GitHub
   (`Kentico/xperience-by-kentico-lucene`), not docs.kentico.com. `Lucene.Net*` pinned to
   `4.8.0-beta00017`.

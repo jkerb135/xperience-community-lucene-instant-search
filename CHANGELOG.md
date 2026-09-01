@@ -6,6 +6,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/). Versioning: [SemVer](ht
 Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 (spec §4.2, as amended by ADR-0010) are always major-version events.
 
+Entries lead with the change type and affected project(s), e.g. `**Added (widgets):**`.
+Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — the
+`docs/guides/breaking-changes.md` page is generated from those entries.
+
 ## [Unreleased]
 
 - **Fixed (admin):** in the rule builder's action side panel, **Add row** in the attribute + value
@@ -91,7 +95,7 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
   classes join the analytics module: `XpSearch.PopularityIndex`, `XpSearch.PopularityScore`,
   `XpSearch.PopularitySuggestion` and `XpSearch.SynonymSuggestion`.
 
-- **Changed (core) — source-breaking for custom implementations:** `IQueryLogStore.SetClickedPositionAsync`
+- **Breaking (core)** — source-breaking for custom implementations: `IQueryLogStore.SetClickedPositionAsync`
   is now `SetClickAsync(queryId, position, resultId, cancellationToken)`, `CachedSearchPipeline`
   takes an `IPopularitySignalStore`, and `XpSearchPopularityTask` takes an `ISynonymSuggestionStore`. Hosts that only call `AddXpSearch()` are unaffected; the JSON
   contract is unchanged.
