@@ -591,6 +591,8 @@ the asset tag helper.
 ### Related pages
 
 - [Page Builder widgets](page-builder-widgets.md) — the shipped widgets, their editor properties, assets.
+- [Server rendering and the mount contract](server-rendering.md) — the stable mount attributes, and
+  first-paint rendering from `XpSearch.Core` without the widgets.
 - [JavaScript client](js-client.md) — options, the actions, routing, the event bus, the mock server.
 - [Search API](search-api.md) — the JSON contract behind `results`.
 - [Widget reference](widget-reference.md) — the built-in widgets, the templating helpers, the XSS model.

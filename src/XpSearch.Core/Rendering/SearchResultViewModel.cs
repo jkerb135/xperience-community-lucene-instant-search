@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Html;
 
 using XpSearch.Core.Contract;
 
-namespace XpSearch.Widgets.Templates;
+namespace XpSearch.Core.Rendering;
 
 /// <summary>
 /// The model a result template partial receives: one search result, plus the conveniences the

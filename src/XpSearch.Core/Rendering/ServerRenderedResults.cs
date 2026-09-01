@@ -9,11 +9,10 @@ using Microsoft.Extensions.Logging;
 using XpSearch.Core.Abstractions;
 using XpSearch.Core.Contract;
 using XpSearch.Core.Pipeline;
-using XpSearch.Widgets.Templates;
 
-namespace XpSearch.Widgets.Rendering;
+namespace XpSearch.Core.Rendering;
 
-/// <summary>What the Results widget wants server-rendered (spec §5.8).</summary>
+/// <summary>What a caller wants server-rendered (spec §5.8): the Results widget, or a host's own view.</summary>
 /// <param name="Index">The index to search.</param>
 /// <param name="ResultsPerPage">Page size; zero keeps the index's own.</param>
 /// <param name="Fields">Attributes to retrieve; empty keeps the index defaults.</param>
@@ -21,6 +20,11 @@ namespace XpSearch.Widgets.Rendering;
 /// <param name="TitleAttribute">Attribute the default card's title comes from; empty means <c>title</c>.</param>
 /// <param name="UrlAttribute">Attribute the default card links to; empty means <c>url</c>.</param>
 /// <param name="SnippetAttributes">Attributes the default card tries for its snippet, in order.</param>
+/// <param name="DefaultViewPath">
+/// Partial view rendering one result when no registered template applies; empty, or a view that
+/// cannot be resolved, renders the built-in card instead. XpSearch.Widgets passes the partial in its
+/// Razor class library; a host without it needs nothing.
+/// </param>
 public sealed record ServerResultsOptions(
     string Index,
     int ResultsPerPage,
@@ -28,7 +32,8 @@ public sealed record ServerResultsOptions(
     string? TemplateIdentifier,
     string? TitleAttribute,
     string? UrlAttribute,
-    IReadOnlyList<string> SnippetAttributes);
+    IReadOnlyList<string> SnippetAttributes,
+    string? DefaultViewPath = null);
 
 /// <summary>The server-rendered first paint and the search that produced it.</summary>
 /// <param name="Content">The markup that goes inside the mount element.</param>
@@ -136,20 +141,52 @@ public sealed class ServerRenderedResults
             // A template scoped to content types only renders the results of those types; the rest,
             // and every result when no template applies, get the built-in card.
             var view = (template is not null && Applies(template, model.ContentType) ? Resolve(template.ViewName) : null)
-                ?? Resolve(XpSearchWidgetConstants.DefaultResultViewPath);
-
-            if (view is null)
-            {
-                continue;
-            }
+                ?? (options.DefaultViewPath is { Length: > 0 } path ? Resolve(path) : null);
 
             content
                 .AppendHtml(ItemOpen)
-                .AppendHtml(await RenderViewAsync(viewContext, view, model).ConfigureAwait(false))
+                .AppendHtml(view is null ? DefaultCard(model) : await RenderViewAsync(viewContext, view, model).ConfigureAwait(false))
                 .AppendHtml(ItemClose);
         }
 
         return render(content.AppendHtml(ListClose));
+    }
+
+    /// <summary>
+    /// The built-in card, emitted without a view so a host that has no result partial - anything but
+    /// the widgets' Razor class library - still gets a first paint. Same markup as the client's
+    /// default item template and the widgets' <c>_Result.cshtml</c> (<c>themes/MARKUP.md</c>).
+    /// </summary>
+    private static IHtmlContent DefaultCard(SearchResultViewModel model)
+    {
+        var card = new HtmlContentBuilder().AppendHtml("<article class=\"xps-result\">");
+
+        if (model.Image is { } image)
+        {
+            card.AppendHtml("<div class=\"xps-result__media\"><img class=\"xps-result__image\" src=\"")
+                .Append(image)
+                .AppendHtml("\" alt=\"\" width=\"96\" height=\"96\"></div>");
+        }
+
+        card.AppendHtml("<div class=\"xps-result__body\"><h3 class=\"xps-result__title\"><a class=\"xps-result__link\" href=\"")
+            .Append(model.Url)
+            .AppendHtml("\">")
+            .AppendHtml(model.Title)
+            .AppendHtml("</a></h3>");
+
+        if (model.Snippet is { } snippet)
+        {
+            card.AppendHtml("<p class=\"xps-result__snippet\">").AppendHtml(snippet).AppendHtml("</p>");
+        }
+
+        if (model.ContentType is { } contentType)
+        {
+            card.AppendHtml("<ul class=\"xps-result__meta\"><li class=\"xps-result__meta-item\">")
+                .Append(contentType)
+                .AppendHtml("</li></ul>");
+        }
+
+        return card.AppendHtml("</div></article>");
     }
 
     private static bool Applies(SearchResultTemplate template, string? contentType) =>

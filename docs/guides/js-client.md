@@ -254,7 +254,9 @@ group. The options of a group are **merged** from the `data-xps-instance-config`
 an option only one widget carries (for example the Page Builder results widget's `initialState.pageSize`
 and `fields`) applies whatever the widget order is. The first definition of a key wins, and a mount that
 gives the same key a different value logs one `console.warn` naming the key and the instance. See
-[Page Builder widgets](page-builder-widgets.md) and [Custom widgets](custom-widgets.md).
+[Page Builder widgets](page-builder-widgets.md) and [Custom widgets](custom-widgets.md); the mount
+attributes themselves are a stable contract, documented in
+[Server rendering and the mount contract](server-rendering.md#the-mount-contract-stable).
 
 ### Run it against the mock server
 

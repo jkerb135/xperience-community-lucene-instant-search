@@ -5,9 +5,10 @@ contradicts it, fix the file in your commit.
 
 ## Layout
 
-- `src/XpSearch.Core` — contract, pipeline stages, tuning rules, analytics, contact groups, and the
+- `src/XpSearch.Core` — contract, pipeline stages, tuning rules, analytics, contact groups, the
   popularity signal (`Popularity/`: module classes, aggregation task, store) the Admin UI only
-  toggles and lists.
+  toggles and lists, and the server-rendered first paint (`Rendering/`: `ServerRenderedResults`,
+  `SearchQueryState`, the result-template surface — PK-2 lifted these out of Widgets).
 - `src/XpSearch.Widgets` — Page Builder widgets (`Components/Widgets/XpSearch/`), mount
   infrastructure (`Mounting/`), and the **JS client at `src/XpSearch.Widgets/Client`**
   (vitest, strict TS, UMD bundle).
@@ -39,8 +40,9 @@ cd src/XpSearch.Admin/Client && npm ci && npm run build
 cd src/XpSearch.Widgets/Client && npm run contract:gen && npm run contract:check
 ```
 
-Suite sizes (2026-09-01, after PB-6): Core 262, Admin 186, Ingestion 47, Widgets 90, JS 195 — if your
-run shows fewer, you ran the wrong project.
+Suite sizes (2026-09-01, after PK-2): Core 285, Admin 186, Ingestion 47, Widgets 72, JS 195 — if your
+run shows fewer, you ran the wrong project. (There is no solution file in this repo: test the four
+projects one by one.)
 
 ## Patterns to copy (don't invent parallel ones)
 

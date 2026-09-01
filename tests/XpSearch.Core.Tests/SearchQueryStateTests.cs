@@ -3,11 +3,12 @@ using Microsoft.AspNetCore.WebUtilities;
 
 using XpSearch.Core.Abstractions;
 using XpSearch.Core.Contract;
-using XpSearch.Widgets.Rendering;
+using XpSearch.Core.Rendering;
+using XpSearch.Core.Tests.Fixtures;
 
 using NUnit.Framework;
 
-namespace XpSearch.Widgets.Tests;
+namespace XpSearch.Core.Tests;
 
 /// <summary>
 /// The server reads a shared result URL with the same mapping the client writes it with, so the

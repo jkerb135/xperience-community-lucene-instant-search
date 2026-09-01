@@ -1,6 +1,6 @@
 using Kentico.Xperience.Admin.Base.FormAnnotations;
 
-using XpSearch.Widgets.Templates;
+using XpSearch.Core.Rendering;
 
 namespace XpSearch.Widgets.Options;
 

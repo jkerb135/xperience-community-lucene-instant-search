@@ -296,7 +296,7 @@ A developer registers a result template with an assembly attribute; editors then
 widget's **Result template** drop-down:
 
 ```csharp
-using XpSearch.Widgets.Templates;
+using XpSearch.Core.Rendering;
 
 [assembly: RegisterSearchResultTemplate(
     identifier: "MyCompany.ProductCard",
@@ -312,7 +312,7 @@ identifier is also written into `data-xps-config` as `template`.
 The view is a partial over `SearchResultViewModel`:
 
 ```cshtml
-@using XpSearch.Widgets.Templates
+@using XpSearch.Core.Rendering
 @model SearchResultViewModel
 
 <article class="xps-result xps-result--product">
@@ -348,6 +348,10 @@ to be one the search returns.
 
 An identifier that is not registered, or a view name that does not resolve, logs a warning and renders
 the built-in card instead.
+
+The same first paint is available without the widgets: `ServerRenderedResults` lives in
+`XpSearch.Core`, so a page that builds its search UI in plain JavaScript can render one too — see
+[Server rendering and the mount contract](server-rendering.md).
 
 ### Static assets
 
