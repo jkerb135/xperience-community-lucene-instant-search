@@ -64,3 +64,11 @@ sidebar label **Edit index** — old `/tuning/` bookmarks 500.
 21. Narrow (≤1365) variants of Analytics / Query tester / Status; Status **Copy failure details**
     clipboard; role-restricted checks (View-only vs Rebuild/DELETE).
 22. Degraded status (3b) — still needs the owner-approved failing push to stage it.
+
+## F. PB-3 URL routing (added 2026-08-31)
+23. On /search (existing editor-built page, host rebuilt): typing a query updates the address bar
+    (?q=...), facet/page/sort changes follow, browser Back restores the previous state, and pasting
+    the URL into a fresh tab reproduces the results. No re-save of the widget should be needed
+    (default-on is retroactive).
+24. Search box widget dialog shows "Sync search state to the URL" ticked by default; unticking it
+    and saving stops the URL from changing.
