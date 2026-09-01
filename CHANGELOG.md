@@ -12,6 +12,20 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Added (docs):** a screenshot-led tour of the administration surface,
+  [Administration UI tour](docs/guides/admin-ui-tour.md) — how the per-index tuning pages are grafted
+  onto the Lucene integration's index listing (**Lucene Search → List of registered Lucene indices →
+  a row → the *Edit index (xps)* sidebar**), one section per page (Settings, Rules and the rule
+  builder, Suggestions, Synonyms and Synonym suggestions, Stopwords, Field weights and the
+  popularity toggle, Query tester, Analytics, Experiments with its variant-scoped copies of the four
+  tuning listings, Status) and the two pages of the **Search ingestion** application (API keys,
+  Ingestion log). The same captures are now embedded in the admin sections of the analytics,
+  relevance-tuning, popularity-boosts, experiments and ingestion guides. Images live in
+  `docs/guides/images/` and are referenced relatively, so the pages render both in the repository and
+  in the GitHub wiki; every capture is scripted in `tools/screenshots/` (`npm run capture
+  [-- shotName]`, routes and interaction steps in `routes.json`) and listed with its route, data
+  prerequisites and staleness triggers in `docs/internal/screenshot-manifest.md`.
+
 - **Added (core):** server-rendered first paint is a `XpSearch.Core` capability, not a Page Builder one.
   `AddXpSearch()` registers `ServerRenderedResults` and the result template registry, so a host that
   builds its search UI in plain JavaScript against the npm package can inject `ServerRenderedResults`
@@ -46,6 +60,36 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
   | `SearchResultViewModel` | `XpSearch.Widgets.Templates` | `XpSearch.Core.Rendering` |
 
   `ServerResultsOptions` also takes a new optional last parameter, `DefaultViewPath`.
+
+- **Added (js):** per-widget subpath exports —
+  `@xperience-community/xperience-search/widgets/<kebab-name>` for each of the twelve widget modules
+  (`clearFilters` ships with `active-filters`), plus `.../widgets` for the barrel. Every subpath
+  resolves for `import` and for `types`; `npm run build` fails if a target in the `exports` map is
+  missing from the tarball.
+
+- **Added (js):** explicit widget registration for bundler consumers.
+  `mountAll(root, { widgets })` takes the widget factories a page bundled, and `bootstrap.ts` no
+  longer imports the widget implementations, so importing `createSearch` plus one widget no longer
+  drags in all thirteen (a bundler pass in `npm run package:check` asserts it: 15.9 KB instead of
+  45.4 KB for `createSearch` + `searchBox`). `registerWidgetType` still overrides a widget of the
+  same name. **The UMD bundle is unchanged** — it registers all first-party widgets on load and
+  auto-mounts as before, so the `<xps-search-assets />` path is unaffected. `getWidgetType(id)` now
+  answers only for what was registered, which under the UMD bundle is still every built-in.
+
+- **Added (js, themes):** the SCSS sources ship in the package. `scss/shell`, `scss/default`,
+  `scss/base` and `scss/widgets/<kebab-name>` are exports, so a page can `@use` the base once and
+  then only the widgets it mounted, and `@use … with (…)` sets the default values of the `--xps-*`
+  custom properties at build time. The custom properties themselves are emitted under the same
+  names, so runtime theming is unchanged. For pipelines without sass the same layer ships compiled
+  as `styles/base.css` and `styles/widgets/<kebab-name>.css`. `themes/shell.css` and
+  `themes/default.css` keep their paths and their rules — the build fails if they stop matching the
+  CSS the NuGet package serves.
+
+- **Added (docs):** [JavaScript bundler setup](docs/guides/javascript-bundler-setup.md) — npm-first
+  install, Vite example, SCSS configuration, Page Builder mounts from a bundle, and the version
+  pairing table (the npm package version must match the installed `XperienceCommunity.Search.Core`).
+  The tag helper is now documented as the quick start for a site with no build pipeline, with the
+  rule that one page runs one runtime, never both.
 
 - **Fixed (admin):** in the rule builder's action side panel, **Add row** in the attribute + value
   editor did nothing, and picking an attribute erased the row again (Filter results, and the

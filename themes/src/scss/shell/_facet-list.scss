@@ -1,0 +1,56 @@
+@use '../variables' as v;
+
+/* --------------------------------------------------------------------------
+ * facetList (the checkable-row rules are shared with toggleFilter)
+ * ------------------------------------------------------------------------ */
+
+.xps-facet-list {
+  display: flex;
+  flex-direction: column;
+  gap: v.$half;
+}
+
+.xps-facet-list__search-input {
+  width: 100%;
+  min-height: v.$control-min-height;
+  padding: v.$half;
+}
+
+.xps-facet-list__list {
+  display: flex;
+  flex-direction: column;
+  gap: v.$half;
+}
+
+.xps-facet-list__label,
+.xps-toggle-filter__label {
+  display: flex;
+  align-items: center;
+  gap: v.$half;
+  cursor: pointer;
+}
+
+.xps-facet-list__item--disabled .xps-facet-list__label,
+.xps-toggle-filter--disabled .xps-toggle-filter__label {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.xps-facet-list__checkbox,
+.xps-toggle-filter__checkbox {
+  flex: 0 0 auto;
+}
+
+.xps-facet-list__value,
+.xps-toggle-filter__value {
+  min-width: 0;
+}
+
+.xps-facet-list__count,
+.xps-toggle-filter__count {
+  margin-inline-start: auto;
+}
+
+.xps-facet-list__show-more {
+  align-self: flex-start;
+}

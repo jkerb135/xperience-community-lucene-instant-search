@@ -206,7 +206,7 @@
 }
 
 /* --------------------------------------------------------------------------
- * results / loadMore
+ * results (the list rules are shared with loadMore, which renders the same items)
  * ------------------------------------------------------------------------ */
 .xps-results,
 .xps-load-more {
@@ -262,6 +262,9 @@
   width: 100%;
 }
 
+/* --------------------------------------------------------------------------
+ * loadMore
+ * ------------------------------------------------------------------------ */
 .xps-load-more__sentinel {
   height: 1px;
 }
@@ -271,7 +274,7 @@
 }
 
 /* --------------------------------------------------------------------------
- * facetList / toggleFilter
+ * facetList (the checkable-row rules are shared with toggleFilter)
  * ------------------------------------------------------------------------ */
 .xps-facet-list {
   display: flex;
@@ -350,7 +353,7 @@
 }
 
 /* --------------------------------------------------------------------------
- * stats / sortBy / clearRefinements / currentRefinements
+ * resultStats
  * ------------------------------------------------------------------------ */
 .xps-result-stats {
   display: flex;
@@ -358,8 +361,12 @@
   gap: calc(var(--xps-space) / 2);
 }
 
-/* The shared labelled-select block. Available to custom widgets; sortSelect uses it too, so
-   there is one themed <select> in the product rather than one per widget. */
+/* --------------------------------------------------------------------------
+ * sortSelect
+ *
+ * The shared labelled-select block. Available to custom widgets; sortSelect uses it too, so
+ * there is one themed <select> in the product rather than one per widget.
+ * ------------------------------------------------------------------------ */
 .xps-select {
   display: flex;
   flex-wrap: wrap;
@@ -376,6 +383,9 @@
   opacity: 0.6;
 }
 
+/* --------------------------------------------------------------------------
+ * activeFilters / clearFilters (the chips themselves are in _base.scss)
+ * ------------------------------------------------------------------------ */
 .xps-active-filters__list {
   display: flex;
   flex-wrap: wrap;

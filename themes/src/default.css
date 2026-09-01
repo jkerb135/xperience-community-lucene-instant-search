@@ -99,7 +99,8 @@
 }
 
 /* --------------------------------------------------------------------------
- * Form controls
+ * Form controls — shared by searchBox, suggestions, facetList, rangeFilter and sortSelect,
+ * so that every text input and select in the product is themed once.
  * ------------------------------------------------------------------------ */
 .xps-search-box__input,
 .xps-suggestions__input,
@@ -137,7 +138,7 @@
 }
 
 /* --------------------------------------------------------------------------
- * results
+ * results (shared with loadMore, which renders the same items)
  * ------------------------------------------------------------------------ */
 .xps-result__link {
   color: var(--xps-color-accent);
@@ -162,7 +163,8 @@
 }
 
 /* --------------------------------------------------------------------------
- * facetList / toggleFilter / categoryTree
+ * facetList — the title and the muted-count rules are shared with toggleFilter,
+ * categoryTree and rangeFilter.
  * ------------------------------------------------------------------------ */
 .xps-facet-list__title,
 .xps-category-tree__title,
@@ -191,6 +193,9 @@
   color: var(--xps-color-accent);
 }
 
+/* --------------------------------------------------------------------------
+ * categoryTree
+ * ------------------------------------------------------------------------ */
 .xps-category-tree__link {
   color: var(--xps-color-text);
   text-decoration: none;
@@ -209,7 +214,7 @@
 }
 
 /* --------------------------------------------------------------------------
- * pagination / stats
+ * pagination (the muted rule is shared with resultStats)
  * ------------------------------------------------------------------------ */
 .xps-pagination__link {
   color: var(--xps-color-text);
@@ -233,6 +238,9 @@
   color: var(--xps-color-muted);
 }
 
+/* --------------------------------------------------------------------------
+ * resultStats
+ * ------------------------------------------------------------------------ */
 .xps-result-stats__time {
   color: var(--xps-color-muted);
 }

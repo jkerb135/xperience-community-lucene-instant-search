@@ -1,0 +1,39 @@
+/* --------------------------------------------------------------------------
+ * Form controls — shared by searchBox, suggestions, facetList, rangeFilter and sortSelect,
+ * so that every text input and select in the product is themed once.
+ * ------------------------------------------------------------------------ */
+
+.xps-search-box__input,
+.xps-suggestions__input,
+.xps-facet-list__search-input,
+.xps-range-filter__input,
+.xps-select__control {
+  background-color: var(--xps-color-surface);
+  color: var(--xps-color-text);
+  border: 1px solid var(--xps-color-border);
+  border-radius: var(--xps-radius);
+}
+
+.xps-search-box__input::placeholder,
+.xps-suggestions__input::placeholder,
+.xps-facet-list__search-input::placeholder {
+  color: var(--xps-color-muted);
+}
+
+.xps-search-box__reset,
+.xps-search-box__submit,
+.xps-suggestions__reset {
+  color: var(--xps-color-muted);
+}
+
+.xps-search-box__reset:hover:not(:disabled),
+.xps-search-box__submit:hover:not(:disabled),
+.xps-suggestions__reset:hover:not(:disabled) {
+  color: var(--xps-color-text);
+}
+
+.xps-facet-list__checkbox,
+.xps-toggle-filter__checkbox,
+.xps-range-filter__range {
+  accent-color: var(--xps-color-accent);
+}

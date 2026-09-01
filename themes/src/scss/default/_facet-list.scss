@@ -1,0 +1,31 @@
+/* --------------------------------------------------------------------------
+ * facetList — the title and the muted-count rules are shared with toggleFilter,
+ * categoryTree and rangeFilter.
+ * ------------------------------------------------------------------------ */
+
+.xps-facet-list__title,
+.xps-category-tree__title,
+.xps-range-filter__title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.xps-facet-list__item--selected .xps-facet-list__value {
+  font-weight: 600;
+}
+
+.xps-facet-list__count,
+.xps-toggle-filter__count,
+.xps-category-tree__count,
+.xps-facet-list__no-results,
+.xps-range-filter__values,
+.xps-range-filter__input-label {
+  color: var(--xps-color-muted);
+  font-size: 0.875em;
+}
+
+.xps-facet-list__show-more {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--xps-color-accent);
+}

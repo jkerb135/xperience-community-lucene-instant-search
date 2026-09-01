@@ -1,0 +1,4 @@
+// results: structure + theme for this widget alone. Load a base partial (or themes/shell.css)
+// once per page as well — these files carry no reset and no design tokens.
+@use '../shell/results' as structure-results;
+@use '../default/results' as theme-results;

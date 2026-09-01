@@ -1,0 +1,6 @@
+// load-more: structure + theme for this widget alone. Load a base partial (or themes/shell.css)
+// once per page as well — these files carry no reset and no design tokens.
+//
+// Pulls the result-list rules it shares with results.
+@use '../shell/load-more' as structure-load-more;
+@use '../default/results' as theme-results;

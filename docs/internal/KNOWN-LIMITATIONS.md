@@ -17,6 +17,25 @@ and how to lift it.
   Core's Razor class library a fourth package (`XperienceCommunity.Search.Views`) that both Widgets
   and plain hosts reference.
 
+## Per-widget stylesheets in `themes/src/scss/widgets/*` and `Client/styles/widgets/*.css`
+
+- **Simplified:** a widget partial carries the *whole* rule a shared selector list belongs to, so a
+  rule two widgets share is duplicated across the two compiled files rather than layered into a
+  third one. `styles/widgets/toggle-filter.css` therefore also carries the facet-list checkable-row
+  rules, `load-more.css` carries the result-list rules, and both carry the form-control block. The
+  SCSS path does not duplicate anything — `@use` loads a module once — this is only about the
+  precompiled `styles/widgets/*.css` files.
+- **Ceiling:** a consumer loading several of the precompiled per-widget files ships those shared
+  rules more than once; `styles/base.css` plus all twelve is 31.6 KB against 21.3 KB for
+  `shell.css` + `default.css`
+  (which is why the guide points at the two full stylesheets for a page that mounts most widgets).
+  Identical duplicated rules cannot conflict, so only bytes are at stake.
+- **Upgrade path:** split the shared selector lists into their own partials (`_checkable.scss`,
+  `_form-controls.scss`, `_result-list.scss`), emit them as `styles/shared/*.css`, and have the
+  widget CSS files carry only what is theirs — at the cost of a documented load order per widget.
+  The rule-for-rule parity check in `Client/scripts/build-styles.mjs` keeps `shell.css`/`default.css`
+  honest while that is done.
+
 ## Hierarchical facets in `XpSearchIndexingStrategy.AddTags` and `TaxonomyFacetProvider`
 
 - **Simplified:** a tag's ancestors are resolved **when the document is indexed** (ADR-0018) and

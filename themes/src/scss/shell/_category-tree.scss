@@ -1,0 +1,33 @@
+@use '../variables' as v;
+
+/* --------------------------------------------------------------------------
+ * categoryTree
+ * ------------------------------------------------------------------------ */
+
+.xps-category-tree {
+  display: flex;
+  flex-direction: column;
+  gap: v.$half;
+}
+
+.xps-category-tree__list {
+  display: flex;
+  flex-direction: column;
+  gap: v.$quarter;
+}
+
+.xps-category-tree__item > .xps-category-tree__list {
+  margin-top: v.$quarter;
+  padding-inline-start: var(--xps-space);
+}
+
+.xps-category-tree__link {
+  display: flex;
+  align-items: center;
+  gap: v.$half;
+  padding: v.$quarter 0;
+}
+
+.xps-category-tree__count {
+  margin-inline-start: auto;
+}

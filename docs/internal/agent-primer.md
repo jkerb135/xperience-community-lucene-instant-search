@@ -40,9 +40,10 @@ cd src/XpSearch.Admin/Client && npm ci && npm run build
 cd src/XpSearch.Widgets/Client && npm run contract:gen && npm run contract:check
 ```
 
-Suite sizes (2026-09-01, after PK-2): Core 285, Admin 186, Ingestion 47, Widgets 72, JS 195 — if your
-run shows fewer, you ran the wrong project. (There is no solution file in this repo: test the four
-projects one by one.)
+Suite sizes (2026-09-01, after PK-1+PK-2): Core 285, Admin 186, Ingestion 47, Widgets 72, JS 198 — if
+your run shows fewer, you ran the wrong project. There is no solution file in the repo root; run each
+test project by path. The Admin C# suite needs `src/XpSearch.Admin/Client` built first, like the
+Widgets one.
 
 ## Patterns to copy (don't invent parallel ones)
 
@@ -52,6 +53,12 @@ projects one by one.)
   markup tests in `tests/XpSearch.Widgets.Tests/MountMarkupTests.cs`.
 - JS widget: `Client/src/widgets/`, registry + trust-boundary config parsing in
   `Client/src/bootstrap.ts` (`readMountConfig`).
+- New JS widget entry point: add it to `Client/scripts/widget-entries.mjs` (rollup input, the
+  `exports` walk and the per-widget CSS all read that map) and add its `./widgets/<kebab>` export.
+- Stylesheets: authored in `themes/src/scss/{shell,default}/_<widget>.scss`, bundled by
+  `scss/{shell,default}.scss`, à la carte via `scss/widgets/_<widget>.scss`. `themes/src/*.css` is
+  generated **and committed** (`cd themes && npm run build`); the widgets client recompiles the same
+  sources and fails if the rules differ.
 - Pipeline stage: implement + register like `ResolveContactGroupsStage` (order constants matter;
   anything affecting results must join the response cache key).
 - Admin page: custom templates need `RoutingContentPlaceholder` in parent templates; ActionCell

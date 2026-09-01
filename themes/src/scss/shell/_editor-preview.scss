@@ -1,0 +1,42 @@
+@use '../variables' as v;
+
+/* --------------------------------------------------------------------------
+ * Page Builder editor preview (spec 7.5)
+ *
+ * The static picture of a configured widget an editor sees inside the Page Builder,
+ * where hydrating a mount would be unreliable. Structure only, like everything else
+ * here: the mirrored widget markup inside it is styled by the widget's own classes.
+ * ------------------------------------------------------------------------ */
+
+.xps-editor-preview {
+  display: flex;
+  flex-direction: column;
+  gap: v.$half;
+  padding: var(--xps-space);
+}
+
+.xps-editor-preview__badge {
+  align-self: flex-start;
+  opacity: 0.7;
+}
+
+.xps-editor-preview__body {
+  display: flex;
+  flex-direction: column;
+  gap: v.$half;
+}
+
+.xps-editor-preview__note {
+  opacity: 0.7;
+}
+
+/* A placeholder that pulses forever in the builder is a distraction, not information. */
+.xps-editor-preview .xps-skeleton {
+  animation: none;
+}
+
+/* Counts are short; without a width the placeholder bar would eat the row. */
+.xps-editor-preview .xps-facet-list__count > .xps-skeleton,
+.xps-editor-preview .xps-category-tree__count > .xps-skeleton {
+  width: 2rem;
+}

@@ -1,0 +1,12 @@
+@use '../variables' as v;
+
+/* --------------------------------------------------------------------------
+ * activeFilters / clearFilters (the chips themselves are in _base.scss)
+ * ------------------------------------------------------------------------ */
+
+.xps-active-filters__list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: v.$half;
+}

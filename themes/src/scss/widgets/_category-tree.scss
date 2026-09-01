@@ -1,0 +1,4 @@
+// category-tree: structure + theme for this widget alone. Load a base partial (or themes/shell.css)
+// once per page as well — these files carry no reset and no design tokens.
+@use '../shell/category-tree' as structure-category-tree;
+@use '../default/category-tree' as theme-category-tree;

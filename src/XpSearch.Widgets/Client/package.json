@@ -19,23 +19,93 @@
       "import": "./dist/behaviors.mjs",
       "default": "./dist/behaviors.mjs"
     },
+    "./widgets": {
+      "types": "./dist/types/widgets/index.d.ts",
+      "import": "./dist/widgets.mjs",
+      "default": "./dist/widgets.mjs"
+    },
+    "./widgets/active-filters": {
+      "types": "./dist/types/widgets/activeFilters.d.ts",
+      "import": "./dist/widgets/active-filters.mjs",
+      "default": "./dist/widgets/active-filters.mjs"
+    },
+    "./widgets/category-tree": {
+      "types": "./dist/types/widgets/categoryTree.d.ts",
+      "import": "./dist/widgets/category-tree.mjs",
+      "default": "./dist/widgets/category-tree.mjs"
+    },
+    "./widgets/facet-list": {
+      "types": "./dist/types/widgets/facetList.d.ts",
+      "import": "./dist/widgets/facet-list.mjs",
+      "default": "./dist/widgets/facet-list.mjs"
+    },
+    "./widgets/load-more": {
+      "types": "./dist/types/widgets/loadMore.d.ts",
+      "import": "./dist/widgets/load-more.mjs",
+      "default": "./dist/widgets/load-more.mjs"
+    },
+    "./widgets/pagination": {
+      "types": "./dist/types/widgets/pagination.d.ts",
+      "import": "./dist/widgets/pagination.mjs",
+      "default": "./dist/widgets/pagination.mjs"
+    },
+    "./widgets/range-filter": {
+      "types": "./dist/types/widgets/rangeFilter.d.ts",
+      "import": "./dist/widgets/range-filter.mjs",
+      "default": "./dist/widgets/range-filter.mjs"
+    },
+    "./widgets/result-stats": {
+      "types": "./dist/types/widgets/resultStats.d.ts",
+      "import": "./dist/widgets/result-stats.mjs",
+      "default": "./dist/widgets/result-stats.mjs"
+    },
+    "./widgets/results": {
+      "types": "./dist/types/widgets/results.d.ts",
+      "import": "./dist/widgets/results.mjs",
+      "default": "./dist/widgets/results.mjs"
+    },
+    "./widgets/search-box": {
+      "types": "./dist/types/widgets/searchBox.d.ts",
+      "import": "./dist/widgets/search-box.mjs",
+      "default": "./dist/widgets/search-box.mjs"
+    },
+    "./widgets/sort-select": {
+      "types": "./dist/types/widgets/sortSelect.d.ts",
+      "import": "./dist/widgets/sort-select.mjs",
+      "default": "./dist/widgets/sort-select.mjs"
+    },
+    "./widgets/suggestions": {
+      "types": "./dist/types/widgets/suggestions.d.ts",
+      "import": "./dist/widgets/suggestions.mjs",
+      "default": "./dist/widgets/suggestions.mjs"
+    },
+    "./widgets/toggle-filter": {
+      "types": "./dist/types/widgets/toggleFilter.d.ts",
+      "import": "./dist/widgets/toggle-filter.mjs",
+      "default": "./dist/widgets/toggle-filter.mjs"
+    },
     "./themes/shell.css": "./themes/shell.css",
     "./themes/default.css": "./themes/default.css",
+    "./scss/*": "./scss/*",
+    "./styles/*": "./styles/*",
     "./mock/server.mjs": "./mock/server.mjs",
     "./package.json": "./package.json"
   },
   "files": [
     "dist",
     "themes",
+    "scss",
+    "styles",
     "mock/server.mjs",
     "README.md"
   ],
   "scripts": {
-    "build": "node -e \"fs.rmSync('dist',{recursive:true,force:true})\" && rollup -c && tsc -p tsconfig.build.json && node scripts/package-assets.mjs",
+    "build": "node -e \"fs.rmSync('dist',{recursive:true,force:true})\" && rollup -c && tsc -p tsconfig.build.json && node scripts/build-styles.mjs && node scripts/package-assets.mjs && npm run package:check",
     "contract:check": "node scripts/contract.mjs --check",
     "contract:gen": "node scripts/contract.mjs",
     "docs:check": "node scripts/migration-guide.mjs --check",
     "docs:migration": "node scripts/migration-guide.mjs",
+    "package:check": "node scripts/package-check.mjs",
     "prepack": "npm run build",
     "repo:demo": "npm run build && node mock/demo-server.ts",
     "repo:mock": "node mock/server.ts",
@@ -50,6 +120,7 @@
     "jsdom": "30.0.1",
     "quicktype": "26.0.0",
     "rollup": "4.62.5",
+    "sass": "1.103.1",
     "typescript": "7.0.2",
     "vitest": "4.1.11"
   },

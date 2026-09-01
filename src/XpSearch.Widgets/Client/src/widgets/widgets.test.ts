@@ -13,6 +13,7 @@ import type { SearchInstance, Widget } from '../types';
 import { html } from '../templates/html';
 import { widgetId } from './dom';
 import {
+  DEFAULT_WIDGETS,
   categoryTree,
   clearFilters,
   activeFilters,
@@ -985,7 +986,7 @@ describe('the .xps-mount bootstrap', () => {
       )
       .join('');
 
-    const instances = mountAll(document);
+    const instances = mountAll(document, { widgets: DEFAULT_WIDGETS });
     expect(instances.length).toBe(1);
     const roots = [...document.querySelectorAll('.xps-mount > .xps')];
     expect(roots.length).toBe(9);

@@ -1,0 +1,40 @@
+@use '../variables' as v;
+
+/* --------------------------------------------------------------------------
+ * searchBox
+ * ------------------------------------------------------------------------ */
+
+.xps-search-box {
+  display: flex;
+  flex-direction: column;
+  gap: v.$half;
+}
+
+.xps-search-box__field {
+  display: flex;
+  align-items: center;
+  gap: v.$half;
+}
+
+.xps-search-box__input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: v.$control-min-height;
+  padding: v.$half;
+}
+
+.xps-search-box__loading {
+  display: none;
+  flex: 0 0 auto;
+  width: 1em;
+  height: 1em;
+}
+
+.xps-search-box--stalled .xps-search-box__loading {
+  display: block;
+}
+
+.xps-search-box__reset,
+.xps-search-box__submit {
+  flex: 0 0 auto;
+}

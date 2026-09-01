@@ -371,9 +371,13 @@ builds one `createSearch()` instance per group and starts it:
   option only one widget knows still applies wherever that widget sits. The first definition of a key
   wins; a mount that disagrees produces one `console.warn` naming the key. The group needs an `index`
   from at least one mount.
-- The UMD bundle runs `mountAll()` itself on `DOMContentLoaded`. From a bundler, call
-  `mountAll(root = document)` after your `registerWidgetType` calls; already-mounted elements are
-  skipped, so it is safe to call again after injecting markup.
+- The UMD bundle runs `mountAll()` itself on `DOMContentLoaded`, and is the only build that registers
+  the thirteen first-party widgets for you. From a bundler, call `mountAll(root = document)` after your
+  `registerWidgetType` calls, and pass the first-party widgets you bundled:
+  `mountAll(document, { widgets: { searchBox, results } })` — see
+  [JavaScript bundler setup](javascript-bundler-setup.md#page-builder-mounts). A factory you registered
+  wins over one of the same name in that map. Already-mounted elements are skipped, so it is safe to
+  call again after injecting markup.
 - Nothing here throws. An unknown widget type, malformed JSON or a group with no `index` is a
   `console.error` and a skipped mount; the rest of the page still works.
 

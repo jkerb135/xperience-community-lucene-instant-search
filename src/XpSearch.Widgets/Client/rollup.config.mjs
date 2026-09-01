@@ -3,8 +3,17 @@
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { transformSync } from 'esbuild';
+import { WIDGET_ENTRIES } from './scripts/widget-entries.mjs';
 
 const TARGET = 'es2020';
+
+/** `./widgets/<kebab>` subpaths (PK-1), sharing chunks with the main entries. */
+const widgetInputs = Object.fromEntries(
+  Object.entries(WIDGET_ENTRIES).map(([name, module]) => [
+    `widgets/${name}`,
+    `src/widgets/${module}.ts`,
+  ])
+);
 
 /** Resolves the extensionless relative imports the source uses, then strips types. */
 const typescript = () => ({
@@ -45,7 +54,12 @@ const typescript = () => ({
 
 export default [
   {
-    input: { xpsearch: 'src/index.ts', behaviors: 'src/behaviors.ts' },
+    input: {
+      xpsearch: 'src/index.ts',
+      behaviors: 'src/behaviors.ts',
+      widgets: 'src/widgets/index.ts',
+      ...widgetInputs,
+    },
     output: {
       dir: 'dist',
       format: 'es',

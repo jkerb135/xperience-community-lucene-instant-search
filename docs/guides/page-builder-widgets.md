@@ -364,8 +364,17 @@ The client bundle and the two stylesheets ship as Razor Class Library static web
 /_content/XperienceCommunity.Search.Widgets/xpsearch/xpsearch.umd.js  the UMD bundle, global `xpsearch`
 ```
 
-`<xps-search-assets />` emits all three. If your site has its own design system, load only the structural
-stylesheet:
+`<xps-search-assets />` emits all three. **This is the quick start: no npm, no build pipeline.** If the
+site already has a JavaScript build, the recommended setup is the npm package instead —
+[JavaScript bundler setup](javascript-bundler-setup.md).
+
+**One page, one runtime.** A page runs either the tag helper's bundle or your own — never both, or
+`.xps-mount` elements get hydrated twice and every keystroke searches twice. If you bundle the npm
+package, do not emit `<xps-search-assets />` in that layout (import the stylesheets through your build
+instead). Page Builder mounts hydrate from whichever runtime is present, so the editors' experience is
+the same either way.
+
+If your site has its own design system, load only the structural stylesheet:
 
 ```cshtml
 <xps-search-assets default-theme="false" />

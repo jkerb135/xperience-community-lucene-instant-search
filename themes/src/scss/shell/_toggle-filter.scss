@@ -1,0 +1,3 @@
+// toggleFilter is one checkable row: structurally it is a facet-list row and nothing else,
+// so every rule it needs lives in the shared block of _facet-list.scss.
+@use 'facet-list';
