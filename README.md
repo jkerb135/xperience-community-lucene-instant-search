@@ -1,4 +1,5 @@
-# Xperience Search
+# Xperience Search - Currently In Development
+- not intended for production sites
 
 A search experience layer for Xperience by Kentico: JSON search API over Lucene,
 a widget-based JS library, Page Builder widgets, admin relevance tuning,
