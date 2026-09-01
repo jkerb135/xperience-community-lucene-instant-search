@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Card,
   CellType,
@@ -12,6 +13,9 @@ import {
 import type { StringCell, TableColumn, TableRow } from '@kentico/xperience-admin-components';
 
 import { muted } from '../theme';
+import { TablePager } from './ReportTable';
+
+import './ReportTable.scss';
 
 /*
  * Searches and zero-result searches over time. The design system exposes no line chart - only
@@ -29,6 +33,8 @@ interface VolumeChartProps {
   readonly points: VolumePoint[];
   /** Formats a yyyy-mm-dd day for the axis labels. */
   readonly formatDay: (day: string) => string;
+  /** How many rows one page of the "Show the numbers" table holds, as for the report tables. */
+  readonly pageSize: number;
 }
 
 const width = 1000;
@@ -67,7 +73,6 @@ const numberColumns: TableColumn[] = [
 
 const numberCell = (columnName: string, value: string): StringCell => ({ type: CellType.String, columnName, value });
 
-// Every point is a row: the range the dashboard offers tops out at 90 days, so there is no paging.
 const numberRow =
   (formatDay: (day: string) => string) =>
   (point: VolumePoint): TableRow => ({
@@ -87,9 +92,14 @@ const Legend = ({ color, label }: { readonly color: string; readonly label: stri
   </span>
 );
 
-export const VolumeChart = ({ points, formatDay }: VolumeChartProps) => {
+export const VolumeChart = ({ points, formatDay, pageSize }: VolumeChartProps) => {
+  const [page, setPage] = useState(1);
+
   const peak = Math.max(...points.map((point) => point.volume), 1);
   const labels = points.filter((_, index) => index % Math.ceil(points.length / 6) === 0);
+  const totalPages = Math.max(1, Math.ceil(points.length / pageSize));
+  // As in ReportTable: the series can shrink under the page the user is standing on.
+  const current = Math.min(page, totalPages);
 
   return (
     <Card
@@ -124,7 +134,14 @@ export const VolumeChart = ({ points, formatDay }: VolumeChartProps) => {
       </div>
       <details>
         <summary>Show the numbers</summary>
-        <Table columns={numberColumns} rows={points.map(numberRow(formatDay))} isHeaderVisible />
+        <Table
+          columns={numberColumns}
+          rows={points.slice((current - 1) * pageSize, current * pageSize).map(numberRow(formatDay))}
+          isHeaderVisible
+        />
+        {totalPages > 1 ? (
+          <TablePager page={current} totalPages={totalPages} total={points.length} onChange={setPage} />
+        ) : null}
       </details>
     </Card>
   );

@@ -37,7 +37,7 @@ internal sealed class FacetAttributeOptionsTests
 
         string? options = await FacetAttributeOptions.BuildOptionsAsync(provider, "site-content", CancellationToken.None);
 
-        Assert.That(options, Is.EqualTo("tags;tags\r\ncontentType;contentType"));
+        Assert.That(options, Is.EqualTo("contentType;contentType\r\ntags;tags"));
     }
 
     [TestCase("")]
@@ -79,7 +79,7 @@ internal sealed class FacetAttributeOptionsTests
             // The default is unchanged: the facet drop-down still offers the facetable fields.
             Assert.That(
                 FacetAttributeOptions.BuildOptionsAsync(provider, "site-content", CancellationToken.None).Result,
-                Is.EqualTo("tags;tags\r\nprice;price"));
+                Is.EqualTo("price;price\r\ntags;tags"));
         });
     }
 
@@ -100,7 +100,21 @@ internal sealed class FacetAttributeOptionsTests
         string? weightable = await FacetAttributeOptions.BuildOptionsAsync(
             provider, "site-content", CancellationToken.None, FacetAttributeOptions.IsWeightable);
 
-        Assert.That(weightable, Is.EqualTo("title;title\r\nsummary;summary"));
+        Assert.That(weightable, Is.EqualTo("summary;summary\r\ntitle;title"));
+    }
+
+    /// <summary>
+    /// Discovery order is meaningless to an editor hunting for a field name, so every drop-down fed
+    /// from here is alphabetical (AD-9, HW-11 #17).
+    /// </summary>
+    [Test]
+    public async Task Options_are_alphabetical_regardless_of_case_or_discovery_order()
+    {
+        var provider = SchemaProvider("site-content", Field("Zebra", true), Field("apple", true), Field("Banana", true));
+
+        Assert.That(
+            await FacetAttributeOptions.BuildOptionsAsync(provider, "site-content", CancellationToken.None),
+            Is.EqualTo("apple;apple\r\nBanana;Banana\r\nZebra;Zebra"));
     }
 
     [Test]

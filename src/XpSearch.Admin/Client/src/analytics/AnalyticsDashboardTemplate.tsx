@@ -468,6 +468,7 @@ export const AnalyticsDashboardTemplate = ({selectedIndexName, today}: Analytics
                     {loaded && !empty ? (
                         <Fragment key={tableGeneration}>
                             <VolumeChart points={report.volumeOverTime}
+                                         pageSize={pageSize}
                                          formatDay={(day) => dayMonthFormat.format(toDate(day))}/>
                             {zeroResultCard}
                             {topQueriesCard}

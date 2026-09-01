@@ -8,6 +8,14 @@ Breaking changes to the public behaviour API (spec §5.7) or the JSON contract
 
 ## [Unreleased]
 
+- **Fixed (admin):** the Analytics chart's **Show the numbers** table now pages like the report tables
+  below it (same pager, same *Rows per page* selector) instead of listing every day of the range in
+  one 90-row table.
+
+- **Fixed (core, admin):** the field drop-downs built from an index schema — **Field weights**' Field,
+  the facet and range-filter attribute properties of the widgets, and the rule builder's attribute
+  picker — list the fields alphabetically (case-insensitive) instead of in index-discovery order.
+
 - **Fixed (core, admin):** the `XpSearch.PopularitySignal` scheduled task failed with *Cannot insert
   the value NULL into column 'PopularityIndexEnabled'* the first time it ran for an index. A Kentico
   Info object only writes the fields that were set, so the settings row it creates now sets the
