@@ -136,7 +136,7 @@ verified live — "There are 2 results without them / Clear filters and show 2 r
   names on real Kentico sites).
 
 **Plans:**
-- [ ] 04-01: §10.5 typed clients unit
+- [x] 04-01: §10.5 typed clients (CL-1) — merged fa5843d (2026-09-01); lead host round trip passed both clients; checklist §U 104–107
 - [ ] 04-02: §10.7 example 2 unit
 - [ ] 04-03: §12 performance unit
 - [x] 04-04: SG-1 mixed suggestion sources + recent searches — merged b2d5234 (2026-09-01); checklist §S 95–100 = owner browser items
