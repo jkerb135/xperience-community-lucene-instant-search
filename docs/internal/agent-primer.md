@@ -87,9 +87,13 @@ Widgets one.
   `ForInfoObjects<T>().All()` dependency (`TouchCacheDependencies = true` on the TYPEINFO), the flag
   folded into `SearchCacheKey.Compute`, and a header command + callout on the listing it belongs to.
 - Admin page: custom templates need `RoutingContentPlaceholder` in parent templates; ActionCell
-  buttons need real aria-labels (use labelled stock Buttons); `[PageCommand]` on abstract bases /
-  re-annotated overrides is SUSPECT on the host — declare commands as plain methods on the final
-  page class.
+  buttons need real aria-labels (use labelled stock Buttons); `[PageCommand]` works on plain methods,
+  on abstract bases and on re-annotated overrides alike — the only rule is that the command NAME is
+  unique on the page (a collision refuses to build the UI tree) and that `ListingPage.Delete` carries
+  no attribute of its own, so a listing must supply one (ADR-0027, decompiled). New commands are
+  guarded by `tests/XpSearch.Admin.Tests/PageCommandDiscoveryTests.cs`, which asks Kentico's real
+  `UITree`; add the client's command name there. A host "command not found" is usually a stale host
+  build — the host `ProjectReference`s the MAIN worktree's `src/`.
 - Scheduled/background work: follow the analytics retention task registration.
 - Creating an Info object (`new XpSearch…Info { … }`): set EVERY field its installer form declares
   without `allowEmpty`, including booleans and the GUID. Kentico serializes only the fields that were

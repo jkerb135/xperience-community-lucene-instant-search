@@ -463,3 +463,29 @@ Search → DancingGoatSample → Edit index → Field weights → Boost by popul
      again: that product is now first. Add `"explain": true` and `ranking.boosts` names the clicks
      boost. A document with clicks that does **not** match the text must still be absent from the
      results — the boost is a SHOULD clause, never a filter.
+
+## W. CD-1 page commands answer (added 2026-09-01)
+
+**Prerequisite, and the point of the whole section:** the host builds this library by
+`ProjectReference` into `..\libraries\xperience-search\src`, i.e. the **main** worktree. Check out
+`main` there (no unit branch), rebuild the solution and restart the host before clicking — the
+2026-08-31 "command not found" reports came from an instance built minutes before the `Delete`
+commands (23:01) and the rule builder's pickers (22:23) merged. `PageCommandDiscoveryTests` proves
+every command below resolves on the current main; these items confirm the running host agrees.
+
+111. **The three that failed.** Lucene Search → an index → Edit → **Field weights**: delete a weight
+     (row menu → Delete → confirm) — the row goes, no "command not found". **Rules**: delete a rule
+     the same way. Open a rule → in an action card use the **item picker** (type a word, results
+     appear) — that is `SearchItems`.
+112. **The never-clicked siblings of the same shape.** Delete a row on **Synonyms**, on **Stopwords**
+     and on **API keys** (`xpsearch-tuning → API keys`). Each is the identical `Delete` command on a
+     different listing.
+113. **The variant-B twins.** Inside an experiment (Experiments → an experiment → Field weights /
+     Rules / Synonyms / Stopwords), delete a variant row — that is the differently named `DeleteRow`
+     command, and a wrong-named action would show up here and nowhere else.
+114. **The rule builder's other commands.** In the rule editor: the attribute picker's value list
+     (`GetAttributeValues`), **Save**, **Cancel**, and **Delete rule**. All four are inherited from
+     the abstract `RuleBuilderPage` — the shape the old convention wrongly suspected.
+115. **If any of these still says "command not found"**, capture the page name from the message and
+     the assembly the host loaded (`XpSearch.Admin.dll` timestamp in the host's `bin`) *before*
+     reporting — that message names the page it looked on, and the answer is usually the timestamp.
