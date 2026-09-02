@@ -1253,21 +1253,3 @@ and how to lift it.
 - **Upgrade path:** build the request body incrementally from the measured byte arrays instead of
   reserializing, and read the caps from `GET /indexes` once per client instead of hardcoding them.
 
-## Highlighting rebuilds the highlighter per document, which makes typo tolerance ~25× more expensive (`LuceneHighlighter.Highlight` in `src/XpSearch.Core/Highlighting/LuceneHighlighter.cs`, called per document by `HighlightStage`)
-
-- **Simplified:** `HighlightStage` calls `IHighlighter.Highlight` once per document on the page, and
-  each call constructs a fresh `Highlighter` and `QueryScorer` over `context.BaseQuery`. For an
-  ordinary query that is cheap. For a `FuzzyQuery` — which is what typo tolerance (FZ-1) builds, one
-  per searchable field — the scorer has to expand the multi-term query against each fragment, and
-  that expansion is redone for every document and every highlighted field.
-- **Ceiling:** measured by PF-1 (`docs/internal/perf-results-2026-09-01.md`, the two `no highlight`
-  rows): at 10,000 documents a single-term search costs 2.8 ms with highlighting and 2.0 ms without;
-  with typo tolerance on the same search costs **135 ms with highlighting and 4.9 ms without**. So
-  ~0.8 ms of highlighting becomes ~130 ms purely because the query is fuzzy. It scales with page size
-  × highlighted fields, not with corpus size (the figure is nearly identical at 10k, 100k and 1M).
-  The response cache hides it from repeat searches; the first visitor for each misspelling pays it.
-- **Upgrade path:** build the `Highlighter`/`QueryScorer` **once per request** in `HighlightStage`
-  rather than once per document, and rewrite the query against the index reader once
-  (`QueryScorer(query, reader, field)`) so the multi-term expansion is not redone per fragment.
-  Deliberately not done in PF-1, which was a measure-only unit: it is a behaviour change to shared
-  ranking code and wants its own unit with the snippet-equality tests to prove nothing moved.

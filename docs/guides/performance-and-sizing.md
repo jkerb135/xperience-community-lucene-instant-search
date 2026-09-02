@@ -30,7 +30,10 @@ dotnet run --project tests/XpSearch.Bench/XpSearch.Bench.csproj -c Release \
 
 It takes about fifteen minutes, needs ~1.5 GB of temporary disk (cleaned up afterwards), and writes
 a dated results document with the full tables and the environment they were measured on. The tables
-below are read from the run of **2026-09-01**:
+below are read from the run of **2026-09-01**, except the two typo-tolerance rows, which come from
+the re-run in `docs/internal/perf-results-2026-09-01-hl-1.md` after the highlighting fix described
+under [Typo tolerance](#typo-tolerance-costs-what-the-extra-terms-cost); that re-run left every
+other row where it was:
 
 | | |
 |---|---|
@@ -63,8 +66,8 @@ number is a number that was actually measured.
 | Term + facet filter + numeric range | 5.7 / 8.8 ms | 9.7 / 15.5 ms | 36.3 / 80.7 ms |
 | Term, sorted by a number | 3.4 / 4.6 ms | 5.8 / 10.8 ms | 19.4 / 77.5 ms |
 | Match-all, deep page (rank 10,000) | 9.1 / 11.0 ms | 17.2 / 20.1 ms | 94.8 / 141.6 ms |
-| Term with typo tolerance on | 135.2 / 204.3 ms | 136.8 / 202.1 ms | 166.9 / 239.7 ms |
-| …the same, with highlighting off | 4.9 / 6.0 ms | 8.5 / 14.7 ms | 31.4 / 92.3 ms |
+| Term with typo tolerance on | 8.2 / 11.2 ms | 11.4 / 19.3 ms | 35.4 / 93.6 ms |
+| …the same, with highlighting off | 4.7 / 6.8 ms | 7.9 / 14.2 ms | 31.5 / 87.6 ms |
 | Autocomplete (`/suggest`, prefix) | 0.34 / 0.54 ms | 0.40 / 0.64 ms | 0.94 / 1.74 ms |
 | Cache hit on the same request | 0.00 ms | 0.00 ms | 0.00 ms |
 
@@ -101,26 +104,31 @@ Raising `MaxResultWindow` raises that cost linearly and buys nothing a visitor w
 paginates to result 20,000. If you have a use case that walks the whole result set (an export, a
 sitemap, a migration), page it by a filter — a date range, a section — rather than by depth.
 
-#### Typo tolerance is the expensive switch
+#### Typo tolerance costs what the extra terms cost
 
 Turning on typo tolerance for an index (see [Relevance tuning → Typo
-tolerance](relevance-tuning.md#typo-tolerance)) takes a search from ~3 ms to ~135 ms at 10,000
-documents. That is real, it is measured, and it is worth understanding before you decide.
+tolerance](relevance-tuning.md#typo-tolerance)) takes a search from 2.6 ms to 8.2 ms at 10,000
+documents — roughly 3× an exact search, at every corpus size. That is the honest price of asking the
+index for every near spelling of every query term instead of just the one the visitor typed.
 
-Almost none of it is the search. Compare the two rows: with highlighting turned off, the same fuzzy
-search costs 4.9 ms at 10k against 2.0 ms for an exact one. **The cost is producing the highlighted
-snippets for a fuzzy query** — the highlighter re-expands the near-spelling match against each
-result's text, for each highlighted field, and it does that per result on the page.
+Most of it is the search itself: with highlighting turned off, the same fuzzy search costs 4.7 ms at
+10k against 1.9 ms for an exact one. Highlighting adds ~3.5 ms on top, against ~0.7 ms for an exact
+query, because there are simply more terms to mark.
+
+The original PF-1 run measured this row at **135 ms**, and that number is still quoted in the PF-1
+changelog entry and in `docs/internal/perf-results-2026-09-01.md`. It was a defect, not a property of
+fuzzy search: the highlighter re-expanded the near-spelling query for every result and every
+highlighted field. The query is now expanded once per request, and the row is the 8.2 ms above.
 
 What that means in practice:
 
-- Typo tolerance plus highlighting is roughly a tenth of a second per uncached search. For a search
-  box, that is acceptable; for an autocomplete-speed experience, it is not. Autocomplete does not go
-  through this path and is unaffected.
-- If you do not render snippets, omit `highlight` from the request and typo tolerance costs almost
-  nothing.
-- The [response cache](search-api.md) hides it from repeat searches — and misspellings repeat, since
-  a popular typo is still a popular query.
+- Typo tolerance plus highlighting is single-digit milliseconds at website sizes. It is a ranking and
+  recall decision now, not a latency decision.
+- If you do not render snippets, omit `highlight` from the request and typo tolerance is a little
+  cheaper still.
+- Autocomplete does not go through this path and is unaffected.
+- The [response cache](search-api.md) hides the cost from repeat searches — and misspellings repeat,
+  since a popular typo is still a popular query.
 
 This is a known cost, not a defect being hidden: it is recorded in the results document with the
 isolating measurement next to it.
