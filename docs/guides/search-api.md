@@ -444,7 +444,9 @@ lets a request send `"sort": "newest"`. Anything else is a `400` keyed `sort`.
 (`XpSearchOptions.MaxPageSize`, 100 by default) it is silently clamped, and the response reports the
 clamped value. Deep paging is bounded too: `page * pageSize` must not exceed
 `XpSearchOptions.MaxResultWindow` (10000 by default), because Lucene ranks every document up to that
-depth.
+depth. That ceiling has a measured cost behind it — see
+[Performance and sizing](performance-and-sizing.md), which also says how deep paging, facets, typo
+tolerance and corpus size actually behave.
 
 **`language`** filters on the language field the Lucene integration writes to every document. One index
 holds every language; whether a per-language index is the better model is not decided yet, so treat this
