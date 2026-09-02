@@ -332,6 +332,143 @@ relationship.
 Once the page carries the product's fields, drop the reusable content types from the index
 configuration, or the same product is in the index twice — once with a URL, once without.
 
+### Worked example: a computed relevance field
+
+**Want click-based ranking and no code? You do not need any of this.** The library ships that exact
+signal as a per-index toggle — see [Popularity boosts](popularity-boosts.md). This example is here for
+the *pattern*: any signal you can compute — stock level, editorial score, a rating from another
+system — can be written onto the document at index time and fed back into ranking at query time. It
+uses click counts only because every site already has them.
+
+Two moving parts, both of them extension points you have already met: the indexing strategy writes the
+field, and a pipeline stage of your own boosts on it. The code below is the sample project's
+(`src/Search/` in the Dancing Goat host), with its comments and its `explain` line elided.
+
+**1. Compute the signal, once per mapping scope.** The strategy reads the aggregate query log
+(`IQueryLogStore`, see [Analytics](analytics.md)) through a `Lazy<Task<…>>`: the same strategy instance
+maps every item of a rebuild, so the log is scanned once, not once per document.
+
+```csharp
+private readonly Lazy<Task<IReadOnlyDictionary<string, int>>> clickCounts;
+
+public DancingGoatSearchIndexingStrategy(/* … */ IQueryLogStore queryLog)
+    : base(/* … */)
+{
+    clickCounts = new Lazy<Task<IReadOnlyDictionary<string, int>>>(() => LoadClickCountsAsync(queryLog));
+}
+
+private static async Task<IReadOnlyDictionary<string, int>> LoadClickCountsAsync(IQueryLogStore queryLog)
+{
+    var now = DateTime.UtcNow;
+    var rows = await queryLog.ReadAsync(INDEX_NAME, now.AddDays(-30), now, CancellationToken.None);
+
+    return rows
+        .Where(row => !string.IsNullOrEmpty(row.ClickedResultId))
+        .GroupBy(row => row.ClickedResultId!, StringComparer.Ordinal)
+        .ToDictionary(group => group.Key, group => group.Count(), StringComparer.Ordinal);
+}
+```
+
+A query log row's `ClickedResultId` is the result `id` of the clicked document — for Xperience content
+`{WebPageItemGUID}:{language}`, which `XpSearchIndexingStrategy.ComposeResultId` builds. That is the
+key the count is looked up under.
+
+**2. Write it per document**, in `ContributeAsync` — the step-2 half of *Adding fields of your own*
+above. Every indexed page gets the field, including the ones nobody clicked (a `0`), so the sort below
+has a value for every document:
+
+```csharp
+var clicks = await clickCounts.Value;
+
+await context.AddFieldAsync(
+    ClicksField,
+    clicks.GetValueOrDefault(ComposeResultId(page.ItemGuid.ToString(), page.LanguageName)),
+    cancellationToken);
+```
+
+**3. Declare it** — step 1 — and, one line more, publish it as a sort key:
+
+```csharp
+internal static readonly SchemaField ClicksField =
+    new("clicks", SearchFieldKind.Number, Searchable: false, Facetable: false, Sortable: true, Retrievable: true);
+```
+
+```csharp
+builder.Services.AddXpSearch(
+    options => options.Indexes["DancingGoatSample"].SortKeys["popular"] = new SortKey("clicks", Descending: true),
+    indexing => indexing
+        .AddField(ProductPage.CONTENT_TYPE_NAME, DancingGoatSearchIndexingStrategy.ClicksField)
+        .AddField(ArticlePage.CONTENT_TYPE_NAME, DancingGoatSearchIndexingStrategy.ClicksField));
+```
+
+The flags are the whole design of the field: **retrievable** so `result.attributes.clicks` shows it,
+**sortable** so `"sort": "popular"` works, **not searchable** (nobody types a click count) and **not
+facetable** (a facet per distinct number is noise). After a rebuild a raw hit carries it:
+
+```jsonc
+{ "id": "bc9493ac-…:en", "attributes": { "ProductFieldName": "Clever Dripper", "clicks": 5 } }
+```
+
+**4. Boost on it at query time**, with a stage of your own — `ISearchStage`, registered with
+`AddXpSearchStage`, exactly like the library's own stages:
+
+```csharp
+public sealed class ClicksBoostStage : ISearchStage
+{
+    private static readonly (int MinClicks, float Factor)[] tiers = [(2, 1.5f), (5, 2.5f)];
+
+    public int Order => SearchStageOrder.PopularityBoost + 1;
+
+    public Task ExecuteAsync(SearchContext context, CancellationToken cancellationToken)
+    {
+        if (context.Request.Index != "DancingGoatSample" || context.SortField is not null)
+        {
+            return Task.CompletedTask;
+        }
+
+        var boosted = new BooleanQuery { { context.BaseQuery, Occur.MUST } };
+
+        foreach ((int minClicks, float factor) in tiers)
+        {
+            var tier = NumericRangeQuery.NewDoubleRange("clicks", minClicks, null, true, true);
+            tier.Boost = factor;
+            boosted.Add(tier, Occur.SHOULD);
+        }
+
+        context.BaseQuery = boosted;
+
+        return Task.CompletedTask;
+    }
+}
+```
+
+```csharp
+builder.Services.AddXpSearchStage<ClicksBoostStage>();
+```
+
+Four things in there are the parts worth copying:
+
+- **`Order`** decides where the stage runs. `SearchStageOrder` names every shipped slot; anything that
+  rewrites the query has to land after `BuildQuery` (400) and before `Execute` (800). This one sits
+  just after the built-in popularity boost.
+- **SHOULD, next to the query everything else built**, never MUST — a boost must not turn into a
+  filter. A document with clicks that does not match the text stays out of the results.
+- **It is bounded.** The tiers cap what any amount of clicking can buy. Tune the factors against your
+  own scores: these are constant-score clauses, so on an index whose text scores are small a factor of
+  2.5 is a big move, and on one with large scores it is a nudge. Turn on `"explain": true` and read
+  `ranking.baseScore` before you pick numbers.
+- **It gets out of the way.** A request sorted by a field ignores scores altogether, so the stage does
+  nothing for one — and it does nothing for other indexes, which have no `clicks` field.
+
+Running this *and* the built-in popularity boost stacks two bounded boosts on the same evidence. Pick
+one.
+
+**The ceiling: the value is as fresh as the document.** A computed field is written when the document
+is indexed, so it only changes when that document is re-indexed or the index is rebuilt — clicks that
+arrived since then are not in it. A scheduled rebuild (or a nightly task that re-indexes the documents
+whose signal moved) is the operational answer; if you need a signal that is live at query time, read it
+in the stage instead of writing it on the document.
+
 ### The schema it exposes
 
 Everything above is described by an `IndexSchema`, which the query pipeline uses to validate filters and
