@@ -213,7 +213,101 @@ straight after a `clear` can still report the pre-clear counts. That lag is not 
 `health` stays `healthy` through it; `degraded` means queued work failed to reach the index and
 nothing has succeeded since.
 
+### Typed clients
+
+Two thin clients wrap the routes above so a sync job does not have to hand-roll HTTP: batching under
+the server caps, retry with backoff, and one aggregated answer per call. The verbs mirror the
+endpoints — `upsert`, `patch`, `delete`, `deleteMany`, `clear`, `rebuild`, `status`, `listIndexes` —
+so what a call does is the row it sits on in the table above.
+
+**Neither client belongs in a browser.** The API key can rewrite or empty your index; it is a
+server-side secret. The npm client is therefore a *subpath* (`…/ingestion`) that the package root
+never re-exports, so a widget bundle cannot pick it up by accident.
+
+#### C# — `XperienceCommunity.Search.Client`
+
+A separate package with **no Xperience and no Lucene dependency**: it is meant for the app pushing
+documents *in* — a console importer, a PIM sync job, a worker service — not for code inside the CMS.
+
+```csharp
+using XpSearch.Client;
+
+using var client = new XpSearchIngestionClient("https://example.com", Environment.GetEnvironmentVariable("XPSEARCH_API_KEY")!);
+
+var products = client.Index("products");
+
+var result = await products.UpsertAsync(catalog.Select(item => XpSearchIngestionClient.Document(
+    $"pim-sku-{item.Sku}",
+    new { title = item.Name, price = item.Price, tags = item.Tags },
+    source: "pim")));
+
+Console.WriteLine($"{result.Indexed} indexed, {result.Failed} failed, {result.Batches} request(s)");
+
+foreach (var error in result.Errors)
+{
+    Console.WriteLine($"  {error.Id} / {error.Field}: {error.Message}");
+}
+
+await products.PatchAsync("pim-sku-88213", new Dictionary<string, object?> { ["price"] = 19.90 });
+await products.DeleteManyAsync(["pim-sku-00001", "pim-sku-00002"]);
+await products.ClearAsync("pim-clearance");
+
+var status = await products.GetStatusAsync();
+```
+
+Pass an `HttpClient` instead of a base URL (`new XpSearchIngestionClient(httpClient, apiKey)`) to use
+`IHttpClientFactory`; its `BaseAddress` must be set.
+
+#### Node — `@xperience-community/xperience-search/ingestion`
+
+Node 18+ (global `fetch`); `fetchFn` is there for tests and exotic runtimes.
+
+```ts
+import { createIngestionClient } from '@xperience-community/xperience-search/ingestion';
+
+const products = createIngestionClient({
+  endpoint: 'https://example.com',
+  apiKey: process.env['XPSEARCH_API_KEY']!,
+}).index('products');
+
+const result = await products.upsert(
+  catalog.map((item) => ({ id: `pim-sku-${item.sku}`, _source: 'pim', title: item.name, price: item.price }))
+);
+
+console.log(`${result.indexed} indexed, ${result.failed} failed, ${result.batches} request(s)`);
+for (const error of result.errors) console.log(`  ${error.id} / ${error.field}: ${error.message}`);
+
+await products.patch('pim-sku-88213', { price: 19.9 });
+await products.deleteMany(['pim-sku-00001', 'pim-sku-00002']);
+await products.clear('pim-clearance');
+
+const status = await products.status();
+```
+
+#### What both clients do for you
+
+| Behaviour | Default | Knob |
+|---|---|---|
+| Split an upsert under both server caps | 1000 documents / 10 MB per request | `MaxDocumentsPerRequest`, `MaxRequestBytes` / `maxDocumentsPerRequest`, `maxRequestBytes` |
+| Split `deleteMany` by id count | 1000 ids per request | the same document-count knob |
+| Retry `408`, `429`, `5xx` and transport failures | 4 attempts, 500 ms doubling with jitter, capped at 30 s | `MaxAttempts`, `RetryBaseDelay`, `MaxRetryDelay` / `maxAttempts`, `retryBaseMs`, `maxRetryMs` |
+| Honour `Retry-After` | always, capped at the retry ceiling | — |
+| Never retry another `4xx` | a validation `400` sent again is the same `400`, slower | — |
+
+Retrying a write is safe because upsert is idempotent by contract: a document whose `id` already
+exists is *replaced*, so the same batch sent twice leaves the index in the same state.
+
+**Partial failure has two halves.** Documents the server rejected come back in `result.errors` with
+the totals — that is a *successful* call. A batch the server never accepted throws
+`XpSearchIngestionException` / `XpSearchIngestionError`, which carries the status and the parsed
+Problem Details, and — for a multi-batch upsert — `PartialUpsert` / `partialUpsert`: the aggregate of
+everything the earlier batches had already written, so you know where to resume.
+
 ### In-process: `IXpSearchIndexer`
+
+> Inside the Xperience application, use this and not the HTTP clients above: no network hop, no API
+> key, no rate limit.
+
 
 Code running inside the Xperience application should skip HTTP entirely. This is the API to reach for
 from a scheduled task, a custom module, a global event handler or an automation step:
@@ -266,6 +360,5 @@ Nothing is ever silently truncated.
 - Admin UI for schemas; schemas are declared in code on the indexing strategy. Keys and the
   ingestion log are in the **Search ingestion** application; index status is per index, at
   **Lucene Search → indexes → *index* → Edit index → Status**.
-- The C# and Node convenience clients; today it is one `fetch` or one `HttpClient` call per request.
 - Facet **counts** for pushed documents: they are filterable on `string[]` attributes, but the taxonomy
   sidecar the counts come from is only written for Xperience content.

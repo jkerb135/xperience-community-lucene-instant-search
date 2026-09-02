@@ -1238,3 +1238,17 @@ and how to lift it.
 - **Upgrade path:** store `{ text, at }` objects and add an age cut-off; listen for the `storage`
   event to keep tabs in sync. A cross-device list would need per-visitor server storage, which the
   anonymous query log deliberately does not have.
+
+## The ingestion clients size a batch by summing serialized documents, in `Batches` (`src/XpSearch.Client/XpSearchIngestionIndexClient.cs`) and `batches` (`src/XpSearch.Widgets/Client/src/ingestion.ts`)
+
+- **Simplified:** each document is serialized once to measure it, its bytes plus one separator are
+  accumulated, and a fixed 48-byte constant stands in for the request envelope. The document is then
+  serialized a second time as part of the batch body. A single document larger than the cap is sent
+  alone rather than rejected client-side, and `deleteMany` splits by id count only — it never weighs
+  its body and its failures carry no partial result (only `upsert` does).
+- **Ceiling:** twice the serialization work per document on a bulk import, and the estimate assumes
+  the client and the server agree on the caps — a host that lowered `MaxRequestBytes` without the
+  caller lowering `maxRequestBytes` gets a `413` instead of a smaller batch. A `deleteMany` that
+  fails midway has to be re-run whole (safe: deletes are idempotent).
+- **Upgrade path:** build the request body incrementally from the measured byte arrays instead of
+  reserializing, and read the caps from `GET /indexes` once per client instead of hardcoding them.

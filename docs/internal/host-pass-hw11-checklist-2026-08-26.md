@@ -383,3 +383,60 @@ calls (see the IX-1 report), then rebuilds the demo index.
     autocomplete: one warning per index appears in the event log naming `SuggestField`, and the
     suggestions show the slug-ish item names it describes. Set `SuggestField` to `ProductFieldName`,
     restart, and both the warning and the slugs are gone.
+
+## U. CL-1 typed ingestion clients (added 2026-09-01)
+
+Prerequisite: the dev API key's plaintext. `DevIngestionKeySeeder` logs it **once**, at Warning
+level, the first time it creates `dev-sample`; it is unrecoverable afterwards. To get a fresh one,
+delete the row from `XpSearch_ApiKey` and restart the host. Then `KEY=xps_…` and, with the host
+running on `http://localhost:27340`:
+
+104. **Node client round trip.** From `src/XpSearch.Widgets/Client`, after `npm run build`:
+
+     ```bash
+     node --input-type=module -e "
+     import { createIngestionClient } from './dist/ingestion.mjs';
+     const products = createIngestionClient({ endpoint: 'http://localhost:27340', apiKey: process.env.KEY }).index('DancingGoatSample');
+     console.log(await products.upsert([
+       { id: 'cl1-node-1', _source: 'pim', Title: 'CL-1 Node probe', ProductFieldName: 'CL-1 Node probe', ProductFieldPrice: 1.5, ProductFieldCategory: ['Coffees'] },
+     ], { waitForIndex: true }));
+     console.log((await products.status()).documents.bySource);
+     "
+     ```
+
+     Expect `{ indexed: 1, failed: 0, batches: 1, errors: [], taskIds: [...] }` and a `pim` entry in
+     the counts. Then search the site for **CL-1 Node probe** — the pushed document is in the
+     results. Finally `console.log(await products.clear('pim'))` and search again: it is gone and the
+     32 Xperience documents are still there.
+
+105. **C# client round trip.** Same three steps from a throwaway console app that references
+     `src/XpSearch.Client/XpSearch.Client.csproj` (`dotnet new console`, `dotnet add reference`):
+
+     ```csharp
+     using XpSearch.Client;
+     using var client = new XpSearchIngestionClient("http://localhost:27340", Environment.GetEnvironmentVariable("KEY")!);
+     var products = client.Index("DancingGoatSample");
+     var result = await products.UpsertAsync([XpSearchIngestionClient.Document("cl1-dotnet-1",
+         new { Title = "CL-1 dotnet probe", ProductFieldName = "CL-1 dotnet probe", ProductFieldPrice = 1.5, ProductFieldCategory = new[] { "Coffees" } },
+         source: "pim")], waitForIndex: true);
+     Console.WriteLine($"{result.Indexed}/{result.Failed} in {result.Batches} batch(es)");
+     Console.WriteLine((await products.GetStatusAsync()).Documents.BySource["pim"]);
+     Console.WriteLine((await products.ClearAsync("pim")).Deleted);
+     ```
+
+     Expect `1/0 in 1 batch(es)`, the `pim` count, then the deleted count. `dotnet build` on that app
+     must pull in **no** Kentico or Lucene package — that is the point of the separate client.
+
+106. **The failure paths are honest.** With the same key: push a document whose
+     `ProductFieldPrice` is the string `"free"` — the call *succeeds* and `result.Errors` names
+     `cl1-node-2` / `ProductFieldPrice`. Then run either client with a wrong key: it throws once,
+     with status `401` and the server's Problem Details title, and does **not** retry (the call
+     returns immediately, not four backoffs later).
+
+107. **A `429` is waited out, not fought.** Push ~80 single-document batches in a loop
+     (`maxDocumentsPerRequest: 1`) so the 60-per-minute per-key limit trips. The run must not fail on
+     the first `429`: the client sleeps instead. Note what it does next — the host's fixed window is
+     60 s and the client's `maxRetryMs` ceiling is 30 s, so with the defaults it can burn its four
+     attempts inside one window and still throw. If it does, that is expected and the fix is a
+     `maxRetryMs` / `MaxRetryDelay` at or above the window (raise it and re-run to confirm the loop
+     then finishes clean). Either way the event log shows no ingestion *errors* — only rejections.

@@ -201,6 +201,9 @@ const bundles = [
     assert: assertOpenDocument,
     targets: [
       csharpTarget('xpsearch-ingestion.schema.json', resolve(clientDir, '../../XpSearch.Ingestion/Contract/Generated/XpSearchIngestionContract.g.cs'), 'XpSearch.Ingestion.Contract', ingestionCsharpEdits),
+      // Second C# emission (CL-1): XpSearch.Client is Kentico-free and standalone, so it carries its
+      // own copy of the same wire types under its own namespace. Wire DTOs never cross assemblies.
+      csharpTarget('xpsearch-ingestion.schema.json', resolve(clientDir, '../../XpSearch.Client/Contract/Generated/XpSearchIngestionContract.g.cs'), 'XpSearch.Client.Contract', ingestionCsharpEdits),
       typeScriptTarget('xpsearch-ingestion.schema.json', resolve(clientDir, 'src/contract/ingestion-generated.ts')),
     ],
   },

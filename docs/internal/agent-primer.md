@@ -15,7 +15,10 @@ contradicts it, fix the file in your commit.
 - `src/XpSearch.Admin` — admin UI; React client at `src/XpSearch.Admin/Client` (webpack,
   `@kentico/xperience-admin-*` packages).
 - `src/XpSearch.Ingestion` — external-document push API.
-- Tests: `tests/XpSearch.{Core,Admin,Ingestion,Widgets}.Tests` (NUnit), plus `tests/XpSearch.FacetSpike`.
+- `src/XpSearch.Client` — the typed ingestion client for apps OUTSIDE Xperience (CL-1). BCL only:
+  it must never reference Kentico or Lucene (`tests/XpSearch.Client.Tests/KenticoFreeTests.cs` pins
+  that). Its contract DTOs are a second emission of the ingestion schema, own namespace.
+- Tests: `tests/XpSearch.{Core,Admin,Ingestion,Widgets,Client}.Tests` (NUnit), plus `tests/XpSearch.FacetSpike`.
   (There is no `tests/a11y`, `tests/performance` or `XpSearch.Integration.Tests` project — checked
   2026-09-01; the a11y and performance checks live in the widgets JS client.)
 - Docs: guides in `docs/guides/` (wiki-ready, verified samples), ADRs in `docs/adr/`,
@@ -32,6 +35,7 @@ dotnet test tests/XpSearch.Core.Tests/XpSearch.Core.Tests.csproj
 dotnet test tests/XpSearch.Admin.Tests/XpSearch.Admin.Tests.csproj
 dotnet test tests/XpSearch.Ingestion.Tests/XpSearch.Ingestion.Tests.csproj
 dotnet test tests/XpSearch.Widgets.Tests/XpSearch.Widgets.Tests.csproj
+dotnet test tests/XpSearch.Client.Tests/XpSearch.Client.Tests.csproj
 
 # Admin React client:
 cd src/XpSearch.Admin/Client && npm ci && npm run build
@@ -40,7 +44,9 @@ cd src/XpSearch.Admin/Client && npm ci && npm run build
 cd src/XpSearch.Widgets/Client && npm run contract:gen && npm run contract:check
 ```
 
-Suite sizes (2026-09-01, after SG-1): Core 334, Admin 190, Ingestion 47, Widgets 78, JS 272 — if
+Suite sizes (2026-09-01, after CL-1): Core 345, Admin 190, Ingestion 47, Widgets 78, Client 16,
+JS 285 (one PRE-EXISTING failure in `src/widgets/widgets.test.ts`, a facet-count assertion — it
+fails on a clean main checkout too) — if
 your run shows fewer, you ran the wrong project. There is no solution file in the repo root; run each
 test project by path. The Admin C# suite needs `src/XpSearch.Admin/Client` built first, like the
 Widgets one.

@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>XpSearch.Client.Tests</RootNamespace>
+    <AssemblyName>XpSearch.Client.Tests</AssemblyName>
+    <PackageId>XperienceCommunity.Search.Client.Tests</PackageId>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <!-- Only the client and the test runner: no Kentico, no Lucene, no ASP.NET. KenticoFreeTests
+       asserts that the client assembly itself stays that way. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\XpSearch.Client\XpSearch.Client.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="NUnit" />
+    <PackageReference Include="NUnit3TestAdapter" />
+    <PackageReference Include="NUnit.Analyzers" />
+  </ItemGroup>
+
+</Project>

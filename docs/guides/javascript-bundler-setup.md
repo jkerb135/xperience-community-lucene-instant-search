@@ -26,6 +26,11 @@ them. It has no runtime dependencies.
 | `.../scss/*` | SCSS sources: `scss/shell`, `scss/default`, `scss/base`, `scss/widgets/<name>` |
 | `.../themes/shell.css`, `.../themes/default.css` | the two compiled stylesheets, identical to the ones the tag helper serves |
 | `.../styles/base.css`, `.../styles/widgets/<name>.css` | compiled per-widget CSS, for pipelines that cannot compile SCSS |
+| `.../ingestion` | `createIngestionClient`, the typed client for the ingestion API — **Node only** |
+
+`.../ingestion` is the one subpath the root entry deliberately does not re-export: it takes an API
+key that can rewrite or empty your index, so it belongs in a build pipeline or a server, never in a
+browser bundle. See the [ingestion guide](ingestion.md).
 
 Importing a widget from the root entry tree-shakes just as well as importing its subpath — the
 subpaths exist so that a bundler with no tree-shaking, or a browser importing modules directly,

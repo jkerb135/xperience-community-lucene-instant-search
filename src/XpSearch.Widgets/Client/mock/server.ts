@@ -22,6 +22,12 @@ import type {
   SuggestResponse,
   Suggestion,
 } from '../src/contract/generated.ts';
+import type {
+  IngestionError,
+  PushDocument,
+  UpsertRequest,
+  UpsertResponse,
+} from '../src/contract/ingestion-generated.ts';
 
 interface Doc {
   id: string;
@@ -357,6 +363,55 @@ export function suggest(request: SuggestRequest): SuggestResponse {
   return { suggestions: [...queries, ...documents] };
 }
 
+/**
+ * The ingestion half of the mock (CL-1): just enough of `POST indexes/{index}/documents` for the
+ * typed clients' end-to-end test — bearer auth, the document cap, per-document validation and the
+ * partial-success answer. A test double, not a second implementation of the server.
+ */
+export const PUSHED = new Map<string, Map<string, PushDocument>>();
+
+/** Prefix of the one ingestion route the mock answers. */
+const UPSERT_PATTERN = /^\/api\/xpsearch\/admin\/indexes\/([^/]+)\/documents$/;
+
+/** The API key the mock accepts, so a test can assert the 401 path with any other value. */
+export const MOCK_API_KEY = 'xps_mock_key';
+
+function upsert(index: string, authorization: string | undefined, body: unknown): { status: number; body: unknown } {
+  if (authorization !== `Bearer ${MOCK_API_KEY}`) {
+    return { status: 401, body: { title: 'The API key is not valid.', status: 401 } };
+  }
+  const request = body as UpsertRequest;
+  const documents = request?.documents;
+  if (!Array.isArray(documents) || documents.length === 0) {
+    return { status: 400, body: { title: 'The request is not valid.', status: 400, errors: { documents: ['At least one document is required.'] } } };
+  }
+  if (documents.length > 1000) {
+    return { status: 413, body: { title: 'The request is too large.', status: 413, detail: 'A request may carry at most 1000 documents. Split the batch.' } };
+  }
+  const stored = PUSHED.get(index) ?? new Map<string, PushDocument>();
+  PUSHED.set(index, stored);
+  const errors: IngestionError[] = [];
+  for (const document of documents) {
+    // The one validation rule the mock keeps: a document must have an id, and `price` must be a
+    // number if it is there — enough to exercise the partial-failure path.
+    if (typeof document.id !== 'string' || document.id === '') {
+      errors.push({ message: 'id is required.' });
+    } else if ('price' in document && typeof document.price !== 'number') {
+      errors.push({ id: document.id, field: 'price', message: 'price must be a number.' });
+    } else {
+      stored.set(document.id, document);
+    }
+  }
+  const response: UpsertResponse = {
+    indexed: documents.length - errors.length,
+    failed: errors.length,
+    errors,
+    taskId: randomUUID(),
+    tookMs: 1,
+  };
+  return { status: 200, body: response };
+}
+
 function readBody(req: IncomingMessage): Promise<unknown> {
   return new Promise((resolve, reject) => {
     let raw = '';
@@ -405,6 +460,10 @@ export function handleApiRequest(req: IncomingMessage, res: ServerResponse): voi
         const event = body as EventRequest;
         if (!event?.resultId || !event?.queryId) send(res, 400, { title: 'resultId and queryId are required', status: 400 });
         else send(res, 202);
+      } else if (UPSERT_PATTERN.test(path ?? '')) {
+        const index = decodeURIComponent(UPSERT_PATTERN.exec(path!)![1]!);
+        const answer = upsert(index, req.headers.authorization, body);
+        send(res, answer.status, answer.body);
       } else {
         send(res, 404, { title: 'Not found', status: 404 });
       }

@@ -22,6 +22,7 @@ activity tracking, and an ingestion API for external data.
 | `src/XpSearch.Admin` | Relevance tuning + analytics admin UI (NuGet) |
 | `src/XpSearch.Widgets` | Page Builder widgets (NuGet) |
 | `src/XpSearch.Ingestion` | Push API, schema, API keys (NuGet) |
+| `src/XpSearch.Client` | Typed ingestion client for apps outside Xperience — no Kentico dependency (NuGet) |
 | `src/XpSearch.Widgets/Client` | JS library — behaviours, widgets, routing (npm) |
 | `clients/` | Thin .NET and Node ingestion clients |
 | `themes/` | shell.css (structural) + default.css (opt-in theme), authored in Sass under `themes/src/scss/` |

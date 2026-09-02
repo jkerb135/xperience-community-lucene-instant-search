@@ -19,6 +19,11 @@
       "import": "./dist/behaviors.mjs",
       "default": "./dist/behaviors.mjs"
     },
+    "./ingestion": {
+      "types": "./dist/types/ingestion.d.ts",
+      "import": "./dist/ingestion.mjs",
+      "default": "./dist/ingestion.mjs"
+    },
     "./widgets": {
       "types": "./dist/types/widgets/index.d.ts",
       "import": "./dist/widgets.mjs",

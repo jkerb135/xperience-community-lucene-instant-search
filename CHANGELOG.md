@@ -12,6 +12,20 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Added (client, widgets):** typed ingestion clients for both languages, so a sync job stops
+  hand-rolling HTTP (CL-1). **C#:** a new Kentico-free package `XperienceCommunity.Search.Client`
+  (`XpSearchIngestionClient`, BCL only — it is for the console importer or PIM job pushing documents
+  *in*, which must not drag Xperience and Lucene along). **Node:** a new npm subpath
+  `@xperience-community/xperience-search/ingestion` (`createIngestionClient`), deliberately not
+  re-exported from the package root because the API key is a server-side secret. Both speak the
+  frozen ingestion contract with verbs named after its endpoints — `upsert`, `patch`, `delete`,
+  `deleteMany`, `clear`, `rebuild`, `status`, `listIndexes` — split an upsert under both server caps
+  (1000 documents / 10 MB) and `deleteMany` by id count, retry `408`/`429`/`5xx`/transport failures
+  with jittered exponential backoff honouring `Retry-After` (never another `4xx`, which would be the
+  same failure slower), and report a partial failure two ways: rejected documents in the result's
+  `errors`, and a failed batch as a typed exception carrying the Problem Details plus the aggregate
+  of everything the earlier batches already wrote. No new dependencies anywhere; the C# DTOs are a
+  second emission of the same contract generator.
 - **Added (core):** `indexing.AddField(contentTypeName, field)` declares a field auto-detection
   cannot know about, so a value written from `ContributeAsync` is part of the index schema and
   therefore reaches `result.attributes`, the ingestion schema endpoint and the admin attribute
