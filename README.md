@@ -27,5 +27,5 @@ activity tracking, and an ingestion API for external data.
 | `clients/` | Thin .NET and Node ingestion clients |
 | `themes/` | shell.css (structural) + default.css (opt-in theme), authored in Sass under `themes/src/scss/` |
 | `samples/` | Dancing Goat reference build, custom widget example |
-| `tests/` | Unit, integration, a11y, performance |
+| `tests/` | NUnit suites per package, plus two console tools: the SP-1 faceting spike and the PF-1 performance bench |
 | `build/` | Packaging, licensing key tooling |

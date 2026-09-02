@@ -12,6 +12,19 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Added (docs, tests):** the spec §12 performance pass. A new console tool `tests/XpSearch.Bench`
+  builds deterministic synthetic corpora of 10k / 100k / 1,000,000 documents and measures the **real
+  query pipeline** — the stage chain `AddXpSearch` composes, with light-but-present synonyms, one
+  boost rule, non-default field weights, facets on four dimensions and highlighting — writing
+  `docs/internal/perf-results-<date>.md` with an environment table, p50/p95 as median-of-runs with
+  `[min-max]`, and nearest-rank percentiles. Headline latencies are uncached (a different query text
+  per iteration); one cache-hit row is there for contrast. No new dependencies (Stopwatch and maths,
+  like the SP-1 spike), and no library code changed. A new guide
+  `docs/guides/performance-and-sizing.md` publishes the measured numbers and — the part spec §12 asks
+  for — says plainly when a local Lucene index stops being the right answer: one writer, one process,
+  no replication, a rebuild window that grows with the corpus, and the index sitting on one disk.
+  The run also **measured a real cost that was not previously visible**: with typo tolerance on,
+  highlighting dominates a search. Not fixed here, on purpose — see the results doc.
 - **Fixed (widgets):** a disposed `SearchClient` no longer keeps retrying a failed request.
   Probes and analytics events carry no abort signal, so a failing count probe from a Filter & Sort
   sheet could still fetch on its retry backoff (up to ~600 ms) after the search instance was

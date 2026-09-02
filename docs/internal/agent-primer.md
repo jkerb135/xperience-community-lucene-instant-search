@@ -18,9 +18,10 @@ contradicts it, fix the file in your commit.
 - `src/XpSearch.Client` — the typed ingestion client for apps OUTSIDE Xperience (CL-1). BCL only:
   it must never reference Kentico or Lucene (`tests/XpSearch.Client.Tests/KenticoFreeTests.cs` pins
   that). Its contract DTOs are a second emission of the ingestion schema, own namespace.
-- Tests: `tests/XpSearch.{Core,Admin,Ingestion,Widgets,Client}.Tests` (NUnit), plus `tests/XpSearch.FacetSpike`.
+- Tests: `tests/XpSearch.{Core,Admin,Ingestion,Widgets,Client}.Tests` (NUnit), plus two console tools,
+  `tests/XpSearch.FacetSpike` (SP-1, frozen) and `tests/XpSearch.Bench` (PF-1).
   (There is no `tests/a11y`, `tests/performance` or `XpSearch.Integration.Tests` project — checked
-  2026-09-01; the a11y and performance checks live in the widgets JS client.)
+  2026-09-01; the a11y checks live in the widgets JS client.)
 - Docs: guides in `docs/guides/` (wiki-ready, verified samples), ADRs in `docs/adr/`,
   spec + amendments in `docs/spec/`, shortcuts in `docs/internal/KNOWN-LIMITATIONS.md`,
   unit specs in `docs/internal/units/`.
@@ -39,6 +40,11 @@ dotnet test tests/XpSearch.Client.Tests/XpSearch.Client.Tests.csproj
 
 # Admin React client:
 cd src/XpSearch.Admin/Client && npm ci && npm run build
+
+# Performance bench (PF-1). NOT part of any suite: Release-only, minutes long, writes
+# docs/internal/perf-results-<date>.md. A full 10k/100k/1M run takes ~15 minutes and needs ~1.5 GB
+# of temp disk (cleaned up at the end). Smoke it with `--sizes 10k --runs 1 --iterations 20`:
+dotnet run --project tests/XpSearch.Bench/XpSearch.Bench.csproj -c Release -- --sizes 10k,100k,1m --runs 3 --iterations 100
 
 # Contract codegen lives in the WIDGETS client; regen + drift check after contract changes:
 cd src/XpSearch.Widgets/Client && npm run contract:gen && npm run contract:check

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>XpSearch.Bench</RootNamespace>
+    <AssemblyName>XpSearch.Bench</AssemblyName>
+    <IsPackable>false</IsPackable>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\XpSearch.Core\XpSearch.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Lucene.Net.Facet" />
+    <PackageReference Include="Lucene.Net.Analysis.Common" />
+  </ItemGroup>
+
+</Project>
