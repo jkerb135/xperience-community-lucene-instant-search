@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>XpSearch.Client</RootNamespace>
+    <AssemblyName>XpSearch.Client</AssemblyName>
+    <PackageId>XperienceCommunity.Search.Client</PackageId>
+    <IsPackable>true</IsPackable>
+    <Description>Typed .NET client for the Xperience Search ingestion API. Batching, retry and partial-failure reporting over HTTP; no Xperience or Lucene dependency, so a sync job outside the CMS can use it.</Description>
+  </PropertyGroup>
+
+  <!-- No PackageReference on purpose: this client exists so a console importer or a PIM sync job can
+       talk to the ingestion API without dragging Kentico.Xperience.Core and Lucene.Net along. The BCL
+       has HttpClient and System.Text.Json; the backoff is a dozen lines, not a Polly dependency.
+       tests/XpSearch.Client.Tests/KenticoFreeTests.cs pins that. -->
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="XpSearch.Client.Tests" />
+  </ItemGroup>
+
+</Project>

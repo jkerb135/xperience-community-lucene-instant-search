@@ -57,6 +57,9 @@ export default [
     input: {
       xpsearch: 'src/index.ts',
       behaviors: 'src/behaviors.ts',
+      // Node-only (CL-1): the ingestion client is a subpath of its own so no browser bundle can
+      // reach it — its API key is a server-side secret.
+      ingestion: 'src/ingestion.ts',
       widgets: 'src/widgets/index.ts',
       ...widgetInputs,
     },

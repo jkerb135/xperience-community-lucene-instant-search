@@ -47,6 +47,7 @@ console.log(`exports: ${targets} target(s) across ${Object.keys(pkg.exports).len
 // --- 2. tree-shaking --------------------------------------------------------
 const RESULTS_MARKER = 'xps-result__snippet'; // only results.ts renders it
 const SEARCH_BOX_MARKER = 'xps-search-box__field';
+const INGESTION_MARKER = '/api/xpsearch/admin'; // only ingestion.ts knows the admin routes
 
 const bundle = (source) =>
   buildSync({
@@ -83,6 +84,28 @@ for (const [what, source] of Object.entries(fixtures)) {
   }
   const verdict = errors.length === before ? 'no results.ts' : 'FAILED';
   console.log(`tree-shake: ${what} -> ${(out.length / 1024).toFixed(1)} KB, ${verdict}`);
+}
+
+// --- 3. the ingestion subpath is Node-only and isolated both ways (CL-1) ----
+// Its API key is a server-side secret, so no browser bundle may reach it: the root entry must not
+// pull it in, and it must not drag a widget along either.
+{
+  const entry = bundle(`
+    import { createSearch, searchBox } from './dist/xpsearch.mjs';
+    globalThis.demo = [createSearch, searchBox];`);
+  if (entry.includes(INGESTION_MARKER)) {
+    errors.push(`the package entry bundles the ingestion client ("${INGESTION_MARKER}" is in the output); it must stay a subpath`);
+  }
+  const ingestion = bundle(`
+    import { createIngestionClient } from './dist/ingestion.mjs';
+    globalThis.demo = [createIngestionClient];`);
+  if (!ingestion.includes(INGESTION_MARKER)) {
+    errors.push('tree-shake fixture for ./ingestion lost the client itself — the check proves nothing');
+  }
+  for (const [marker, what] of [[SEARCH_BOX_MARKER, 'searchBox'], [RESULTS_MARKER, 'results.ts']]) {
+    if (ingestion.includes(marker)) errors.push(`the ./ingestion subpath bundles ${what}; it must import contract types only`);
+  }
+  console.log(`ingestion: ./ingestion -> ${(ingestion.length / 1024).toFixed(1)} KB, no widget code; entry has no ingestion client`);
 }
 
 if (errors.length) {
