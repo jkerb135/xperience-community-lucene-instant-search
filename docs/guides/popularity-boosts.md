@@ -205,6 +205,10 @@ tracking.
 - **A mined pair is only a candidate.** Approving `settee, sofa` makes both words find both sets of
   results — check that this is what you want, especially for brand names and product codes.
 
+Want this pattern for a signal of your own — stock level, editorial score, a rating from another
+system? [Indexing strategy → Worked example: a computed relevance field](indexing-strategy.md#worked-example-a-computed-relevance-field)
+walks the sample project's version of it: compute at index time, boost in a stage of your own.
+
 See also: [Relevance tuning](relevance-tuning.md) for rules, synonyms and field weights,
 [Search analytics](analytics.md) for the query log this is built on, and
 `docs/adr/0025-popularity-boosts.md` / `docs/adr/0026-mined-synonyms.md` for why the numbers are what

@@ -440,3 +440,26 @@ running on `http://localhost:27340`:
      attempts inside one window and still throw. If it does, that is expected and the fix is a
      `maxRetryMs` / `MaxRetryDelay` at or above the window (raise it and re-run to confirm the loop
      then finishes clean). Either way the event log shows no ingestion *errors* — only rejections.
+
+## V. EX-2 computed relevance field, worked example 2 (added 2026-09-01)
+
+Prerequisite: the host's `src/Search/` carries the `clicks` field (`DancingGoatSearchIndexingStrategy`
++ the `AddField` / `SortKeys["popular"]` lines in `Program.cs`) and `ClicksBoostStage`. The built-in
+popularity boost for `DancingGoatSample` was found **off** and left off — the two boosts stack, so the
+demo below is only honest with it off. Turn it back on afterwards if item 45's flow needs it (**Lucene
+Search → DancingGoatSample → Edit index → Field weights → Boost by popularity**).
+
+108. **The computed field is on the wire.** Rebuild the demo index, then `curl`
+     `/api/xpsearch/query` for a product a visitor clicked: `result.attributes.clicks` is a number,
+     and it is `0` for a document nobody clicked (never missing). The value only changes on
+     re-index — that is the guide's staleness ceiling, and it is the expected behaviour, not a bug.
+109. **The `popular` sort works with no further code.** `{"index":"DancingGoatSample","query":"",
+     "sort":"popular","fields":["title","clicks"]}` returns the documents in descending `clicks`
+     order. The live search page's sort dropdown is *not* configured to offer it — adding
+     `popular` to the widget's sort options is an owner decision.
+110. **Ranking moves with the signal.** Search **filter** and note the order (a mid-list product with
+     no clicks). Click that result four or five times through the results widget (or `POST
+     /api/xpsearch/events` with each search's `queryId`), rebuild the index, and search **filter**
+     again: that product is now first. Add `"explain": true` and `ranking.boosts` names the clicks
+     boost. A document with clicks that does **not** match the text must still be absent from the
+     results — the boost is a SHOULD clause, never a filter.

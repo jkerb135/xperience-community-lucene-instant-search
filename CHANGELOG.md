@@ -16,6 +16,14 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
   Probes and analytics events carry no abort signal, so a failing count probe from a Filter & Sort
   sheet could still fetch on its retry backoff (up to ~600 ms) after the search instance was
   disposed; `dispose()` now stops the retry loop.
+- **Docs:** spec §10.7's second worked extensibility example — a computed relevance field — is built
+  for real in the sample project and walked in `docs/guides/indexing-strategy.md`: click counts from
+  the query log written onto each document at index time (`AddField` + `ContributeAsync`, computed
+  once per mapping scope), published as a `popular` sort key, and fed back into ranking by a
+  host-owned `ISearchStage` registered with `AddXpSearchStage`. Opens by pointing at the shipped
+  no-code popularity toggle (RK-1) — the example is about the pattern, not about clicks — states the
+  staleness ceiling (the value is as fresh as the document), and `popularity-boosts.md` links to it.
+  No library code changed.
 - **Added (client, widgets):** typed ingestion clients for both languages, so a sync job stops
   hand-rolling HTTP (CL-1). **C#:** a new Kentico-free package `XperienceCommunity.Search.Client`
   (`XpSearchIngestionClient`, BCL only — it is for the console importer or PIM job pushing documents
