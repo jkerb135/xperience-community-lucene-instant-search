@@ -68,6 +68,10 @@ const fixtures = {
     import { createSearch } from './dist/xpsearch.mjs';
     import { searchBox } from './dist/widgets/search-box.mjs';
     globalThis.demo = [createSearch, searchBox];`,
+  'the ./widgets barrel': `
+    import { createSearch } from './dist/xpsearch.mjs';
+    import { searchBox } from './dist/widgets.mjs';
+    globalThis.demo = [createSearch, searchBox];`,
 };
 
 for (const [what, source] of Object.entries(fixtures)) {

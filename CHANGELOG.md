@@ -12,6 +12,12 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Fixed (widgets):** the `./widgets` barrel now tree-shakes. `DEFAULT_WIDGETS` references every
+  widget as a value, so having it in the barrel dragged all fourteen widgets into any bundle that
+  imported one of them (60 KB where 24 KB was asked for); it moved to a chunk of its own and is
+  still re-exported from `./widgets`, so nothing changes for callers. The package check gained a
+  barrel tree-shake fixture, and the bundler guide now leads with the one-line
+  `import { searchBox, results } from '@xperience-community/xperience-search/widgets'` form.
 - **Fixed (core):** highlighting a search with typo tolerance on is no longer ~50× the cost of the
   search itself. `HighlightStage` scored every result against the unrewritten query, so the fuzzy
   terms FZ-1 builds were re-expanded once per document and per highlighted field; the query is now

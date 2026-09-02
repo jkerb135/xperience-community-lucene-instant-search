@@ -61,6 +61,8 @@ export default [
       // reach it — its API key is a server-side secret.
       ingestion: 'src/ingestion.ts',
       widgets: 'src/widgets/index.ts',
+      // Its own entry so rollup cannot inline it into the barrel (see src/widgets/defaults.ts).
+      'widgets/defaults': 'src/widgets/defaults.ts',
       ...widgetInputs,
     },
     output: {

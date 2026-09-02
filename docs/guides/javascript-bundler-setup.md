@@ -20,7 +20,7 @@ them. It has no runtime dependencies.
 | Subpath | What is in it |
 |---|---|
 | `@xperience-community/xperience-search` | `createSearch`, `mountAll`, `registerWidgetType`, the templates helper, the contract types — and every widget, for convenience |
-| `.../widgets` | all thirteen widget factories, nothing else |
+| `.../widgets` | every widget factory in one import, plus `DEFAULT_WIDGETS` — tree-shakes to only the widgets you name |
 | `.../widgets/search-box`, `.../widgets/results`, `.../widgets/facet-list`, `.../widgets/category-tree`, `.../widgets/sort-select`, `.../widgets/result-stats`, `.../widgets/toggle-filter`, `.../widgets/range-filter`, `.../widgets/load-more`, `.../widgets/pagination`, `.../widgets/suggestions`, `.../widgets/active-filters` | one widget each (`clearFilters` ships with `active-filters`) |
 | `.../behaviors` | the headless behaviours, for widgets you render yourself |
 | `.../scss/*` | SCSS sources: `scss/shell`, `scss/default`, `scss/base`, `scss/widgets/<name>` |
@@ -32,17 +32,17 @@ them. It has no runtime dependencies.
 key that can rewrite or empty your index, so it belongs in a build pipeline or a server, never in a
 browser bundle. See the [ingestion guide](ingestion.md).
 
-Importing a widget from the root entry tree-shakes just as well as importing its subpath — the
-subpaths exist so that a bundler with no tree-shaking, or a browser importing modules directly,
-can be precise too.
+Importing widgets from the root entry or the `.../widgets` barrel tree-shakes just as well as
+importing per-widget subpaths — name three widgets, bundle three widgets. The per-widget subpaths
+exist so that a bundler with no tree-shaking, or a browser importing modules directly, can be
+precise too.
 
 ### A working search page
 
 ```js
 // search.js
 import { createSearch } from '@xperience-community/xperience-search';
-import { searchBox } from '@xperience-community/xperience-search/widgets/search-box';
-import { results } from '@xperience-community/xperience-search/widgets/results';
+import { searchBox, results } from '@xperience-community/xperience-search/widgets';
 
 const search = createSearch({
   index: 'site-content',
@@ -119,9 +119,7 @@ elements that a runtime has to hydrate. Tell the bootstrap which widgets you bun
 
 ```js
 import { mountAll } from '@xperience-community/xperience-search';
-import { searchBox } from '@xperience-community/xperience-search/widgets/search-box';
-import { results } from '@xperience-community/xperience-search/widgets/results';
-import { facetList } from '@xperience-community/xperience-search/widgets/facet-list';
+import { searchBox, results, facetList } from '@xperience-community/xperience-search/widgets';
 
 mountAll(document, { widgets: { searchBox, results, facetList } });
 ```

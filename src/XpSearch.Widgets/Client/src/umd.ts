@@ -7,7 +7,7 @@ import { mountAll, registerWidgetType } from './bootstrap';
 import createSearchCore from './index';
 import * as core from './index';
 import type { XpSearchOptions } from './types';
-import { DEFAULT_WIDGETS } from './widgets';
+import { DEFAULT_WIDGETS } from './widgets/defaults';
 
 // The no-build path resolves `data-xps-widget` with no author code, so this bundle - and only this
 // bundle - registers every first-party widget. Page code calling registerWidgetType() later still
