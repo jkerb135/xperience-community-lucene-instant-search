@@ -12,6 +12,10 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Fixed (widgets):** a disposed `SearchClient` no longer keeps retrying a failed request.
+  Probes and analytics events carry no abort signal, so a failing count probe from a Filter & Sort
+  sheet could still fetch on its retry backoff (up to ~600 ms) after the search instance was
+  disposed; `dispose()` now stops the retry loop.
 - **Added (client, widgets):** typed ingestion clients for both languages, so a sync job stops
   hand-rolling HTTP (CL-1). **C#:** a new Kentico-free package `XperienceCommunity.Search.Client`
   (`XpSearchIngestionClient`, BCL only — it is for the console importer or PIM job pushing documents

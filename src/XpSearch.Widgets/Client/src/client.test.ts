@@ -90,6 +90,18 @@ describe('SearchClient', () => {
     expect(fetchFn).toHaveBeenCalledTimes(3);
   });
 
+  it('stops a failing probe from retrying after dispose', async () => {
+    const fetchFn = vi.fn().mockRejectedValue(new TypeError('down'));
+    const client = new SearchClient({ retryDelayMs: 20, fetchFn: fetchFn as unknown as typeof fetch });
+    const probe = client.probe(REQUEST).catch(() => {});
+    await vi.waitFor(() => expect(fetchFn).toHaveBeenCalled());
+    client.dispose();
+    await probe;
+    // Without the disposed guard the retry backoff would fetch again here.
+    await new Promise((r) => setTimeout(r, 60));
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+  });
+
   it('surfaces a contract-version mismatch without throwing, once per version', async () => {
     const errors: Error[] = [];
     const fetchFn = vi.fn(async () =>

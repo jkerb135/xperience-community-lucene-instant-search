@@ -55,6 +55,7 @@ export class SearchClient {
   };
   #timer: ReturnType<typeof setTimeout> | undefined;
   #controller: AbortController | undefined;
+  #disposed = false;
   /** Monotonic id of the newest requested search; older answers are dropped. */
   #sequence = 0;
   #pending: Array<{ sequence: number; resolve: (r: SearchResponse | null) => void }> = [];
@@ -136,8 +137,9 @@ export class SearchClient {
     }
   }
 
-  /** Cancels the in-flight request and any debounced one. */
+  /** Cancels the in-flight request, any debounced one, and the retry loops of the rest. */
   dispose(): void {
+    this.#disposed = true;
     if (this.#timer !== undefined) clearTimeout(this.#timer);
     this.#timer = undefined;
     this.#controller?.abort();
@@ -151,7 +153,8 @@ export class SearchClient {
     for (let attempt = 0; attempt <= retries; attempt++) {
       if (attempt > 0) {
         await new Promise((r) => setTimeout(r, retryDelayMs * 2 ** (attempt - 1)));
-        if (signal?.aborted) throw new SearchError('Aborted');
+        // Probes and events carry no abort signal, so this flag is what stops their retries.
+        if (this.#disposed || signal?.aborted) throw new SearchError('Aborted');
       }
       let response: Response;
       try {
