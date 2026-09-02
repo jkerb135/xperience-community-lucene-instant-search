@@ -18,6 +18,12 @@ namespace XpSearch.Core.Highlighting;
 /// unencoded markup in the result is the configured pre and post tag. Encoding first is what makes
 /// the output safe to render: a document containing <c>&lt;script&gt;</c> comes back as text, and no
 /// re-encoding pass can then destroy the tags the highlighter inserted.
+/// <para>
+/// The scorer runs on <see cref="SearchContext.HighlightQuery"/> - the query already rewritten against
+/// the index reader - and falls back to the unrewritten <see cref="SearchContext.BaseQuery"/> only when
+/// the search did not go through the execute stage. Without the rewrite, a multi-term query (typo
+/// tolerance) is re-expanded per document and per field against an in-memory index of the fragment.
+/// </para>
 /// </remarks>
 public sealed class LuceneHighlighter : IHighlighter
 {
@@ -42,7 +48,7 @@ public sealed class LuceneHighlighter : IHighlighter
         string postTag = options?.PostTag ?? DefaultPostTag;
         int snippetLength = (int)Math.Max(1, options?.SnippetLength ?? DefaultSnippetLength);
 
-        var highlighter = new Highlighter(new SimpleHTMLFormatter(preTag, postTag), new QueryScorer(context.BaseQuery))
+        var highlighter = new Highlighter(new SimpleHTMLFormatter(preTag, postTag), new QueryScorer(context.HighlightQuery ?? context.BaseQuery))
         {
             TextFragmenter = new SimpleFragmenter(snippetLength)
         };

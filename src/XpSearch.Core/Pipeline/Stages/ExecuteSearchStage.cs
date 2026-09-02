@@ -49,6 +49,7 @@ public sealed class ExecuteSearchStage : ISearchStage
                     : searcher.Search(context.BaseQuery, null, topN, sort, doDocScores: true, doMaxScore: false);
 
                 Materialize(context, searcher, topDocs);
+                PrepareHighlightQuery(context, searcher);
                 return true;
             });
 
@@ -65,6 +66,7 @@ public sealed class ExecuteSearchStage : ISearchStage
 
             context.Facets = result.Facets;
             Materialize(context, searcher, result.Hits);
+            PrepareHighlightQuery(context, searcher);
             return true;
         });
 
@@ -115,6 +117,21 @@ public sealed class ExecuteSearchStage : ISearchStage
         };
 
         return new Sort(new SortField(LuceneFieldNames.SortFieldName(context.SortField), type, context.SortDescending));
+    }
+
+    /// <summary>
+    /// Rewrites the query against the reader for <c>HighlightStage</c>, which runs after the lease is
+    /// gone. The rewrite turns a multi-term query (typo tolerance) into the terms that actually exist
+    /// in the index, so the highlighter's scorer does not re-expand it for every document and field.
+    /// </summary>
+    private static void PrepareHighlightQuery(SearchContext context, IndexSearcher searcher)
+    {
+        if (context.Request.Highlight?.Fields is not { Length: > 0 } || context.Documents.Count == 0)
+        {
+            return;
+        }
+
+        context.HighlightQuery = context.BaseQuery.Rewrite(searcher.IndexReader);
     }
 
     private static void Materialize(SearchContext context, IndexSearcher searcher, TopDocs topDocs)

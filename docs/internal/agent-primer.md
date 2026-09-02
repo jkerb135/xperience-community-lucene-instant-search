@@ -50,7 +50,7 @@ dotnet run --project tests/XpSearch.Bench/XpSearch.Bench.csproj -c Release -- --
 cd src/XpSearch.Widgets/Client && npm run contract:gen && npm run contract:check
 ```
 
-Suite sizes (2026-09-01, after CL-1): Core 345, Admin 190, Ingestion 47, Widgets 78, Client 16,
+Suite sizes (2026-09-01, after HL-1): Core 347, Admin 260, Ingestion 47, Widgets 78, Client 16,
 JS 286 (the former `widgets.test.ts` facet-count flake is fixed — a disposed `SearchClient` no
 longer retries a failed probe into the next test's fetch log) — if
 your run shows fewer, you ran the wrong project. There is no solution file in the repo root; run each

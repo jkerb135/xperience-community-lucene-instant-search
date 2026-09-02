@@ -12,6 +12,15 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Fixed (core):** highlighting a search with typo tolerance on is no longer ~50× the cost of the
+  search itself. `HighlightStage` scored every result against the unrewritten query, so the fuzzy
+  terms FZ-1 builds were re-expanded once per document and per highlighted field; the query is now
+  rewritten against the index reader **once per request**, inside the searcher lease
+  (`ExecuteSearchStage`), and carried to the highlighter on `SearchContext.HighlightQuery`. Measured
+  by the same `XpSearch.Bench` workload as PF-1 at 10,000 documents: single term with typo tolerance
+  and highlighting **135.2 ms → 8.2 ms p50** (204.3 ms → 12.1 ms p95); the exact-query and
+  no-highlight rows are unchanged. Snippets are unchanged — a rewritten query holds the concrete
+  terms that matched, which is what should be marked. No API and no contract change.
 - **Fixed (admin):** the admin's page commands are now guarded against the "command not found" answer
   a click can get. Every command name the admin client sends is asserted against Kentico's own
   `UITree` for the page that has to answer it, for the whole Admin assembly, so a page whose command

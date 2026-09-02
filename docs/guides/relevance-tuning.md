@@ -447,9 +447,10 @@ It is **off by default**, because turning it on changes what an existing site fi
 a few real searches through the [Query tester](#checking-your-work-the-query-tester), and leave it on
 if you like what you see.
 
-It is also the most expensive switch on these pages. Measured, it makes a search take tens of
-milliseconds longer, mostly in producing the highlighted snippets — still fast enough for a search
-box, but it is not free, and [Performance and sizing](performance-and-sizing.md) has the numbers.
+It is also the most expensive switch on these pages. Measured, it makes a search take about three
+times as long — a few milliseconds at website sizes — because the index is asked for every near
+spelling of every term. Comfortably fast enough for a search box, but not free;
+[Performance and sizing](performance-and-sizing.md) has the numbers.
 
 Two things it does not change: rule conditions (a rule that fires on *espresso* still needs that
 exact word — see [Things that do not work yet](#things-that-do-not-work-yet)) and the suggestions

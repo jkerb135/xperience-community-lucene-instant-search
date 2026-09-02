@@ -199,6 +199,62 @@ internal sealed class FuzzyTests
         });
     }
 
+    /// <summary>
+    /// HL-1: what the highlighter scores against must already be rewritten against the reader. An
+    /// unrewritten <see cref="FuzzyQuery"/> makes the scorer re-expand it per document and per field
+    /// (135 ms p50 at 10k docs in the PF-1 bench); the rewrite happens once, inside the searcher lease.
+    /// </summary>
+    [Test]
+    public async Task TheHighlighter_ScoresAgainstTheRewrittenQuery_NotTheFuzzyOne()
+    {
+        var capture = new CaptureHighlightQueryStage();
+        using var harness = new TestHarness(typoTolerance: true, extraStages: capture);
+
+        var request = TestHarness.Request("expresso");
+        request.Highlight = new HighlightOptions { Fields = [TestCorpus.BodyField] };
+
+        await harness.Search(request);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(capture.HighlightQuery, Is.Not.Null, "the execute stage prepares it while the lease is open");
+            Assert.That(
+                Flatten(capture.HighlightQuery!).OfType<MultiTermQuery>(),
+                Is.Empty,
+                "a multi-term query left in here is the per-document expansion coming back");
+            Assert.That(
+                Flatten(capture.HighlightQuery!).OfType<TermQuery>().Select(term => term.Term.Text),
+                Does.Contain("espresso"),
+                "the rewrite resolves the misspelling to the term that actually exists in the index");
+        });
+    }
+
+    [Test]
+    public async Task WithoutHighlighting_NoRewriteIsPrepared()
+    {
+        var capture = new CaptureHighlightQueryStage();
+        using var harness = new TestHarness(typoTolerance: true, extraStages: capture);
+
+        await harness.Search(TestHarness.Request("expresso"));
+
+        Assert.That(capture.HighlightQuery, Is.Null, "nothing to highlight, nothing to rewrite for");
+    }
+
+    /// <summary>Captures the rewritten query as <c>HighlightStage</c> is about to see it.</summary>
+    private sealed class CaptureHighlightQueryStage : ISearchStage
+    {
+        public Query? HighlightQuery { get; private set; }
+
+        public int Order => SearchStageOrder.Highlight - 1;
+
+        public Task ExecuteAsync(SearchContext context, CancellationToken cancellationToken)
+        {
+            HighlightQuery = context.HighlightQuery;
+
+            return Task.CompletedTask;
+        }
+    }
+
     [Test]
     public void TheCacheKey_ChangesWithTheToggleAndOnlyWhenItIsOn()
     {

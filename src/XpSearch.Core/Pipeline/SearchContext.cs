@@ -105,6 +105,15 @@ public sealed class SearchContext
     public Query BaseQuery { get; set; } = new MatchAllDocsQuery();
 
     /// <summary>
+    /// Gets or sets <see cref="BaseQuery"/> rewritten against the index reader, set once per request by
+    /// <c>ExecuteSearchStage</c> while the searcher lease is still open. Highlighting scores against
+    /// this: a rewritten query holds the concrete matched terms, so a multi-term query (typo
+    /// tolerance) is expanded once per request instead of once per document per field.
+    /// <see langword="null"/> when no highlighting was requested.
+    /// </summary>
+    public Query? HighlightQuery { get; set; }
+
+    /// <summary>
     /// Gets the drill-down refinements, keyed by facet dimension. Executed through
     /// <see cref="DrillSideways"/> so counts for a drilled dimension stay "what if I picked another value".
     /// </summary>
