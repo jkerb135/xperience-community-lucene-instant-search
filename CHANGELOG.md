@@ -12,6 +12,12 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Fixed (admin):** the admin's page commands are now guarded against the "command not found" answer
+  a click can get. Every command name the admin client sends is asserted against Kentico's own
+  `UITree` for the page that has to answer it, for the whole Admin assembly, so a page whose command
+  cannot be reached fails a test instead of a click. No command name, payload or permission changed —
+  the reported failures were already fixed in source and the discovery rule they were blamed on turned
+  out not to exist (ADR-0027 records what Xperience actually does).
 - **Fixed (widgets):** a disposed `SearchClient` no longer keeps retrying a failed request.
   Probes and analytics events carry no abort signal, so a failing count probe from a Filter & Sort
   sheet could still fetch on its retry backoff (up to ~600 ms) after the search instance was
