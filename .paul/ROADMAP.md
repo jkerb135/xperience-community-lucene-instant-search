@@ -105,7 +105,7 @@ verified live — "There are 2 results without them / Clear filters and show 2 r
 - Findings batches from the owner walk (triage → fix units as they land)
 
 **Plans:**
-- [ ] 03-01: Command-discovery defect unit
+- [x] 03-01: Command-discovery defect (CD-1) — merged 6c92033 (2026-09-02): NOT a code defect; stale-host-build race diagnosed w/ decompiled proof, ADR-0027 + 70-case discovery guard; owner clicks §W 111–115
 - [ ] 03-02: HW-11 findings batches (count TBD by walk results)
 
 ### Phase 4: Remaining spec scope
