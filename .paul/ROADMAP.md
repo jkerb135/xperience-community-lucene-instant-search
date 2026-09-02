@@ -137,7 +137,7 @@ verified live — "There are 2 results without them / Clear filters and show 2 r
 
 **Plans:**
 - [x] 04-01: §10.5 typed clients (CL-1) — merged fa5843d (2026-09-01); lead host round trip passed both clients; checklist §U 104–107
-- [ ] 04-02: §10.7 example 2 unit
+- [x] 04-02: §10.7 example 2 (EX-2) — merged 232a906 (2026-09-02); live-verified on the host; checklist §V 108–110
 - [ ] 04-03: §12 performance unit
 - [x] 04-04: SG-1 mixed suggestion sources + recent searches — merged b2d5234 (2026-09-01); checklist §S 95–100 = owner browser items
 - [x] 04-05: IX-1 AddField indexing API + suggest-field warning — merged 7cddb43 (2026-09-01); host decorator swapped for AddField same day; checklist §T 101–103
