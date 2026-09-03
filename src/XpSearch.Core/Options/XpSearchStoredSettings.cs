@@ -3,6 +3,8 @@ using CMS.DataEngine;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
+using XpSearch.Core.Abstractions;
+
 namespace XpSearch.Core.Options;
 
 /// <summary>
@@ -291,24 +293,31 @@ internal sealed class XpSearchIndexSettingsSetup : IConfigureNamedOptions<XpSear
 }
 
 /// <summary>
-/// Drops one index's built <see cref="XpSearchIndexSettings"/> when its stored row is saved, so an
-/// administrator's change is live without an application restart and no other index is rebuilt.
+/// Drops one index's built <see cref="XpSearchIndexSettings"/> and its cached responses when its
+/// stored row is saved, so an administrator's change is live without an application restart and no
+/// other index is disturbed.
 /// </summary>
 /// <remarks>
 /// The trigger is the object type's own insert/update/delete event
 /// (https://docs.kentico.com/documentation/developers-and-admins/customization/handle-global-events),
 /// which fires wherever the row is written from.
+/// The response cache has to go with the settings: a request that omits <c>pageSize</c> computes the
+/// same <c>SearchCacheKey</c> before and after the save - the settings shape the response below the
+/// key - so a cached response would keep serving the old values for up to the old cache lifetime.
 /// </remarks>
 internal sealed class XpSearchIndexSettingsInvalidator
 {
     private readonly IOptionsMonitorCache<XpSearchIndexSettings> cache;
+    private readonly ISearchCache responses;
     private bool started;
 
-    public XpSearchIndexSettingsInvalidator(IOptionsMonitorCache<XpSearchIndexSettings> cache)
+    public XpSearchIndexSettingsInvalidator(IOptionsMonitorCache<XpSearchIndexSettings> cache, ISearchCache responses)
     {
         ArgumentNullException.ThrowIfNull(cache);
+        ArgumentNullException.ThrowIfNull(responses);
 
         this.cache = cache;
+        this.responses = responses;
     }
 
     /// <summary>Subscribes to the row's save events. Calling it twice subscribes once.</summary>
@@ -326,14 +335,20 @@ internal sealed class XpSearchIndexSettingsInvalidator
         XpSearchSettingsInfo.TYPEINFO.Events.Delete.After += OnSaved;
     }
 
-    /// <summary>Forgets one index's settings, so the next <c>Get</c> reads its row again.</summary>
+    /// <summary>
+    /// Forgets one index's settings, so the next <c>Get</c> reads its row again, and drops the
+    /// responses answered with the old ones.
+    /// </summary>
     /// <param name="indexName">Code name of the index whose row changed.</param>
     internal void Invalidate(string? indexName)
     {
-        if (!string.IsNullOrEmpty(indexName))
+        if (string.IsNullOrEmpty(indexName))
         {
-            cache.TryRemove(indexName);
+            return;
         }
+
+        cache.TryRemove(indexName);
+        responses.Evict(indexName);
     }
 
     private void OnSaved(object? sender, ObjectEventArgs e) =>

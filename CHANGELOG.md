@@ -27,7 +27,8 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
   settings*) edits all sixteen values, headed by *"Remove search analytics older than X days"*
   (default 365). Each index's row is loaded over the code defaults through
   `IConfigureNamedOptions<XpSearchIndexSettings>`, and a save is in effect on the next search without
-  an application restart — only the saved index's settings are rebuilt. The
+  an application restart — only the saved index's settings are rebuilt, and that index's cached
+  responses are dropped with them, so the very next request reflects the change. The
   `XpSearch.QueryLogRetention` task now prunes **each index with its own window**, deletes *answered*
   popularity and synonym suggestions along with the query log rows — pending suggestions are never
   touched — prunes rows left behind by indexes that are no longer registered with the code defaults,

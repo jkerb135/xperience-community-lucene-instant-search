@@ -193,7 +193,9 @@ An administrator sets the window **per index** in the administration:
 1. Open the **Lucene Search** application → the index → **Search settings**.
 2. Set **Remove search analytics older than X days**. The default is **365**; the minimum is 1.
 3. **Save**. The new window is in effect at once — no application restart, and no other index is
-   affected.
+   affected. Saving any of the index's search settings also drops that index's cached responses, so
+   a value that shapes a response (page sizes, facet limits) is visible on the next request rather
+   than after the old cache lifetime.
 
 `XpSearchQueryLogRetentionTask` then walks every registered index and deletes, in batches, that
 index's rows older than its own cutoff:

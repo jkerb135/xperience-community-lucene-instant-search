@@ -486,8 +486,9 @@ override it in the administration under **Lucene Search → the index → Search
 someone saves an index's Search settings page; an index with no row answers with the lambda's values,
 so changing the lambda still changes every index that was never saved. A save takes effect on the next
 search of **that index**, without an application restart and without rebuilding any other index's
-settings. To go back to what the code says for one index, delete its row from the `XpSearch_Settings`
-table.
+settings; it also drops that index's cached responses, so the next request reflects the new values
+rather than waiting out the old cache lifetime. To go back to what the code says for one index, delete
+its row from the `XpSearch_Settings` table.
 
 In code, the settings in effect for an index are
 `IOptionsMonitor<XpSearchIndexSettings>.Get(indexCodeName)`, read per operation. Read it with the
