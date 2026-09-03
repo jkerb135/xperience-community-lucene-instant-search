@@ -471,8 +471,8 @@ override it in the administration under **Lucene Search → the index → Search
 | Maximum values per facet | 100 | 1 or more | The ceiling the Facet list's *Values shown* and the Category tree's *Nodes per level* display from |
 | Maximum result window | 10000 | 1 or more | How deep the Pagination widget (and any caller) may page; a deeper request is refused |
 | Maximum suggestion count | 20 | 1–100 | Clamps the Suggestions widget's *Maximum items* and the search box's *Maximum suggestions* |
-| Remove search analytics older than X days | 365 | 1 or more | The `XpSearch.QueryLogRetention` task; sets the history depth of the Analytics page |
-| Retention batch size | 1000 | 1 or more | The `XpSearch.QueryLogRetention` task's delete batches |
+| Retention: remove search analytics older than X days | 365 | 1 or more | The `XpSearch.QueryLogRetention` task; sets the history depth of the Analytics page |
+| Cleanup batch size (rows per delete) | 1000 | 1 or more | The `XpSearch.QueryLogRetention` task's delete batches; it does not change the retention window |
 | Query suggestion window (days) | 30 | 1 or more | Popular-query suggestions, on an index whose suggest mode is `QuerySuggestions` or `Mixed` |
 | Popularity lookback (days) | 30 | 1 or more | The `XpSearch.PopularitySignal` task: the click window behind the popularity boost and the Suggestions listing |
 | Popularity documents per index | 100 | 1 or more | The `XpSearch.PopularitySignal` task: how many documents the signal keeps |

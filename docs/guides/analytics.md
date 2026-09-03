@@ -191,7 +191,9 @@ made, and the numbers here only ever mean the second thing.
 An administrator sets the window **per index** in the administration:
 
 1. Open the **Lucene Search** application → the index → **Search settings**.
-2. Set **Remove search analytics older than X days**. The default is **365**; the minimum is 1.
+2. Set **Retention: remove search analytics older than X days**. The default is **365**; the minimum
+   is 1. *Cleanup batch size (rows per delete)* below it is not the window — it only says how many
+   rows one delete statement takes.
 3. **Save**. The new window is in effect at once — no application restart, and no other index is
    affected. Saving any of the index's search settings also drops that index's cached responses, so
    a value that shapes a response (page sizes, facet limits) is visible on the next request rather

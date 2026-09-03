@@ -17,8 +17,8 @@ namespace XpSearch.Core.Analytics;
 /// the popularity and synonym suggestions a human already answered (spec §9.2, AR-2).
 /// </summary>
 /// <remarks>
-/// The window is the <em>Remove search analytics older than X days</em> setting on the index's Search
-/// settings page. Rows left behind by an index nobody registers any more are pruned with the
+/// The window is the <em>Retention: remove search analytics older than X days</em> setting on the
+/// index's Search settings page. Rows left behind by an index nobody registers any more are pruned with the
 /// code-configured defaults. Pending suggestions are never deleted - the mining task owns them - and
 /// the popularity scores are replaced on every run, so nothing prunes them.
 /// Registration only makes the task selectable; the task <em>configuration</em> - its schedule and

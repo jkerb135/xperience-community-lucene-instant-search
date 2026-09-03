@@ -97,19 +97,19 @@ public class SearchSettingsModel : IIndexScopedModel
     /// <summary>Gets or sets how many days of this index's search analytics are kept.</summary>
     [MinimumIntegerValueValidationRule(1)]
     [NumberInputComponent(
-        Label = "Remove search analytics older than X days",
+        Label = "Retention: remove search analytics older than X days",
         Order = 9,
-        Tooltip = "How many days of this index's search analytics are kept.",
+        Tooltip = "The retention window: how many days of this index's search analytics are kept.",
         ExplanationText = "The 'XpSearch.QueryLogRetention' scheduled task deletes this index's query log rows and its answered popularity and synonym suggestions once they are older than this; suggestions still waiting for an answer are never deleted. Sets how far back the Analytics page can report.")]
     public int RetentionDays { get; set; }
 
     /// <summary>Gets or sets how many rows the retention task deletes per batch.</summary>
     [MinimumIntegerValueValidationRule(1)]
     [NumberInputComponent(
-        Label = "Retention batch size",
+        Label = "Cleanup batch size (rows per delete)",
         Order = 10,
-        Tooltip = "How many rows the retention task deletes at a time.",
-        ExplanationText = "Only affects the 'XpSearch.QueryLogRetention' task's load on the database, never what is kept. Lower it if the deletion blocks other work; raise it to finish a large backlog sooner.")]
+        Tooltip = "How many rows the 'XpSearch.QueryLogRetention' task deletes at a time.",
+        ExplanationText = "This is not the retention window and does not change what is kept - only how hard the cleanup leans on the database. To keep analytics for longer or shorter, edit 'Retention: remove search analytics older than X days' above. Lower this if the deletion blocks other work; raise it to finish a large backlog sooner.")]
     public int RetentionBatchSize { get; set; }
 
     /// <summary>Gets or sets how far back query suggestions count query volume, in days.</summary>

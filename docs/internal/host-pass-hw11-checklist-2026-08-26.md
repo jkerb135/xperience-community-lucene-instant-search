@@ -509,9 +509,10 @@ index; a row exists only after a save). Items 116–120 below are kept for histo
      answers `pageSize 2`. A second index (create one in Lucene Search if there is none) is
      unaffected. Set the cap back to 100 → six cards. No restart at any point. *Default page size*
      and *Default suggestion count* are no longer on the page (removed by AR-3).
-123. **Retention per index.** Set DancingGoatSample's retention to **1**, save, run the
-     `XpSearch query log retention` task → *Last result* names the index and its three deleted
-     counts; a second index's rows (if any) are untouched. Restore the value.
+123. **Retention per index.** Set DancingGoatSample's **Retention: remove search analytics older than
+     X days** to **1** (not *Cleanup batch size (rows per delete)*, which only sizes the delete
+     batches), save, run the `XpSearch query log retention` task → *Last result* names the index and
+     its three deleted counts; a second index's rows (if any) are untouched. Restore the value.
 124. **Survives a restart.** Set a value, restart the host, reopen → unchanged.
 125. **Orphan rows use the defaults.** Delete (or rename) a test index that has a settings row and
      log rows, run the task → the event/console log names the orphan index and the rows are pruned
