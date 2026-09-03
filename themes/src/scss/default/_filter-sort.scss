@@ -6,7 +6,7 @@
  * dimmed backdrop, primary apply button.
  * ------------------------------------------------------------------------ */
 
-#{r.$root} .xps-filter-sort__badge {
+#{r.block('filter-sort')} .xps-filter-sort__badge {
   background-color: var(--xps-color-accent);
   color: var(--xps-color-on-accent);
   border-radius: 999px;
@@ -16,29 +16,29 @@
 }
 
 /* The page behind is dimmed, not tinted: the text colour at 40% works on any host background. */
-#{r.$root} .xps-sheet__backdrop {
+#{r.block('sheet')} .xps-sheet__backdrop {
   background-color: color-mix(in srgb, var(--xps-color-text) 40%, transparent);
 }
 
-#{r.$root} .xps-sheet__panel {
+#{r.block('sheet')} .xps-sheet__panel {
   background-color: var(--xps-color-surface);
   color: var(--xps-color-text);
   border-radius: calc(var(--xps-radius) * 2) calc(var(--xps-radius) * 2) 0 0;
 }
 
-#{r.$root} .xps-sheet__header {
+#{r.block('sheet')} .xps-sheet__header {
   border-bottom: 1px solid var(--xps-color-border);
 }
 
 /* The sheet's own heading, not the site's: a host `h2 { color: … ; font-size: 3rem }` used to
    walk straight into it (TH-7, deferred cosmetic item). */
-#{r.$root} .xps-sheet__title {
+#{r.block('sheet')} .xps-sheet__title {
   font-size: 1.125rem;
   font-weight: 600;
   color: var(--xps-color-text);
 }
 
-#{r.$root} .xps-sheet__close {
+#{r.block('sheet')} .xps-sheet__close {
   @include b.sheet-close;
   background-color: transparent;
   border: 0;
@@ -53,17 +53,17 @@
 }
 
 /* Hairline between sections, none above the first one. */
-#{r.$root} .xps-sheet__section + .xps-sheet__section {
+#{r.block('sheet')} .xps-sheet__section + .xps-sheet__section {
   border-top: 1px solid var(--xps-color-border);
 }
 
-#{r.$root} .xps-sheet__section-title {
+#{r.block('sheet')} .xps-sheet__section-title {
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--xps-color-muted);
 }
 
-#{r.$root} .xps-sheet__pill {
+#{r.block('sheet')} .xps-sheet__pill {
   @include b.sheet-pill;
   background-color: var(--xps-color-surface);
   color: var(--xps-color-text);
@@ -76,25 +76,25 @@
   }
 }
 
-#{r.$root} .xps-sheet__pill--selected {
+#{r.block('sheet')} .xps-sheet__pill--selected {
   background-color: var(--xps-color-accent);
   border-color: var(--xps-color-accent);
   color: var(--xps-color-on-accent);
   font-weight: 600;
 }
 
-#{r.$root} .xps-sheet__value-count {
+#{r.block('sheet')} .xps-sheet__value-count {
   color: var(--xps-color-muted);
   font-size: 0.875em;
   font-variant-numeric: tabular-nums;
 }
 
-#{r.$root} .xps-sheet__footer {
+#{r.block('sheet')} .xps-sheet__footer {
   background-color: var(--xps-color-surface);
   border-top: 1px solid var(--xps-color-border);
 }
 
-#{r.$root} .xps-sheet__clear {
+#{r.block('sheet')} .xps-sheet__clear {
   background-color: transparent;
   border-color: transparent;
   color: var(--xps-color-accent-ink);

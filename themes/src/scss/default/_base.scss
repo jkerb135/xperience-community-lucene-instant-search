@@ -13,16 +13,19 @@
  *
  * Colour literals appear only in the variable blocks. `themes/scripts/check.mjs` enforces that.
  *
- * Every rule is written inside the theme root `.xps.xps.xps` (src/scss/default/_root.scss), which
- * is what makes a widget a closed styling boundary: no host stylesheet up to (0,2,1) can change
- * anything inside one. `themes/scripts/check-isolation.mjs` proves it, fixture by fixture,
- * property by property, against test/site-hostile.css.
+ * Every rule is written inside the widget block it paints (`.xps.xps-results .xps-results__empty`)
+ * or, for the elements several widgets render, on the element's own class
+ * (`.xps .xps-button.xps-button`) — see src/scss/default/_root.scss for the three scopes and the
+ * one place a class is repeated for its own sake. That is what makes a widget a closed styling
+ * boundary: no host stylesheet up to (0,2,1) can change anything inside one.
+ * `themes/scripts/check-isolation.mjs` proves it, fixture by fixture, property by property,
+ * against test/site-hostile.css.
  */
 
 /* The tokens are declared on the PLAIN root class, at (0,1,0): they are the documented override
    surface (docs/guides/theming.md), so a site's own `.xps { --xps-color-accent: … }` — or a rule
-   for one widget — has to be able to win. Everything the tokens feed is stated below at the theme
-   root's (0,3,0)+, where a site cannot reach it by accident. */
+   for one widget — has to be able to win. Everything the tokens feed is stated below at (0,3,0)+,
+   where a site cannot reach it by accident. */
 .xps {
   --xps-color-accent: #{t.$color-accent};
   --xps-color-accent-ink: #{t.$color-accent-ink};
@@ -75,8 +78,12 @@
  *
  * Every element inside a widget takes its appearance from this file. The reset states the
  * neutral value of everything a host stylesheet could otherwise reach — at (0,3,0), above the
- * (0,2,1) a site reaches without knowing our class names, and below the (0,4,0) of the component
- * rules that follow, which are what actually paint the design.
+ * (0,2,1) a site reaches without knowing our class names.
+ *
+ * This is the ONE place the theme repeats a class for weight alone (`_root.scss`, `$root`): a
+ * reset selects elements, so it has no class of its own to carry the weight. Element selectors
+ * below sit in `:where()` so they stay at the reset's own (0,3,0) — the component rules that paint
+ * the design are (0,3,0) too and win by coming later, not by out-weighing anything.
  * ------------------------------------------------------------------------ */
 
 #{r.$root} *,
@@ -110,64 +117,80 @@
    `.landing-page ul li { margin: 12px 0 }` or `.section p { margin-bottom: 1.4rem }` stops here.
    Controls and links keep their margins reset too; their padding is the shell's, restated below
    at this file's specificity. */
-#{r.$root} :is(p, h1, h2, h3, h4, h5, h6, ul, ol, li, dl, dt, dd, figure, blockquote, hr, form, fieldset, legend, table, pre),
-#{r.$root} :is(a, button, input, select, textarea, label, kbd, mark, img, svg) {
+#{r.$root} :where(p, h1, h2, h3, h4, h5, h6, ul, ol, li, dl, dt, dd, figure, blockquote, hr, form, fieldset, legend, table, pre),
+#{r.$root} :where(a, button, input, select, textarea, label, kbd, mark, img, svg) {
   margin: 0;
   padding: 0;
 }
 
 /* Screen-reader-only text is a box the reset above would otherwise flatten. */
-#{r.$root} .xps-sr-only {
+#{r.own('xps-sr-only')} {
   @include b.sr-only;
 }
 
 /* --------------------------------------------------------------------------
- * Element defaults — (0,3,1), above the reset, below every component rule.
+ * Element defaults — after the reset, before every component rule, all at the same (0,3,0).
  * ------------------------------------------------------------------------ */
 
 /* Headings inside a widget are labels, not page furniture: the design gives them the body size in
    semibold and lets the component say otherwise (the sheet title, the group titles). */
-#{r.$root} :is(h1, h2, h3, h4, h5, h6) {
+#{r.$root} :where(h1, h2, h3, h4, h5, h6) {
   font-size: 1em;
   font-weight: 600;
 }
 
-#{r.$root} :is(b, strong) {
+#{r.$root} :where(b, strong) {
   font-weight: 600;
 }
 
-#{r.$root} a {
+#{r.$root} :where(a) {
   color: var(--xps-color-accent-ink);
   text-decoration: none;
 }
 
-#{r.$root} a:hover {
+#{r.$root} :where(a):hover {
   text-decoration: underline;
 }
 
-#{r.$root} :is(a, button, label, select, summary) {
+#{r.$root} :where(a, button, label, select, summary) {
   cursor: pointer;
 }
 
-#{r.$root} :is(:disabled, [aria-disabled="true"]) {
+#{r.$root} :where(:disabled, [aria-disabled="true"]) {
   cursor: default;
   opacity: 0.55;
 }
 
+/* The one control the theme leaves native: a checkbox tinted with `accent-color` is the platform's
+   own tick, keyboard model and forced-colors behaviour, at the design's size. The reset turns
+   `appearance` off for everything, so this states it back — an element default rather than a
+   component rule, because it has to reach every checkbox in the product (the facet rows, the
+   toggle filter, the mobile sheet) and the mirrored markup in the editor preview. It is also what
+   keeps a host's `.product-filter input[type="checkbox"] { appearance: auto; margin: 5px }` from
+   reaching them (TH-7). */
+#{r.$root} :where(input[type="checkbox"], input[type="radio"]) {
+  appearance: auto;
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--xps-color-accent);
+  color: var(--xps-color-accent);
+}
+
 /* The focus ring is the theme's: accent, never removed, always offset clear of the control. */
-#{r.$root}:focus-visible,
-#{r.$root} :focus-visible {
+#{r.$root}:where(:focus-visible),
+#{r.$root} :where(:focus-visible) {
   outline: 2px solid var(--xps-color-accent);
   outline-offset: 2px;
 }
 
 /* --------------------------------------------------------------------------
- * Shared primitives
+ * Shared primitives — the elements more than one widget renders, so the weight sits on the
+ * element's own class (`_root.scss`, `own()`) instead of on a widget name.
  * ------------------------------------------------------------------------ */
 
 /* A highlighter band under unchanged text, not a tinted box: the text colour is never the signal
    (the <mark> element and the band both are), and the underline survives a dense snippet. */
-#{r.$root} .xps-highlight {
+#{r.own('xps-highlight')} {
   background-image: linear-gradient(
     to top,
     color-mix(in srgb, var(--xps-color-accent) 18%, transparent) 42%,
@@ -176,7 +199,7 @@
   color: inherit;
 }
 
-#{r.$root} .xps-skeleton {
+#{r.own('xps-skeleton')} {
   background-color: currentColor;
   color: var(--xps-color-muted);
   border-radius: calc(var(--xps-radius) / 2);
@@ -191,12 +214,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #{r.$root} .xps-skeleton {
+  #{r.own('xps-skeleton')} {
     animation: none;
   }
 }
 
-#{r.$root} .xps-button {
+#{r.own('xps-button')} {
   @include b.button;
   background-color: var(--xps-color-surface);
   color: var(--xps-color-text);
@@ -211,7 +234,7 @@
   }
 }
 
-#{r.$root} .xps-button--primary {
+#{r.own('xps-button--primary')} {
   background-color: var(--xps-color-accent);
   border-color: var(--xps-color-accent);
   color: var(--xps-color-on-accent);
@@ -224,7 +247,7 @@
 
 /* The muted-link button: "Clear all" next to a heading or a chips row, where a filled box would
    shout. Still a real <button>, still focusable, still 2.25rem tall for the pointer. */
-#{r.$root} .xps-button--link {
+#{r.own('xps-button--link')} {
   @include b.button-link;
   background-color: transparent;
   border-color: transparent;
@@ -240,8 +263,11 @@
 }
 
 /* The filter column is a card (design board `Main.dc.html`). The class sits on the host's own
-   element, which carries `xps` too, so the selector is compound rather than a descendant one. */
-#{r.$root}.xps-sidebar {
+   element, which carries `xps` too, so the selector is compound rather than a descendant one —
+   and the card is painted on the block itself, which has no child to hang the weight on, so this
+   is one of the two rules that double the block class (TH-10; `.xps.xps-sidebar` alone is (0,2,0),
+   which a host's `.section div` would outrank). */
+#{r.block('sidebar')}.xps-sidebar {
   padding: 1.25rem;
   background-color: var(--xps-color-surface);
   border: 1px solid var(--xps-color-border);
@@ -249,7 +275,7 @@
   box-shadow: 0 4px 16px color-mix(in srgb, var(--xps-color-text) 8%, transparent);
 }
 
-#{r.$root} .xps-chip {
+#{r.own('xps-chip')} {
   @include b.chip;
   background-color: color-mix(in srgb, var(--xps-color-accent) 8%, var(--xps-color-surface));
   border: 1px solid color-mix(in srgb, var(--xps-color-accent) 30%, var(--xps-color-border));
@@ -257,11 +283,11 @@
   font-size: 0.8125em;
 }
 
-#{r.$root} .xps-chip__attribute {
+.xps .xps-chip .xps-chip__attribute {
   color: var(--xps-color-muted);
 }
 
-#{r.$root} .xps-chip__remove {
+.xps .xps-chip .xps-chip__remove {
   @include b.chip-remove;
   background-color: transparent;
   border: 0;

@@ -4,19 +4,21 @@
  * Page Builder editor preview
  * ------------------------------------------------------------------------ */
 
-#{r.$root} .xps-editor-preview {
+/* The dashed frame is painted on the block itself, which has no child wrapper to hang the weight
+   on, so this is the second (and last) rule that doubles its block class (TH-10). */
+#{r.block('editor-preview')}.xps-editor-preview {
   border: 1px dashed var(--xps-color-border);
   border-radius: var(--xps-radius);
 }
 
-#{r.$root} .xps-editor-preview__badge,
-#{r.$root} .xps-editor-preview__note {
+#{r.block('editor-preview')} .xps-editor-preview__badge,
+#{r.block('editor-preview')} .xps-editor-preview__note {
   color: var(--xps-color-muted);
   font-size: 0.875em;
   opacity: 0.7;
 }
 
 /* A placeholder that pulses forever in the builder is a distraction, not information. */
-#{r.$root} .xps-editor-preview .xps-skeleton {
+#{r.block('editor-preview')} .xps-skeleton {
   animation: none;
 }

@@ -52,15 +52,26 @@ fonts, shadows or radii live in it. **`default.css` is the design** (`docs/inter
 A custom theme replaces `default.css` and starts from that bare structure; `themes/scripts/check.mjs`
 enforces the split on every build.
 
-**One root selector: `.xps`.** `default.css` states it three times — `.xps.xps.xps` — on every rule
-it owns, so each lands at (0,3,0) or more:
+**One root selector: `.xps`, and every design rule is scoped to the widget block it paints.** A rule
+in `default.css` names the block's root (which carries `xps` and `xps-<block>` on one element) and
+then the part it paints, so it lands at (0,3,0) and reads as what it is:
 
 | Tier | Example | What it is |
 |---|---|---|
 | (0,1,0) | `.xps { --xps-color-accent: … }` | the tokens, deliberately weak: they are the documented override surface |
-| (0,3,0) | `.xps.xps.xps *` | the element reset — every property a host stylesheet could otherwise reach |
-| (0,3,1) | `.xps.xps.xps h3` | element defaults (headings, `strong`, links, cursors) |
-| (0,4,0)+ | `.xps.xps.xps .xps-button` | the component rules, which paint the design |
+| (0,3,0) | `.xps.xps.xps *`, `.xps.xps.xps :where(a)` | the element reset and the element defaults — **the one place a class is repeated**, because a reset has no class of its own to carry the weight |
+| (0,3,0) | `.xps.xps-pagination .xps-pagination__link` | a widget's design rules; they beat the reset by coming later, not by out-weighing it |
+| (0,3,0) | `.xps .xps-button.xps-button` | the elements several widgets render (buttons, chips, `xps-select`, `xps-highlight`, `xps-sr-only`, `xps-sidebar__header`): naming one widget would be a lie, so the element's own class carries the weight |
+
+Two rules paint a **block itself** rather than something inside it, and a block class alone is only
+(0,2,0), so those two double it: `.xps.xps-sidebar.xps-sidebar` (the filter card) and
+`.xps.xps-editor-preview.xps-editor-preview` (the builder's dashed frame).
+
+The block scope is written `:is(.xps.xps-pagination, .xps .xps-pagination)` in the compiled file:
+a widget root carries both classes on one element, while the Page Builder editor preview mirrors a
+widget's markup one level down inside its own `.xps` root. Both spellings are the same block.
+`themes/scripts/check.mjs` fails the build if any partial other than `default/_root.scss` repeats a
+class, so the `.xps.xps.xps` idiom cannot spread back out of the reset.
 
 A site's own stylesheet reaches (0,2,1) without knowing our class names (`button`, `.section h3`,
 `.landing-page ul li`, `.product-filter input[type="checkbox"]`), so with the theme loaded a widget
@@ -112,7 +123,7 @@ to know to inherit accessible defaults.
 | `xps-button--link` | Muted-link button (default theme only): no box, underlines on hover, still a real `<button>` at full hit size. What `clearFilters` renders. |
 | `xps-select` | Labelled-select box: flex row, `gap` half `--xps-space`. Children: `xps-select__label` (a real `<label for>`; add `xps-sr-only` to hide it) and `xps-select__control` (the native `<select>`, styled like every other form control by the default theme). Wrap the control in `xps-select__field` with an `xps-select__chevron` `<svg>` beside it for the design's own arrow — that wrapper, and only that wrapper, drops the platform arrow, so a bare `xps-select` keeps it. Modifier `xps-select--disabled` pairs with the `disabled` attribute on the control (rule 5). The only themed `<select>` in the product — `sortSelect` renders this same block, and a custom widget that needs a drop-down should too. |
 | `xps-toolbar` | The row above the results: stats left, sort right, wrapping onto two rows when the column is narrow. Colourless; it holds widget mounts and is not a widget. |
-| `xps-sidebar` | Fixture: `fixtures/sidebar.html`. The filter column: a vertical stack of the heading row and every refinement widget the host put in it. Unlike the two above it this one is **painted** — the theme gives it the design's card (surface, 1px border, radius, `1.25rem` padding, soft shadow) — so the element carries `xps` as well and the theme's rule for it is compound (`.xps.xps.xps.xps-sidebar`), not a descendant rule. Put both classes on the one element that holds the mounts; wrapping the mounts in a second element breaks a host rule that keys on them being direct children. |
+| `xps-sidebar` | Fixture: `fixtures/sidebar.html`. The filter column: a vertical stack of the heading row and every refinement widget the host put in it. Unlike the two above it this one is **painted** — the theme gives it the design's card (surface, 1px border, radius, `1.25rem` padding, soft shadow) — so the element carries `xps` as well and the theme's rule for it is compound (`.xps.xps-sidebar.xps-sidebar`), not a descendant rule. Put both classes on the one element that holds the mounts; wrapping the mounts in a second element breaks a host rule that keys on them being direct children. |
 | `xps-sidebar__header` | The filter column's heading row: `xps-sidebar__title` (any heading element) and a trailing "Clear all". Carries the same rule under it as a facet-group title. |
 | `xps-chip` | Removable-token box. Children: `xps-chip__label`, optional `xps-chip__attribute` (the facet name inside the label), `xps-chip__remove` (a `<button>` with an `aria-label` naming what is removed). |
 | `xps-skeleton` | Loading placeholder: `currentColor` at low opacity with a pulse animation, suppressed under `prefers-reduced-motion`. Modifiers `--title`, `--text`, `--block`. |

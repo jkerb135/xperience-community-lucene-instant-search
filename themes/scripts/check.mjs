@@ -87,8 +87,37 @@ for (const [name, css] of [['src/shell.css', shell], ['src/default.css', theme]]
   }
 }
 
+// (vii) TH-10: the specificity idiom cannot creep back. A design rule is scoped to the widget block
+// it paints (`.xps.xps-pagination .xps-pagination__link`) or, for the elements several widgets
+// render, to the element's own class doubled (`.xps .xps-button.xps-button`) — both emitted by the
+// two helpers in `default/_root.scss`. The ONE repeated class that names nothing is the reset's
+// `$root` (`.xps.xps.xps`), declared in `_root.scss` and used only by the reset in `_base.scss`.
+// So: no partial may write a repeated class literally or reach for `$root`, and no selector that
+// carries the triple may name an `xps-` component — that would be a component rule wearing the
+// reset's weight.
+const SPECIFICITY_HOME = ['default/_root.scss', 'default/_base.scss'];
+const REPEATED_CLASS = /(\.[a-z][\w-]*)\1(?![\w-])/i;
+for (const entry of readdirSync(join(themes, 'src/scss'), { recursive: true })) {
+  const file = `src/scss/${entry.split('\\').join('/')}`;
+  if (!file.endsWith('.scss')) continue;
+  // comments talk ABOUT the idiom; only the rules count
+  const source = strip(read(file)).replace(/(^|\s)\/\/.*$/gm, '');
+  const repeated = REPEATED_CLASS.exec(source);
+  if (repeated && !file.endsWith(SPECIFICITY_HOME[0])) {
+    fail(file, `"${repeated[0]}" repeats a class — scope the rule with block()/own() from default/_root.scss`);
+  }
+  if (source.includes('$root') && !SPECIFICITY_HOME.some((home) => file.endsWith(home))) {
+    fail(file, '$root (the reset triple) is used outside the element reset — use block() or own()');
+  }
+}
+for (const { selector } of blocks(theme)) {
+  if (selector.includes('.xps.xps.xps') && /\.xps-/.test(selector)) {
+    fail('src/default.css', `"${selector}" carries the reset triple AND names a component`);
+  }
+}
+
 // (vi) the shipped palette is actually readable, and re-skinnable through the one token.
-// The theme's RULES are stated inside `.xps.xps.xps` (src/scss/default/_root.scss), but the tokens
+// The theme's RULES are scoped per widget block (src/scss/default/_root.scss), but the tokens
 // stay on the plain `.xps`: they are the documented override surface.
 const ROOT = '.xps';
 const RATIOS = [
@@ -224,6 +253,7 @@ console.log(`        ${cssClasses.size} classes styled in shell.css + default.cs
 console.log('        shell.css: no colour/font/border declarations, no colour literals');
 console.log(`        default.css + ${PALETTES.join('.css + ')}.css: colour literals only in --xps-* declarations on an .xps selector`);
 console.log('        both: every selector scoped to xps-, no outline removed without a replacement');
+console.log('        src/scss: only default/_root.scss repeats a class, only the reset uses it');
 
 if (errors.length) {
   console.error(`\n${errors.length} problem(s):`);

@@ -8,7 +8,7 @@
  * categoryTree
  * ------------------------------------------------------------------------ */
 
-#{r.$root} .xps-category-tree__link {
+#{r.block('category-tree')} .xps-category-tree__link {
   @include b.category-tree-link;
   color: var(--xps-color-text);
   text-decoration: none;
@@ -18,12 +18,12 @@
   }
 }
 
-#{r.$root} .xps-category-tree__item--selected > .xps-category-tree__link {
+#{r.block('category-tree')} .xps-category-tree__item--selected > .xps-category-tree__link {
   color: var(--xps-color-accent-ink);
   font-weight: 600;
 }
 
-#{r.$root} .xps-category-tree__item > .xps-category-tree__list {
+#{r.block('category-tree')} .xps-category-tree__item > .xps-category-tree__list {
   @include b.category-tree-sublist;
   border-inline-start: 1px solid var(--xps-color-border);
 }

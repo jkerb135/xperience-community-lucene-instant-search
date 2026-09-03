@@ -12,6 +12,21 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Changed (themes):** the default theme's selectors say what they paint. Every design rule is now
+  scoped to its widget block — `.xps.xps-pagination .xps-pagination__link`,
+  `.xps.xps-results .xps-results__empty` — or, for the elements several widgets render, to the
+  element's own class doubled (`.xps .xps-button.xps-button`, `.xps .xps-chip.xps-chip`). The
+  `.xps.xps.xps` triple survives only on the element reset, which has no class of its own to carry
+  the weight. Nothing about the boundary changed: every rule still lands at (0,3,0), still beats a
+  host selector at (0,2,1), still uses no `!important`, and `themes/scripts/check-isolation.mjs`
+  still reports zero leaks across every fixture and both palettes. **If your site wrote overrides
+  against `.xps.xps.xps.xps …`, update them** — they still win by specificity, but the theme's own
+  rules are the ones documented in `docs/guides/theming.md`, "Specificity and host styles", and this
+  is the release to follow them (pre-1.0, no deprecation window). Three rules that were written as
+  descendants of the root but target the widget root itself never matched and now do, as the design
+  always said: the Page Builder editor preview gets its dashed frame and its skeletons stop pulsing,
+  the results list dims while a refinement is in flight, and a disabled toggle filter dims.
+
 - **Added (widgets, themes):** the filter column is a card. `xps-sidebar` is a documented
   composition class the host puts on the element holding its refinement mounts — the shell stacks
   them, the theme draws the design's card around them (surface, 1px border, `6px` radius,
