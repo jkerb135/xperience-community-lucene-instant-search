@@ -28,8 +28,9 @@ public sealed class ResultsWidgetProperties : XpSearchMountWidgetProperties
 {
     /// <summary>Gets or sets how many results a page shows. Zero keeps the API's configured default.</summary>
     [NumberInputComponent(
-        Label = "Results per page",
-        ExplanationText = "Leave at 0 to use the page size configured for the index.",
+        Label = "Results per page (0 = index setting)",
+        Tooltip = "How many results one page of the list shows.",
+        ExplanationText = "0 = the index's 'Default page size'; any other value overrides it for this widget only, capped by the index's 'Maximum page size'. It sets the page size of the whole search instance, so the Search - Pagination widget beside it pages in these steps.",
         Order = OrderFirstWidgetProperty)]
     public int ResultsPerPage { get; set; }
 
@@ -37,6 +38,8 @@ public sealed class ResultsWidgetProperties : XpSearchMountWidgetProperties
     [DropDownComponent(
         Label = "Result template",
         Placeholder = "Default template",
+        Tooltip = "Which registered card template renders one result.",
+        ExplanationText = "Only templates a developer registered in the project appear here; empty renders the shipped default card. A template decides the markup, the attributes below decide what it is given.",
         DataProviderType = typeof(ResultTemplateOptionsProvider),
         Order = OrderFirstWidgetProperty + 10)]
     public string ResultTemplate { get; set; } = string.Empty;
@@ -46,7 +49,8 @@ public sealed class ResultsWidgetProperties : XpSearchMountWidgetProperties
         dataProviderType: typeof(IndexFieldSelectorDataProvider),
         Label = "Fields to show",
         Placeholder = "Index defaults",
-        ExplanationText = "The index fields each card can read, for example title, url, summary, image. Leave empty for the defaults.",
+        Tooltip = "Which index fields the search retrieves for each result.",
+        ExplanationText = "The index fields each card can read, for example title, url, summary, image. Leave empty for the defaults. Once it is not empty it is the whole list, so a field a card reads - the title, link and snippet attributes below - has to be in it.",
         Order = OrderFirstWidgetProperty + 20)]
     public IEnumerable<string> FieldNames { get; set; } = [];
 
@@ -63,7 +67,8 @@ public sealed class ResultsWidgetProperties : XpSearchMountWidgetProperties
         dataProviderType: typeof(IndexFieldSelectorDataProvider),
         Label = "Title attribute",
         Placeholder = "Default: title",
-        ExplanationText = "Index field the card's heading comes from.",
+        Tooltip = "Index field the card's heading comes from.",
+        ExplanationText = "Empty keeps 'title'. Used by the default card; a custom result template may read whatever it likes.",
         Order = OrderFirstWidgetProperty + 30)]
     public string TitleAttribute { get; set; } = string.Empty;
 
@@ -72,7 +77,8 @@ public sealed class ResultsWidgetProperties : XpSearchMountWidgetProperties
         dataProviderType: typeof(IndexFieldSelectorDataProvider),
         Label = "Link attribute",
         Placeholder = "Default: url",
-        ExplanationText = "Index field the card links to.",
+        Tooltip = "Index field the card links to.",
+        ExplanationText = "Empty keeps 'url'. Point it at another field only when your content stores its address somewhere else, and either leave 'Fields to show' empty or list that field there too.",
         Order = OrderFirstWidgetProperty + 40)]
     public string UrlAttribute { get; set; } = string.Empty;
 
@@ -83,7 +89,8 @@ public sealed class ResultsWidgetProperties : XpSearchMountWidgetProperties
     /// </remarks>
     [TextAreaComponent(
         Label = "Snippet attributes",
-        ExplanationText = "One index field name per line, tried in order; the first one with a value wins. Leave empty for summary, content, excerpt.",
+        Tooltip = "Index fields the card's summary line is taken from.",
+        ExplanationText = "One index field name per line, tried in order; the first one with a value wins. Leave empty for summary, content, excerpt. A field named here is only on the card if it was retrieved: either leave 'Fields to show' empty or list it there too.",
         Order = OrderFirstWidgetProperty + 50)]
     public string SnippetAttributes { get; set; } = string.Empty;
 }

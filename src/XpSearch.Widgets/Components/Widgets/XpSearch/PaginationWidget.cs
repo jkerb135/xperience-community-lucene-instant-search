@@ -35,7 +35,8 @@ public sealed class PaginationWidgetProperties : XpSearchMountWidgetProperties
     [DropDownComponent(
         Label = "Style",
         Options = $"{StyleNumbered};Numbered pages\r\n{StyleLoadMore};Load more button",
-        ExplanationText = "\"Load more\" appends the next page instead of replacing it. Place either this or numbered pages, never both.",
+        Tooltip = "Which pagination control this widget renders.",
+        ExplanationText = "\"Load more\" appends the next page instead of replacing it. Place either this or numbered pages, never both. The step is the page size of the search - the Search - Results widget's 'Results per page (0 = index setting)', or the index's 'Default page size' - and the index's 'Maximum result window' is how deep paging may go.",
         Order = OrderFirstWidgetProperty)]
     public string Style { get; set; } = StyleNumbered;
 }

@@ -34,6 +34,11 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
   touched — prunes rows left behind by indexes that are no longer registered with the code defaults,
   and reports one line per index as its *Last result*.
 
+- **Changed (admin, widgets):** every setting and widget property now explains what it does and what
+  it interacts with — a tooltip and an explanation line on each field of the per-index *Search
+  settings* page and on each Page Builder widget property — and the Results widget's page-size label
+  is now *Results per page (0 = index setting)*.
+
 - **Fixed (widgets):** the `./widgets` barrel now tree-shakes. `DEFAULT_WIDGETS` references every
   widget as a value, so having it in the barrel dragged all fourteen widgets into any bundle that
   imported one of them (60 KB where 24 KB was asked for); it moved to a chunk of its own and is

@@ -33,16 +33,25 @@ public sealed class SortSelectWidgetProperties : XpSearchMountWidgetProperties
     /// </summary>
     [TextAreaComponent(
         Label = "Sort options",
-        ExplanationText = "One per line, as key;Label - for example relevance;Most relevant or publishedAt_desc;Newest first.",
+        Tooltip = "The orders the selector offers, one per line.",
+        ExplanationText = "One per line, as key;Label - for example relevance;Most relevant or publishedAt_desc;Newest first. A key is 'relevance', a sort key a developer configured for this index in code, or a sortable index field with an _asc / _desc suffix; a key the index does not publish returns an error instead of results.",
         Order = OrderFirstWidgetProperty)]
     public string SortOptions { get; set; } = "relevance;Most relevant";
 
     /// <summary>Gets or sets the label of the selector. Empty keeps the JavaScript default.</summary>
-    [TextInputComponent(Label = "Label", Order = OrderFirstWidgetProperty + 10)]
+    [TextInputComponent(
+        Label = "Label",
+        Tooltip = "The text shown beside the drop-down.",
+        ExplanationText = "Empty keeps the built-in wording. The label always names the drop-down for screen readers, whether it is visible or not.",
+        Order = OrderFirstWidgetProperty + 10)]
     public string Label { get; set; } = string.Empty;
 
     /// <summary>Gets or sets whether the label is hidden from sighted users. It stays available to screen readers.</summary>
-    [CheckBoxComponent(Label = "Hide the label visually", Order = OrderFirstWidgetProperty + 20)]
+    [CheckBoxComponent(
+        Label = "Hide the label visually",
+        Tooltip = "Hides the label on screen, keeping it for screen readers.",
+        ExplanationText = "For a toolbar where the drop-down is self-explanatory. The label is not removed, only visually hidden.",
+        Order = OrderFirstWidgetProperty + 20)]
     public bool HideLabel { get; set; }
 }
 

@@ -463,24 +463,24 @@ back escaped.
 Every number on the root of `XpSearchOptions` is a **default for all indexes**, and each index can
 override it in the administration under **Lucene Search → the index → Search settings**:
 
-| Setting | Default | Accepted |
-|---|---|---|
-| Response cache lifetime (seconds) | 60 | 0 or more (0 = no response caching) |
-| Maximum query length | 256 | 1–1000 |
-| Default page size | 20 | 1–1000 |
-| Maximum page size | 100 | 1–1000 |
-| Maximum values per facet | 100 | 1 or more |
-| Maximum result window | 10000 | 1 or more |
-| Default suggestion count | 5 | 1–100 |
-| Maximum suggestion count | 20 | 1–100 |
-| Remove search analytics older than X days | 365 | 1 or more |
-| Retention batch size | 1000 | 1 or more |
-| Query suggestion window (days) | 30 | 1 or more |
-| Popularity lookback (days) | 30 | 1 or more |
-| Popularity documents per index | 100 | 1 or more |
-| Popularity suggestion queries | 10 | 1 or more |
-| Synonym reformulation window (seconds) | 60 | 1 or more |
-| Synonym minimum occurrences | 3 | 1 or more |
+| Setting | Default | Accepted | Used by |
+|---|---|---|---|
+| Response cache lifetime (seconds) | 60 | 0 or more (0 = no response caching) | Every search of the index — all widgets and every API caller |
+| Maximum query length | 256 | 1–1000 | Every search request; the text is truncated, not refused. Suggest requests are unaffected |
+| Default page size | 20 | 1–1000 | The Results widget with *Results per page (0 = index setting)* left at 0, and any caller that omits `pageSize` |
+| Maximum page size | 100 | 1–1000 | Clamps the Results widget's *Results per page* and every caller's `pageSize`; the clamped value is reported back |
+| Maximum values per facet | 100 | 1 or more | The ceiling the Facet list's *Values shown* and the Category tree's *Nodes per level* display from |
+| Maximum result window | 10000 | 1 or more | How deep the Pagination widget (and any caller) may page; a deeper request is refused |
+| Default suggestion count | 5 | 1–100 | Callers of `/suggest` that omit `limit`. The Suggestions widget and the search box always send their own number |
+| Maximum suggestion count | 20 | 1–100 | Clamps the Suggestions widget's *Maximum items* and the search box's *Maximum suggestions* |
+| Remove search analytics older than X days | 365 | 1 or more | The `XpSearch.QueryLogRetention` task; sets the history depth of the Analytics page |
+| Retention batch size | 1000 | 1 or more | The `XpSearch.QueryLogRetention` task's delete batches |
+| Query suggestion window (days) | 30 | 1 or more | Popular-query suggestions, on an index whose suggest mode is `QuerySuggestions` or `Mixed` |
+| Popularity lookback (days) | 30 | 1 or more | The `XpSearch.PopularitySignal` task: the click window behind the popularity boost and the Suggestions listing |
+| Popularity documents per index | 100 | 1 or more | The `XpSearch.PopularitySignal` task: how many documents the signal keeps |
+| Popularity suggestion queries | 10 | 1 or more | The `XpSearch.PopularitySignal` task: how many rows can reach the index's Suggestions listing |
+| Synonym reformulation window (seconds) | 60 | 1 or more | The `XpSearch.PopularitySignal` task's synonym mining, behind the Synonym suggestions listing |
+| Synonym minimum occurrences | 3 | 1 or more | The same mining: the noise threshold before a pair is offered |
 
 **The `AddXpSearch(options => …)` lambda sets the defaults.** Nothing is written to the database until
 someone saves an index's Search settings page; an index with no row answers with the lambda's values,

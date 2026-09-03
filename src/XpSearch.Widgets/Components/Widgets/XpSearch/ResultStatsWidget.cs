@@ -31,12 +31,17 @@ public sealed class ResultStatsWidgetProperties : XpSearchMountWidgetProperties
     /// </summary>
     [TextInputComponent(
         Label = "Text template",
-        ExplanationText = "Placeholders: {total}, {tookMs}, {query}, {page}, {totalPages}. The count is emphasised. Markup is shown, not rendered.",
+        Tooltip = "The wording of the result line, with placeholders.",
+        ExplanationText = "Placeholders: {total}, {tookMs}, {query}, {page}, {totalPages}. The count is emphasised. Markup is shown, not rendered. {page} and {totalPages} follow the same search as the Search - Pagination widget beside it.",
         Order = OrderFirstWidgetProperty)]
     public string TextTemplate { get; set; } = DefaultTextTemplate;
 
     /// <summary>Gets or sets the text shown before the first search runs.</summary>
-    [TextInputComponent(Label = "Text before the first search", Order = OrderFirstWidgetProperty + 10)]
+    [TextInputComponent(
+        Label = "Text before the first search",
+        Tooltip = "What the line reads while no search has run yet.",
+        ExplanationText = "Shown until the first response arrives; empty keeps the built-in \"Type to search.\". Set it to the wording that suits the page the search box is on.",
+        Order = OrderFirstWidgetProperty + 10)]
     public string EmptyText { get; set; } = string.Empty;
 }
 

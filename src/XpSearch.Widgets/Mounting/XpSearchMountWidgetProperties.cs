@@ -38,7 +38,8 @@ public abstract class XpSearchMountWidgetProperties : IWidgetProperties
     /// </summary>
     [DropDownComponent(
         Label = "Search index",
-        ExplanationText = "The index this search queries. All widgets of one search instance must select the same index.",
+        Tooltip = "Which Lucene index this widget searches.",
+        ExplanationText = "All widgets of one search instance must select the same index. Leave it empty when the project has exactly one index. The index's own Search settings - page size, cache lifetime, facet and suggestion limits - apply to everything this widget asks for.",
         DataProviderType = typeof(XpSearchIndexOptionsProvider),
         Order = OrderIndex)]
     public string Index { get; set; } = string.Empty;
@@ -51,7 +52,8 @@ public abstract class XpSearchMountWidgetProperties : IWidgetProperties
     /// </summary>
     [TextInputComponent(
         Label = "Instance ID",
-        ExplanationText = "Widgets that share an instance ID form one search. Change it only to run two independent searches on one page.",
+        Tooltip = "Groups the widgets that share one search state.",
+        ExplanationText = "Widgets with the same instance ID share one query, its filters and its results, wherever they sit on the page. Change it only to run two independent searches on one page; a widget with an ID no other widget uses reacts to nothing.",
         Order = OrderInstanceId)]
     public string InstanceId { get; set; } = XpSearchWidgetConstants.DefaultInstanceId;
 }

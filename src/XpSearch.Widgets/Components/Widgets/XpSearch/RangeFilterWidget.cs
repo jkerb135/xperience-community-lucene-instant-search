@@ -34,39 +34,66 @@ public sealed class RangeFilterWidgetProperties : XpSearchMountWidgetProperties
     [DropDownComponent(
         Label = "Attribute",
         Placeholder = "Select an attribute",
+        Tooltip = "The numeric or date index attribute the range narrows.",
+        ExplanationText = "The list is the selected index's numeric and date fields. The refinement joins the chips of a Search - Active filters widget and is removed by Search - Clear filters, like any facet.",
         Order = OrderFirstWidgetProperty)]
     [FormComponentConfiguration(XpSearchConstants.NumericAttributeConfiguratorIdentifier, nameof(Index))]
     public string Attribute { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the heading shown above the control. Empty falls back to the attribute name.</summary>
-    [TextInputComponent(Label = "Label", Order = OrderFirstWidgetProperty + 10)]
+    [TextInputComponent(
+        Label = "Label",
+        Tooltip = "The heading shown above the control.",
+        ExplanationText = "Empty shows the attribute name, which is rarely what a visitor should read.",
+        Order = OrderFirstWidgetProperty + 10)]
     public string Label { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the lower end of the control.</summary>
     [DecimalNumberInputComponent(
         Label = "Minimum",
-        ExplanationText = "The lowest value the control offers. The search response carries no statistics about the corpus, so both bounds have to be set here.",
+        Tooltip = "The lowest value the control offers.",
+        ExplanationText = "The search response carries no statistics about the corpus, so both bounds have to be set here. Set it from what the content actually holds: a visitor cannot pick a value below it.",
         Order = OrderFirstWidgetProperty + 20)]
     public decimal? Minimum { get; set; }
 
     /// <summary>Gets or sets the upper end of the control.</summary>
-    [DecimalNumberInputComponent(Label = "Maximum", Order = OrderFirstWidgetProperty + 30)]
+    [DecimalNumberInputComponent(
+        Label = "Maximum",
+        Tooltip = "The highest value the control offers.",
+        ExplanationText = "The other hand-set bound. Set it from what the content actually holds: a visitor cannot pick a value above it.",
+        Order = OrderFirstWidgetProperty + 30)]
     public decimal? Maximum { get; set; }
 
     /// <summary>Gets or sets the step of the sliders and the number inputs.</summary>
-    [DecimalNumberInputComponent(Label = "Step", Order = OrderFirstWidgetProperty + 40)]
+    [DecimalNumberInputComponent(
+        Label = "Step",
+        Tooltip = "How far one move of a slider or a number input goes.",
+        ExplanationText = "Match it to the precision of the attribute: 1 for whole units, 0.01 for a price in cents.",
+        Order = OrderFirstWidgetProperty + 40)]
     public decimal? Step { get; set; } = 1m;
 
     /// <summary>Gets or sets the visible label of the lower number input. Empty leaves "From".</summary>
-    [TextInputComponent(Label = "\"From\" label", Order = OrderFirstWidgetProperty + 50)]
+    [TextInputComponent(
+        Label = "\"From\" label",
+        Tooltip = "The label of the lower number input.",
+        ExplanationText = "Empty keeps \"From\".",
+        Order = OrderFirstWidgetProperty + 50)]
     public string FromLabel { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the visible label of the upper number input. Empty leaves "To".</summary>
-    [TextInputComponent(Label = "\"To\" label", Order = OrderFirstWidgetProperty + 60)]
+    [TextInputComponent(
+        Label = "\"To\" label",
+        Tooltip = "The label of the upper number input.",
+        ExplanationText = "Empty keeps \"To\".",
+        Order = OrderFirstWidgetProperty + 60)]
     public string ToLabel { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the unit shown after the two number inputs, such as "USD" or "kg".</summary>
-    [TextInputComponent(Label = "Unit", Order = OrderFirstWidgetProperty + 70)]
+    [TextInputComponent(
+        Label = "Unit",
+        Tooltip = "Shown after the two number inputs.",
+        ExplanationText = "Decoration only - \"USD\", \"kg\", \"pages\". It does not convert or format the values.",
+        Order = OrderFirstWidgetProperty + 70)]
     public string Unit { get; set; } = string.Empty;
 }
 

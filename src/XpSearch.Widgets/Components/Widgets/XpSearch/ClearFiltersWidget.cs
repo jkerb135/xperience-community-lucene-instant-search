@@ -24,7 +24,11 @@ namespace XpSearch.Widgets.Components.Widgets.XpSearch;
 public sealed class ClearFiltersWidgetProperties : XpSearchMountWidgetProperties
 {
     /// <summary>Gets or sets the button text. Empty keeps "Clear all".</summary>
-    [TextInputComponent(Label = "Button text", Order = OrderFirstWidgetProperty)]
+    [TextInputComponent(
+        Label = "Button text",
+        Tooltip = "The wording of the button.",
+        ExplanationText = "Empty keeps \"Clear all\". The button removes every refinement of this search instance - facets, categories and ranges alike - and is disabled while there is nothing to clear.",
+        Order = OrderFirstWidgetProperty)]
     public string Label { get; set; } = string.Empty;
 }
 

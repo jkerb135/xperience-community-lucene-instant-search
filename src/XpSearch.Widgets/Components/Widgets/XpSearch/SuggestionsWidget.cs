@@ -38,18 +38,25 @@ public sealed class SuggestionsWidgetProperties : XpSearchMountWidgetProperties
     [DropDownComponent(
         Label = "Mode",
         Options = $"{ModeDocuments};Matching documents\r\n{ModeQuerySuggestions};Popular queries\r\n{ModeMixed};Both, queries first",
+        Tooltip = "What the suggestions are drawn from.",
+        ExplanationText = "What an index actually answers with is configured in code, per index; this property records the intent and does not change the request. Popular queries come from the query log within the index's 'Query suggestion window (days)'.",
         Order = OrderFirstWidgetProperty)]
     public string Mode { get; set; } = ModeDocuments;
 
     /// <summary>Gets or sets how many suggestions are offered.</summary>
-    [NumberInputComponent(Label = "Maximum items", Order = OrderFirstWidgetProperty + 10)]
+    [NumberInputComponent(
+        Label = "Maximum items",
+        Tooltip = "How many suggestions the panel offers.",
+        ExplanationText = "The index's 'Maximum suggestion count' caps it: a higher number comes back trimmed to that.",
+        Order = OrderFirstWidgetProperty + 10)]
     public int MaxItems { get; set; } = 5;
 
     /// <summary>Gets or sets whether the panel offers this visitor's own recent searches.</summary>
     [CheckBoxComponent(
         Label = "Offer recent searches",
+        Tooltip = "Adds this visitor's own earlier searches to the panel.",
         ExplanationText = "Shows what this visitor searched for before as the first group of the panel, and opens it when they "
-            + "focus the empty field. The list is kept in their own browser and never sent to the server.",
+            + "focus the empty field. The list is kept in their own browser and never sent to the server. Clear the checkbox on a shared or kiosk device.",
         Order = OrderFirstWidgetProperty + 20)]
     public bool RecentSearches { get; set; } = true;
 }

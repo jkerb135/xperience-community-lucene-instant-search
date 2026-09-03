@@ -35,22 +35,32 @@ public sealed class CategoryTreeWidgetProperties : XpSearchMountWidgetProperties
     [DropDownComponent(
         Label = "Attribute",
         Placeholder = "Select an attribute",
-        ExplanationText = "A taxonomy attribute. A flat attribute renders as one level.",
+        Tooltip = "The index attribute the tree navigates.",
+        ExplanationText = "Pick a taxonomy attribute: the levels come from the tag hierarchy, and a flat attribute renders as one level. A Search - Facet list on the same attribute in the same search instance writes the same filter, so place one or the other.",
         Order = OrderFirstWidgetProperty)]
     [FormComponentConfiguration(XpSearchConstants.FacetAttributeConfiguratorIdentifier, nameof(Index))]
     public string Attribute { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the heading shown above the tree. Empty falls back to the attribute name.</summary>
-    [TextInputComponent(Label = "Label", Order = OrderFirstWidgetProperty + 10)]
+    [TextInputComponent(
+        Label = "Label",
+        Tooltip = "The heading shown above the tree.",
+        ExplanationText = "Empty shows the attribute name, which is rarely what a visitor should read.",
+        Order = OrderFirstWidgetProperty + 10)]
     public string Label { get; set; } = string.Empty;
 
     /// <summary>Gets or sets how many nodes are listed at each level of the tree.</summary>
-    [NumberInputComponent(Label = "Nodes per level", Order = OrderFirstWidgetProperty + 20)]
+    [NumberInputComponent(
+        Label = "Nodes per level",
+        Tooltip = "How many child nodes one level of the tree lists.",
+        ExplanationText = "A display limit over the values the response carried, so the index setting 'Maximum values per facet' is the real ceiling on how many categories can appear.",
+        Order = OrderFirstWidgetProperty + 20)]
     public int Limit { get; set; } = 10;
 
     /// <summary>Gets or sets whether the tree's title folds it away.</summary>
     [CheckBoxComponent(
         Label = "Title folds the tree",
+        Tooltip = "Makes the heading a disclosure button.",
         ExplanationText = "The title becomes a button with a chevron. The tree starts open, and the state is not remembered between page loads.",
         Order = OrderFirstWidgetProperty + 30)]
     public bool Collapsible { get; set; } = true;
