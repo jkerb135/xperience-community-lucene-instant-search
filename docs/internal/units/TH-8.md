@@ -43,8 +43,13 @@ first, then the accent shade — report the final ratios.
   `./themes/default.css` (keep) and `./themes/shell.css`; `package:check` covers them.
 - Tag helper / no-build fallback: whatever selects the theme today (`data-xps-theme`, the tag
   helper's theme attribute) gains the two names; `default` = violet. No Page Builder property.
-- Demo host stays violet. Add ONE fixture render of the orange palette to `themes/test/` so the
-  check and a screenshot can show it; screenshot manifest row `themes--kentico-orange` (STALE).
+- **Demo host switches to orange** (owner 2026-09-03): the host imports `kentico-orange` instead
+  of the default in its Vite entry (`F:/Personal/CommunityProjects/src` — find the search entry
+  that imports the theme; the host is not in this repo's git, edit it in place and list the exact
+  file/line in the report) so `/search` renders the orange palette after `npm run build` in `src/`.
+  The guide's walkthrough keeps violet as "the default"; the demo shows the switch is one import.
+  Add ONE fixture render of the orange palette to `themes/test/` so the check and a screenshot can
+  show it; screenshot manifest row `themes--kentico-orange` (STALE).
 
 ## 4. Docs + verification
 
