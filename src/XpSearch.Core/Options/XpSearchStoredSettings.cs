@@ -1,5 +1,4 @@
 using CMS.DataEngine;
-using CMS.Helpers;
 
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -191,46 +190,30 @@ internal interface IStoredSearchSettingsSource
 }
 
 /// <summary>
-/// Reads the row from the database behind one cache entry, so options binding does not query on every
-/// read. The entry depends on the object type, which touches its dummy cache keys, so a save in the
-/// administration invalidates it at once.
+/// Reads the row from the database, straight, on every call.
 /// </summary>
+/// <remarks>
+/// Deliberately uncached: <see cref="IOptionsMonitor{TOptions}"/> holds the built options until
+/// <see cref="XpSearchSettingsChangeTokenSource"/> fires, so this runs at most once per save, and a
+/// cache in front of it can only serve the values the save just replaced.
+/// </remarks>
 internal sealed class InfoStoredSearchSettingsSource : IStoredSearchSettingsSource
 {
-    /// <summary>How long the entry survives without a change touching it.</summary>
-    internal const int CacheMinutes = 30;
-
     private readonly IInfoProvider<XpSearchSettingsInfo> rows;
-    private readonly IProgressiveCache cache;
-    private readonly ICacheDependencyBuilderFactory dependencies;
 
-    public InfoStoredSearchSettingsSource(
-        IInfoProvider<XpSearchSettingsInfo> rows,
-        IProgressiveCache cache,
-        ICacheDependencyBuilderFactory dependencies)
+    public InfoStoredSearchSettingsSource(IInfoProvider<XpSearchSettingsInfo> rows)
     {
         ArgumentNullException.ThrowIfNull(rows);
-        ArgumentNullException.ThrowIfNull(cache);
-        ArgumentNullException.ThrowIfNull(dependencies);
 
         this.rows = rows;
-        this.cache = cache;
-        this.dependencies = dependencies;
     }
 
-    public SearchSettingsValues? Get() =>
-        cache.Load(
-            settings =>
-            {
-                settings.CacheDependency = dependencies.Create()
-                    .ForInfoObjects<XpSearchSettingsInfo>().All().Builder()
-                    .Build();
+    public SearchSettingsValues? Get()
+    {
+        var row = rows.Get().TopN(1).FirstOrDefault();
 
-                var row = rows.Get().TopN(1).FirstOrDefault();
-
-                return row is null ? null : StoredSearchSettings.Read(row);
-            },
-            new CacheSettings(CacheMinutes, "xpsearch", "settings"));
+        return row is null ? null : StoredSearchSettings.Read(row);
+    }
 }
 
 /// <summary>

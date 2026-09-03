@@ -46,8 +46,9 @@ public class XpSearchSettingsInfo : AbstractInfo<XpSearchSettingsInfo, IInfoProv
             null,
             null)
         {
-            // The overlay caches the row behind a ForInfoObjects<T>().All() dependency, so a save has to
-            // touch the dummy cache keys
+            // The options overlay reads this row uncached - the options monitor is its cache - so nothing
+            // here depends on the dummy cache keys today; a save touches them anyway, so anything that
+            // does take a ForInfoObjects<T>().All() dependency on it later is invalidated
             // (https://docs.kentico.com/documentation/developers-and-admins/development/caching/cache-dependencies).
             TouchCacheDependencies = true,
         };

@@ -70,7 +70,9 @@ in the administration, the way Kentico's own *Delete inactive contacts* setting 
 lives in a stored row that an editor changes without a deployment. Default **365** days, minimum 1,
 1000 rows per batch. `Analytics.RetentionDays` stays on `XpSearchOptions`, but only to seed that row on
 first start; the running task reads the options, which the stored row has overwritten
-(`IConfigureOptions<XpSearchOptions>` + an `IOptionsChangeTokenSource`, so a save is live). The same
+(`IConfigureOptions<XpSearchOptions>` + an `IOptionsChangeTokenSource`, so a save is live). The row is
+read straight from the database on each rebuild — the options monitor is the only cache in that path,
+which is what makes a save take effect on the very next search. The same
 run now also prunes *answered* popularity and synonym suggestions, the only rows nothing else deleted.
 Kentico's `SettingsKeyInfo` is deliberately not used: Kentico's own guidance for settings of your own
 is a custom object type with your own UI, and its cache-dependency support covers built-in keys only.

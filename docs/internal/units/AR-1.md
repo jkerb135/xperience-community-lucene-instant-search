@@ -75,9 +75,10 @@ content-type fields and types; that is code, not an admin knob. Say so in the gu
 
 - `XpSearchStoredSettingsConfigureOptions : IConfigureOptions<XpSearchOptions>` in Core, registered
   in `AddXpSearch` **after** `services.Configure(configure)` so it runs after the host lambda and
-  the stored values win. It reads the single row (via `IInfoProvider<XpSearchSettingsInfo>`,
-  through `IProgressiveCache` with a `ForInfoObjects<XpSearchSettingsInfo>().All()` dependency —
-  exactly the seam shape `InfoTypoToleranceSource` uses) and copies each column onto the options.
+  the stored values win. It reads the single row **directly** (via `IInfoProvider<XpSearchSettingsInfo>`,
+  no `IProgressiveCache` in front of it: the options monitor is the cache, so the read happens at most
+  once per save, and a cache here would only serve the values the save just replaced — the live-update
+  defect the owner found on the host) and copies each column onto the options.
   No row (Core-only test hosts, first request before the installer ran) → options untouched.
   Must never throw when the database is unreachable (log at Debug, leave options as configured) —
   `ServerRenderedResultsTests` builds `AddXpSearch()` with no Kentico DB.
