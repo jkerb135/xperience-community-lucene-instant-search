@@ -1,4 +1,5 @@
 @use '../variables' as v;
+@use '../boxes' as b;
 
 /* --------------------------------------------------------------------------
  * results (the list rules are shared with loadMore, which renders the same items)
@@ -26,20 +27,16 @@
   align-items: center;
   gap: v.$half;
   padding: v.$double;
-  text-align: center;
 }
 
 .xps-results__clear {
-  min-height: 2.375rem;
-  margin-top: v.$half;
-  padding-inline: 1.125rem;
+  @include b.results-clear;
 }
 
 /* The two ways out of a dead end: the correction reads as one sentence, the popular searches
    as a row of chips that wraps. */
 .xps-results__correction {
-  min-height: 0;
-  padding-block: 0;
+  @include b.button-inline;
 }
 
 .xps-results__popular {
@@ -48,7 +45,6 @@
   flex-direction: column;
   gap: v.$half;
   padding-top: v.$half;
-  text-align: start;
 }
 
 .xps-results__popular-list {
@@ -62,8 +58,7 @@
 
 /* A pill, not the boxed chip the active filters use. */
 .xps-results__popular-button {
-  min-height: 0;
-  padding: 0.3125rem 0.75rem;
+  @include b.popular-pill;
 }
 
 .xps-result {

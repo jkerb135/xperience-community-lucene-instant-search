@@ -1,9 +1,12 @@
 ## Theming
 
-Two stylesheets, strictly separated. `shell.css` is structure — layout, spacing, focus rings,
-screen-reader utilities, loading skeletons. `default.css` is an opt-in visual theme driven
-entirely by CSS custom properties. Load both and override a couple of variables, and the whole
-widget set matches your site:
+Two stylesheets, strictly separated. `shell.css` is **structure only** — layout, box model,
+positioning, sizing, visibility and state mechanics, focus rings and screen-reader utilities; it
+carries no colour, font, border, shadow or radius at all. `default.css` is **the design**, driven
+entirely by CSS custom properties, and it is also what makes a widget a closed styling boundary
+(see [Specificity and host styles](#specificity-and-host-styles)). A custom theme replaces
+`default.css` and starts from the bare structure. Load both and override a couple of variables, and
+the whole widget set matches your site:
 
 ```html
 <link rel="stylesheet" href="/css/xpsearch/shell.css">
@@ -71,7 +74,9 @@ Every one of these is declared on `.xps` in `default.css` with the default shown
 | `--xps-color-border` | `#e3e5ea` | Every border, the keycaps, and the suggestions footer rule. |
 | `--xps-radius` | `6px` | Corner radius on inputs, buttons, chips, the panel and hit images. A derived value (`calc(--xps-radius / 2)`) rounds the skeletons. |
 | `--xps-space` | `0.75rem` | The whole spacing rhythm — gaps and padding are `var(--xps-space)`, `calc(var(--xps-space) / 2)` or `calc(var(--xps-space) * 2)`. **Also declared by `shell.css`**, so structure keeps its rhythm when the theme is not loaded. |
-| `--xps-font` | `inherit` | `font-family` on `.xps`, and nothing else. The widgets never set a font size in absolute units; sizes are `em`-relative to your text. |
+| `--xps-font` | `inherit` | `font-family` on `.xps`. Inherited by default, so the widgets read as part of your page — but stated from the token, so a host `button { font-family: … }` cannot reach inside one. |
+| `--xps-font-size` | `1rem` | `font-size` on `.xps`, which every size inside a widget is `em`-relative to. Stated rather than inherited so a host `body { font-size: 20px }` cannot rescale the design; set it to `inherit` to go back to following your page. |
+| `--xps-line-height` | `1.5` | `line-height` on `.xps`, same reasoning. |
 
 Override them anywhere the cascade reaches — a stylesheet rule on `.xps`, an inline `style`, or a
 scoped rule for one widget:
@@ -80,6 +85,51 @@ scoped rule for one widget:
 /* one widget, different accent */
 .xps-pagination { --xps-color-accent: #007a5e; }
 ```
+
+The variables are declared on the plain `.xps` class on purpose: they are the override surface, so
+a one-class rule of yours beats them. The rules they feed are stated more specifically — that is
+the next section.
+
+### Specificity and host styles
+
+With `default.css` loaded, **every visual property of every element inside a widget is decided by
+the theme**: colour, background, border, radius, font, line height, letter spacing, text transform
+and decoration, alignment, margins, padding, shadow, `appearance`, `box-sizing`, list style,
+outline and cursor. A site's own `button { … }`, `.section h3 { … }`, `.landing-page ul li { … }` or
+`.product-filter input[type="checkbox"] { … }` does not reach inside one.
+
+It works by specificity alone — there is no `!important` in either stylesheet. `default.css` states
+the root class three times on every rule it owns:
+
+```css
+.xps            { --xps-color-accent: … }   /* (0,1,0) tokens: your override wins */
+.xps.xps.xps *  { … }                       /* (0,3,0) the element reset          */
+.xps.xps.xps h3 { … }                        /* (0,3,1) element defaults           */
+.xps.xps.xps .xps-button { … }               /* (0,4,0) the components             */
+```
+
+A stylesheet that does not know our class names tops out at two classes plus an element, which the
+reset outranks. `themes/scripts/check-isolation.mjs` proves it on every build: each fixture is
+rendered twice in a real browser — plain, and under Dancing Goat's own CSS re-pointed at our
+markup — and every computed property of every element is compared.
+
+**Deliberately overriding the theme** is still one rule away: match the theme's specificity or
+beat it. The theme's component rules are three classes plus the component's own, so this wins:
+
+```css
+/* your button style, inside the search widgets */
+.xps.xps.xps.xps .xps-button {
+  background-color: #272219;
+  color: #fff;
+  border-radius: 0;
+}
+```
+
+`.xps` repeated four times is not elegant, and it is not the usual answer — overriding
+`--xps-color-*`, `--xps-radius` and `--xps-font*` re-skins the whole set without any of this, and a
+site with its own design system loads `shell.css` alone
+(see [using shell on its own](#using-shell-on-its-own)). It is here for the one control your brand
+insists on.
 
 #### One token re-skins the theme
 
@@ -140,10 +190,12 @@ border. It is safe to load on any site. It provides:
   controls, `max-width: 100%` on images, and `[hidden] { display: none !important }` so a host
   stylesheet cannot reveal the parts a widget has hidden. Every one of those rules is scoped
   inside `.xps`.
-- **Loading skeletons** — `currentColor` at 12% opacity with a pulse that stops under
-  `prefers-reduced-motion: reduce`.
+- **The box of every control** — the `2.25rem` minimum hit target and the padding of buttons,
+  inputs, selects, pills and pagination links (`themes/src/scss/_boxes.scss`, which `default.css`
+  states again at its own specificity so a host rule cannot resize them).
+- **Loading skeleton boxes** — their size and position. What they are painted with, and whether
+  they pulse, is the theme's.
 - **Screen-reader and layout utilities** for custom widgets (below).
-- Minimum `2.25rem` hit targets on buttons, inputs and pagination links.
 
 Gzipped: `shell.css` ~2.2 KB, `default.css` ~1.5 KB.
 
@@ -154,11 +206,16 @@ system. The full class list, with the ARIA attributes and state modifiers each w
 `themes/MARKUP.md` in the library repository; the hand-written markup for every widget and every
 state is `themes/fixtures/`, which is what to copy from when writing your rules.
 
-Two things shell deliberately leaves to you, because both require a colour:
+Three things shell deliberately leaves to you, because all three require a colour:
 
 - `.xps-suggestions__panel` has position but no surface. Give it a `background-color` (and
   usually a border or shadow), or the popup will be see-through over the page behind it.
 - `mark.xps-highlight` keeps the browser's default yellow. Restyle it to match your palette.
+- `.xps-skeleton` has the right box but no fill. Give it a `background-color` (and a pulse, if you
+  want one — remember `prefers-reduced-motion`).
+
+Without `default.css` there is no isolation either: your own site rules and the widgets' classes
+share one cascade, which is the point of running shell alone.
 
 State is always in the DOM, so you can style it without JavaScript: `--selected`, `--disabled`,
 `--stalled`, `--open`, `--exhausted`, `--empty`, `--loading` modifiers, plus the real attributes

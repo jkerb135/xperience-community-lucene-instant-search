@@ -1,4 +1,5 @@
 @use '../variables' as v;
+@use '../boxes' as b;
 
 /* --------------------------------------------------------------------------
  * pagination
@@ -15,9 +16,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: v.$control-min-height;
-  min-height: v.$control-min-height;
-  padding: 0 v.$half;
+  @include b.pagination-link;
 }
 
 .xps-pagination__ellipsis {

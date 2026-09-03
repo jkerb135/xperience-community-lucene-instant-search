@@ -1,4 +1,5 @@
 @use '../variables' as v;
+@use '../boxes' as b;
 
 // The collapsible title row is the shared block in _facet-list.scss.
 @use 'facet-list';
@@ -20,15 +21,14 @@
 }
 
 .xps-category-tree__item > .xps-category-tree__list {
-  margin-top: v.$quarter;
-  padding-inline-start: var(--xps-space);
+  @include b.category-tree-sublist;
 }
 
 .xps-category-tree__link {
   display: flex;
   align-items: center;
   gap: v.$half;
-  padding: v.$quarter 0;
+  @include b.category-tree-link;
 }
 
 .xps-category-tree__count {

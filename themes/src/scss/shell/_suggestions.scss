@@ -1,4 +1,5 @@
 @use '../variables' as v;
+@use '../boxes' as b;
 
 /* --------------------------------------------------------------------------
  * suggestions — combobox with a listbox popup
@@ -19,8 +20,7 @@
 .xps-suggestions__input {
   flex: 1 1 auto;
   min-width: 0;
-  min-height: v.$control-min-height;
-  padding: v.$half;
+  @include b.text-input;
 }
 
 .xps-suggestions__panel {
@@ -47,8 +47,7 @@
 }
 
 .xps-suggestions__group-clear {
-  min-height: 0;
-  padding-block: 0;
+  @include b.button-inline;
 }
 
 /* A recent row and its remove control: one row, the option taking everything the X leaves. */
@@ -115,9 +114,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 1.25rem;
-  height: 1.25rem;
-  padding: 0 v.$quarter;
+  @include b.keycap;
 }
 
 /* Keyboard hints are noise on a touch keyboard. */

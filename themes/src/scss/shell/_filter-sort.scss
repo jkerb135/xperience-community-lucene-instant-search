@@ -1,4 +1,5 @@
 @use '../variables' as v;
+@use '../boxes' as b;
 
 /* --------------------------------------------------------------------------
  * filterSort — the mobile toolbar trigger and the bottom sheet it opens.
@@ -77,9 +78,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
+  @include b.sheet-close;
   line-height: 1;
 }
 
@@ -104,8 +103,7 @@
 }
 
 .xps-sheet__pill {
-  min-height: v.$control-min-height;
-  padding: v.$quarter var(--xps-space);
+  @include b.sheet-pill;
 }
 
 .xps-sheet__values {

@@ -1,13 +1,20 @@
+@use '../boxes' as b;
+@use 'root' as r;
+
 /* --------------------------------------------------------------------------
  * Form controls — shared by searchBox, suggestions, facetList, rangeFilter and sortSelect,
  * so that every text input and select in the product is themed once.
+ *
+ * The box model of each control is restated here from the same source the shell uses
+ * (src/scss/_boxes.scss): inside the theme root it has to outrank a host's
+ * `.landing-page button { padding: 0.5rem 1rem }` (TH-7).
  * ------------------------------------------------------------------------ */
 
-.xps-search-box__input,
-.xps-suggestions__input,
-.xps-facet-list__search-input,
-.xps-range-filter__input,
-.xps-select__control {
+#{r.$root} .xps-search-box__input,
+#{r.$root} .xps-suggestions__input,
+#{r.$root} .xps-facet-list__search-input,
+#{r.$root} .xps-range-filter__input,
+#{r.$root} .xps-select__control {
   background-color: var(--xps-color-surface);
   color: var(--xps-color-text);
   border: 1px solid var(--xps-color-border);
@@ -15,36 +22,76 @@
   box-shadow: inset 0 1px 3px color-mix(in srgb, var(--xps-color-text) 6%, transparent);
 }
 
-.xps-search-box__input::placeholder,
-.xps-suggestions__input::placeholder,
-.xps-facet-list__search-input::placeholder {
+#{r.$root} .xps-search-box__input {
+  @include b.search-box-input;
+}
+
+#{r.$root} .xps-suggestions__input {
+  @include b.text-input;
+}
+
+#{r.$root} .xps-facet-list__search-input {
+  @include b.facet-search-input;
+}
+
+#{r.$root} .xps-range-filter__input {
+  @include b.range-number-input;
+}
+
+#{r.$root} .xps-select__control {
+  @include b.select-control;
+}
+
+#{r.$root} .xps-select__field .xps-select__control {
+  @include b.select-control-with-chevron;
+}
+
+#{r.$root} .xps-search-box__input::placeholder,
+#{r.$root} .xps-suggestions__input::placeholder,
+#{r.$root} .xps-facet-list__search-input::placeholder {
   color: var(--xps-color-muted);
 }
 
-.xps-search-box__icon,
-.xps-search-box__reset,
-.xps-search-box__submit,
-.xps-suggestions__reset {
+#{r.$root} .xps-search-box__icon,
+#{r.$root} .xps-search-box__reset,
+#{r.$root} .xps-search-box__submit,
+#{r.$root} .xps-suggestions__reset {
   color: var(--xps-color-muted);
 }
 
-.xps-search-box__reset:hover:not(:disabled),
-.xps-search-box__submit:hover:not(:disabled),
-.xps-suggestions__reset:hover:not(:disabled) {
+#{r.$root} .xps-search-box__reset {
+  @include b.search-box-reset;
+}
+
+#{r.$root} .xps-search-box__reset:hover:not(:disabled),
+#{r.$root} .xps-search-box__submit:hover:not(:disabled),
+#{r.$root} .xps-suggestions__reset:hover:not(:disabled) {
   color: var(--xps-color-text);
 }
 
-.xps-facet-list__checkbox,
-.xps-toggle-filter__checkbox {
+/* The one control the theme leaves native: a checkbox tinted with `accent-color` is the platform's
+   own tick, keyboard model and forced-colors behaviour, at the design's size. The element reset
+   turns `appearance` off for everything, so this states it back — at (0,4,1), which is also what
+   keeps a host's `.product-filter input[type="checkbox"] { appearance: auto; margin: 5px }` from
+   reaching it (TH-7; the deferred "mobile checkboxes unthemed" item). */
+#{r.$root} :is(input[type="checkbox"], input[type="radio"]) {
+  appearance: auto;
+  width: 1rem;
+  height: 1rem;
   accent-color: var(--xps-color-accent);
+  color: var(--xps-color-accent);
 }
 
-.xps-select__chevron {
+#{r.$root} .xps-select__chevron {
   color: var(--xps-color-muted);
+}
+
+#{r.$root} .xps-select--disabled {
+  opacity: 0.6;
 }
 
 /* In the toolbar above the results the select sits next to the stats line, so it reads as one
    compact control rather than a form field. */
-.xps-toolbar .xps-select__control {
+#{r.$root} .xps-toolbar .xps-select__control {
   font-size: 0.875em;
 }

@@ -1,0 +1,16 @@
+// The theme's one root selector (TH-7).
+//
+// `.xps` is the class every widget root carries — the mount emits it, `themes/MARKUP.md` requires
+// it, and it is what shell.css keys on too. The theme states it THREE times so that every rule in
+// default.css starts at (0,3,0):
+//
+//   .xps.xps.xps *              (0,3,0)  the element reset — beats a host's `.section h3` (0,2,1)
+//   .xps.xps.xps p              (0,3,1)  element defaults  — beats the reset
+//   .xps.xps.xps .xps-button    (0,4,0)  component rules   — beat both
+//
+// (0,2,1) is the tier a site's own stylesheet reaches without knowing our class names
+// (`button`, `.section h3`, `.landing-page ul li`, `.product-filter input[type="checkbox"]`), and
+// it is the tier `scripts/check-isolation.mjs` proves the theme wins against. Nothing here uses
+// `!important`: a host that deliberately wants its own style writes a selector at least as
+// specific as ours (see docs/guides/theming.md, "Specificity and host styles").
+$root: '.xps.xps.xps';

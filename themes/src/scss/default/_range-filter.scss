@@ -1,3 +1,5 @@
+@use 'root' as r;
+
 // The values line and the input labels are muted by the shared block in _facet-list.scss.
 @use 'facet-list';
 
@@ -10,7 +12,7 @@
  * platform sliders it already knows how to theme, on an unpainted rail.
  * ------------------------------------------------------------------------ */
 
-.xps-range-filter__track {
+#{r.$root} .xps-range-filter__track {
   // `to right` is flipped for RTL below; the two percentages are always from the start edge.
   background-image: linear-gradient(
     to var(--xps-range-side, right),
@@ -24,37 +26,37 @@
   background-position: center;
 }
 
-.xps-range-filter__track:dir(rtl) {
+#{r.$root} .xps-range-filter__track:dir(rtl) {
   --xps-range-side: left;
 }
 
 /* Windows High Contrast: the rail and the handles are one design, so switching the two tokens
  * system-coloured covers both. */
 @media (forced-colors: active) {
-  .xps-range-filter__track {
+  #{r.$root} .xps-range-filter__track {
     --xps-color-border: ButtonBorder;
     --xps-color-accent: Highlight;
   }
 }
 
-.xps-range-filter__range {
+/* Transparent, not unstyled: the wrapper's rail shows through both inputs, and the 2px height is
+ * what the thumb offsets below are centred against. */
+#{r.$root} .xps-range-filter__range {
   appearance: none;
   background-color: transparent;
 }
 
-/* Transparent, not unstyled: the wrapper's rail shows through both inputs, and the 2px height is
- * what the thumb offsets below are centred against. */
-.xps-range-filter__range::-webkit-slider-runnable-track {
+#{r.$root} .xps-range-filter__range::-webkit-slider-runnable-track {
   height: 2px;
   background-color: transparent;
 }
 
-.xps-range-filter__range::-moz-range-track {
+#{r.$root} .xps-range-filter__range::-moz-range-track {
   height: 2px;
   background-color: transparent;
 }
 
-.xps-range-filter__range::-webkit-slider-thumb {
+#{r.$root} .xps-range-filter__range::-webkit-slider-thumb {
   appearance: none;
   width: 0.875rem;
   height: 0.875rem;
@@ -65,7 +67,7 @@
   border: 2px solid var(--xps-color-surface);
 }
 
-.xps-range-filter__range::-moz-range-thumb {
+#{r.$root} .xps-range-filter__range::-moz-range-thumb {
   width: 0.875rem;
   height: 0.875rem;
   border-radius: 50%;
@@ -73,7 +75,12 @@
   border: 2px solid var(--xps-color-surface);
 }
 
-.xps-range-filter__unit {
+/* The bounds of the control ("0 to 500"), under the row it describes. */
+#{r.$root} .xps-range-filter__values {
+  text-align: end;
+}
+
+#{r.$root} .xps-range-filter__unit {
   color: var(--xps-color-muted);
   font-size: 0.875em;
 }

@@ -1,9 +1,17 @@
+/* The link-button ("Clear all", the did-you-mean correction): text in a row, not a box. */
+/* The collapsible group heading: a full-width button that must not look or size like one. */
+/* The primary way out of the empty state: 38px tall with 18px flanks, per the design board. */
+/* A pill, not the boxed chip the active filters use. */
+/* The footer's keycaps: 20px tall, per the autocomplete board. */
+/* Screen-reader-only text is a box too: the theme's element reset would otherwise flatten it. */
 /* xperience-search — shell.css
  * Generated from themes/src/scss/shell.scss — run `npm run build` in themes/, do not edit by hand.
- * Structure only: layout, spacing rhythm, focus rings, screen-reader utilities, skeletons.
- * No colours beyond currentColor, no fonts, no borders. A site with its own design system
- * loads this file and nothing else. Every selector is scoped to an xps- token so nothing
- * in the stylesheet can reach the host page.
+ * STRUCTURE ONLY: layout, box model, positioning, sizing, visibility and state mechanics, focus
+ * and screen-reader mechanics. Nothing of the design lives here — no colours, no backgrounds, no
+ * border colours or styles, no fonts, no shadows, no radii. That is `default.css`'s job, and a
+ * custom theme replaces default.css and starts from this bare structure (themes/MARKUP.md).
+ * A site with its own design system loads this file and nothing else. Every selector is scoped to
+ * an xps- token so nothing in the stylesheet can reach the host page.
  * Markup contract: themes/MARKUP.md
  */
 /* --------------------------------------------------------------------------
@@ -55,7 +63,6 @@
 .xps :disabled,
 .xps [aria-disabled=true] {
   cursor: default;
-  opacity: 0.55;
 }
 
 .xps img {
@@ -158,13 +165,12 @@
   line-height: 1;
 }
 
+/* The placeholder's size only: what it is painted with, and whether it pulses, is the theme's
+   (default.css). A shell-only site draws its own. */
 .xps-skeleton {
   display: block;
   width: 100%;
   height: 1em;
-  background-color: currentColor;
-  opacity: 0.12;
-  animation: xps-skeleton-pulse 1.4s ease-in-out infinite;
 }
 
 .xps-skeleton--title {
@@ -180,16 +186,6 @@
   height: 6rem;
 }
 
-@keyframes xps-skeleton-pulse {
-  50% {
-    opacity: 0.05;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .xps-skeleton {
-    animation: none;
-  }
-}
 /* --------------------------------------------------------------------------
  * searchBox
  * ------------------------------------------------------------------------ */
@@ -282,7 +278,6 @@
   align-items: center;
   gap: calc(var(--xps-space) / 2);
   padding: calc(var(--xps-space) * 2);
-  text-align: center;
 }
 
 .xps-results__clear {
@@ -304,7 +299,6 @@
   flex-direction: column;
   gap: calc(var(--xps-space) / 2);
   padding-top: calc(var(--xps-space) / 2);
-  text-align: start;
 }
 
 .xps-results__popular-list {
@@ -407,6 +401,8 @@
   gap: calc(var(--xps-space) / 2);
   width: 100%;
   padding: 0;
+  /* Neutralising a native control is mechanics, not design: a shell-only site must not get a
+     platform button here either. The theme states the same three again at its own specificity. */
   background: none;
   border: 0;
   font: inherit;
@@ -455,7 +451,6 @@
 .xps-facet-list__item--disabled .xps-facet-list__label,
 .xps-toggle-filter--disabled .xps-toggle-filter__label {
   cursor: default;
-  opacity: 0.55;
 }
 
 .xps-facet-list__checkbox,
@@ -704,10 +699,6 @@
   pointer-events: none;
 }
 
-.xps-select--disabled {
-  opacity: 0.6;
-}
-
 /* --------------------------------------------------------------------------
  * activeFilters / clearFilters (the chips themselves are in _base.scss)
  * ------------------------------------------------------------------------ */
@@ -892,11 +883,6 @@
   padding: calc(var(--xps-space) / 4) calc(var(--xps-space) / 2);
 }
 
-/* The bounds of the control ("0 to 500"), under the row it describes. */
-.xps-range-filter__values {
-  text-align: end;
-}
-
 /* --------------------------------------------------------------------------
  * categoryTree
  * ------------------------------------------------------------------------ */
@@ -944,22 +930,12 @@
 
 .xps-editor-preview__badge {
   align-self: flex-start;
-  opacity: 0.7;
 }
 
 .xps-editor-preview__body {
   display: flex;
   flex-direction: column;
   gap: calc(var(--xps-space) / 2);
-}
-
-.xps-editor-preview__note {
-  opacity: 0.7;
-}
-
-/* A placeholder that pulses forever in the builder is a distraction, not information. */
-.xps-editor-preview .xps-skeleton {
-  animation: none;
 }
 
 /* Counts are short; without a width the placeholder bar would eat the row. */

@@ -19,7 +19,13 @@ $color-surface: #fff !default;
 $color-border: #e3e5ea !default;
 $radius: 6px !default;
 $space: 0.75rem !default;
+
+// Typography of the widget root. The family is `inherit` so the widgets read as part of the host
+// page; the size and the line height are stated, so a host `body { font-size: 20px }` cannot
+// rescale the design (TH-7). All three are custom properties like every other token.
 $font: inherit !default;
+$font-size: 1rem !default;
+$line-height: 1.5 !default;
 
 // Opt-in dark mode (data-xps-theme="auto"); values only, no new rules. Same family, re-derived
 // against the dark surface: accent 6.91:1, text 15.88:1, muted 7.55:1 on #17161d.

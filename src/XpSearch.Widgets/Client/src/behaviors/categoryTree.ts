@@ -64,17 +64,28 @@ export function withCategoryTree<
       const values = base.results?.facets?.[params.attribute] ?? [];
       const selected = facetValues(base.state, params.attribute)[0];
       const open = openPath(values, selected);
-      const items = build(
-        values.map((value) => ({
-          value: value.value,
-          label: value.label,
-          count: value.count,
-          path: [...(value.path ?? [])],
-          isActive: open.has(value.value),
+      const nodes = values.map((value) => ({
+        value: value.value,
+        label: value.label,
+        count: value.count,
+        path: [...(value.path ?? [])],
+        isActive: open.has(value.value),
+        children: [] as CategoryTreeItem[],
+      }));
+      // A category that narrows the search to nothing is not carried by the response any more.
+      // Keep it, at the root, with its zero: selecting it again is the way back out, and without
+      // it the tree would be empty and the visitor stuck with Clear all (TH-7).
+      if (selected !== undefined && !nodes.some((node) => node.value === selected)) {
+        nodes.unshift({
+          value: selected,
+          label: selected,
+          count: 0,
+          path: [],
+          isActive: true,
           children: [],
-        })),
-        params.limit ?? DEFAULT_LIMIT
-      );
+        });
+      }
+      const items = build(nodes, params.limit ?? DEFAULT_LIMIT);
 
       // Selecting the open node again closes it: with one value at a time there is no other way
       // back to "all categories" from inside the tree.

@@ -1,8 +1,17 @@
+@use '../boxes' as b;
+@use 'root' as r;
+
 /* --------------------------------------------------------------------------
  * results (shared with loadMore, which renders the same items)
  * ------------------------------------------------------------------------ */
 
-.xps-result__link {
+/* The card's headline: 16px semibold on the design board, whatever the host does to its own h3. */
+#{r.$root} .xps-result__title {
+  font-size: 1em;
+  font-weight: 600;
+}
+
+#{r.$root} .xps-result__link {
   color: var(--xps-color-accent);
   text-decoration: none;
 
@@ -13,7 +22,7 @@
 
 /* Three lines, whatever the host's snippet field holds: a card of body copy is a wall of text.
    `max-height` is the fallback for engines without the clamp. */
-.xps-result__snippet {
+#{r.$root} .xps-result__snippet {
   color: var(--xps-color-text);
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -22,19 +31,19 @@
   max-height: calc(3 * 1.5em);
 }
 
-.xps-result__meta,
-.xps-results__empty {
+#{r.$root} .xps-result__meta,
+#{r.$root} .xps-results__empty {
   color: var(--xps-color-muted);
   font-size: 0.875em;
 }
 
-.xps-result__path {
+#{r.$root} .xps-result__path {
   color: var(--xps-color-muted);
   font-size: 0.75em;
 }
 
 /* 0.85em of the 0.875em `xps-result__meta` it sits in — ~0.74em of the card, not 0.72 * 0.875. */
-.xps-result__type {
+#{r.$root} .xps-result__type {
   color: var(--xps-color-accent);
   font-size: 0.85em;
   font-weight: 700;
@@ -42,40 +51,57 @@
   text-transform: uppercase;
 }
 
-.xps-result__image {
+#{r.$root} .xps-result__image {
   border-radius: var(--xps-radius);
 }
 
-.xps-result__icon,
-.xps-results__empty-icon {
+#{r.$root} .xps-result__icon,
+#{r.$root} .xps-results__empty-icon {
   color: var(--xps-color-muted);
 }
 
 /* The dead end reads as a card of its own, with the headline above the copy. */
-.xps-results__empty {
+#{r.$root} .xps-results__empty {
   background-color: var(--xps-color-surface);
   border: 1px solid var(--xps-color-border);
   border-radius: var(--xps-radius);
+  text-align: center;
 }
 
-.xps-results__empty-title {
+#{r.$root} .xps-results__empty-title {
   color: var(--xps-color-text);
   font-size: 1.143em;
   font-weight: 600;
 }
 
 /* The unfiltered count inside the muted copy. */
-.xps-results__empty strong {
+#{r.$root} .xps-results__empty strong {
   color: var(--xps-color-text);
 }
 
-.xps-results__clear {
+#{r.$root} .xps-results__clear {
+  @include b.results-clear;
   font-weight: 600;
 }
 
 /* No-results recovery: the correction is a link-button inside a sentence, the popular searches
    are pills — the chip without its fill, so they read as offers rather than as applied filters. */
-.xps-results__popular-title {
+/* The correction is the offer, so it reads as the link the board draws — accent, semibold. */
+#{r.$root} .xps-results__correction {
+  @include b.button-inline;
+  color: var(--xps-color-accent);
+  font-weight: 600;
+
+  &:hover:not(:disabled) {
+    color: var(--xps-color-accent);
+  }
+}
+
+#{r.$root} .xps-results__popular {
+  text-align: start;
+}
+
+#{r.$root} .xps-results__popular-title {
   color: var(--xps-color-muted);
   font-size: 0.75em;
   font-weight: 700;
@@ -83,11 +109,13 @@
   text-transform: uppercase;
 }
 
-.xps-results__popular-button {
+#{r.$root} .xps-results__popular-button {
+  @include b.popular-pill;
   background-color: transparent;
   border: 1px solid var(--xps-color-border);
   border-radius: 999px;
   font-size: 0.929em;
+  font-weight: 400;
 
   &:hover {
     background-color: color-mix(in srgb, var(--xps-color-accent) 8%, var(--xps-color-surface));
@@ -96,6 +124,6 @@
 }
 
 /* A refinement dims the stale list instead of blanking it — skeletons stay first-search-only. */
-.xps-results--loading .xps-results__list {
+#{r.$root} .xps-results--loading .xps-results__list {
   opacity: 0.55;
 }

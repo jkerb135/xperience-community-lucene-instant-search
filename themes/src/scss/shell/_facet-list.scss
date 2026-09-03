@@ -1,4 +1,5 @@
 @use '../variables' as v;
+@use '../boxes' as b;
 
 /* --------------------------------------------------------------------------
  * facetList (the checkable-row rules are shared with toggleFilter)
@@ -18,8 +19,9 @@
   align-items: center;
   justify-content: space-between;
   gap: v.$half;
-  width: 100%;
-  padding: 0;
+  @include b.group-toggle;
+  /* Neutralising a native control is mechanics, not design: a shell-only site must not get a
+     platform button here either. The theme states the same three again at its own specificity. */
   background: none;
   border: 0;
   font: inherit;
@@ -46,9 +48,7 @@
 }
 
 .xps-facet-list__search-input {
-  width: 100%;
-  min-height: v.$control-min-height;
-  padding: v.$half;
+  @include b.facet-search-input;
 }
 
 .xps-facet-list__list {
@@ -68,7 +68,6 @@
 .xps-facet-list__item--disabled .xps-facet-list__label,
 .xps-toggle-filter--disabled .xps-toggle-filter__label {
   cursor: default;
-  opacity: 0.55;
 }
 
 .xps-facet-list__checkbox,
