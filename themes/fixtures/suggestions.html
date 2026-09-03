@@ -33,29 +33,31 @@
         aria-label="Search suggestions">
       <li class="xps-suggestions__group" role="group" aria-labelledby="xps-search-1-suggestions-group-suggestions">
         <div class="xps-suggestions__group-title" id="xps-search-1-suggestions-group-suggestions">Suggestions</div>
-        <div class="xps-suggestions__option"
+        <div class="xps-suggestions__option xps-suggestions__option--query"
              role="option"
              id="xps-search-1-suggestions-option-0"
              aria-selected="false">
+          <svg class="xps-suggestions__option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4.2-4.2"></path></svg>
           <span class="xps-suggestions__option-title"><mark class="xps-highlight">esp</mark>resso machine</span>
         </div>
-        <div class="xps-suggestions__option xps-suggestions__option--active"
+        <div class="xps-suggestions__option xps-suggestions__option--query xps-suggestions__option--active"
              role="option"
              id="xps-search-1-suggestions-option-1"
              aria-selected="true">
+          <svg class="xps-suggestions__option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4.2-4.2"></path></svg>
           <span class="xps-suggestions__option-title"><mark class="xps-highlight">esp</mark>resso grinder</span>
         </div>
       </li>
       <li class="xps-suggestions__group" role="group" aria-labelledby="xps-search-1-suggestions-group-pages">
         <div class="xps-suggestions__group-title" id="xps-search-1-suggestions-group-pages">Pages</div>
-        <div class="xps-suggestions__option"
+        <div class="xps-suggestions__option xps-suggestions__option--document"
              role="option"
              id="xps-search-1-suggestions-option-2"
              aria-selected="false">
           <span class="xps-suggestions__option-title">Choosing an <mark class="xps-highlight">esp</mark>resso machine</span>
           <span class="xps-suggestions__option-meta">Article &middot; 12 March 2026</span>
         </div>
-        <div class="xps-suggestions__option"
+        <div class="xps-suggestions__option xps-suggestions__option--document"
              role="option"
              id="xps-search-1-suggestions-option-3"
              aria-selected="false">
@@ -148,26 +150,34 @@
     </div>
   </form>
   <div class="xps-suggestions__panel">
+    <div class="xps-suggestions__group-header">
+      <div class="xps-suggestions__group-title" id="xps-search-4-suggestions-group-recent">Recent searches</div>
+      <button class="xps-button xps-button--link xps-suggestions__group-clear" type="button" data-xps-recent-clear aria-label="Clear recent searches">Clear</button>
+    </div>
     <ul class="xps-suggestions__list"
         id="xps-search-4-suggestions-listbox"
         role="listbox"
         aria-label="Search suggestions">
       <li class="xps-suggestions__group" role="group" aria-labelledby="xps-search-4-suggestions-group-recent">
-        <div class="xps-suggestions__group-header">
-          <div class="xps-suggestions__group-title" id="xps-search-4-suggestions-group-recent">Recent searches</div>
-          <button class="xps-button xps-button--link xps-suggestions__group-clear" type="button" data-xps-recent-clear aria-label="Clear recent searches">Clear</button>
+        <div class="xps-suggestions__row">
+          <div class="xps-suggestions__option xps-suggestions__option--recent"
+               role="option"
+               id="xps-search-4-suggestions-option-0"
+               aria-selected="false">
+            <svg class="xps-suggestions__option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+            <span class="xps-suggestions__option-title">espresso machine</span>
+          </div>
+          <span class="xps-suggestions__option-remove" data-xps-recent-remove="espresso machine" title="Remove from recent searches" aria-hidden="true"><svg class="xps-suggestions__option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg></span>
         </div>
-        <div class="xps-suggestions__option"
-             role="option"
-             id="xps-search-4-suggestions-option-0"
-             aria-selected="false">
-          <span class="xps-suggestions__option-title">espresso machine</span>
-        </div>
-        <div class="xps-suggestions__option"
-             role="option"
-             id="xps-search-4-suggestions-option-1"
-             aria-selected="false">
-          <span class="xps-suggestions__option-title">milk frother</span>
+        <div class="xps-suggestions__row">
+          <div class="xps-suggestions__option xps-suggestions__option--recent"
+               role="option"
+               id="xps-search-4-suggestions-option-1"
+               aria-selected="false">
+            <svg class="xps-suggestions__option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+            <span class="xps-suggestions__option-title">milk frother</span>
+          </div>
+          <span class="xps-suggestions__option-remove" data-xps-recent-remove="milk frother" title="Remove from recent searches" aria-hidden="true"><svg class="xps-suggestions__option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg></span>
         </div>
       </li>
     </ul>

@@ -16,7 +16,13 @@ import { withLoadMore } from '../behaviors/loadMore';
 import { helpers, html, toHtml, type Renderable, type TemplateHelpers } from '../templates/html';
 import type { Result, Widget } from '../types';
 import { createRoot, resolveContainer } from './dom';
-import { defaultResultItem } from './results';
+import {
+  CLEAR_CLASS,
+  RECOVER_ATTRIBUTE,
+  defaultResultItem,
+  emptyState,
+  type EmptyTemplateData,
+} from './results';
 
 export type LoadMoreWidgetParams<
   TAttributes extends Record<string, unknown> = Record<string, unknown>,
@@ -51,6 +57,10 @@ export function loadMore<TAttributes extends Record<string, unknown> = Record<st
   let shown: Array<Result<TAttributes>> = [];
   let load: () => void = () => {};
   let send: (result: Result<TAttributes>) => void = () => {};
+  let clearRefinements: () => void = () => {};
+  let recover: (query: string) => void = () => {};
+  /** The empty state currently in the DOM, if any. Rebuilt whenever the render state changes. */
+  let empty: HTMLElement | undefined;
 
   const widget = withLoadMore<TAttributes, LoadMoreWidgetParams<TAttributes>>(
     (options, isFirstRender) => {
@@ -58,6 +68,12 @@ export function loadMore<TAttributes extends Record<string, unknown> = Record<st
       load = options.loadMore;
       shown = options.items;
       send = (result) => options.sendEvent('click', result);
+      clearRefinements = () => {
+        options.actions.clearFilters().search();
+      };
+      recover = (query) => {
+        options.actions.setQuery(query).search();
+      };
 
       if (isFirstRender) {
         root = createRoot(container, 'div', 'xps xps-load-more');
@@ -75,6 +91,15 @@ export function loadMore<TAttributes extends Record<string, unknown> = Record<st
         root.addEventListener('click', (event) => {
           const target = event.target;
           if (!(target instanceof Element)) return;
+          if (target.closest(`.${CLEAR_CLASS}`)) {
+            clearRefinements();
+            return;
+          }
+          const offer = target.closest<HTMLElement>(`[${RECOVER_ATTRIBUTE}]`);
+          if (offer) {
+            recover(offer.dataset['xpsRecover'] ?? '');
+            return;
+          }
           const item = target.closest('a')?.closest('.xps-load-more__item');
           const parent = item?.parentElement;
           if (!item || !parent) return;
@@ -122,6 +147,32 @@ export function loadMore<TAttributes extends Record<string, unknown> = Record<st
             ? `Showing all ${count} results`
             : `Showing ${count} of ${helpers.formatNumber(options.total)} results`;
       if (status.textContent !== announcement) status.textContent = announcement;
+
+      // MB-1's mount-time swap puts `loadMore` where `results` would be, so it owes the same empty
+      // state (TH-6). Same render, same delegated recovery clicks; no unfiltered probe, so the
+      // clear-filters button stays countless here (docs/internal/KNOWN-LIMITATIONS.md).
+      const isEmpty = options.results !== null && options.items.length === 0;
+      empty?.remove();
+      empty = undefined;
+      if (isEmpty) {
+        const filters = options.state.filters;
+        const data: EmptyTemplateData = {
+          query: options.state.query,
+          hasRefinements:
+            filters.numeric.length > 0 || filters.facets.some((facet) => facet.values.length > 0),
+          clearRefinements,
+          ...(options.results?.didYouMean === undefined
+            ? {}
+            : { didYouMean: options.results.didYouMean }),
+          ...(options.results?.popularSearches === undefined
+            ? {}
+            : { popularSearches: options.results.popularSearches }),
+        };
+        list.insertAdjacentHTML('afterend', toHtml(emptyState(data)));
+        empty = root.querySelector<HTMLElement>('.xps-results__empty') ?? undefined;
+      }
+      // Nothing to load and nothing to say about it: the control would only offer a dead end.
+      button.hidden = isEmpty;
 
       root.classList.toggle('xps-load-more--exhausted', options.isExhausted);
       button.disabled = options.isExhausted;

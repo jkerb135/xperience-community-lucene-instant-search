@@ -253,9 +253,29 @@ internal sealed class ServerRenderedResultsTests
     {
         string html = (await RenderAsync(new FakePipeline(new SearchResponse { Results = [] })))!;
 
+        // The client's default empty state, glyph included (widgets client `card-parity.test.ts`).
         Assert.That(html, Is.EqualTo(
             "<div data-xps-server-rendered class=\"xps xps-results xps-results--empty\">"
-            + "<div class=\"xps-results__empty\"><p>No results.</p></div></div>"));
+            + "<div class=\"xps-results__empty\">"
+            + "<svg class=\"xps-results__empty-icon\" viewBox=\"0 0 24 24\" fill=\"none\""
+            + " stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\""
+            + " aria-hidden=\"true\" focusable=\"false\"><circle cx=\"11\" cy=\"11\" r=\"7\"></circle>"
+            + "<path d=\"M8 11h6\"></path><path d=\"m20 20-4.35-4.35\"></path></svg>"
+            + "<p class=\"xps-results__empty-title\">No results.</p></div></div>"));
+    }
+
+    [Test]
+    public async Task The_empty_state_names_the_query_and_encodes_it()
+    {
+        string html = (await RenderAsync(
+            new FakePipeline(new SearchResponse { Results = [] }),
+            queryString: "?q=%3Cscript%3E"))!;
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(html, Does.Contain("<p class=\"xps-results__empty-title\">No results for &ldquo;&lt;script&gt;&rdquo;</p>"));
+            Assert.That(html, Does.Not.Contain("<script>"));
+        });
     }
 
     [Test]

@@ -1643,6 +1643,17 @@ describe('loadMore', () => {
   const CORPUS = ['a', 'b', 'c', 'd', 'e'];
   /** One page of a five-document corpus, so a second load is a different set of ids. */
   const paged = (request: SearchRequest): SearchResponse => {
+    if (request.query === 'xyzzy') {
+      return {
+        ...RESPONSE,
+        results: [],
+        page: 1,
+        pageSize: 2,
+        total: 0,
+        totalPages: 0,
+        didYouMean: 'espresso',
+      };
+    }
     const at = request.page ?? 1;
     const ids = CORPUS.slice((at - 1) * 2, at * 2);
     return {
@@ -1738,6 +1749,32 @@ describe('loadMore', () => {
     search!.actions.setQuery('espresso').setPage(1).search();
     await vi.waitFor(() => expect(items(host).length).toBe(2));
     expect(items(host)).toEqual(['A', 'B']);
+  });
+
+  /**
+   * TH-6: under 1024px MB-1's mount-time swap puts `loadMore` where `results` would be, so a
+   * fruitless query has to show the same empty state here — the control alone said nothing.
+   */
+  it('renders the shared empty state and hides the control when nothing was found', async () => {
+    const host = mount();
+    await vi.waitFor(() => expect(items(host).length).toBe(2));
+    const button = host.querySelector<HTMLButtonElement>('.xps-load-more__load-more')!;
+
+    search!.actions.setQuery('xyzzy').setPage(1).search();
+    await vi.waitFor(() => expect(host.querySelector('.xps-results__empty')).not.toBeNull());
+
+    const empty = host.querySelector('.xps-results__empty')!;
+    expect(text(empty.querySelector('.xps-results__empty-title'))).toBe('No results for “xyzzy”');
+    expect(empty.querySelector('.xps-results__empty-icon')).not.toBeNull();
+    expect(items(host)).toEqual([]);
+    expect(button.hidden).toBe(true);
+
+    // The recovery offers are live here too, through the widget's own delegated handler.
+    host.querySelector<HTMLButtonElement>('.xps-results__correction')!.click();
+    await vi.waitFor(() => expect(items(host).length).toBe(2));
+    expect(search?.state.query).toBe('espresso');
+    expect(host.querySelector('.xps-results__empty')).toBeNull();
+    expect(button.hidden).toBe(false);
   });
 });
 
@@ -1952,9 +1989,12 @@ describe('suggestions', () => {
 
       const groups = [...host.querySelectorAll('.xps-suggestions__group')];
       expect(groups).toHaveLength(1);
-      expect(text(groups[0]?.querySelector('.xps-suggestions__group-title'))).toBe(
-        'Recent searches'
-      );
+      // The recents' title row is a sibling of the listbox (it carries the Clear button), and the
+      // group inside points at it.
+      const title = host.querySelector('.xps-suggestions__group-header .xps-suggestions__group-title')!;
+      expect(text(title)).toBe('Recent searches');
+      expect(groups[0]?.getAttribute('aria-labelledby')).toBe(title.id);
+      expect(title.closest('.xps-suggestions__list')).toBeNull();
       expect([...host.querySelectorAll('[role="option"]')].map((o) => text(o))).toEqual([
         'espresso machine',
         'grinder',
@@ -1993,7 +2033,7 @@ describe('suggestions', () => {
 
       const groups = [...host.querySelectorAll('.xps-suggestions__group')];
       expect(
-        groups.map((group) => text(group.querySelector('.xps-suggestions__group-title')))
+        [...host.querySelectorAll('.xps-suggestions__group-title')].map((title) => text(title))
       ).toEqual(['Recent searches', 'Suggestions', 'Pages']);
       // "grinder" does not start with "esp", so it is not offered.
       expect(text(groups[0])).toContain('espresso machine');
@@ -2097,6 +2137,51 @@ describe('suggestions', () => {
       expect(localStorage.getItem('xps-recent:site-content')).toBeNull();
       expect(host.querySelector('.xps-suggestions__group')).toBeNull();
       expect(host.querySelector<HTMLElement>('.xps-suggestions__panel')?.hidden).toBe(true);
+    });
+
+    /** TH-6: the row's own X, and the keyboard half of it. */
+    it('drops one entry from its row control, without closing the panel', async () => {
+      seed('espresso machine', 'grinder');
+      const host = mount();
+      await settled(search!);
+      await focus(host);
+
+      const remove = host.querySelector<HTMLElement>('.xps-suggestions__option-remove')!;
+      expect(remove.dataset['xpsRecentRemove']).toBe('espresso machine');
+      expect(remove.title).toBe('Remove from recent searches');
+      // Not a focusable control, and not inside the option: a listbox owns options and groups only,
+      // and a focusable descendant of an option is swallowed by its accessible name (axe).
+      expect(remove.tagName).toBe('SPAN');
+      expect(remove.getAttribute('aria-hidden')).toBe('true');
+      expect(remove.closest('[role="option"]')).toBeNull();
+
+      const before = calls.length;
+      remove.click();
+      expect(JSON.parse(localStorage.getItem('xps-recent:site-content')!)).toEqual(['grinder']);
+      expect([...host.querySelectorAll('[role="option"]')].map((option) => text(option))).toEqual([
+        'grinder',
+      ]);
+      expect(host.querySelector<HTMLElement>('.xps-suggestions__panel')?.hidden).toBe(false);
+      // Removing an entry is not picking it: nothing was searched for.
+      expect(calls.length).toBe(before);
+      expect(search?.state.query).toBe('');
+    });
+
+    it('removes the active recent row with the Delete key', async () => {
+      seed('espresso machine', 'grinder');
+      const host = mount();
+      await settled(search!);
+      const input = await focus(host);
+
+      key(input, 'ArrowDown');
+      expect(text(host.querySelector('.xps-suggestions__option--active'))).toBe('espresso machine');
+      key(input, 'Delete');
+
+      expect(JSON.parse(localStorage.getItem('xps-recent:site-content')!)).toEqual(['grinder']);
+      expect([...host.querySelectorAll('[role="option"]')].map((option) => text(option))).toEqual([
+        'grinder',
+      ]);
+      expect(host.querySelector('.xps-suggestions__option--active')).toBeNull();
     });
   });
 });

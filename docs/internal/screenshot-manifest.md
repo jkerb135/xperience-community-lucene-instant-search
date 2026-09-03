@@ -48,6 +48,10 @@ No widget property dialog has a row here yet. UX-1 rewrote every widget property
 explanation, and AR-3 made the Results widget's *Results per page* and the two suggestion counts
 required (one or greater), so any Page Builder dialog shot added later must be taken after those
 changes.
+No row covers the front-end widgets, so TH-6 (autocomplete panel + empty states + the Load more
+empty state) has nothing to mark stale here: the theme is verified against
+`docs/internal/design/*.dc.html` and `themes/test/section-*.html`. Add
+`widgets--autocomplete-panel` and `widgets--empty-states` rows when the guides start showing them.
 
 Pending captures worth adding once data exists: `tuning--popularity-suggestions` and
 `tuning--synonym-suggestions` with ≥1 mined row (current captures show empty tables; recapture

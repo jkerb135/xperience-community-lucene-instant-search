@@ -277,8 +277,13 @@ results({
 });
 ```
 
-The server-rendered first paint keeps the plain empty block: recovery is client-side by design, so
-it appears as soon as the widget hydrates.
+The server-rendered first paint renders the glyph and the same "No results for “…”" headline, and
+nothing else: the recovery offers are client-side by design, so they appear as soon as the widget
+hydrates.
+
+`loadMore` renders this same empty state — including the recovery offers — and hides its own
+"No more results" control while it is showing, so the narrow-screen layout is not a dead end. It
+does not run the unfiltered probe, so its clear-filters button stays in the countless form.
 
 The widget delegates clicks on `xps-results__clear` to `clearRefinements`, so a template that only
 returns markup needs no handler of its own. `clearRefinements` is handed to the template as well,
@@ -812,13 +817,21 @@ document suggestion is not recorded: it is a link to a page, not a search anyone
 Set `recentSearches: false` to turn it off, or relabel the group with
 `groupLabels: { recent: 'You searched for' }`.
 
+Each recent row carries an X at its end that drops that one entry without closing the panel; the
+group's **Clear** empties the list. The X is a pointer affordance only — a listbox may own nothing
+but options and groups, so it is not a focusable control — and the keyboard equivalent is **Delete
+on the active recent row** (arrow down to it, press Delete).
+
 Markup: `<div class="xps xps-suggestions">` (plus `--open`) with `__form`, `__label`, `__field`,
 `__input`, `__reset`, `__panel`, `__list` (`role="listbox"`), `__option` (`role="option"`, plus
-`--active`), `__option-title`, `__option-meta`, `__empty`, `__footer` and `__see-all`. When the panel
+`--active` and a `--recent` / `--query` / `--document` source modifier), `__option-icon`,
+`__option-title`, `__option-meta`, `__empty`, `__footer` and `__see-all`. When the panel
 shows more than one source the options are wrapped in a `__group` per source — recent searches,
 query suggestions, documents, in that order — each with a `__group-title`; with a single source the
 options sit directly in the listbox. The recents group is the exception: it is always wrapped and
-labelled, because its `__group-header` row also holds the `__group-clear` button.
+labelled, and its `__group-header` row (title plus the `__group-clear` button) is rendered *above*
+the listbox, because a button is not something a listbox may own. Each recent option sits in a
+`__row` beside its `__option-remove`.
 
 Accessibility: the WAI-ARIA APG
 [combobox-with-listbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/). DOM focus never

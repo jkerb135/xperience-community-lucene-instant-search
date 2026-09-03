@@ -55,6 +55,18 @@ export function recordRecent(storage: Storage | undefined, index: string, query:
   }
 }
 
+/** Drops one entry, comparing the way `recordRecent` de-duplicates. */
+export function removeRecent(storage: Storage | undefined, index: string, query: string): void {
+  const kept = readRecents(storage, index).filter(
+    (entry) => entry.toLowerCase() !== query.trim().toLowerCase()
+  );
+  try {
+    storage?.setItem(keyFor(index), JSON.stringify(kept));
+  } catch {
+    /* full, disabled, or private: the list is a convenience, not state anyone depends on */
+  }
+}
+
 export function clearRecents(storage: Storage | undefined, index: string): void {
   try {
     storage?.removeItem(keyFor(index));
@@ -101,10 +113,19 @@ export function createRecents({ index, storage, repaint }: RecentsOptions): Rece
   let focused = false;
   /** Active option over the *merged* list, owned here whenever a recent is showing. */
   let active = -1;
+  /** The entries the last render put in the panel, so a control on one can name it. */
+  let shown: string[] = [];
 
   const reset = (): void => {
     focused = false;
     active = -1;
+  };
+
+  const remove = (text: string): void => {
+    removeRecent(storage, index, text);
+    // The list shortens under the highlight; dropping it is less surprising than moving it.
+    active = -1;
+    repaint();
   };
 
   return {
@@ -113,9 +134,22 @@ export function createRecents({ index, storage, repaint }: RecentsOptions): Rece
         focused = true;
         repaint();
       });
+      // Delete on an active recent row removes it, the keyboard half of the row's X (MARKUP.md).
+      input.addEventListener('keydown', (event) => {
+        if (event.key !== 'Delete' || active < 0) return;
+        const text = shown[active];
+        if (text === undefined) return;
+        event.preventDefault();
+        remove(text);
+      });
       panel.addEventListener('click', (event) => {
         const target = event.target;
         if (!(target instanceof Element)) return;
+        const removal = target.closest<HTMLElement>('[data-xps-recent-remove]');
+        if (removal) {
+          remove(removal.dataset['xpsRecentRemove'] ?? '');
+          return;
+        }
         if (target.closest('[data-xps-recent-clear]') === null) return;
         clearRecents(storage, index);
         reset();
@@ -134,6 +168,7 @@ export function createRecents({ index, storage, repaint }: RecentsOptions): Rece
         .map((text) => ({ text, group: 'recent' }));
       /** Whether the recents own the panel's highlight and openness this render. */
       const owns = entries.length > 0;
+      shown = entries.map((entry) => entry.text);
       const merged = owns ? [...entries, ...api.suggestions] : api.suggestions;
       if (active >= merged.length) active = -1;
 

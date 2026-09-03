@@ -18,10 +18,21 @@
   gap: v.$double;
 }
 
+/* A dead end is a card of its own: the copy is centred in it, and only the popular searches keep
+   the card's full width (design board `States.dc.html`). */
 .xps-results__empty {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: v.$half;
+  padding: v.$double;
+  text-align: center;
+}
+
+.xps-results__clear {
+  min-height: 2.375rem;
+  margin-top: v.$half;
+  padding-inline: 1.125rem;
 }
 
 /* The two ways out of a dead end: the correction reads as one sentence, the popular searches
@@ -31,6 +42,15 @@
   padding-block: 0;
 }
 
+.xps-results__popular {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: v.$half;
+  padding-top: v.$half;
+  text-align: start;
+}
+
 .xps-results__popular-list {
   display: flex;
   flex-wrap: wrap;
@@ -38,6 +58,12 @@
   list-style: none;
   margin: 0;
   padding: 0;
+}
+
+/* A pill, not the boxed chip the active filters use. */
+.xps-results__popular-button {
+  min-height: 0;
+  padding: 0.3125rem 0.75rem;
 }
 
 .xps-result {
@@ -91,6 +117,6 @@
 /* The glyph above the empty state's copy. 24px grid, sized like a heading, centred with the block. */
 .xps-results__empty-icon {
   display: block;
-  width: 2rem;
-  height: 2rem;
+  width: 2.25rem;
+  height: 2.25rem;
 }

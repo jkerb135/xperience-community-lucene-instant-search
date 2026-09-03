@@ -47,6 +47,20 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
   settings* page and on each Page Builder widget property, saying the one rule: widgets own their
   sizes, the index owns the caps, and API callers that send no size get the code default.
 
+- **Fixed (widgets, themes):** the autocomplete panel and the empty states now match the design
+  artboards. Panel: a clock glyph on recent rows and a magnifier on suggestion rows, per-source
+  option modifiers (`--recent` / `--query` / `--document`), page rows in accent semibold over their
+  muted meta line, an 11px uppercase group heading with a rule between groups, 20px footer keycaps
+  and a tinted footer, and an **X on each recent row** that drops that one entry (pointer
+  affordance; `Delete` on the active row is the keyboard path). The recents' heading row — and with
+  it the **Clear** button — moved *above* the listbox: a `<button>` inside `role="listbox"` was an
+  unallowed child (axe `aria-required-children`, now covered by the a11y gate with recents seeded).
+  Empty states: a bordered card with the copy centred, a 36px glyph, an `xps-results__empty-title`
+  headline reading `No results for “{query}”`, popular searches as outline pills, and the
+  "Try fewer words…" line dropped. `loadMore` renders that same empty state and hides its
+  "No more results" control while it shows — under 1024px a fruitless search was a dead end. The
+  server-rendered first paint renders the glyph and the same headline, pinned against the client's
+  by `card-parity.test.ts`.
 - **Fixed (widgets):** the `./widgets` barrel now tree-shakes. `DEFAULT_WIDGETS` references every
   widget as a value, so having it in the barrel dragged all fourteen widgets into any bundle that
   imported one of them (60 KB where 24 KB was asked for); it moved to a chunk of its own and is

@@ -51,8 +51,30 @@
   color: var(--xps-color-muted);
 }
 
+/* The dead end reads as a card of its own, with the headline above the copy. */
+.xps-results__empty {
+  background-color: var(--xps-color-surface);
+  border: 1px solid var(--xps-color-border);
+  border-radius: var(--xps-radius);
+}
+
+.xps-results__empty-title {
+  color: var(--xps-color-text);
+  font-size: 1.143em;
+  font-weight: 600;
+}
+
+/* The unfiltered count inside the muted copy. */
+.xps-results__empty strong {
+  color: var(--xps-color-text);
+}
+
+.xps-results__clear {
+  font-weight: 600;
+}
+
 /* No-results recovery: the correction is a link-button inside a sentence, the popular searches
-   are the same chips the active filters use, made clickable. */
+   are pills — the chip without its fill, so they read as offers rather than as applied filters. */
 .xps-results__popular-title {
   color: var(--xps-color-muted);
   font-size: 0.75em;
@@ -61,8 +83,16 @@
   text-transform: uppercase;
 }
 
-.xps-results__popular-button:hover {
-  border-color: var(--xps-color-accent);
+.xps-results__popular-button {
+  background-color: transparent;
+  border: 1px solid var(--xps-color-border);
+  border-radius: 999px;
+  font-size: 0.929em;
+
+  &:hover {
+    background-color: color-mix(in srgb, var(--xps-color-accent) 8%, var(--xps-color-surface));
+    border-color: var(--xps-color-accent);
+  }
 }
 
 /* A refinement dims the stale list instead of blanking it — skeletons stay first-search-only. */

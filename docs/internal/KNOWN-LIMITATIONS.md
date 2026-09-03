@@ -1287,3 +1287,28 @@ and how to lift it.
   longer. Either way the rows belong to nothing.
 - **Upgrade path:** keep the index's settings row when the index is deleted and read the window from
   it, or delete the analytics rows with the index.
+
+## The recents remove control is a pointer affordance, not a focusable button (`renderPanel`, `suggestionsPanel.ts`, TH-6)
+
+- **Simplified:** the X that drops one recent search is a `<span data-xps-recent-remove>` beside the
+  option, `aria-hidden`, clicked through the panel's delegated handler. A listbox owns options and
+  groups and nothing else, and a focusable element in that subtree is either swallowed by an option's
+  accessible name (`nested-interactive`) or an unallowed child of the listbox
+  (`aria-required-children`) - both measured with axe, which is why the group's Clear button moved
+  out of the listbox in the same unit.
+- **Ceiling:** removing one entry with the keyboard or a screen reader is the Delete key on the
+  active row (documented in `themes/MARKUP.md` and the widget reference); the visible X itself is
+  mouse and touch only.
+- **Upgrade path:** move the recents out of the listbox into their own `role="list"` above it, with a
+  roving-tabindex row of real buttons - a second keyboard model in the same popup, which is why it
+  was not done for one control.
+
+## The Load more empty state never probes for the unfiltered count (`loadMore`, TH-6)
+
+- **Simplified:** `loadMore` renders the `results` widget's empty state, recovery offers included,
+  but not its debounced unfiltered probe, so its clear-filters button reads "Clear filters" instead
+  of "Clear filters and show N results".
+- **Ceiling:** the narrow-screen layout (MB-1 swaps `results`+`pagination` for `loadMore` under
+  1024px) says less about what clearing the filters would bring back than the wide one.
+- **Upgrade path:** lift the probe out of `results.ts` into a small helper both widgets call, keyed by
+  query the way `probedQuery` already is.

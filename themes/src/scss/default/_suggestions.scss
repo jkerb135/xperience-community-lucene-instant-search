@@ -11,10 +11,15 @@
 
 .xps-suggestions__group-title {
   color: var(--xps-color-muted);
-  font-size: 0.75em;
+  font-size: 0.6875em;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
+}
+
+/* A rule between sources, lighter than the panel's own edge. */
+.xps-suggestions__group + .xps-suggestions__group {
+  border-top: 1px solid color-mix(in srgb, var(--xps-color-border) 60%, var(--xps-color-surface));
 }
 
 .xps-suggestions__group-clear {
@@ -28,18 +33,38 @@
   background-color: color-mix(in srgb, var(--xps-color-accent) 10%, transparent);
 }
 
+.xps-suggestions__option-icon {
+  color: var(--xps-color-muted);
+}
+
+/* A page is a destination, not a query: its title reads as the link it is. */
+.xps-suggestions__option--document .xps-suggestions__option-title {
+  color: var(--xps-color-accent);
+  font-weight: 600;
+}
+
 .xps-suggestions__option-meta,
 .xps-suggestions__empty {
   color: var(--xps-color-muted);
   font-size: 0.875em;
 }
 
+.xps-suggestions__option-remove {
+  color: var(--xps-color-muted);
+
+  &:hover {
+    color: var(--xps-color-text);
+  }
+}
+
 .xps-suggestions__footer {
+  background-color: color-mix(in srgb, var(--xps-color-border) 25%, var(--xps-color-surface));
   border-top: 1px solid var(--xps-color-border);
 }
 
 .xps-suggestions__see-all {
   color: var(--xps-color-accent);
+  font-size: 0.75em;
 }
 
 .xps-suggestions__hints {
@@ -54,5 +79,5 @@
   border-radius: 4px;
   color: var(--xps-color-muted);
   font-family: inherit;
-  font-size: 1em;
+  font-size: 0.9em;
 }
