@@ -515,6 +515,12 @@
 .xps-sheet {
   position: fixed;
   inset: 0;
+  /* The visible viewport, not the tallest one the browser could have: on a phone `100vh` is the
+     height with the URL bar retracted, so a sheet sized in `vh` hangs its footer under the chrome
+     with no way to scroll to it. `dvh` tracks the bar; the `vh` line above it is the fallback for
+     engines that do not know the unit, which are also the ones with no dynamic chrome. */
+  height: 100vh;
+  height: 100dvh;
   z-index: 1000;
   display: flex;
   flex-direction: column;
@@ -532,6 +538,7 @@
   flex-direction: column;
   width: 100%;
   max-height: 92vh;
+  max-height: 92dvh;
   animation: xps-sheet-up 180ms ease-out;
 }
 
@@ -553,8 +560,13 @@
   line-height: 1;
 }
 
+/* The one part of the sheet that scrolls. `min-height: 0` is what lets it shrink below its own
+   content so the panel can stay inside its cap: a flex item's automatic minimum size only
+   collapses to zero because this element is a scroll container, and the rule must not depend on
+   that — a theme that ever sets `overflow: visible` here would push the footer off the screen. */
 .xps-sheet__body {
   flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 0 var(--xps-space);

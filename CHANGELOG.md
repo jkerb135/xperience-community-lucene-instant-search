@@ -12,6 +12,15 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Fixed (themes):** the mobile Filter & sort sheet is sized against the *visible* viewport
+  (`100dvh` for the sheet, `92dvh` for the panel, each with the `vh` line kept as a fallback), so on
+  a phone its footer no longer sits under the browser's URL bar with the page locked behind it — the
+  symptom being a pane that cannot be scrolled to the Apply button. The scrolling body also states
+  `min-height: 0` explicitly instead of relying on being a scroll container for its flex minimum.
+  New `themes/scripts/check-sheet.mjs` (wired into `npm run check`) opens the sheet at 390×600 with
+  more facet content than fits and fails if the panel leaves the viewport, if the body stops
+  scrolling, or if the header or the Clear all / Show results footer is pushed out of view.
+
 - **Breaking (core):** the root values of `XpSearchOptions` (cache lifetime, query length, page sizes,
   facet and result-window ceilings, suggestion limits, and every `Analytics` number) are now the
   **defaults for every index**, and the administration overrides them **per index** on *Lucene Search

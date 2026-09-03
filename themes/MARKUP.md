@@ -343,7 +343,7 @@ removed when it closes.
 | `xps-sheet__header` | `<header>` | |
 | `xps-sheet__title` | `<h2 id>` | The dialog's accessible name. |
 | `xps-sheet__close` | `<button type="button" aria-label>` | The glyph is `aria-hidden="true"`. |
-| `xps-sheet__body` | `<div>` | The scrolling region; scroll is contained and the page behind is locked. |
+| `xps-sheet__body` | `<div>` | The scrolling region — the **only** part of the sheet that scrolls; scroll is contained and the page behind is locked. It is the flex item that gives way (`min-height: 0`), so the panel stays inside its cap and the header and footer stay put. |
 | `xps-sheet__section` | `<section>` | One per facet group, plus the sort section when sort options are configured. Hairline rule between sections. |
 | `xps-sheet__section-title` | `<h3>` (`id` on the sort section) | |
 | `xps-sheet__pills` | `<div role="group" aria-labelledby>` | The "Sort by" choice row. |
@@ -364,6 +364,12 @@ The widget sets it from `scroll: true` (`Scroll sideways` in the Page Builder); 
 the markup by hand can also put it on the root itself.
 
 The slide-up animation on `xps-sheet__panel` is dropped under `prefers-reduced-motion: reduce`.
+
+The sheet is sized against the **visible** viewport: `xps-sheet` is `100dvh` tall and the panel is
+capped at `92dvh`, each with a `vh` line before it for engines that do not know the unit. `vh` alone
+is the height a phone has with its URL bar retracted, which puts the footer under the bar with the
+page locked behind it — `themes/scripts/check-sheet.mjs` measures the open sheet at 390×600 and
+fails if the panel leaves the viewport, if the body stops scrolling, or if either unit is dropped.
 
 ## rangeFilter
 

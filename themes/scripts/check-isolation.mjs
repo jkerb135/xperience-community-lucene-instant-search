@@ -9,24 +9,10 @@
 // Playwright is not a dependency of this package: it is the one the docs screenshot tooling
 // already installs. Run `npm install` in tools/screenshots once, then `npm run check` here.
 import { readFileSync, readdirSync, writeFileSync, mkdtempSync } from 'node:fs';
-import { fileURLToPath, pathToFileURL } from 'node:url';
-import { createRequire } from 'node:module';
-import { dirname, join } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-
-const themes = join(dirname(fileURLToPath(import.meta.url)), '..');
-const screenshots = join(themes, '..', 'tools', 'screenshots');
-
-let chromium;
-try {
-  ({ chromium } = createRequire(join(screenshots, 'package.json'))('playwright'));
-} catch {
-  console.error(
-    'playwright is missing — it belongs to the screenshot tooling, which shares it with this check.\n' +
-      '  Run: cd tools/screenshots && npm install'
-  );
-  process.exit(1);
-}
+import { chromium, href, themes } from './browser.mjs';
 
 /** Everything a host stylesheet could plausibly reach. Compared verbatim, string for string. */
 const PROPERTIES = [
@@ -49,8 +35,6 @@ const PROPERTIES = [
 const WRAPPER_OPEN =
   '<div class="container"><div class="row"><section class="section landing-page"><div class="product-filter">';
 const WRAPPER_CLOSE = '</div></section></div></div>';
-
-const href = (file) => pathToFileURL(join(themes, file)).href;
 
 /** Both shipped palettes are checked: they share a design source, not a build (TH-8). */
 const PALETTES = ['kentico-violet', 'kentico-orange'];
@@ -102,7 +86,7 @@ const write = (name, html) => {
 };
 
 const fixtures = readdirSync(join(themes, 'fixtures')).filter((f) => f.endsWith('.html'));
-const browser = await chromium.launch();
+const browser = await chromium().launch();
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
 
 const problems = [];
