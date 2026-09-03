@@ -23,11 +23,9 @@ public sealed class XpSearchAnalyticsModuleInstaller
     [
         nameof(Options.XpSearchSettingsInfo.SettingsCacheTtlSeconds),
         nameof(Options.XpSearchSettingsInfo.SettingsMaxQueryLength),
-        nameof(Options.XpSearchSettingsInfo.SettingsDefaultPageSize),
         nameof(Options.XpSearchSettingsInfo.SettingsMaxPageSize),
         nameof(Options.XpSearchSettingsInfo.SettingsMaxFacetValues),
         nameof(Options.XpSearchSettingsInfo.SettingsMaxResultWindow),
-        nameof(Options.XpSearchSettingsInfo.SettingsDefaultSuggestLimit),
         nameof(Options.XpSearchSettingsInfo.SettingsMaxSuggestLimit),
         nameof(Options.XpSearchSettingsInfo.SettingsRetentionDays),
         nameof(Options.XpSearchSettingsInfo.SettingsRetentionBatchSize),
@@ -249,11 +247,13 @@ public sealed class XpSearchAnalyticsModuleInstaller
         dataClass.ClassType = ClassType.OTHER;
         dataClass.ClassResourceID = resource.ResourceID;
 
-        // An existing class keeps whatever an upgrade already added; only missing fields are merged in.
+        // An existing class gains the fields the form added since it was installed and loses the ones
+        // the form no longer declares.
         if (dataClass.ClassID > 0)
         {
             var existing = new FormInfo(dataClass.ClassFormDefinition);
             existing.CombineWithForm(form, new CombineWithFormSettings());
+            RemoveUndeclaredFields(existing, form);
             dataClass.ClassFormDefinition = existing.GetXmlDefinition();
         }
         else
@@ -264,6 +264,39 @@ public sealed class XpSearchAnalyticsModuleInstaller
         if (dataClass.HasChanged)
         {
             DataClassInfoProvider.SetDataClassInfo(dataClass);
+        }
+    }
+
+    /// <summary>
+    /// Drops the fields an installed class still has but this installer's form no longer declares,
+    /// which drops their columns (AR-3 removed two settings this way).
+    /// </summary>
+    /// <param name="installed">The installed definition, already combined with <paramref name="declared"/>.</param>
+    /// <param name="declared">The form this installer declares.</param>
+    /// <remarks>
+    /// <see cref="FormInfo.CombineWithForm"/> only ever adds, and a leftover <c>NOT NULL</c> column
+    /// nothing writes any more would refuse the next insert, so the removal has to be explicit -
+    /// the same move <c>RuleStorageMigration.RetireLegacyColumns</c> makes for the rule class. The
+    /// primary key is never touched, and every field each of this installer's Info classes carries is
+    /// declared by its form, so "not declared" means "retired".
+    /// </remarks>
+    internal static void RemoveUndeclaredFields(FormInfo installed, FormInfo declared)
+    {
+        ArgumentNullException.ThrowIfNull(installed);
+        ArgumentNullException.ThrowIfNull(declared);
+
+        var keep = declared.GetFields(true, true)
+            .Select(field => field.Name)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var retired = installed.GetFields(true, true)
+            .Where(field => !field.PrimaryKey && !keep.Contains(field.Name))
+            .Select(field => field.Name)
+            .ToList();
+
+        foreach (string name in retired)
+        {
+            installed.RemoveFormField(name);
         }
     }
 }

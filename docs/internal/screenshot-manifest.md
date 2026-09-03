@@ -23,7 +23,7 @@ deliberately): synonym group `espresso expresso`, stopword list `the a an of and
 | `lucene--index-listing.png` | `/admin/lucene/indexes` | 2 indexes registered | Kentico Lucene listing + `src/XpSearch.Admin/UIPages/IndexTuning.cs` | 2026-09-01 |
 | `index--edit.png` | `/admin/lucene/indexes/edit/2` | — | `src/XpSearch.Admin/UIPages/IndexTuning.cs` | 2026-09-01 |
 | `tuning--settings.png` | `…/edit/2/settings` | — | `src/XpSearch.Admin/UIPages/IndexTuning.cs` | 2026-09-01 |
-| `index--search-settings.png` | `…/edit/2/search-settings` | — (the form shows the code defaults until saved) | `src/XpSearch.Admin/UIPages/SearchSettings.cs` | STALE - never captured (AR-2) |
+| `index--search-settings.png` | `…/edit/2/search-settings` | — (the form shows the code defaults until saved) | `src/XpSearch.Admin/UIPages/SearchSettings.cs` | STALE - never captured (AR-2); UX-1 gave every field a tooltip and an explanation line, and AR-3 removed *Default page size* and *Default suggestion count*, so the form is fourteen fields and taller than it was |
 | `tuning--status.png` | `…/edit/2/status` | built index (35 entries) | `src/XpSearch.Admin/UIPages/IndexStatus.cs`, `Client/src/status/IndexStatusTemplate.tsx` | 2026-09-01 |
 | `tuning--analytics.png` | `…/edit/2/analytics` | query-log rows (HW-11 seeding) | `src/XpSearch.Admin/UIPages/Analytics/AnalyticsDashboardPage.cs`, `Client/src/analytics/AnalyticsDashboardTemplate.tsx` | 2026-09-01 |
 | `tuning--query-tester.png` | `…/edit/2/query-tester` (runs "coffee") | indexed content | `src/XpSearch.Admin/UIPages/QueryTester/QueryTesterPage.cs`, `Client/src/query-tester/QueryTesterTemplate.tsx` | 2026-09-01 |
@@ -43,6 +43,11 @@ deliberately): synonym group `espresso expresso`, stopword list `the a an of and
 | `experiments--detail.png` | `…/edit/2/experiments` → open experiment | concluded experiment | `src/XpSearch.Admin/UIPages/Experiments/ExperimentPages.cs`, `Client/src/experiments/ExperimentDetailTemplate.tsx` | 2026-09-01 |
 | `experiments--variant-rules-draft.png` | `…/edit/2/experiments/2/rules` | draft "Docs demo experiment" (left in place) | `ExperimentPages.cs`, `ExperimentScope.cs`, `Rules.cs` | **PENDING** — run `npm run capture -- experiments--variant-rules-draft experiments--variant-rules-readonly` while the capture profile is signed in (session was lost 2026-09-01; sign in once in the window it opens) |
 | `experiments--variant-rules-readonly.png` | `…/edit/2/experiments/1/rules` | concluded experiment 1 (read-only banner, empty after discard) | `ExperimentPages.cs`, `ExperimentScope.cs`, `Rules.cs` | **PENDING** — same run as above |
+
+No widget property dialog has a row here yet. UX-1 rewrote every widget property's tooltip and
+explanation, and AR-3 made the Results widget's *Results per page* and the two suggestion counts
+required (one or greater), so any Page Builder dialog shot added later must be taken after those
+changes.
 
 Pending captures worth adding once data exists: `tuning--popularity-suggestions` and
 `tuning--synonym-suggestions` with ≥1 mined row (current captures show empty tables; recapture

@@ -106,14 +106,6 @@ public class XpSearchSettingsInfo : AbstractInfo<XpSearchSettingsInfo, IInfoProv
         set => SetValue(nameof(SettingsMaxQueryLength), value);
     }
 
-    /// <summary>Gets or sets the page size used when a request omits one.</summary>
-    [DatabaseField]
-    public virtual int SettingsDefaultPageSize
-    {
-        get => Integer(nameof(SettingsDefaultPageSize));
-        set => SetValue(nameof(SettingsDefaultPageSize), value);
-    }
-
     /// <summary>Gets or sets the server-side page size ceiling.</summary>
     [DatabaseField]
     public virtual int SettingsMaxPageSize
@@ -136,14 +128,6 @@ public class XpSearchSettingsInfo : AbstractInfo<XpSearchSettingsInfo, IInfoProv
     {
         get => Integer(nameof(SettingsMaxResultWindow));
         set => SetValue(nameof(SettingsMaxResultWindow), value);
-    }
-
-    /// <summary>Gets or sets the number of suggestions returned when a request omits a limit.</summary>
-    [DatabaseField]
-    public virtual int SettingsDefaultSuggestLimit
-    {
-        get => Integer(nameof(SettingsDefaultSuggestLimit));
-        set => SetValue(nameof(SettingsDefaultSuggestLimit), value);
     }
 
     /// <summary>Gets or sets the ceiling on the suggestion limit.</summary>

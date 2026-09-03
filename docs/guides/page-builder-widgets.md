@@ -77,21 +77,41 @@ Then, per widget:
 
 | Widget | Properties |
 |---|---|
-| Search box | Placeholder · Show reset button · Focus on page load · Suggest as the visitor types · Maximum suggestions and Offer recent searches (shown once suggesting is on) · Sync search state to the URL — see [Shareable result URLs](#shareable-result-urls) and [One page, one search field](#one-page-one-search-field) |
-| Results | Results per page · Result template · Fields to show (a selector over the index fields — `title`, `url`, `contentType`, `language` or any stored field of your content types) · Title attribute · Link attribute · Snippet attributes — see [Pointing a card at other attributes](#pointing-a-card-at-other-attributes) |
-| Facet list | Attribute · Label · Operator (any / all of the selected values) · Values shown · Show a "show more" button · Title folds the group (on by default — see [Folding groups](#folding-groups)) |
-| Category tree | Attribute · Label · Nodes per level · Title folds the tree (on by default). Pick a **taxonomy** attribute: the tree comes from the tag hierarchy, and a flat attribute renders as one level. Selection is one value at a time, because a parent's count already includes its children |
-| Pagination | Style (numbered pages / load more button) — "load more" emits a `loadMore` mount instead of a `pagination` one, so place one or the other, never both |
+| Search box | Placeholder · Show reset button · Focus on page load · Suggest as the visitor types · Maximum suggestions (capped by the index's *Maximum suggestion count*) and Offer recent searches (shown once suggesting is on) · Sync search state to the URL — see [Shareable result URLs](#shareable-result-urls) and [One page, one search field](#one-page-one-search-field) |
+| Results | Results per page — required, one or greater (20 by default), capped by the index's *Maximum page size*; it is the page size of the whole search instance · Result template · Fields to show (a selector over the index fields — `title`, `url`, `contentType`, `language` or any stored field of your content types; once it is not empty it is the whole list) · Title attribute · Link attribute · Snippet attributes — see [Pointing a card at other attributes](#pointing-a-card-at-other-attributes) |
+| Facet list | Attribute · Label · Operator (any / all of the selected values) · Values shown (a display limit over what the response carried, so the index's *Maximum values per facet* is the real ceiling) · Show a "show more" button · Title folds the group (on by default — see [Folding groups](#folding-groups)) |
+| Category tree | Attribute · Label · Nodes per level (same ceiling as above) · Title folds the tree (on by default). Pick a **taxonomy** attribute: the tree comes from the tag hierarchy, and a flat attribute renders as one level. Selection is one value at a time, because a parent's count already includes its children |
+| Pagination | Style (numbered pages / load more button) — "load more" emits a `loadMore` mount instead of a `pagination` one, so place one or the other, never both. It steps by the search's page size and cannot go past the index's *Maximum result window* |
 | Result stats | Text template (`{total}`, `{tookMs}`, `{query}`, `{page}`, `{totalPages}`) — pre-filled with `{total} results for “{query}” ({tookMs} ms)`, the design's own wording, so a freshly placed widget needs no editing; the count is emphasised · Text before the first search |
 | Sort selector | Sort options (one `key;Label` per line) · Label · Hide the label visually |
 | Active filters | Screen-reader heading · Keep the chips on one scrolling row. The chips row of the design: one removable chip per refinement. Place a Clear filters widget beside it for the trailing "Clear all" |
 | Clear filters | Button text (empty leaves "Clear all"). Renders a muted link-style button, disabled while nothing is refined. Two of them on a page is normal: one in the sidebar heading, one beside the chips |
 | Range filter | Attribute (numeric or date) · Label · Minimum · Maximum · Step · "From" label · "To" label · Unit (shown after the two inputs: "USD", "kg") — see [The range filter's bounds are hand-configured](#the-range-filters-bounds-are-hand-configured) |
 | Filter & sort sheet | Facet groups (one `attribute;Label` per line, in the order they appear in the sheet) · Sort options (one `key;Label` per line, exactly as the sort selector takes them — leave empty for no "Sort by" section) · Label · Apply button text (`{count}` becomes the live count of the pending selection; empty leaves "Show {count} results"). The mobile counterpart of the facet sidebar: the mount renders only a toolbar button, and the sheet it opens is built in the browser. Place it alongside the facet list widgets, not instead of them — see [Mobile filtering](widget-reference.md#mobile-filtering) |
-| Suggestions | Mode (matching documents / popular queries / both) · Maximum items · Offer recent searches. Whether an index answers with documents, with query suggestions or with both is server-side configuration; the Mode property records the editor’s intent and does not change the request |
+| Suggestions | Mode (matching documents / popular queries / both) · Maximum items (capped by the index's *Maximum suggestion count*) · Offer recent searches. Whether an index answers with documents, with query suggestions or with both is server-side configuration; the Mode property records the editor’s intent and does not change the request. Popular queries are counted over the index's *Query suggestion window (days)* |
 
 A blank text property is left out of `data-xps-config` entirely, so the JavaScript widget's own default
 applies rather than an empty string overriding it.
+
+Every property carries a tooltip and an explanation line in the widget dialog, so the table above is a
+map rather than the only place the wording lives.
+
+#### How widget properties and index settings interact
+
+One rule: **widgets own their sizes; the index owns the caps; API callers that send no size get the
+code default.**
+
+- **Widget properties** decide what a placement asks for. The sizes — the Results widget's *Results
+  per page*, the search box's *Maximum suggestions*, the Suggestions widget's *Maximum items* — are
+  required and one or greater, so a widget always sends its own number.
+- **Index settings** (*Lucene Search → the index → Search settings*) are the ceilings and the
+  policies: *Maximum page size*, *Maximum values per facet* and *Maximum suggestion count* clamp
+  whatever a widget or an API caller asks for, so a widget property can lower a number but never
+  raise it past its index's ceiling. *Maximum result window* refuses rather than clamps: a request
+  whose `page × pageSize` exceeds it returns a validation error.
+- **Code defaults** (`AddXpSearch(o => …)`) supply an index's settings until someone saves that
+  index's page, and `DefaultPageSize` / `DefaultSuggestLimit` answer an API caller that sends no size
+  at all. No widget uses those two.
 
 #### One page, one search field
 

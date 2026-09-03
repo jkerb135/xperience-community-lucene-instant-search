@@ -1,8 +1,12 @@
+using CMS.DataEngine;
+using CMS.FormEngine;
+
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 using NUnit.Framework;
 
+using XpSearch.Core.Analytics;
 using XpSearch.Core.Contract;
 using XpSearch.Core.Options;
 using XpSearch.Core.Tests.Fixtures;
@@ -140,6 +144,49 @@ internal sealed class StoredSettingsTests
             Assert.That(values.CacheTtlSeconds, Is.EqualTo(15));
             Assert.That(values.SynonymMinimumOccurrences, Is.EqualTo(9));
             Assert.That(values.RetentionDays, Is.EqualTo(365), "the shipped retention default");
+        });
+    }
+
+    /// <summary>
+    /// AR-3 removed two settings, so an upgraded class has two columns the form no longer declares;
+    /// they have to go, or the next insert meets a NOT NULL column nothing writes.
+    /// </summary>
+    [Test]
+    public void UpgradingTheSettingsClass_DropsTheColumnsTheFormNoLongerDeclares()
+    {
+        var declared = XpSearchAnalyticsModuleInstaller.SettingsForm();
+
+        // What an AR-2 install has: the current form plus the two retired settings.
+        var installed = XpSearchAnalyticsModuleInstaller.SettingsForm();
+        installed.AddFormItem(new FormFieldInfo
+        {
+            Name = "SettingsDefaultPageSize",
+            AllowEmpty = false,
+            DataType = FieldDataType.Integer,
+            Visible = true,
+            Enabled = true
+        });
+        installed.AddFormItem(new FormFieldInfo
+        {
+            Name = "SettingsDefaultSuggestLimit",
+            AllowEmpty = false,
+            DataType = FieldDataType.Integer,
+            Visible = true,
+            Enabled = true
+        });
+
+        XpSearchAnalyticsModuleInstaller.RemoveUndeclaredFields(installed, declared);
+
+        var names = installed.GetFields(true, true).Select(field => field.Name).ToList();
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(names, Does.Not.Contain("SettingsDefaultPageSize"));
+            Assert.That(names, Does.Not.Contain("SettingsDefaultSuggestLimit"));
+            Assert.That(
+                names,
+                Is.EquivalentTo(declared.GetFields(true, true).Select(field => field.Name)),
+                "nothing the form still declares - the primary key included - may be dropped");
         });
     }
 

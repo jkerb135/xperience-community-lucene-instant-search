@@ -41,8 +41,8 @@ They appear as soon as the client hydrates.
 @inject ServerRenderedResults SearchResults
 
 @{
-    // Index, page size, projected fields, an optional registered template, and the attributes the
-    // built-in card reads. The search state (q, page, sort, facet and range filters) is read from
+    // Index, page size (required, one or greater - the index's Maximum page size may clamp it),
+    // projected fields, an optional registered template, and the attributes the built-in card reads. The search state (q, page, sort, facet and range filters) is read from
     // the request's query string with the same mapping the client writes it with.
     var render = await SearchResults.RenderAsync(
         ViewContext,

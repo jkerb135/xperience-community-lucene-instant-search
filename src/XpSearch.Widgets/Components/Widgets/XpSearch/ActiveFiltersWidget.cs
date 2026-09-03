@@ -29,14 +29,16 @@ public sealed class ActiveFiltersWidgetProperties : XpSearchMountWidgetPropertie
     /// </summary>
     [TextInputComponent(
         Label = "Screen-reader heading",
-        ExplanationText = "Announced before the chips. Not shown on screen.",
+        Tooltip = "What screen readers announce before the chips.",
+        ExplanationText = "Announced before the chips, never shown on screen; empty keeps \"Active filters\". The chips themselves are whatever the Search - Facet list, Search - Category tree and Search - Range filter widgets of this search instance have refined.",
         Order = OrderFirstWidgetProperty)]
     public string Title { get; set; } = string.Empty;
 
     /// <summary>Gets or sets whether the chips stay on one scrolling row instead of wrapping.</summary>
     [CheckBoxComponent(
         Label = "Keep the chips on one scrolling row",
-        ExplanationText = "Off, the chips wrap onto as many rows as they need.",
+        Tooltip = "Keeps the chips on a single, horizontally scrolling row.",
+        ExplanationText = "Off, the chips wrap onto as many rows as they need. Use it where the row's height has to stay fixed, such as a sticky toolbar.",
         Order = OrderFirstWidgetProperty + 10)]
     public bool Scroll { get; set; }
 }

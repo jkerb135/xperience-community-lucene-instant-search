@@ -122,8 +122,8 @@ internal sealed class ServerRenderedResultsTests
         Expect.Multiple(() =>
         {
             Assert.That(instance.GetProperty("initialQueryId").GetString(), Is.EqualTo("server-query-1"));
-            // Parity: the widget left the page size unset, so the client must ask for the page size
-            // the pipeline actually applied rather than fall back to its own default.
+            // Parity: the client must ask for the page size the pipeline actually applied - the
+            // index's maximum may have clamped what the widget asked for - not the widget's own.
             Assert.That(instance.GetProperty("initialState").GetProperty("pageSize").GetInt32(), Is.EqualTo(10));
         });
     }
@@ -141,7 +141,8 @@ internal sealed class ServerRenderedResultsTests
         Expect.Multiple(() =>
         {
             Assert.That(instance.TryGetProperty("initialQueryId", out _), Is.False);
-            Assert.That(instance.TryGetProperty("initialState", out _), Is.False);
+            // The widget's own page size still goes over: only what the server rendered is missing.
+            Assert.That(instance.GetProperty("initialState").GetProperty("pageSize").GetInt32(), Is.EqualTo(20));
         });
     }
 

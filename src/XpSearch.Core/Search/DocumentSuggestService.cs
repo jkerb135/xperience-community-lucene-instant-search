@@ -97,7 +97,7 @@ public sealed class DocumentSuggestService : ISuggestService
             return Empty();
         }
 
-        int limit = ValidateLimit(request.Limit, settings.Get(index));
+        int limit = ValidateLimit(request.Limit, settings.Get(index), options.CurrentValue.DefaultSuggestLimit);
 
         if (indexOptions.SuggestMode == SuggestMode.QuerySuggestions)
         {
@@ -238,11 +238,12 @@ public sealed class DocumentSuggestService : ISuggestService
 
     private static string NormalizePrefix(string? query) => (query ?? string.Empty).Trim().ToLowerInvariant();
 
-    private static int ValidateLimit(long? limit, XpSearchIndexSettings settings)
+    // The default is code-only (AR-3): the per-index settings own the ceiling, not the default.
+    private static int ValidateLimit(long? limit, XpSearchIndexSettings settings, int defaultLimit)
     {
         if (limit is null)
         {
-            return settings.DefaultSuggestLimit;
+            return Math.Min(defaultLimit, settings.MaxSuggestLimit);
         }
 
         if (limit < 1)

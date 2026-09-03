@@ -34,7 +34,8 @@ public sealed class FilterSortWidgetProperties : XpSearchMountWidgetProperties
     /// </summary>
     [TextAreaComponent(
         Label = "Facet groups",
-        ExplanationText = "One per line, as attribute;Label - for example contentType;Content type.",
+        Tooltip = "The facet groups the mobile sheet shows, one per line.",
+        ExplanationText = "One per line, as attribute;Label - for example contentType;Content type. Name the same attributes as the Search - Facet list widgets of this search instance: the sheet is their mobile counterpart, not a replacement, and an attribute the index does not facet shows nothing.",
         Order = OrderFirstWidgetProperty)]
     public string Facets { get; set; } = string.Empty;
 
@@ -44,12 +45,17 @@ public sealed class FilterSortWidgetProperties : XpSearchMountWidgetProperties
     /// </summary>
     [TextAreaComponent(
         Label = "Sort options",
-        ExplanationText = "One per line, as key;Label. Leave empty to hide the sort section.",
+        Tooltip = "The orders the sheet's sort section offers, one per line.",
+        ExplanationText = "One per line, as key;Label, exactly as the Search - Sort selector widget takes them - keep the two lists the same so mobile and desktop offer the same orders. Leave empty to hide the sort section.",
         Order = OrderFirstWidgetProperty + 10)]
     public string SortOptions { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the trigger and sheet heading. Empty keeps the JavaScript default.</summary>
-    [TextInputComponent(Label = "Label", Order = OrderFirstWidgetProperty + 20)]
+    [TextInputComponent(
+        Label = "Label",
+        Tooltip = "The text on the toolbar button and the sheet's heading.",
+        ExplanationText = "Empty keeps the built-in wording.",
+        Order = OrderFirstWidgetProperty + 20)]
     public string Label { get; set; } = string.Empty;
 
     /// <summary>
@@ -59,7 +65,8 @@ public sealed class FilterSortWidgetProperties : XpSearchMountWidgetProperties
     /// </summary>
     [TextInputComponent(
         Label = "Apply button text",
-        ExplanationText = "Use {count} for the live result count, e.g. \"Show {count} results\". Leave empty for that default.",
+        Tooltip = "The text of the sheet's primary button.",
+        ExplanationText = "Use {count} for the live result count of the pending selection, e.g. \"Show {count} results\". Leave empty for that default; the placeholder disappears while the count is still unknown.",
         Order = OrderFirstWidgetProperty + 30)]
     public string ApplyLabel { get; set; } = string.Empty;
 }

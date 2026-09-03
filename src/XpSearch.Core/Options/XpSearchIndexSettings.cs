@@ -21,9 +21,6 @@ public sealed class XpSearchIndexSettings
     /// <summary>Gets or sets the maximum accepted length of the query text.</summary>
     public int MaxQueryLength { get; set; } = CodeDefaults.MaxQueryLength;
 
-    /// <summary>Gets or sets the page size used when a request omits one.</summary>
-    public int DefaultPageSize { get; set; } = CodeDefaults.DefaultPageSize;
-
     /// <summary>Gets or sets the server-side page size ceiling.</summary>
     public int MaxPageSize { get; set; } = CodeDefaults.MaxPageSize;
 
@@ -32,9 +29,6 @@ public sealed class XpSearchIndexSettings
 
     /// <summary>Gets or sets how deep paging may go.</summary>
     public int MaxResultWindow { get; set; } = CodeDefaults.MaxResultWindow;
-
-    /// <summary>Gets or sets the number of suggestions returned when a request omits a limit.</summary>
-    public int DefaultSuggestLimit { get; set; } = CodeDefaults.DefaultSuggestLimit;
 
     /// <summary>Gets or sets the ceiling on the suggestion limit.</summary>
     public int MaxSuggestLimit { get; set; } = CodeDefaults.MaxSuggestLimit;
@@ -82,11 +76,9 @@ public sealed class XpSearchIndexSettings
 
         CacheTtl = options.CacheTtl;
         MaxQueryLength = options.MaxQueryLength;
-        DefaultPageSize = options.DefaultPageSize;
         MaxPageSize = options.MaxPageSize;
         MaxFacetValues = options.MaxFacetValues;
         MaxResultWindow = options.MaxResultWindow;
-        DefaultSuggestLimit = options.DefaultSuggestLimit;
         MaxSuggestLimit = options.MaxSuggestLimit;
         RetentionDays = options.Analytics.RetentionDays;
         RetentionBatchSize = options.Analytics.RetentionBatchSize;

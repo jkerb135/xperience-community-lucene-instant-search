@@ -109,7 +109,10 @@ public sealed class XpSearchOptions
     /// <summary>Gets or sets the maximum accepted length of <c>query</c>; longer text is truncated. Defaults to 256.</summary>
     public int MaxQueryLength { get; set; } = 256;
 
-    /// <summary>Gets or sets the page size used when a request omits <c>pageSize</c>. Defaults to 20.</summary>
+    /// <summary>
+    /// Gets or sets the page size used when a request omits <c>pageSize</c>. Defaults to 20. Code-only
+    /// and not per index (AR-3): it is for API callers that send no size; widgets always send one.
+    /// </summary>
     public int DefaultPageSize { get; set; } = 20;
 
     /// <summary>
@@ -128,7 +131,10 @@ public sealed class XpSearchOptions
     /// </summary>
     public int MaxResultWindow { get; set; } = 10_000;
 
-    /// <summary>Gets or sets the number of suggestions returned when a request omits <c>limit</c>. Defaults to 5.</summary>
+    /// <summary>
+    /// Gets or sets the number of suggestions returned when a request omits <c>limit</c>. Defaults to 5.
+    /// Code-only and not per index (AR-3): it is for API callers that send no size; widgets always send one.
+    /// </summary>
     public int DefaultSuggestLimit { get; set; } = 5;
 
     /// <summary>Gets or sets the ceiling on <c>limit</c> for <c>/suggest</c>. Defaults to 20.</summary>

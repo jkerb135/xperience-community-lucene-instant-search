@@ -1268,7 +1268,7 @@ and how to lift it.
 ## A settings column that was never written is recognised by its zero value (`SearchSettingsValues.ApplyTo`, AR-2)
 
 - **Simplified:** an upgrade that adds a column to `XpSearch.Settings` leaves existing rows with 0 in
-  it. The overlay treats any of the fifteen "1 or more" values that reads as 0 or less as "nobody set
+  it. The overlay treats any of the thirteen "1 or more" values that reads as 0 or less as "nobody set
   this" and keeps the code-configured default, instead of asking `CombineWithForm` which fields it
   actually added.
 - **Ceiling:** the cache lifetime is exempt, because 0 is a legal value there (no response caching) -

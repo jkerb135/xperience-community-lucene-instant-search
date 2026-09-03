@@ -34,32 +34,49 @@ public sealed class FacetListWidgetProperties : XpSearchMountWidgetProperties
     [DropDownComponent(
         Label = "Attribute",
         Placeholder = "Select an attribute",
+        Tooltip = "The index attribute this group filters on.",
+        ExplanationText = "The list is the selected index's facetable fields. A Search - Filter & sort sheet on the same page has to name the same attribute for its mobile counterpart of this group.",
         Order = OrderFirstWidgetProperty)]
     [FormComponentConfiguration(XpSearchConstants.FacetAttributeConfiguratorIdentifier, nameof(Index))]
     public string Attribute { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the heading shown above the values. Empty falls back to the attribute name.</summary>
-    [TextInputComponent(Label = "Label", Order = OrderFirstWidgetProperty + 10)]
+    [TextInputComponent(
+        Label = "Label",
+        Tooltip = "The heading shown above the values.",
+        ExplanationText = "Empty shows the attribute name, which is rarely what a visitor should read.",
+        Order = OrderFirstWidgetProperty + 10)]
     public string Label { get; set; } = string.Empty;
 
     /// <summary>Gets or sets how several selected values combine.</summary>
     [DropDownComponent(
         Label = "Operator",
         Options = "or;Match any of the selected values\r\nand;Match all of the selected values",
+        Tooltip = "How several ticked values of this group combine.",
+        ExplanationText = "'Any' widens the results with each tick and is what most facets want; 'all' narrows them, which only makes sense where one result can carry several values, such as tags.",
         Order = OrderFirstWidgetProperty + 20)]
     public string Operator { get; set; } = "or";
 
     /// <summary>Gets or sets how many values are listed before "show more".</summary>
-    [NumberInputComponent(Label = "Values shown", Order = OrderFirstWidgetProperty + 30)]
+    [NumberInputComponent(
+        Label = "Values shown",
+        Tooltip = "How many values are listed before the \"show more\" button.",
+        ExplanationText = "A display limit over the values the response carried, so the index setting 'Maximum values per facet' is the real ceiling: asking for more than it returns shows all there is.",
+        Order = OrderFirstWidgetProperty + 30)]
     public int Limit { get; set; } = 10;
 
     /// <summary>Gets or sets whether a "show more" button reveals the remaining values.</summary>
-    [CheckBoxComponent(Label = "Show a \"show more\" button", Order = OrderFirstWidgetProperty + 40)]
+    [CheckBoxComponent(
+        Label = "Show a \"show more\" button",
+        Tooltip = "Reveals the values beyond 'Values shown'.",
+        ExplanationText = "Off, the values past that number are simply not offered. Turn it on for an attribute with a long tail of values.",
+        Order = OrderFirstWidgetProperty + 40)]
     public bool ShowMore { get; set; }
 
     /// <summary>Gets or sets whether the group's title folds the values away.</summary>
     [CheckBoxComponent(
         Label = "Title folds the group",
+        Tooltip = "Makes the heading a disclosure button.",
         ExplanationText = "The title becomes a button with a chevron. The group starts open, and the state is not remembered between page loads.",
         Order = OrderFirstWidgetProperty + 50)]
     public bool Collapsible { get; set; } = true;

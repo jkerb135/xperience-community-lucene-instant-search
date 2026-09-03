@@ -109,6 +109,10 @@ Widgets one.
   through `ILuceneIndexAccessor.ResolveName` (named options compare ordinally) — never `IOptions<>`,
   or a saved setting needs a restart. `XpSearchOptions.Indexes[...]` stays for code-only per-index
   members.
+- Removing a column from a Core Info class: drop it from the Info, from `SettingsForm()`/its form
+  method, and from every mapping. `XpSearchAnalyticsModuleInstaller.InstallClass` then drops it from
+  an installed class too (`RemoveUndeclaredFields` after `CombineWithForm`, which only ever adds), so
+  no `NOT NULL` leftover meets the next insert. The Admin and Ingestion installers still only add.
 - Scheduled/background work: follow the analytics retention task registration.
 - Creating an Info object (`new XpSearch…Info { … }`): set EVERY field its installer form declares
   without `allowEmpty`, including booleans and the GUID. Kentico serializes only the fields that were

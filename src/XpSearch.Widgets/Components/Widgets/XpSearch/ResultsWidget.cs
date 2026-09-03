@@ -26,17 +26,22 @@ namespace XpSearch.Widgets.Components.Widgets.XpSearch;
 /// <summary>Editor properties of the results widget (spec §7.3).</summary>
 public sealed class ResultsWidgetProperties : XpSearchMountWidgetProperties
 {
-    /// <summary>Gets or sets how many results a page shows. Zero keeps the API's configured default.</summary>
+    /// <summary>Gets or sets how many results a page shows. Always set (AR-3): the widget owns its size.</summary>
+    [RequiredValidationRule]
+    [MinimumIntegerValueValidationRule(1)]
     [NumberInputComponent(
         Label = "Results per page",
-        ExplanationText = "Leave at 0 to use the page size configured for the index.",
+        Tooltip = "How many results one page of the list shows.",
+        ExplanationText = "Results on each page of this widget. Capped by the index's 'Maximum page size'. It is the page size of the whole search instance, so the Search - Pagination widget beside it pages in these steps.",
         Order = OrderFirstWidgetProperty)]
-    public int ResultsPerPage { get; set; }
+    public int ResultsPerPage { get; set; } = 20;
 
     /// <summary>Gets or sets the identifier of a registered result template (spec §5.8).</summary>
     [DropDownComponent(
         Label = "Result template",
         Placeholder = "Default template",
+        Tooltip = "Which registered card template renders one result.",
+        ExplanationText = "Only templates a developer registered in the project appear here; empty renders the shipped default card. A template decides the markup, the attributes below decide what it is given.",
         DataProviderType = typeof(ResultTemplateOptionsProvider),
         Order = OrderFirstWidgetProperty + 10)]
     public string ResultTemplate { get; set; } = string.Empty;
@@ -46,7 +51,8 @@ public sealed class ResultsWidgetProperties : XpSearchMountWidgetProperties
         dataProviderType: typeof(IndexFieldSelectorDataProvider),
         Label = "Fields to show",
         Placeholder = "Index defaults",
-        ExplanationText = "The index fields each card can read, for example title, url, summary, image. Leave empty for the defaults.",
+        Tooltip = "Which index fields the search retrieves for each result.",
+        ExplanationText = "The index fields each card can read, for example title, url, summary, image. Leave empty for the defaults. Once it is not empty it is the whole list, so a field a card reads - the title, link and snippet attributes below - has to be in it.",
         Order = OrderFirstWidgetProperty + 20)]
     public IEnumerable<string> FieldNames { get; set; } = [];
 
@@ -63,7 +69,8 @@ public sealed class ResultsWidgetProperties : XpSearchMountWidgetProperties
         dataProviderType: typeof(IndexFieldSelectorDataProvider),
         Label = "Title attribute",
         Placeholder = "Default: title",
-        ExplanationText = "Index field the card's heading comes from.",
+        Tooltip = "Index field the card's heading comes from.",
+        ExplanationText = "Empty keeps 'title'. Used by the default card; a custom result template may read whatever it likes.",
         Order = OrderFirstWidgetProperty + 30)]
     public string TitleAttribute { get; set; } = string.Empty;
 
@@ -72,7 +79,8 @@ public sealed class ResultsWidgetProperties : XpSearchMountWidgetProperties
         dataProviderType: typeof(IndexFieldSelectorDataProvider),
         Label = "Link attribute",
         Placeholder = "Default: url",
-        ExplanationText = "Index field the card links to.",
+        Tooltip = "Index field the card links to.",
+        ExplanationText = "Empty keeps 'url'. Point it at another field only when your content stores its address somewhere else, and either leave 'Fields to show' empty or list that field there too.",
         Order = OrderFirstWidgetProperty + 40)]
     public string UrlAttribute { get; set; } = string.Empty;
 
@@ -83,7 +91,8 @@ public sealed class ResultsWidgetProperties : XpSearchMountWidgetProperties
     /// </remarks>
     [TextAreaComponent(
         Label = "Snippet attributes",
-        ExplanationText = "One index field name per line, tried in order; the first one with a value wins. Leave empty for summary, content, excerpt.",
+        Tooltip = "Index fields the card's summary line is taken from.",
+        ExplanationText = "One index field name per line, tried in order; the first one with a value wins. Leave empty for summary, content, excerpt. A field named here is only on the card if it was retrieved: either leave 'Fields to show' empty or list it there too.",
         Order = OrderFirstWidgetProperty + 50)]
     public string SnippetAttributes { get; set; } = string.Empty;
 }
@@ -91,6 +100,9 @@ public sealed class ResultsWidgetProperties : XpSearchMountWidgetProperties
 /// <summary>Renders the <c>results</c> mount.</summary>
 public sealed class ResultsWidgetViewComponent : XpSearchMountWidgetViewComponent<ResultsWidgetProperties>
 {
+    /// <summary>What a widget saved before AR-3 - when 0 meant "use the index's default" - is read as.</summary>
+    private const int FallbackResultsPerPage = 20;
+
     private static readonly char[] LineSeparators = ['\r', '\n'];
 
     private readonly ServerRenderedResults? serverResults;
@@ -158,17 +170,13 @@ public sealed class ResultsWidgetViewComponent : XpSearchMountWidgetViewComponen
         ArgumentNullException.ThrowIfNull(properties);
         ArgumentNullException.ThrowIfNull(instanceConfig);
 
-        // The page size the server actually applied, not the one the widget asked for: with the
-        // property left unset the pipeline's own default decides it, and the hydration query must ask
-        // for the same page the visitor is already looking at.
-        int pageSize = firstPaint?.PageSize ?? properties.ResultsPerPage;
-        if (pageSize > 0)
+        // The page size the server actually applied, not the one the widget asked for: the index's
+        // maximum may have clamped it, and the hydration query must ask for the same page the visitor
+        // is already looking at.
+        instanceConfig["initialState"] = new Dictionary<string, object?>(StringComparer.Ordinal)
         {
-            instanceConfig["initialState"] = new Dictionary<string, object?>(StringComparer.Ordinal)
-            {
-                ["pageSize"] = pageSize
-            };
-        }
+            ["pageSize"] = firstPaint?.PageSize ?? PageSize(properties)
+        };
 
         // Only when the server really answered a search: the client then reuses the id instead of
         // journaling the same page load twice.
@@ -206,7 +214,7 @@ public sealed class ResultsWidgetViewComponent : XpSearchMountWidgetViewComponen
             viewContext,
             new ServerResultsOptions(
                 CurrentIndex,
-                properties.ResultsPerPage,
+                PageSize(properties),
                 EffectiveFields(properties),
                 properties.ResultTemplate,
                 properties.TitleAttribute,
@@ -224,7 +232,7 @@ public sealed class ResultsWidgetViewComponent : XpSearchMountWidgetViewComponen
         ArgumentNullException.ThrowIfNull(properties);
 
         // Four cards is enough to read as a list; a page size of 50 must not fill the builder.
-        int cards = Math.Clamp(properties.ResultsPerPage <= 0 ? 3 : properties.ResultsPerPage, 1, 4);
+        int cards = Math.Clamp(PageSize(properties), 1, 4);
         var list = EditorPreview.El("ol", "xps-results__list");
 
         for (int card = 0; card < cards; card++)
@@ -245,12 +253,15 @@ public sealed class ResultsWidgetViewComponent : XpSearchMountWidgetViewComponen
             .AppendHtml(EditorPreview.Note(string.Format(
                 CultureInfo.CurrentUICulture,
                 WidgetResources.Preview_Note_Results,
-                properties.ResultsPerPage > 0
-                    ? properties.ResultsPerPage.ToString(CultureInfo.CurrentUICulture)
-                    : WidgetResources.Preview_Unset,
+                PageSize(properties).ToString(CultureInfo.CurrentUICulture),
                 string.IsNullOrWhiteSpace(properties.ResultTemplate) ? WidgetResources.Preview_Unset : properties.ResultTemplate.Trim(),
                 fields.Count > 0 ? string.Join(", ", fields) : WidgetResources.Preview_Unset)));
     }
+
+    // The property is required and one or greater from AR-3 on, but a widget saved while 0 meant "use
+    // the index's default" still holds 0, and 0 is a validation error on the wire.
+    private static int PageSize(ResultsWidgetProperties properties) =>
+        properties.ResultsPerPage > 0 ? properties.ResultsPerPage : FallbackResultsPerPage;
 
     /// <summary>
     /// The fields to retrieve: what the selector holds, or - for a widget saved before the selector

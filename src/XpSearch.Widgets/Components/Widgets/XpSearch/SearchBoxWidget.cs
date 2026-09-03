@@ -25,38 +25,55 @@ namespace XpSearch.Widgets.Components.Widgets.XpSearch;
 public sealed class SearchBoxWidgetProperties : XpSearchMountWidgetProperties
 {
     /// <summary>Gets or sets the placeholder text. Empty keeps the JavaScript default.</summary>
-    [TextInputComponent(Label = "Placeholder", Order = OrderFirstWidgetProperty)]
+    [TextInputComponent(
+        Label = "Placeholder",
+        Tooltip = "The grey hint shown in the empty input.",
+        ExplanationText = "Leave it empty to keep the built-in wording. It is a hint, not a label: screen readers still announce the field as \"Search\".",
+        Order = OrderFirstWidgetProperty)]
     public string Placeholder { get; set; } = string.Empty;
 
     /// <summary>Gets or sets whether the clear button is offered once the visitor has typed.</summary>
-    [CheckBoxComponent(Label = "Show reset button", Order = OrderFirstWidgetProperty + 10)]
+    [CheckBoxComponent(
+        Label = "Show reset button",
+        Tooltip = "Offers a button that empties the field.",
+        ExplanationText = "The button appears once the visitor has typed. Clearing the field runs an empty search, so the Results widget goes back to showing everything.",
+        Order = OrderFirstWidgetProperty + 10)]
     public bool ShowReset { get; set; } = true;
 
     /// <summary>Gets or sets whether the input takes focus on page load.</summary>
     [CheckBoxComponent(
         Label = "Focus on page load",
-        ExplanationText = "Use on a dedicated search page only; stealing focus is disorienting elsewhere.",
+        Tooltip = "Puts the cursor in the input as soon as the page opens.",
+        ExplanationText = "Use on a dedicated search page only; stealing focus is disorienting elsewhere. Only one widget on a page should take focus.",
         Order = OrderFirstWidgetProperty + 20)]
     public bool Autofocus { get; set; }
 
     /// <summary>Gets or sets whether the input offers type-ahead suggestions as a combobox.</summary>
     [CheckBoxComponent(
         Label = "Suggest as the visitor types",
+        Tooltip = "Drops a suggestion panel under this input.",
         ExplanationText = "Turns this input into an autocomplete combobox. Picking a suggestion searches on this page. "
             + "Do not add the separate Suggestions widget as well: that one renders a second search field.",
         Order = OrderFirstWidgetProperty + 25)]
     public bool EnableSuggestions { get; set; }
 
     /// <summary>Gets or sets how many suggestions are offered. Only used when suggestions are on.</summary>
-    [NumberInputComponent(Label = "Maximum suggestions", Order = OrderFirstWidgetProperty + 27)]
+    [RequiredValidationRule]
+    [MinimumIntegerValueValidationRule(1)]
+    [NumberInputComponent(
+        Label = "Maximum suggestions",
+        Tooltip = "How many suggestions the panel offers.",
+        ExplanationText = "Suggestions this input offers. Capped by the index's 'Maximum suggestion count'.",
+        Order = OrderFirstWidgetProperty + 27)]
     [VisibleIfTrue(nameof(EnableSuggestions))]
     public int SuggestionLimit { get; set; } = 5;
 
     /// <summary>Gets or sets whether the panel offers this visitor's own recent searches.</summary>
     [CheckBoxComponent(
         Label = "Offer recent searches",
+        Tooltip = "Adds this visitor's own earlier searches to the panel.",
         ExplanationText = "Shows what this visitor searched for before as the first group of the panel, and opens it when they "
-            + "focus the empty field. The list is kept in their own browser and never sent to the server.",
+            + "focus the empty field. The list is kept in their own browser and never sent to the server. Clear the checkbox on a shared or kiosk device.",
         Order = OrderFirstWidgetProperty + 28)]
     [VisibleIfTrue(nameof(EnableSuggestions))]
     public bool RecentSearches { get; set; } = true;
@@ -64,6 +81,7 @@ public sealed class SearchBoxWidgetProperties : XpSearchMountWidgetProperties
     /// <summary>Gets or sets whether the search keeps its state in the page URL (spec §5.5).</summary>
     [CheckBoxComponent(
         Label = "Sync search state to the URL",
+        Tooltip = "Writes the query, filters and page into the address bar.",
         ExplanationText = "Keeps the query, filters and page in the address bar, so a result page can be shared and the back button works. "
             + "Turn it off for a secondary search embedded on a content page: at most one search instance per page may sync, because all of them would write the same parameters.",
         Order = OrderFirstWidgetProperty + 30)]
