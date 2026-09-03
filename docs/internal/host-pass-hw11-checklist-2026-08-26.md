@@ -495,7 +495,8 @@ every command below resolves on the current main; these items confirm the runnin
 Open the boards beside the demo: `docs/internal/design/Autocomplete.dc.html` and `States.dc.html`
 (self-contained HTML). The lead's screenshots are in the session; these are the owner's eyes.
 
-126. **Panel.** On `/search`, search "coffee" once (creates a recent), clear the box, type `gri` →
+126. **Panel.** On `/search`, search "grinder" once (creates a recent that the prefix below will
+     match — recents only show when they match the typed text), clear the box, type `gri` →
      the panel shows **Recent** (clock glyph, X at the row end; hovering the X tints it; **Delete**
      on the highlighted recent row removes it without closing the panel), **Suggestions** (magnifier
      glyph, violet band under the typed prefix), **Pages** (accent semibold title, muted type line —
