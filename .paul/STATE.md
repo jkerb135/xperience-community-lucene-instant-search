@@ -17,9 +17,9 @@ See: .paul/PROJECT.md (updated 2026-09-01)
 
 Milestone: v1.0 Public Release (v1.0.0)
 Phase: 6 of 6 (Analytics retention setting & cleanup task) — Planning. Phases 1, 1.1, 2, 4 COMPLETE; Phase 3 = only 03-02 HW-11 findings batches (owner walk); Phase 5 packaging waits on 6.
-Plan: 06-01 created, awaiting approval
-Status: PLAN created, ready for APPLY. Prior context: HL-1 merged cdbc7bb; PF-1 ad7da9f; CD-1 6c92033; EX-2 232a906; CL-1 fa5843d; IX-1 7cddb43; SG-1 b2d5234; FZ-1 b5893ac; MB-1 dc4e86e; ES-1 879ebb6 (details in auto-memory xperience-search-session-state).
-Last activity: 2026-09-02 — Created .paul/phases/06-analytics-retention-setting/06-01-PLAN.md
+Plan: 06-01 in APPLY — Tasks 1–3 done, at the human-verify checkpoint (owner walks checklist §X 116–120 on the running host)
+Status: AR-1 MERGED 07928a7 (approved first pass; rev 2 scope: all global options on Search ingestion → Settings, IConfigureOptions overlay + live change token; retention default 365; answered-suggestion prune). Core 357/Admin 261 lead-verified; full sln 0 errors; pushed 4714efa; host rebuilt+running on 27340; `XpSearch_Settings` row seeded (365/100/20/60/1000) — DB-verified. Prior context: HL-1 merged cdbc7bb; PF-1 ad7da9f; CD-1 6c92033; EX-2 232a906; CL-1 fa5843d; IX-1 7cddb43; SG-1 b2d5234; FZ-1 b5893ac; MB-1 dc4e86e; ES-1 879ebb6 (details in auto-memory xperience-search-session-state).
+Last activity: 2026-09-02 — AR-1 merged + pushed; host restarted; awaiting owner checkpoint (items 116–120)
 
 Progress:
 - Milestone: [██████░░░░] ~60% (of the closing stretch; spec Phases 0–7 already shipped pre-PAUL)
@@ -30,7 +30,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ○        ○     [Plan 06-01 created, awaiting approval]
+  ✓        ◉        ○     [06-01 applied; human-verify checkpoint open]
 ```
 
 ## Accumulated Context
@@ -79,8 +79,8 @@ PLAN ──▶ APPLY ──▶ UNIFY
 ## Session Continuity
 
 Last session: 2026-09-02
-Stopped at: Plan 06-01 created
-Next action: Review and approve plan, then run /paul:apply .paul/phases/06-analytics-retention-setting/06-01-PLAN.md
+Stopped at: Plan 06-01 human-verify checkpoint (all auto tasks done, merged, pushed)
+Next action: Owner walks checklist §X 116–120 → "approved" → /paul:unify .paul/phases/06-analytics-retention-setting/06-01-PLAN.md
 Resume file: .paul/phases/06-analytics-retention-setting/06-01-PLAN.md
 Resume context: Read auto-memory `xperience-search-session-state` first — it is the richer, authoritative session state; STATE.md is the PAUL-level digest
 
