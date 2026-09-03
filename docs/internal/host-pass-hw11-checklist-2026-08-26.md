@@ -499,7 +499,10 @@ index; a row exists only after a save). Items 116–120 below are kept for histo
 121. **Per-index page, no global page.** Lucene Search → **DancingGoatSample** → **Search settings**
      lists the fourteen values with the code defaults (retention **365**, maximum page size **100**;
      AR-3 removed *Default page size* and *Default suggestion count* — widgets own their sizes).
-     Every field shows a tooltip and an explanation (UX-1). **Search ingestion** no longer has a
+     The fields sit in five open (non-collapsible) groups, in this order: **Search** (5 fields),
+     **Suggestions** (2), **Analytics retention** (2), **Popularity boosts** (3), **Synonym
+     suggestions** (2); *Index* stands above the first group. Every field shows a tooltip and an
+     explanation (UX-1), and every group heading a tooltip of its own. **Search ingestion** no longer has a
      Settings entry. On this AR-2-era database the start-up also **dropped** the two retired columns
      from `XpSearch_Settings` (lead checks the table) — saving the page must succeed.
 122. **Live, and only that index.** (AR-3: widgets own their sizes, the index owns the caps — the
