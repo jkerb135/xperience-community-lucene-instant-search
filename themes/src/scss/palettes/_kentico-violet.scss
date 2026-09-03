@@ -1,0 +1,9 @@
+// Selects the kentico-violet palette for the à la carte path — load it once, before `base`:
+//
+//   @use "@xperience-community/xperience-search/scss/palettes/kentico-violet";
+//   @use "@xperience-community/xperience-search/scss/base";
+//   @use "@xperience-community/xperience-search/scss/widgets/results";
+//
+// Violet is what `theme-variables` already defaults to, so this file only exists to give the two
+// palettes the same name shape in a host's stylesheet. Loading neither is loading this one.
+@forward '../theme-variables';

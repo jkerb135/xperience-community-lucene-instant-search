@@ -39,6 +39,11 @@ const isKeyframeStep = (sel) => sel.split(',').every((s) => /^(from|to|[\d.]+%)$
 const shell = read('src/shell.css');
 const theme = read('src/default.css');
 
+// The shipped palettes (TH-8). default.css is the violet build under its old name — build-css.mjs
+// asserts they are byte-identical — so everything below that reads `theme` speaks for it too.
+const PALETTES = ['kentico-violet', 'kentico-orange'];
+const palettes = new Map(PALETTES.map((name) => [name, read(`src/${name}.css`)]));
+
 // (i) shell.css carries no colour, no font, no design.
 for (const { selector, body } of blocks(shell)) {
   for (const [prop, value] of decls(body)) {
@@ -52,13 +57,16 @@ for (const { selector, body } of blocks(shell)) {
   }
 }
 
-// (iii) default.css puts every colour behind a variable: a colour literal may only appear in a
-// custom-property declaration on an .xps selector (the spec §6 block and the dark-mode override).
-for (const { selector, body } of blocks(theme)) {
-  for (const [prop, value] of decls(body)) {
-    if (prop.startsWith('--') && selector.startsWith('.xps')) continue;
-    if (LITERAL.test(value)) {
-      fail('src/default.css', `"${selector}" hard-codes a colour in "${prop}: ${value}" — use var(--xps-…)`);
+// (iii) every built theme puts its colours behind a variable: a colour literal may only appear in a
+// custom-property declaration on an .xps selector (the token block and the dark-mode override).
+// That rule is what lets one design source carry two palettes.
+for (const [file, css] of [['src/default.css', theme], ...[...palettes].map(([n, c]) => [`src/${n}.css`, c])]) {
+  for (const { selector, body } of blocks(css)) {
+    for (const [prop, value] of decls(body)) {
+      if (prop.startsWith('--') && selector.startsWith('.xps')) continue;
+      if (LITERAL.test(value)) {
+        fail(file, `"${selector}" hard-codes a colour in "${prop}: ${value}" — use var(--xps-…)`);
+      }
     }
   }
 }
@@ -99,34 +107,41 @@ const contrast = (a, b) => {
   return (hi + 0.05) / (lo + 0.05);
 };
 
-const tokensOf = (selector) => {
-  const block = blocks(theme).find((b) => b.selector === selector);
+const tokensOf = (css, selector) => {
+  const block = blocks(css).find((b) => b.selector === selector);
   return Object.fromEntries(decls(block?.body ?? '').filter(([p]) => p.startsWith('--')));
 };
 
-for (const [mode, selector] of RATIOS) {
-  const t = tokensOf(selector);
-  const surface = t['--xps-color-surface'] ?? tokensOf(ROOT)['--xps-color-surface'];
-  for (const token of ['--xps-color-accent', '--xps-color-text', '--xps-color-muted']) {
-    // Accent is link text and white-on-accent button fill; muted is the counts and the path line.
-    // All three are body text, so all three owe AA's 4.5:1 against the surface they sit on.
-    const ratio = contrast(t[token], surface);
-    console.log(`        ${mode} ${token} ${t[token]} on ${surface}: ${ratio.toFixed(2)}:1`);
-    if (ratio < 4.5) fail('src/default.css', `${mode} ${token} is ${ratio.toFixed(2)}:1 on ${surface} — AA needs 4.5:1`);
+// Both shipped palettes owe AA in both modes — the design source is shared, the colours are not.
+for (const [name, css] of palettes) {
+  for (const [mode, selector] of RATIOS) {
+    const t = tokensOf(css, selector);
+    const surface = t['--xps-color-surface'] ?? tokensOf(css, ROOT)['--xps-color-surface'];
+    for (const token of ['--xps-color-accent', '--xps-color-text', '--xps-color-muted']) {
+      // Accent is link text and white-on-accent button fill; muted is the counts and the path line.
+      // All three are body text, so all three owe AA's 4.5:1 against the surface they sit on.
+      const ratio = contrast(t[token], surface);
+      console.log(`        ${name} ${mode} ${token} ${t[token]} on ${surface}: ${ratio.toFixed(2)}:1`);
+      if (ratio < 4.5) fail(`src/${name}.css`, `${mode} ${token} is ${ratio.toFixed(2)}:1 on ${surface} — AA needs 4.5:1`);
+    }
   }
 }
 
-// One token re-skins everything: compiling with a different $color-accent must leave no shipped
-// violet behind anywhere in the file.
-const reskinned = compileString(`@use 'default' with ($color-accent: #b8005c);`, {
-  loadPaths: [join(themes, 'src/scss')],
-  charset: false,
-}).css.toLowerCase();
-if (reskinned.includes('#af00fa')) fail('src/scss', '#af00fa survives a $color-accent override — derive it with color-mix');
-if (!reskinned.includes('#b8005c')) fail('src/scss', 'the overridden $color-accent never reaches --xps-color-accent');
-// The dark accent is its own knob, so it survives — but only as its one variable declaration.
-const darkLeft = reskinned.split('#c983f7').length - 1;
-if (darkLeft !== 1) fail('src/scss', `#c983f7 appears ${darkLeft} times after a re-skin; only the dark --xps-color-accent may hold it`);
+// One token re-skins everything, whichever palette you started from: compiling an entry with a
+// different $color-accent must leave none of that palette's accent behind anywhere in the file.
+for (const name of PALETTES) {
+  const shipped = tokensOf(palettes.get(name), ROOT)['--xps-color-accent'];
+  const shippedDark = tokensOf(palettes.get(name), `${ROOT}[data-xps-theme=auto]`)['--xps-color-accent'];
+  const reskinned = compileString(`@use '${name}' with ($color-accent: #b8005c);`, {
+    loadPaths: [join(themes, 'src/scss')],
+    charset: false,
+  }).css.toLowerCase();
+  if (reskinned.includes(shipped)) fail('src/scss', `${shipped} survives a $color-accent override of ${name} — derive it with color-mix`);
+  if (!reskinned.includes('#b8005c')) fail('src/scss', `the overridden $color-accent never reaches --xps-color-accent in ${name}`);
+  // The dark accent is its own knob, so it survives — but only as its one variable declaration.
+  const darkLeft = reskinned.split(shippedDark).length - 1;
+  if (darkLeft !== 1) fail('src/scss', `${shippedDark} appears ${darkLeft} times after a re-skin of ${name}; only the dark --xps-color-accent may hold it`);
+}
 
 // (iv) three-way agreement between fixtures, CSS and MARKUP.md.
 const fixtureClasses = new Map(); // class -> fixture that uses it
@@ -161,7 +176,7 @@ for (const c of markupClasses) {
 console.log(`checked ${fixtureClasses.size} fixture classes across ${readdirSync(join(themes, 'fixtures')).length} fixtures`);
 console.log(`        ${cssClasses.size} classes styled in shell.css + default.css, ${markupClasses.size} documented in MARKUP.md`);
 console.log('        shell.css: no colour/font/border declarations, no colour literals');
-console.log('        default.css: colour literals only in --xps-* declarations on an .xps selector');
+console.log(`        default.css + ${PALETTES.join('.css + ')}.css: colour literals only in --xps-* declarations on an .xps selector`);
 console.log('        both: every selector scoped to xps-, no outline removed without a replacement');
 
 if (errors.length) {

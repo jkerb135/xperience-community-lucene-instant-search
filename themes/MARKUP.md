@@ -1,8 +1,9 @@
 # Markup contract
 
 This file, together with `themes/fixtures/*.html`, is the contract between the stylesheets
-(`themes/src/shell.css`, `themes/src/default.css` — generated from `themes/src/scss/`, run
-`npm run build` in `themes/` after editing) and the default widget renderers in
+(`themes/src/shell.css` and one theme file — `default.css`, `kentico-violet.css` or
+`kentico-orange.css`, all generated from `themes/src/scss/`, run `npm run build` in `themes/` after
+editing) and the default widget renderers in
 `XpSearch.Widgets/Client`. The fixtures are the normative form: they are the exact DOM a widget must
 produce with no custom templates. This file explains what each class and attribute means.
 
@@ -79,6 +80,10 @@ Page-level utilities the host puts on its *own* elements (`xps-toolbar`, `xps-st
   `prefers-color-scheme: dark` variable set in `default.css`. It is opt-in because the theme does
   not control the host page's background. Renderers should pass the attribute through from
   configuration, never set it themselves.
+- The theme ships in two palettes, `kentico-violet` (which `default.css` is) and `kentico-orange`.
+  They are the same rules with two token values swapped, so the markup contract is identical and a
+  page loads exactly one of them. Selection is a stylesheet choice, never a class or an attribute
+  on the markup.
 - Shell gives `xps-suggestions__panel` position but no surface, leaves `xps-highlight` unpainted and
   the skeletons untinted — all of them need a colour, which shell does not have. A site running
   shell alone supplies them.

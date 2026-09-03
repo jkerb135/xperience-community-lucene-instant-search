@@ -55,6 +55,10 @@ did-you-mean link) have nothing to mark stale here: the theme is verified agains
 `themes/scripts/check-isolation.mjs`. Add `widgets--autocomplete-panel` and `widgets--empty-states`
 rows when the guides start showing them.
 
+| Image | URL / route | Data prerequisites | Source files (staleness triggers) | Captured |
+|---|---|---|---|---|
+| `themes--kentico-orange.png` | `themes/test/section-kentico-orange.html` (opens from disk, no server) | — | `themes/src/scss/tokens/_kentico-orange.scss`, `themes/src/kentico-orange.css`, `themes/fixtures/*.html` | **STALE** — new in TH-8, never captured. Shoot it beside `section-default.html` so the guide's *Two shipped palettes* section can show the pair. |
+
 Pending captures worth adding once data exists: `tuning--popularity-suggestions` and
 `tuning--synonym-suggestions` with ≥1 mined row (current captures show empty tables; recapture
 after a popularity-task run produces suggestions).

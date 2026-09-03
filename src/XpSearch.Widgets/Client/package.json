@@ -96,6 +96,8 @@
     },
     "./themes/shell.css": "./themes/shell.css",
     "./themes/default.css": "./themes/default.css",
+    "./themes/kentico-violet.css": "./themes/kentico-violet.css",
+    "./themes/kentico-orange.css": "./themes/kentico-orange.css",
     "./scss/*": "./scss/*",
     "./styles/*": "./styles/*",
     "./mock/server.mjs": "./mock/server.mjs",

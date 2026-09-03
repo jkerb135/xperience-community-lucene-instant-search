@@ -1,0 +1,911 @@
+/* The link-button ("Clear all", the did-you-mean correction): text in a row, not a box. */
+/* The collapsible group heading: a full-width button that must not look or size like one. */
+/* The primary way out of the empty state: 38px tall with 18px flanks, per the design board. */
+/* A pill, not the boxed chip the active filters use. */
+/* The footer's keycaps: 20px tall, per the autocomplete board. */
+/* Screen-reader-only text is a box too: the theme's element reset would otherwise flatten it. */
+/* xperience-search — default.css
+ * Generated from themes/src/scss/default.scss — run `npm run build` in themes/, do not edit by hand.
+ * The opt-in visual theme: this file IS the design (docs/internal/design/*.dc.html). Load it after
+ * shell.css, which carries the structure it hangs on. Every visual value goes through one of the
+ * custom properties below, so a site re-skins the whole widget set by overriding variables in its
+ * own stylesheet — no build step, no fork.
+ *
+ *   .xps { --xps-color-accent: #b8005c; --xps-radius: 0; }
+ *
+ * Colour literals appear only in the variable blocks. `themes/scripts/check.mjs` enforces that.
+ *
+ * Every rule is written inside the theme root `.xps.xps.xps` (src/scss/default/_root.scss), which
+ * is what makes a widget a closed styling boundary: no host stylesheet up to (0,2,1) can change
+ * anything inside one. `themes/scripts/check-isolation.mjs` proves it, fixture by fixture,
+ * property by property, against test/site-hostile.css.
+ */
+/* The tokens are declared on the PLAIN root class, at (0,1,0): they are the documented override
+   surface (docs/guides/theming.md), so a site's own `.xps { --xps-color-accent: … }` — or a rule
+   for one widget — has to be able to win. Everything the tokens feed is stated below at the theme
+   root's (0,3,0)+, where a site cannot reach it by accident. */
+.xps {
+  --xps-color-accent: #af00fa;
+  --xps-color-text: #1f2430;
+  --xps-color-muted: #5c6370;
+  --xps-color-surface: #fff;
+  --xps-color-border: #e3e5ea;
+  --xps-radius: 6px;
+  --xps-space: 0.75rem;
+  --xps-font: inherit;
+  --xps-font-size: 1rem;
+  --xps-line-height: 1.5;
+}
+
+.xps.xps.xps {
+  /* Everything inside a widget inherits its typography from here, and only from here. The family
+     is `inherit` by default on purpose — the widgets are meant to read as part of the host page —
+     but it is a token, so a site that wants the design's own face sets `--xps-font`. */
+  font-family: var(--xps-font);
+  font-size: var(--xps-font-size);
+  font-style: normal;
+  font-weight: 400;
+  line-height: var(--xps-line-height);
+  letter-spacing: normal;
+  text-align: start;
+  text-transform: none;
+  color: var(--xps-color-text);
+  background-color: transparent;
+}
+
+/* Opt-in dark mode: add data-xps-theme="auto" to the same element that carries `xps`.
+   It is opt-in because the widgets sit inside a host page whose background this file does not
+   control — following the OS unasked would put light text on a site that stayed light.
+   Only variable values change here: no new rules, no new selectors. */
+@media (prefers-color-scheme: dark) {
+  .xps[data-xps-theme=auto] {
+    --xps-color-accent: #c983f7;
+    --xps-color-text: #f2f0f5;
+    --xps-color-muted: #aaa6b4;
+    --xps-color-surface: #17161d;
+    --xps-color-border: #35323d;
+  }
+}
+/* --------------------------------------------------------------------------
+ * The boundary (TH-7)
+ *
+ * Every element inside a widget takes its appearance from this file. The reset states the
+ * neutral value of everything a host stylesheet could otherwise reach — at (0,3,0), above the
+ * (0,2,1) a site reaches without knowing our class names, and below the (0,4,0) of the component
+ * rules that follow, which are what actually paint the design.
+ * ------------------------------------------------------------------------ */
+.xps.xps.xps *,
+.xps.xps.xps *::before,
+.xps.xps.xps *::after {
+  color: inherit;
+  background-color: transparent;
+  background-image: none;
+  border-width: 0;
+  border-style: solid;
+  border-color: var(--xps-color-border);
+  border-radius: 0;
+  box-shadow: none;
+  font-family: inherit;
+  font-size: inherit;
+  font-style: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  text-align: inherit;
+  text-transform: none;
+  text-decoration: none;
+  list-style: none;
+  box-sizing: border-box;
+  outline: 0;
+  appearance: none;
+  cursor: auto;
+}
+
+/* The box model of the text-level elements, which the shell only ever zeroes as well: a host's
+   `.landing-page ul li { margin: 12px 0 }` or `.section p { margin-bottom: 1.4rem }` stops here.
+   Controls and links keep their margins reset too; their padding is the shell's, restated below
+   at this file's specificity. */
+.xps.xps.xps :is(p, h1, h2, h3, h4, h5, h6, ul, ol, li, dl, dt, dd, figure, blockquote, hr, form, fieldset, legend, table, pre),
+.xps.xps.xps :is(a, button, input, select, textarea, label, kbd, mark, img, svg) {
+  margin: 0;
+  padding: 0;
+}
+
+/* Screen-reader-only text is a box the reset above would otherwise flatten. */
+.xps.xps.xps .xps-sr-only {
+  margin: -1px;
+  padding: 0;
+}
+
+/* --------------------------------------------------------------------------
+ * Element defaults — (0,3,1), above the reset, below every component rule.
+ * ------------------------------------------------------------------------ */
+/* Headings inside a widget are labels, not page furniture: the design gives them the body size in
+   semibold and lets the component say otherwise (the sheet title, the group titles). */
+.xps.xps.xps :is(h1, h2, h3, h4, h5, h6) {
+  font-size: 1em;
+  font-weight: 600;
+}
+
+.xps.xps.xps :is(b, strong) {
+  font-weight: 600;
+}
+
+.xps.xps.xps a {
+  color: var(--xps-color-accent);
+  text-decoration: none;
+}
+
+.xps.xps.xps a:hover {
+  text-decoration: underline;
+}
+
+.xps.xps.xps :is(a, button, label, select, summary) {
+  cursor: pointer;
+}
+
+.xps.xps.xps :is(:disabled, [aria-disabled=true]) {
+  cursor: default;
+  opacity: 0.55;
+}
+
+/* The focus ring is the theme's: accent, never removed, always offset clear of the control. */
+.xps.xps.xps:focus-visible,
+.xps.xps.xps :focus-visible {
+  outline: 2px solid var(--xps-color-accent);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+ * Shared primitives
+ * ------------------------------------------------------------------------ */
+/* A highlighter band under unchanged text, not a tinted box: the text colour is never the signal
+   (the <mark> element and the band both are), and the underline survives a dense snippet. */
+.xps.xps.xps .xps-highlight {
+  background-image: linear-gradient(to top, color-mix(in srgb, var(--xps-color-accent) 18%, transparent) 42%, transparent 42%);
+  color: inherit;
+}
+
+.xps.xps.xps .xps-skeleton {
+  background-color: currentColor;
+  color: var(--xps-color-muted);
+  border-radius: calc(var(--xps-radius) / 2);
+  opacity: 0.12;
+  animation: xps-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes xps-skeleton-pulse {
+  50% {
+    opacity: 0.05;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .xps.xps.xps .xps-skeleton {
+    animation: none;
+  }
+}
+.xps.xps.xps .xps-button {
+  min-height: 2.25rem;
+  padding: calc(var(--xps-space) / 2) var(--xps-space);
+  background-color: var(--xps-color-surface);
+  color: var(--xps-color-text);
+  border: 1px solid var(--xps-color-border);
+  border-radius: var(--xps-radius);
+  font-weight: 600;
+  text-align: center;
+}
+.xps.xps.xps .xps-button:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--xps-color-accent) 8%, var(--xps-color-surface));
+  border-color: color-mix(in srgb, var(--xps-color-accent) 40%, var(--xps-color-border));
+}
+
+.xps.xps.xps .xps-button--primary {
+  background-color: var(--xps-color-accent);
+  border-color: var(--xps-color-accent);
+  color: var(--xps-color-surface);
+}
+.xps.xps.xps .xps-button--primary:hover:not(:disabled) {
+  background-color: color-mix(in srgb, var(--xps-color-text) 15%, var(--xps-color-accent));
+  border-color: color-mix(in srgb, var(--xps-color-text) 15%, var(--xps-color-accent));
+}
+
+/* The muted-link button: "Clear all" next to a heading or a chips row, where a filled box would
+   shout. Still a real <button>, still focusable, still 2.25rem tall for the pointer. */
+.xps.xps.xps .xps-button--link {
+  padding-inline: 0;
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--xps-color-muted);
+  font-weight: 400;
+}
+.xps.xps.xps .xps-button--link:hover:not(:disabled) {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--xps-color-accent);
+  text-decoration: underline;
+}
+
+.xps.xps.xps .xps-chip {
+  padding: calc(var(--xps-space) / 4) calc(var(--xps-space) / 2);
+  background-color: color-mix(in srgb, var(--xps-color-accent) 8%, var(--xps-color-surface));
+  border: 1px solid color-mix(in srgb, var(--xps-color-accent) 30%, var(--xps-color-border));
+  border-radius: var(--xps-radius);
+  font-size: 0.8125em;
+}
+
+.xps.xps.xps .xps-chip__attribute {
+  color: var(--xps-color-muted);
+}
+
+.xps.xps.xps .xps-chip__remove {
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  background-color: transparent;
+  border: 0;
+  border-radius: var(--xps-radius);
+  color: var(--xps-color-muted);
+}
+.xps.xps.xps .xps-chip__remove:hover {
+  color: var(--xps-color-text);
+  background-color: color-mix(in srgb, var(--xps-color-accent) 15%, transparent);
+}
+
+/* --------------------------------------------------------------------------
+ * Form controls — shared by searchBox, suggestions, facetList, rangeFilter and sortSelect,
+ * so that every text input and select in the product is themed once.
+ *
+ * The box model of each control is restated here from the same source the shell uses
+ * (src/scss/_boxes.scss): inside the theme root it has to outrank a host's
+ * `.landing-page button { padding: 0.5rem 1rem }` (TH-7).
+ * ------------------------------------------------------------------------ */
+.xps.xps.xps .xps-search-box__input,
+.xps.xps.xps .xps-suggestions__input,
+.xps.xps.xps .xps-facet-list__search-input,
+.xps.xps.xps .xps-range-filter__input,
+.xps.xps.xps .xps-select__control {
+  background-color: var(--xps-color-surface);
+  color: var(--xps-color-text);
+  border: 1px solid var(--xps-color-border);
+  border-radius: var(--xps-radius);
+  box-shadow: inset 0 1px 3px color-mix(in srgb, var(--xps-color-text) 6%, transparent);
+}
+
+.xps.xps.xps .xps-search-box__input {
+  min-height: 2.25rem;
+  padding: calc(var(--xps-space) / 2);
+  /* Room for the icon on one side, the reset button on the other. */
+  padding-inline-start: 2.25rem;
+  padding-inline-end: 2.25rem;
+}
+
+.xps.xps.xps .xps-suggestions__input {
+  min-height: 2.25rem;
+  padding: calc(var(--xps-space) / 2);
+}
+
+.xps.xps.xps .xps-facet-list__search-input {
+  width: 100%;
+  min-height: 2.25rem;
+  padding: calc(var(--xps-space) / 2);
+}
+
+.xps.xps.xps .xps-range-filter__input {
+  width: 5rem;
+  min-height: 2.25rem;
+  padding: calc(var(--xps-space) / 4) calc(var(--xps-space) / 2);
+}
+
+.xps.xps.xps .xps-select__control {
+  min-height: 2.25rem;
+  padding: calc(var(--xps-space) / 4) calc(var(--xps-space) / 2);
+}
+
+.xps.xps.xps .xps-select__field .xps-select__control {
+  width: 100%;
+  padding-inline-end: calc(var(--xps-space) * 1.75);
+}
+
+.xps.xps.xps .xps-search-box__input::placeholder,
+.xps.xps.xps .xps-suggestions__input::placeholder,
+.xps.xps.xps .xps-facet-list__search-input::placeholder {
+  color: var(--xps-color-muted);
+}
+
+.xps.xps.xps .xps-search-box__icon,
+.xps.xps.xps .xps-search-box__reset,
+.xps.xps.xps .xps-search-box__submit,
+.xps.xps.xps .xps-suggestions__reset {
+  color: var(--xps-color-muted);
+}
+
+.xps.xps.xps .xps-search-box__reset {
+  min-width: 2.25rem;
+  padding-inline: calc(var(--xps-space) / 2);
+}
+
+.xps.xps.xps .xps-search-box__reset:hover:not(:disabled),
+.xps.xps.xps .xps-search-box__submit:hover:not(:disabled),
+.xps.xps.xps .xps-suggestions__reset:hover:not(:disabled) {
+  color: var(--xps-color-text);
+}
+
+/* The one control the theme leaves native: a checkbox tinted with `accent-color` is the platform's
+   own tick, keyboard model and forced-colors behaviour, at the design's size. The element reset
+   turns `appearance` off for everything, so this states it back — at (0,4,1), which is also what
+   keeps a host's `.product-filter input[type="checkbox"] { appearance: auto; margin: 5px }` from
+   reaching it (TH-7; the deferred "mobile checkboxes unthemed" item). */
+.xps.xps.xps :is(input[type=checkbox], input[type=radio]) {
+  appearance: auto;
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--xps-color-accent);
+  color: var(--xps-color-accent);
+}
+
+.xps.xps.xps .xps-select__chevron {
+  color: var(--xps-color-muted);
+}
+
+.xps.xps.xps .xps-select--disabled {
+  opacity: 0.6;
+}
+
+/* In the toolbar above the results the select sits next to the stats line, so it reads as one
+   compact control rather than a form field. */
+.xps.xps.xps .xps-toolbar .xps-select__control {
+  font-size: 0.875em;
+}
+
+/* --------------------------------------------------------------------------
+ * results (shared with loadMore, which renders the same items)
+ * ------------------------------------------------------------------------ */
+/* The card's headline: 16px semibold on the design board, whatever the host does to its own h3. */
+.xps.xps.xps .xps-result__title {
+  font-size: 1em;
+  font-weight: 600;
+}
+
+.xps.xps.xps .xps-result__link {
+  color: var(--xps-color-accent);
+  text-decoration: none;
+}
+.xps.xps.xps .xps-result__link:hover {
+  text-decoration: underline;
+}
+
+/* Three lines, whatever the host's snippet field holds: a card of body copy is a wall of text.
+   `max-height` is the fallback for engines without the clamp. */
+.xps.xps.xps .xps-result__snippet {
+  color: var(--xps-color-text);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  max-height: 4.5em;
+}
+
+.xps.xps.xps .xps-result__meta,
+.xps.xps.xps .xps-results__empty {
+  color: var(--xps-color-muted);
+  font-size: 0.875em;
+}
+
+.xps.xps.xps .xps-result__path {
+  color: var(--xps-color-muted);
+  font-size: 0.75em;
+}
+
+/* 0.85em of the 0.875em `xps-result__meta` it sits in — ~0.74em of the card, not 0.72 * 0.875. */
+.xps.xps.xps .xps-result__type {
+  color: var(--xps-color-accent);
+  font-size: 0.85em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.xps.xps.xps .xps-result__image {
+  border-radius: var(--xps-radius);
+}
+
+.xps.xps.xps .xps-result__icon,
+.xps.xps.xps .xps-results__empty-icon {
+  color: var(--xps-color-muted);
+}
+
+/* The dead end reads as a card of its own, with the headline above the copy. */
+.xps.xps.xps .xps-results__empty {
+  background-color: var(--xps-color-surface);
+  border: 1px solid var(--xps-color-border);
+  border-radius: var(--xps-radius);
+  text-align: center;
+}
+
+.xps.xps.xps .xps-results__empty-title {
+  color: var(--xps-color-text);
+  font-size: 1.143em;
+  font-weight: 600;
+}
+
+/* The unfiltered count inside the muted copy. */
+.xps.xps.xps .xps-results__empty strong {
+  color: var(--xps-color-text);
+}
+
+.xps.xps.xps .xps-results__clear {
+  min-height: 2.375rem;
+  margin-top: calc(var(--xps-space) / 2);
+  padding-inline: 1.125rem;
+  font-weight: 600;
+}
+
+/* No-results recovery: the correction is a link-button inside a sentence, the popular searches
+   are pills — the chip without its fill, so they read as offers rather than as applied filters. */
+/* The correction is the offer, so it reads as the link the board draws — accent, semibold. */
+.xps.xps.xps .xps-results__correction {
+  min-height: 0;
+  padding-block: 0;
+  color: var(--xps-color-accent);
+  font-weight: 600;
+}
+.xps.xps.xps .xps-results__correction:hover:not(:disabled) {
+  color: var(--xps-color-accent);
+}
+
+.xps.xps.xps .xps-results__popular {
+  text-align: start;
+}
+
+.xps.xps.xps .xps-results__popular-title {
+  color: var(--xps-color-muted);
+  font-size: 0.75em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.xps.xps.xps .xps-results__popular-button {
+  min-height: 0;
+  padding: 0.3125rem 0.75rem;
+  background-color: transparent;
+  border: 1px solid var(--xps-color-border);
+  border-radius: 999px;
+  font-size: 0.929em;
+  font-weight: 400;
+}
+.xps.xps.xps .xps-results__popular-button:hover {
+  background-color: color-mix(in srgb, var(--xps-color-accent) 8%, var(--xps-color-surface));
+  border-color: var(--xps-color-accent);
+}
+
+/* A refinement dims the stale list instead of blanking it — skeletons stay first-search-only. */
+.xps.xps.xps .xps-results--loading .xps-results__list {
+  opacity: 0.55;
+}
+
+/* --------------------------------------------------------------------------
+ * facetList — the title and the muted-count rules are shared with toggleFilter,
+ * categoryTree and rangeFilter.
+ * ------------------------------------------------------------------------ */
+.xps.xps.xps .xps-facet-list__title,
+.xps.xps.xps .xps-category-tree__title,
+.xps.xps.xps .xps-range-filter__title,
+.xps.xps.xps .xps-sidebar__header {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--xps-color-text);
+  padding-bottom: calc(var(--xps-space) / 3);
+  border-bottom: 2px solid var(--xps-color-text);
+}
+
+/* The sidebar heading sits in the same rule as a group title, so its own <h2> only has to stop
+   being a browser headline. */
+.xps.xps.xps .xps-sidebar__title {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+/* The collapsible group heading is a <button>: it keeps the heading's type and none of the
+   control's. The shell states the same neutralisation for a shell-only site. */
+.xps.xps.xps .xps-facet-list__toggle,
+.xps.xps.xps .xps-category-tree__toggle {
+  width: 100%;
+  padding: 0;
+  background-color: transparent;
+  border: 0;
+  font: inherit;
+  text-align: start;
+  color: inherit;
+}
+
+.xps.xps.xps .xps-facet-list__chevron,
+.xps.xps.xps .xps-category-tree__chevron {
+  color: var(--xps-color-muted);
+}
+
+.xps.xps.xps .xps-facet-list__item--selected .xps-facet-list__value {
+  font-weight: 600;
+}
+
+.xps.xps.xps .xps-facet-list__count,
+.xps.xps.xps .xps-toggle-filter__count,
+.xps.xps.xps .xps-category-tree__count,
+.xps.xps.xps .xps-facet-list__no-results,
+.xps.xps.xps .xps-range-filter__values,
+.xps.xps.xps .xps-range-filter__input-label {
+  color: var(--xps-color-muted);
+  font-size: 0.875em;
+}
+
+/* Plain muted text, no pill: counts change on every refinement, so they line up instead. */
+.xps.xps.xps .xps-facet-list__count,
+.xps.xps.xps .xps-toggle-filter__count,
+.xps.xps.xps .xps-category-tree__count {
+  font-variant-numeric: tabular-nums;
+}
+
+/* A value the visitor picked that this response has no hit for: still there, still untickable,
+   just quiet (TH-7). */
+.xps.xps.xps .xps-facet-list__item--empty .xps-facet-list__value,
+.xps.xps.xps .xps-facet-list__item--empty .xps-facet-list__count {
+  color: var(--xps-color-muted);
+}
+
+.xps.xps.xps .xps-facet-list__item--disabled .xps-facet-list__label,
+.xps.xps.xps .xps-toggle-filter--disabled .xps-toggle-filter__label {
+  opacity: 0.55;
+}
+
+.xps.xps.xps .xps-facet-list__show-more {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--xps-color-accent);
+}
+
+/* --------------------------------------------------------------------------
+ * categoryTree
+ * ------------------------------------------------------------------------ */
+.xps.xps.xps .xps-category-tree__link {
+  padding: calc(var(--xps-space) / 4) 0;
+  color: var(--xps-color-text);
+  text-decoration: none;
+}
+.xps.xps.xps .xps-category-tree__link:hover {
+  color: var(--xps-color-accent);
+}
+
+.xps.xps.xps .xps-category-tree__item--selected > .xps-category-tree__link {
+  color: var(--xps-color-accent);
+  font-weight: 600;
+}
+
+.xps.xps.xps .xps-category-tree__item > .xps-category-tree__list {
+  margin-top: calc(var(--xps-space) / 4);
+  padding-inline-start: var(--xps-space);
+  border-inline-start: 1px solid var(--xps-color-border);
+}
+
+/* --------------------------------------------------------------------------
+ * rangeFilter — one thin rail with two round handles instead of the OS slider.
+ *
+ * The rail is painted on the wrapper (the shell overlays both inputs on it) so the segment
+ * between the handles can be filled: muted outside `--xps-range-from`/`--xps-range-to`, accent
+ * between them. Only this file paints it — a site running shell.css alone gets the overlaid
+ * platform sliders it already knows how to theme, on an unpainted rail.
+ * ------------------------------------------------------------------------ */
+.xps.xps.xps .xps-range-filter__track {
+  background-image: linear-gradient(to var(--xps-range-side, right), var(--xps-color-border) var(--xps-range-from, 0%), var(--xps-color-accent) var(--xps-range-from, 0%), var(--xps-color-accent) var(--xps-range-to, 100%), var(--xps-color-border) var(--xps-range-to, 100%));
+  background-repeat: no-repeat;
+  background-size: 100% 2px;
+  background-position: center;
+}
+
+.xps.xps.xps .xps-range-filter__track:dir(rtl) {
+  --xps-range-side: left;
+}
+
+/* Windows High Contrast: the rail and the handles are one design, so switching the two tokens
+ * system-coloured covers both. */
+@media (forced-colors: active) {
+  .xps.xps.xps .xps-range-filter__track {
+    --xps-color-border: ButtonBorder;
+    --xps-color-accent: Highlight;
+  }
+}
+/* Transparent, not unstyled: the wrapper's rail shows through both inputs, and the 2px height is
+ * what the thumb offsets below are centred against. */
+.xps.xps.xps .xps-range-filter__range {
+  appearance: none;
+  background-color: transparent;
+}
+
+.xps.xps.xps .xps-range-filter__range::-webkit-slider-runnable-track {
+  height: 2px;
+  background-color: transparent;
+}
+
+.xps.xps.xps .xps-range-filter__range::-moz-range-track {
+  height: 2px;
+  background-color: transparent;
+}
+
+.xps.xps.xps .xps-range-filter__range::-webkit-slider-thumb {
+  appearance: none;
+  width: 0.875rem;
+  height: 0.875rem;
+  /* half the handle minus half the 2px rail, so it rides centred on the track */
+  margin-top: -0.375rem;
+  border-radius: 50%;
+  background-color: var(--xps-color-accent);
+  border: 2px solid var(--xps-color-surface);
+}
+
+.xps.xps.xps .xps-range-filter__range::-moz-range-thumb {
+  width: 0.875rem;
+  height: 0.875rem;
+  border-radius: 50%;
+  background-color: var(--xps-color-accent);
+  border: 2px solid var(--xps-color-surface);
+}
+
+/* The bounds of the control ("0 to 500"), under the row it describes. */
+.xps.xps.xps .xps-range-filter__values {
+  text-align: end;
+}
+
+.xps.xps.xps .xps-range-filter__unit {
+  color: var(--xps-color-muted);
+  font-size: 0.875em;
+}
+
+/* --------------------------------------------------------------------------
+ * filterSort — accent badge, choice-pill sort row, hairline section rules,
+ * dimmed backdrop, primary apply button.
+ * ------------------------------------------------------------------------ */
+.xps.xps.xps .xps-filter-sort__badge {
+  background-color: var(--xps-color-accent);
+  color: var(--xps-color-surface);
+  border-radius: 999px;
+  font-size: 0.75em;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The page behind is dimmed, not tinted: the text colour at 40% works on any host background. */
+.xps.xps.xps .xps-sheet__backdrop {
+  background-color: color-mix(in srgb, var(--xps-color-text) 40%, transparent);
+}
+
+.xps.xps.xps .xps-sheet__panel {
+  background-color: var(--xps-color-surface);
+  color: var(--xps-color-text);
+  border-radius: calc(var(--xps-radius) * 2) calc(var(--xps-radius) * 2) 0 0;
+}
+
+.xps.xps.xps .xps-sheet__header {
+  border-bottom: 1px solid var(--xps-color-border);
+}
+
+/* The sheet's own heading, not the site's: a host `h2 { color: … ; font-size: 3rem }` used to
+   walk straight into it (TH-7, deferred cosmetic item). */
+.xps.xps.xps .xps-sheet__title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--xps-color-text);
+}
+
+.xps.xps.xps .xps-sheet__close {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  background-color: transparent;
+  border: 0;
+  border-radius: 999px;
+  color: var(--xps-color-muted);
+  line-height: 1;
+}
+.xps.xps.xps .xps-sheet__close:hover {
+  color: var(--xps-color-text);
+  background-color: color-mix(in srgb, var(--xps-color-accent) 15%, transparent);
+}
+
+/* Hairline between sections, none above the first one. */
+.xps.xps.xps .xps-sheet__section + .xps-sheet__section {
+  border-top: 1px solid var(--xps-color-border);
+}
+
+.xps.xps.xps .xps-sheet__section-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--xps-color-muted);
+}
+
+.xps.xps.xps .xps-sheet__pill {
+  min-height: 2.25rem;
+  padding: calc(var(--xps-space) / 4) var(--xps-space);
+  background-color: var(--xps-color-surface);
+  color: var(--xps-color-text);
+  border: 1px solid var(--xps-color-border);
+  border-radius: 999px;
+  font-weight: 400;
+}
+.xps.xps.xps .xps-sheet__pill:hover {
+  border-color: color-mix(in srgb, var(--xps-color-accent) 40%, var(--xps-color-border));
+}
+
+.xps.xps.xps .xps-sheet__pill--selected {
+  background-color: var(--xps-color-accent);
+  border-color: var(--xps-color-accent);
+  color: var(--xps-color-surface);
+  font-weight: 600;
+}
+
+.xps.xps.xps .xps-sheet__value-count {
+  color: var(--xps-color-muted);
+  font-size: 0.875em;
+  font-variant-numeric: tabular-nums;
+}
+
+.xps.xps.xps .xps-sheet__footer {
+  background-color: var(--xps-color-surface);
+  border-top: 1px solid var(--xps-color-border);
+}
+
+.xps.xps.xps .xps-sheet__clear {
+  background-color: transparent;
+  border-color: transparent;
+  color: var(--xps-color-accent);
+}
+
+/* --------------------------------------------------------------------------
+ * pagination (the muted rule is shared with resultStats)
+ * ------------------------------------------------------------------------ */
+/* Plain text, not boxes: the hit target is the shared 2.25rem minimum, the box was never it. */
+.xps.xps.xps .xps-pagination__link {
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  padding: 0 calc(var(--xps-space) / 2);
+  color: var(--xps-color-muted);
+  text-decoration: none;
+}
+.xps.xps.xps .xps-pagination__link:hover[href] {
+  color: var(--xps-color-text);
+}
+
+.xps.xps.xps .xps-pagination__item--current .xps-pagination__link {
+  color: var(--xps-color-accent);
+  font-weight: 700;
+  border-bottom: 2px solid var(--xps-color-accent);
+}
+
+.xps.xps.xps .xps-pagination__ellipsis,
+.xps.xps.xps .xps-result-stats {
+  color: var(--xps-color-muted);
+}
+
+/* --------------------------------------------------------------------------
+ * resultStats
+ * ------------------------------------------------------------------------ */
+.xps.xps.xps .xps-result-stats__time {
+  color: var(--xps-color-muted);
+}
+
+/* The count is the sentence's subject: it reads at full contrast while the line stays muted. */
+.xps.xps.xps .xps-result-stats__total {
+  color: var(--xps-color-text);
+  font-weight: 700;
+}
+
+/* --------------------------------------------------------------------------
+ * suggestions
+ * ------------------------------------------------------------------------ */
+.xps.xps.xps .xps-suggestions__panel {
+  background-color: var(--xps-color-surface);
+  border: 1px solid var(--xps-color-border);
+  border-radius: var(--xps-radius);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--xps-color-text) 15%, transparent);
+}
+
+.xps.xps.xps .xps-suggestions__group-title {
+  color: var(--xps-color-muted);
+  font-size: 0.6875em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* A rule between sources, lighter than the panel's own edge. */
+.xps.xps.xps .xps-suggestions__group + .xps-suggestions__group {
+  border-top: 1px solid color-mix(in srgb, var(--xps-color-border) 60%, var(--xps-color-surface));
+}
+
+.xps.xps.xps .xps-suggestions__group-clear {
+  min-height: 0;
+  padding-block: 0;
+  font-size: 0.75em;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.xps.xps.xps .xps-suggestions__option {
+  /* Rows read from the start edge, whatever the host page centres. */
+  text-align: start;
+}
+
+.xps.xps.xps .xps-suggestions__option--active,
+.xps.xps.xps .xps-suggestions__option:hover {
+  background-color: color-mix(in srgb, var(--xps-color-accent) 10%, transparent);
+}
+
+.xps.xps.xps .xps-suggestions__option-icon {
+  color: var(--xps-color-muted);
+}
+
+/* A page is a destination, not a query: its title reads as the link it is. */
+.xps.xps.xps .xps-suggestions__option--document .xps-suggestions__option-title {
+  color: var(--xps-color-accent);
+  font-weight: 600;
+}
+
+.xps.xps.xps .xps-suggestions__option-meta,
+.xps.xps.xps .xps-suggestions__empty {
+  color: var(--xps-color-muted);
+  font-size: 0.875em;
+}
+
+.xps.xps.xps .xps-suggestions__option-remove {
+  color: var(--xps-color-muted);
+  cursor: pointer;
+}
+.xps.xps.xps .xps-suggestions__option-remove:hover {
+  color: var(--xps-color-text);
+}
+
+.xps.xps.xps .xps-suggestions__footer {
+  background-color: color-mix(in srgb, var(--xps-color-border) 25%, var(--xps-color-surface));
+  border-top: 1px solid var(--xps-color-border);
+}
+
+.xps.xps.xps .xps-suggestions__see-all {
+  color: var(--xps-color-accent);
+  font-size: 0.75em;
+}
+
+.xps.xps.xps .xps-suggestions__hints {
+  color: var(--xps-color-muted);
+  font-size: 0.75em;
+}
+
+.xps.xps.xps .xps-suggestions__key {
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 calc(var(--xps-space) / 4);
+  background-color: var(--xps-color-surface);
+  border: 1px solid var(--xps-color-border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  color: var(--xps-color-muted);
+  font-family: inherit;
+  font-size: 0.9em;
+}
+
+/* --------------------------------------------------------------------------
+ * Page Builder editor preview
+ * ------------------------------------------------------------------------ */
+.xps.xps.xps .xps-editor-preview {
+  border: 1px dashed var(--xps-color-border);
+  border-radius: var(--xps-radius);
+}
+
+.xps.xps.xps .xps-editor-preview__badge,
+.xps.xps.xps .xps-editor-preview__note {
+  color: var(--xps-color-muted);
+  font-size: 0.875em;
+  opacity: 0.7;
+}
+
+/* A placeholder that pulses forever in the builder is a distraction, not information. */
+.xps.xps.xps .xps-editor-preview .xps-skeleton {
+  animation: none;
+}

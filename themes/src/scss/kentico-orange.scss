@@ -1,0 +1,10 @@
+// kentico-orange.css — the same design in Kentico's orange, the whole visual layer.
+// Compiled to themes/src/kentico-orange.css. It differs from kentico-violet.css in exactly the two
+// accent values of tokens/_kentico-orange.scss; every other colour is a `color-mix` of them.
+//
+//   @use "@xperience-community/xperience-search/scss/kentico-orange";
+//
+// À la carte, load palettes/kentico-orange first and then base + the widget partials you mounted.
+@forward 'palettes/kentico-orange';
+
+@use 'default';

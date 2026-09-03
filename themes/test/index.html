@@ -17,8 +17,8 @@
   <h1>xperience-search — theme verification (spec §6)</h1>
 
   <p class="note">
-    Every widget fixture from <code>themes/fixtures/</code>, rendered three times. Each section is a
-    separate document in an iframe so the three stylesheet combinations cannot contaminate one
+    Every widget fixture from <code>themes/fixtures/</code>, rendered four times. Each section is a
+    separate document in an iframe so the stylesheet combinations cannot contaminate one
     another. Open this file straight from disk — no server, no build step. Regenerate the sections
     after editing a fixture with <code>npm run build:test</code>.
   </p>
@@ -29,13 +29,16 @@
       own colours and fonts. Nothing looks designed, nothing looks broken.</li>
     <li><strong>(b) shell + default</strong> — the same markup, themed. Change a variable in
       <code>src/default.css</code> (say <code>--xps-color-accent</code>) and everything follows.</li>
+    <li><strong>(b2) shell + kentico-orange</strong> — the second shipped palette. Identical to (b)
+      apart from the accent: same boxes, same rhythm, same type. Anything else that differs is a
+      colour that escaped the token block.</li>
     <li><strong>(c) shell + hostile host</strong> — <code>clashing-host.css</code> loads after shell
       with <code>!important</code> colours, global <code>button</code>/<code>input</code>/<code>ul</code>/<code>a</code>/<code>mark</code>
       rules and <code>* { box-sizing: content-box }</code>. Widgets absorb the host's palette but stay
       usable: nothing overflows, no control becomes unreachable.</li>
     <li><strong>Leakage</strong> — the pink-bordered “host page sample” block appears at the top and
-      bottom of all three sections, outside every <code>.xps</code> element. It must render
-      identically in (a) and (b). If it differs, a widget stylesheet has leaked.</li>
+      bottom of every section, outside every <code>.xps</code> element. It must render
+      identically in (a), (b) and (b2). If it differs, a widget stylesheet has leaked.</li>
   </ol>
 
   <h2>Keyboard walk-through (do this in every section)</h2>
@@ -80,6 +83,10 @@
       <iframe src="section-default.html" title="Widgets with shell.css and default.css"></iframe>
     </div>
     <div>
+      <h2>(b2) shell.css + kentico-orange.css</h2>
+      <iframe src="section-kentico-orange.html" title="Widgets with shell.css and kentico-orange.css"></iframe>
+    </div>
+    <div>
       <h2>(c) shell.css + clashing-host.css</h2>
       <iframe src="section-clashing.html" title="Widgets with shell.css and a clashing host stylesheet"></iframe>
     </div>
@@ -87,7 +94,8 @@
 
   <p class="note">Each iframe scrolls independently; open a section directly
     (<a href="section-shell.html">a</a>, <a href="section-default.html">b</a>,
-    <a href="section-clashing.html">c</a>) for a full-height view.</p>
+    <a href="section-kentico-orange.html">b2</a>, <a href="section-clashing.html">c</a>) for a
+    full-height view.</p>
 </main>
 </body>
 </html>

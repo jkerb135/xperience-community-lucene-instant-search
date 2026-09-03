@@ -31,6 +31,17 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
   index's default". Widgets own their sizes; the index owns the caps. On an upgraded installation the
   two retired columns are dropped from `XpSearch_Settings` on the next start: the installer now
   removes the fields its form no longer declares, as well as adding the ones it gained.
+- **Added (themes, widgets):** the design now ships in **two palettes** built from one source:
+  `kentico-violet` (unchanged — `default.css` is that build, byte for byte, so nothing existing
+  moves) and `kentico-orange`. Both accents are Kentico's own brand tokens from
+  `@kentico/xperience-admin-components` (`#af00fa` and `#c64300`, both `5.00:1` on white), the
+  neutrals and every derived tint are shared, and the two stylesheets differ in exactly two
+  declarations. Pick one with the tag helper's new `theme` attribute
+  (`<xps-search-assets theme="kentico-orange" />`), with the new
+  `.../themes/kentico-orange.css` npm export, or in SCSS with `@use ".../scss/kentico-orange"` —
+  or `".../scss/palettes/kentico-orange"` on the first line of an à la carte stylesheet. Copy a
+  file in `scss/tokens/` to make a third. `themes/npm run check` now proves AA contrast, the
+  single-token re-skin and the hostile-CSS isolation for **both** palettes.
 - **Added (core, admin):** a **Search settings** page per index (*Lucene Search → index → Search
   settings*) edits all fourteen values, headed by *"Retention: remove search analytics older than X
   days"* (default 365). Each index's row is loaded over the code defaults through

@@ -1,5 +1,5 @@
-// Generates the three test/section-*.html documents from themes/fixtures/*.html.
-// Each section is its own document so the three stylesheet combinations are genuinely isolated
+// Generates the four test/section-*.html documents from themes/fixtures/*.html.
+// Each section is its own document so the stylesheet combinations are genuinely isolated
 // (spec §6 "Verification"). Run: npm run build:test  —  npm run check passes --check, which
 // fails if the committed sections have drifted from the fixtures.
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
@@ -25,6 +25,11 @@ const SECTIONS = {
     title: '(b) shell.css + default.css',
     links: ['<link rel="stylesheet" href="../src/shell.css">', '<link rel="stylesheet" href="../src/default.css">'],
     note: 'The opt-in theme. Every value comes from a --xps-* custom property.',
+  },
+  'section-kentico-orange.html': {
+    title: '(b2) shell.css + kentico-orange.css',
+    links: ['<link rel="stylesheet" href="../src/shell.css">', '<link rel="stylesheet" href="../src/kentico-orange.css">'],
+    note: 'The second shipped palette. Same design source as (b), two token values apart — the screenshot next to (b) is the whole story.',
   },
   'section-clashing.html': {
     title: '(c) shell.css + a hostile host stylesheet',

@@ -52,10 +52,13 @@ const WRAPPER_CLOSE = '</div></section></div></div>';
 
 const href = (file) => pathToFileURL(join(themes, file)).href;
 
-const document_ = (fixture, hostile) => `<!doctype html>
+/** Both shipped palettes are checked: they share a design source, not a build (TH-8). */
+const PALETTES = ['kentico-violet', 'kentico-orange'];
+
+const document_ = (fixture, palette, hostile) => `<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <link rel="stylesheet" href="${href('src/shell.css')}">
-<link rel="stylesheet" href="${href('src/default.css')}">
+<link rel="stylesheet" href="${href(`src/${palette}.css`)}">
 ${hostile ? `<link rel="stylesheet" href="${href('test/site-hostile.css')}">` : ''}
 </head><body>${WRAPPER_OPEN}${fixture}${WRAPPER_CLOSE}</body></html>`;
 
@@ -105,26 +108,29 @@ const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
 const problems = [];
 let compared = 0;
 
-for (const fixture of fixtures) {
-  const html = readFileSync(join(themes, 'fixtures', fixture), 'utf8');
-  const runs = [];
-  for (const hostile of [false, true]) {
-    await page.goto(write(`${fixture}-${hostile ? 'hostile' : 'clean'}.html`, document_(html, hostile)));
-    runs.push(await page.evaluate(collect, PROPERTIES));
-  }
-  const [clean, hostileRun] = runs;
-  if (clean.length !== hostileRun.length) {
-    problems.push(`${fixture}: the hostile sheet changed the element count (${clean.length} → ${hostileRun.length})`);
-    continue;
-  }
-  for (const [index, element] of clean.entries()) {
-    const other = hostileRun[index];
-    for (const property of PROPERTIES) {
-      compared += 1;
-      if (element.style[property] !== other.style[property]) {
-        problems.push(
-          `${fixture} ${element.where}\n    ${element.what}\n      ${property}: "${element.style[property]}" → "${other.style[property]}"`
-        );
+for (const palette of PALETTES) {
+  for (const fixture of fixtures) {
+    const html = readFileSync(join(themes, 'fixtures', fixture), 'utf8');
+    const runs = [];
+    for (const hostile of [false, true]) {
+      const name = `${palette}-${fixture}-${hostile ? 'hostile' : 'clean'}.html`;
+      await page.goto(write(name, document_(html, palette, hostile)));
+      runs.push(await page.evaluate(collect, PROPERTIES));
+    }
+    const [clean, hostileRun] = runs;
+    if (clean.length !== hostileRun.length) {
+      problems.push(`${palette} ${fixture}: the hostile sheet changed the element count (${clean.length} → ${hostileRun.length})`);
+      continue;
+    }
+    for (const [index, element] of clean.entries()) {
+      const other = hostileRun[index];
+      for (const property of PROPERTIES) {
+        compared += 1;
+        if (element.style[property] !== other.style[property]) {
+          problems.push(
+            `${palette} ${fixture} ${element.where}\n    ${element.what}\n      ${property}: "${element.style[property]}" → "${other.style[property]}"`
+          );
+        }
       }
     }
   }
@@ -133,8 +139,8 @@ for (const fixture of fixtures) {
 await browser.close();
 
 console.log(
-  `        isolation: ${compared} computed values across ${fixtures.length} fixtures, ` +
-    'shell+default vs shell+default+test/site-hostile.css'
+  `        isolation: ${compared} computed values across ${fixtures.length} fixtures × ${PALETTES.length} palettes, ` +
+    'shell+palette vs shell+palette+test/site-hostile.css'
 );
 
 if (problems.length) {

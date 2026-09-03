@@ -15,6 +15,10 @@ public sealed class XpSearchAssetsTagHelper : TagHelper
     [HtmlAttributeName("default-theme")]
     public bool DefaultTheme { get; set; } = true;
 
+    /// <summary>Gets or sets which shipped palette is loaded: <c>default</c> (= <c>kentico-violet</c>) or <c>kentico-orange</c>.</summary>
+    [HtmlAttributeName("theme")]
+    public string Theme { get; set; } = XpSearchAssets.DefaultThemeName;
+
     /// <summary>Gets or sets the current view context.</summary>
     [HtmlAttributeNotBound]
     [ViewContext]
@@ -26,6 +30,6 @@ public sealed class XpSearchAssetsTagHelper : TagHelper
         ArgumentNullException.ThrowIfNull(output);
 
         output.TagName = null;
-        output.Content.SetHtmlContent(XpSearchAssets.Render(ViewContext.HttpContext.Request.PathBase, DefaultTheme));
+        output.Content.SetHtmlContent(XpSearchAssets.Render(ViewContext.HttpContext.Request.PathBase, DefaultTheme, Theme));
     }
 }

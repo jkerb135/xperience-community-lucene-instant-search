@@ -19,7 +19,7 @@ namespace XpSearch.Widgets.Tests;
 [TestFixture]
 internal sealed class AssetsTests
 {
-    private static string RunTagHelper(string pathBase, bool defaultTheme)
+    private static string RunTagHelper(string pathBase, bool defaultTheme, string theme = XpSearchAssets.DefaultThemeName)
     {
         var httpContext = new DefaultHttpContext { Request = { PathBase = new PathString(pathBase) } };
         var viewContext = new ViewContext
@@ -30,7 +30,7 @@ internal sealed class AssetsTests
             ViewData = new ViewDataDictionary(new EmptyModelMetadataProvider(), new ModelStateDictionary())
         };
 
-        var helper = new XpSearchAssetsTagHelper { ViewContext = viewContext, DefaultTheme = defaultTheme };
+        var helper = new XpSearchAssetsTagHelper { ViewContext = viewContext, DefaultTheme = defaultTheme, Theme = theme };
         var output = new TagHelperOutput(
             "xps-search-assets",
             [],
@@ -70,6 +70,27 @@ internal sealed class AssetsTests
             Assert.That(html, Does.Not.Contain("default.css"));
         });
     }
+
+    [TestCase("kentico-violet")]
+    [TestCase("kentico-orange")]
+    [TestCase("KENTICO-ORANGE")]
+    public void A_named_palette_replaces_the_default_stylesheet(string theme)
+    {
+        string html = RunTagHelper(string.Empty, defaultTheme: true, theme);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(html, Does.Contain($"href=\"{XpSearchAssets.ThemeStylesheetPath(theme)}\""));
+            Assert.That(html, Does.Not.Contain("default.css"), "only one palette may be loaded");
+            Assert.That(html, Does.Contain("shell.css"), "the structural stylesheet is always first");
+        });
+    }
+
+    [TestCase("")]
+    [TestCase("../../appsettings.json")]
+    [TestCase("kentico-teal")]
+    public void An_unknown_palette_is_refused_rather_than_turned_into_a_path(string theme) =>
+        Assert.Throws<ArgumentException>(new Action(() => _ = XpSearchAssets.ThemeStylesheetPath(theme)));
 
     [Test]
     public void The_paths_honour_the_application_path_base()

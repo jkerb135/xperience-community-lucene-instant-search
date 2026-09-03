@@ -38,7 +38,7 @@
     <AssemblyAttribute Include="CMS.AssemblyDiscoverableAttribute" />
   </ItemGroup>
 
-  <!-- The JS bundle and the two stylesheets are built outside MSBuild, so they are copied into
+  <!-- The JS bundle and the stylesheets are built outside MSBuild, so they are copied into
        wwwroot/ (gitignored) before static web asset discovery and shipped as Razor Class Library
        static web assets: a NuGet package cannot write into the host's ~/wwwroot/PageBuilder/Public/
        (https://docs.kentico.com/documentation/developers-and-admins/development/builders/bundle-static-assets-of-builder-components).
@@ -51,7 +51,7 @@
     </PropertyGroup>
     <Error Condition="!Exists('$(XpSearchBundle)')"
            Text="XpSearch.Widgets needs the JavaScript bundle: run 'npm ci &amp;&amp; npm run build' in src/XpSearch.Widgets/Client (expected $(XpSearchBundle))." />
-    <Copy SourceFiles="$(XpSearchBundle);$(XpSearchThemeDir)\shell.css;$(XpSearchThemeDir)\default.css"
+    <Copy SourceFiles="$(XpSearchBundle);$(XpSearchThemeDir)\shell.css;$(XpSearchThemeDir)\default.css;$(XpSearchThemeDir)\kentico-violet.css;$(XpSearchThemeDir)\kentico-orange.css"
           DestinationFolder="$(MSBuildThisFileDirectory)wwwroot\xpsearch"
           SkipUnchangedFiles="true" />
     <ItemGroup>
