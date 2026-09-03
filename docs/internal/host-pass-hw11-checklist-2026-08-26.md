@@ -492,14 +492,17 @@ every command below resolves on the current main; these items confirm the runnin
 
 ## §X — AR-1 analytics retention setting (2026-09-02)
 
-The retention threshold moved from a C# option to an admin setting, default 365 days, and the
-`XpSearch.QueryLogRetention` task now also prunes answered suggestions. The AR-1 report says whether
-the setting shipped in the built-in **Settings** application or on the library's own *Analytics
-settings* page — walk whichever location it names.
+Every global `XpSearchOptions` / `Analytics` value is now editable on **Search ingestion →
+Settings** (the library's own admin application), seeded once from the host's `AddXpSearch`
+lambda and loaded through `ConfigureOptions` with live updates; retention defaults to 365 days,
+and the `XpSearch.QueryLogRetention` task now also prunes answered suggestions.
 
-116. **Visible with the default.** Open the setting location. **Remove search analytics older than
-     X days** is listed with value **365**. (Settings app: the search box at the top finds it by
-     typing "search analytics".)
+116. **Visible with the defaults.** Open **Search ingestion → Settings**. Every row of the AR-1
+     spec's table is listed; **Remove search analytics older than X days** shows **365**, and
+     **Maximum page size** shows the value the host lambda set (100 unless Program.cs changed it).
+116a. **Live without a restart.** Set **Default page size** to **3**, save, then run a search on
+     the demo page — the first page shows three results. Set it back to 20 and confirm the page
+     shows twenty again, still without restarting.
 117. **The task honours it.** Set the value to **1**, save. Open **Scheduled tasks** → the
      `XpSearch query log retention` configuration → **Run**. *Last result* reads
      `Deleted N query log rows, N popularity suggestions, N synonym suggestions older than <cutoff>` —

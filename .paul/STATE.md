@@ -39,7 +39,7 @@ PLAN ──▶ APPLY ──▶ UNIFY
 
 | Decision | Phase | Impact |
 |----------|-------|--------|
-| AR-1: retention setting is the single source (default 365); `RetentionDays` option removed (Breaking, pre-1.0); Settings app first, library edit page as evidence-driven fallback; answered suggestions pruned, pending never | 6 | Owner may veto the option removal or the fallback placement at the human-verify checkpoint |
+| AR-1 rev 2 (owner, 2026-09-02, mid-APPLY): ALL global `XpSearchOptions`/`Analytics` values editable on a Settings page in the library's admin app, stored as one typed `XpSearchSettingsInfo` row, loaded via `IConfigureOptions<XpSearchOptions>` with live change tracking; seeded once from the host lambda; `RetentionDays` kept, default 365; per-index/indexing options stay code-only; no `SettingsKeyInfo` (Kentico docs: custom settings = custom info object + own UI) | 6 | Consumers move from `IOptions` to `IOptionsMonitor`; semantics change is a Breaking (core) CHANGELOG entry |
 | Fuzzy search = per-index admin toggle, default OFF, no contract change (FZ-1 spec) | 2 | Owner may veto: default off, single toggle vs level dropdown, Synonyms-listing placement |
 | Defaults must match approved mockup exactly | 1 | TH-4 spec amended; host mirrors docs 1:1 |
 | Added Phase 6: Analytics retention setting & cleanup task (admin settings key, default 365 days) | Phase 3 | Extends milestone scope; should ship before Phase 5 tags v1.0.0 |
