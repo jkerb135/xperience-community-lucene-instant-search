@@ -32,8 +32,8 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
   two retired columns are dropped from `XpSearch_Settings` on the next start: the installer now
   removes the fields its form no longer declares, as well as adding the ones it gained.
 - **Added (core, admin):** a **Search settings** page per index (*Lucene Search → index → Search
-  settings*) edits all fourteen values, headed by *"Remove search analytics older than X days"*
-  (default 365). Each index's row is loaded over the code defaults through
+  settings*) edits all fourteen values, headed by *"Retention: remove search analytics older than X
+  days"* (default 365). Each index's row is loaded over the code defaults through
   `IConfigureNamedOptions<XpSearchIndexSettings>`, and a save is in effect on the next search without
   an application restart — only the saved index's settings are rebuilt, and that index's cached
   responses are dropped with them, so the very next request reflects the change. The

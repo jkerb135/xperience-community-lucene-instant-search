@@ -499,7 +499,10 @@ index; a row exists only after a save). Items 116–120 below are kept for histo
 121. **Per-index page, no global page.** Lucene Search → **DancingGoatSample** → **Search settings**
      lists the fourteen values with the code defaults (retention **365**, maximum page size **100**;
      AR-3 removed *Default page size* and *Default suggestion count* — widgets own their sizes).
-     Every field shows a tooltip and an explanation (UX-1). **Search ingestion** no longer has a
+     The fields sit in five open (non-collapsible) groups, in this order: **Search** (5 fields),
+     **Suggestions** (2), **Analytics retention** (2), **Popularity boosts** (3), **Synonym
+     suggestions** (2); *Index* stands above the first group. Every field shows a tooltip and an
+     explanation (UX-1), and every group heading a tooltip of its own. **Search ingestion** no longer has a
      Settings entry. On this AR-2-era database the start-up also **dropped** the two retired columns
      from `XpSearch_Settings` (lead checks the table) — saving the page must succeed.
 122. **Live, and only that index.** (AR-3: widgets own their sizes, the index owns the caps — the
@@ -509,9 +512,10 @@ index; a row exists only after a save). Items 116–120 below are kept for histo
      answers `pageSize 2`. A second index (create one in Lucene Search if there is none) is
      unaffected. Set the cap back to 100 → six cards. No restart at any point. *Default page size*
      and *Default suggestion count* are no longer on the page (removed by AR-3).
-123. **Retention per index.** Set DancingGoatSample's retention to **1**, save, run the
-     `XpSearch query log retention` task → *Last result* names the index and its three deleted
-     counts; a second index's rows (if any) are untouched. Restore the value.
+123. **Retention per index.** Set DancingGoatSample's **Retention: remove search analytics older than
+     X days** to **1** (not *Cleanup batch size (rows per delete)*, which only sizes the delete
+     batches), save, run the `XpSearch query log retention` task → *Last result* names the index and
+     its three deleted counts; a second index's rows (if any) are untouched. Restore the value.
 124. **Survives a restart.** Set a value, restart the host, reopen → unchanged.
 125. **Orphan rows use the defaults.** Delete (or rename) a test index that has a settings row and
      log rows, run the task → the event/console log names the orphan index and the rows are pruned

@@ -461,24 +461,26 @@ back escaped.
 ### Per-index settings in the administration
 
 Every number on the root of `XpSearchOptions` is a **default for all indexes**, and each index can
-override it in the administration under **Lucene Search → the index → Search settings**:
+override it in the administration under **Lucene Search → the index → Search settings**. The page
+groups the fourteen fields into five sections, all shown open; the *Group* column below is the section
+each one sits in:
 
-| Setting | Default | Accepted | Used by |
-|---|---|---|---|
-| Response cache lifetime (seconds) | 60 | 0 or more (0 = no response caching) | Every search of the index — all widgets and every API caller |
-| Maximum query length | 256 | 1–1000 | Every search request; the text is truncated, not refused. Suggest requests are unaffected |
-| Maximum page size | 100 | 1–1000 | Clamps the Results widget's *Results per page* and every caller's `pageSize`; the clamped value is reported back |
-| Maximum values per facet | 100 | 1 or more | The ceiling the Facet list's *Values shown* and the Category tree's *Nodes per level* display from |
-| Maximum result window | 10000 | 1 or more | How deep the Pagination widget (and any caller) may page; a deeper request is refused |
-| Maximum suggestion count | 20 | 1–100 | Clamps the Suggestions widget's *Maximum items* and the search box's *Maximum suggestions* |
-| Remove search analytics older than X days | 365 | 1 or more | The `XpSearch.QueryLogRetention` task; sets the history depth of the Analytics page |
-| Retention batch size | 1000 | 1 or more | The `XpSearch.QueryLogRetention` task's delete batches |
-| Query suggestion window (days) | 30 | 1 or more | Popular-query suggestions, on an index whose suggest mode is `QuerySuggestions` or `Mixed` |
-| Popularity lookback (days) | 30 | 1 or more | The `XpSearch.PopularitySignal` task: the click window behind the popularity boost and the Suggestions listing |
-| Popularity documents per index | 100 | 1 or more | The `XpSearch.PopularitySignal` task: how many documents the signal keeps |
-| Popularity suggestion queries | 10 | 1 or more | The `XpSearch.PopularitySignal` task: how many rows can reach the index's Suggestions listing |
-| Synonym reformulation window (seconds) | 60 | 1 or more | The `XpSearch.PopularitySignal` task's synonym mining, behind the Synonym suggestions listing |
-| Synonym minimum occurrences | 3 | 1 or more | The same mining: the noise threshold before a pair is offered |
+| Group | Setting | Default | Accepted | Used by |
+|---|---|---|---|---|
+| Search | Response cache lifetime (seconds) | 60 | 0 or more (0 = no response caching) | Every search of the index — all widgets and every API caller |
+| Search | Maximum query length | 256 | 1–1000 | Every search request; the text is truncated, not refused. Suggest requests are unaffected |
+| Search | Maximum page size | 100 | 1–1000 | Clamps the Results widget's *Results per page* and every caller's `pageSize`; the clamped value is reported back |
+| Search | Maximum values per facet | 100 | 1 or more | The ceiling the Facet list's *Values shown* and the Category tree's *Nodes per level* display from |
+| Search | Maximum result window | 10000 | 1 or more | How deep the Pagination widget (and any caller) may page; a deeper request is refused |
+| Suggestions | Maximum suggestion count | 20 | 1–100 | Clamps the Suggestions widget's *Maximum items* and the search box's *Maximum suggestions* |
+| Suggestions | Query suggestion window (days) | 30 | 1 or more | Popular-query suggestions, on an index whose suggest mode is `QuerySuggestions` or `Mixed` |
+| Analytics retention | Retention: remove search analytics older than X days | 365 | 1 or more | The `XpSearch.QueryLogRetention` task; sets the history depth of the Analytics page |
+| Analytics retention | Cleanup batch size (rows per delete) | 1000 | 1 or more | The `XpSearch.QueryLogRetention` task's delete batches; it does not change the retention window |
+| Popularity boosts | Popularity lookback (days) | 30 | 1 or more | The `XpSearch.PopularitySignal` task: the click window behind the popularity boost and the Suggestions listing |
+| Popularity boosts | Popularity documents per index | 100 | 1 or more | The `XpSearch.PopularitySignal` task: how many documents the signal keeps |
+| Popularity boosts | Popularity suggestion queries | 10 | 1 or more | The `XpSearch.PopularitySignal` task: how many rows can reach the index's Suggestions listing |
+| Synonym suggestions | Synonym reformulation window (seconds) | 60 | 1 or more | The `XpSearch.PopularitySignal` task's synonym mining, behind the Synonym suggestions listing |
+| Synonym suggestions | Synonym minimum occurrences | 3 | 1 or more | The same mining: the noise threshold before a pair is offered |
 
 **The `AddXpSearch(options => …)` lambda sets the defaults.** Nothing is written to the database until
 someone saves an index's Search settings page; an index with no row answers with the lambda's values,

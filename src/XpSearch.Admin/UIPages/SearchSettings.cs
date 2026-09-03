@@ -27,6 +27,17 @@ namespace XpSearch.Admin.UIPages;
 /// The search settings of one index (AR-2): every value the host's <c>AddXpSearch(o =&gt; ...)</c>
 /// lambda sets as a default for all indexes, overridable per index here.
 /// </summary>
+/// <remarks>
+/// The fields are grouped with <c>FormCategory</c>, whose <c>Order</c> shares one sequence with the
+/// fields': a field falls into the last category ordered before it. Orders go in tens so a new field
+/// can be slotted into a group without renumbering the rest. None of the groups is collapsible -
+/// fourteen fields are short enough to read at once.
+/// </remarks>
+[FormCategory(Label = "Search", Order = 10, Tooltip = "What every search of this index is allowed to ask for.")]
+[FormCategory(Label = "Suggestions", Order = 70, Tooltip = "What the type-ahead widgets may offer, and how far back popular queries are counted.")]
+[FormCategory(Label = "Analytics retention", Order = 100, Tooltip = "What the 'XpSearch.QueryLogRetention' scheduled task deletes, and how.")]
+[FormCategory(Label = "Popularity boosts", Order = 130, Tooltip = "What the 'XpSearch.PopularitySignal' scheduled task computes from result clicks.")]
+[FormCategory(Label = "Synonym suggestions", Order = 170, Tooltip = "How the same task mines the rephrasings offered on the Synonym suggestions listing.")]
 public class SearchSettingsModel : IIndexScopedModel
 {
     /// <summary>Gets or sets the code name of the index the settings belong to. Set from the URL, not editable.</summary>
@@ -41,7 +52,7 @@ public class SearchSettingsModel : IIndexScopedModel
     [MinimumIntegerValueValidationRule(0)]
     [NumberInputComponent(
         Label = "Response cache lifetime (seconds)",
-        Order = 1,
+        Order = 20,
         Tooltip = "How long an identical query is served from cache. 0 turns response caching off.",
         ExplanationText = "Applies to every search of this index - all search widgets and every API caller. A save applies to the next request; the index's cached responses are dropped with it.")]
     public int CacheTtlSeconds { get; set; }
@@ -51,7 +62,7 @@ public class SearchSettingsModel : IIndexScopedModel
     [MaximumIntegerValueValidationRule(1000)]
     [NumberInputComponent(
         Label = "Maximum query length",
-        Order = 2,
+        Order = 30,
         Tooltip = "Longer query text is truncated.",
         ExplanationText = "What a visitor types into the Search - Search box beyond this many characters is cut off before the search runs; the request is not refused. Applies to every API caller too. Suggestion requests are not affected.")]
     public int MaxQueryLength { get; set; }
@@ -61,7 +72,7 @@ public class SearchSettingsModel : IIndexScopedModel
     [MaximumIntegerValueValidationRule(1000)]
     [NumberInputComponent(
         Label = "Maximum page size",
-        Order = 4,
+        Order = 40,
         Tooltip = "Larger requested page sizes are clamped to this.",
         ExplanationText = "Widgets own their sizes and the index owns the caps: this clamps the Search - Results widget's 'Results per page' and every API caller, and the clamped value is what the response reports back.")]
     public int MaxPageSize { get; set; }
@@ -70,7 +81,7 @@ public class SearchSettingsModel : IIndexScopedModel
     [MinimumIntegerValueValidationRule(1)]
     [NumberInputComponent(
         Label = "Maximum values per facet",
-        Order = 5,
+        Order = 50,
         Tooltip = "How many values one facet dimension returns in a response.",
         ExplanationText = "The ceiling on what the Search - Facet list and Search - Category tree widgets have to show: their own 'Values shown' / 'Nodes per level' can only display values the response carried.")]
     public int MaxFacetValues { get; set; }
@@ -79,7 +90,7 @@ public class SearchSettingsModel : IIndexScopedModel
     [MinimumIntegerValueValidationRule(1)]
     [NumberInputComponent(
         Label = "Maximum result window",
-        Order = 6,
+        Order = 60,
         Tooltip = "Page multiplied by page size may not exceed this; a deeper request is refused.",
         ExplanationText = "How deep the Search - Pagination widget can go: with a page size of 20, a window of 10000 is 500 pages, and a link past that returns a validation error instead of results.")]
     public int MaxResultWindow { get; set; }
@@ -89,43 +100,43 @@ public class SearchSettingsModel : IIndexScopedModel
     [MaximumIntegerValueValidationRule(100)]
     [NumberInputComponent(
         Label = "Maximum suggestion count",
-        Order = 8,
+        Order = 80,
         Tooltip = "A larger requested suggestion count is clamped to this.",
         ExplanationText = "Caps the Search - Suggestions widget's 'Maximum items' and the Search - Search box widget's 'Maximum suggestions', however high an editor sets them.")]
     public int MaxSuggestLimit { get; set; }
 
+    /// <summary>Gets or sets how far back query suggestions count query volume, in days.</summary>
+    [MinimumIntegerValueValidationRule(1)]
+    [NumberInputComponent(
+        Label = "Query suggestion window (days)",
+        Order = 90,
+        Tooltip = "How far back popular queries are counted from the query log.",
+        ExplanationText = "Feeds the Search - Suggestions widget on an index configured (in code) to suggest popular queries or both. A short window follows what visitors search for now; a long one is steadier but slower to change.")]
+    public int QuerySuggestionDays { get; set; }
+
     /// <summary>Gets or sets how many days of this index's search analytics are kept.</summary>
     [MinimumIntegerValueValidationRule(1)]
     [NumberInputComponent(
-        Label = "Remove search analytics older than X days",
-        Order = 9,
-        Tooltip = "How many days of this index's search analytics are kept.",
+        Label = "Retention: remove search analytics older than X days",
+        Order = 110,
+        Tooltip = "The retention window: how many days of this index's search analytics are kept.",
         ExplanationText = "The 'XpSearch.QueryLogRetention' scheduled task deletes this index's query log rows and its answered popularity and synonym suggestions once they are older than this; suggestions still waiting for an answer are never deleted. Sets how far back the Analytics page can report.")]
     public int RetentionDays { get; set; }
 
     /// <summary>Gets or sets how many rows the retention task deletes per batch.</summary>
     [MinimumIntegerValueValidationRule(1)]
     [NumberInputComponent(
-        Label = "Retention batch size",
-        Order = 10,
-        Tooltip = "How many rows the retention task deletes at a time.",
-        ExplanationText = "Only affects the 'XpSearch.QueryLogRetention' task's load on the database, never what is kept. Lower it if the deletion blocks other work; raise it to finish a large backlog sooner.")]
+        Label = "Cleanup batch size (rows per delete)",
+        Order = 120,
+        Tooltip = "How many rows the 'XpSearch.QueryLogRetention' task deletes at a time.",
+        ExplanationText = "This is not the retention window and does not change what is kept - only how hard the cleanup leans on the database. To keep analytics for longer or shorter, edit 'Retention: remove search analytics older than X days' above. Lower this if the deletion blocks other work; raise it to finish a large backlog sooner.")]
     public int RetentionBatchSize { get; set; }
-
-    /// <summary>Gets or sets how far back query suggestions count query volume, in days.</summary>
-    [MinimumIntegerValueValidationRule(1)]
-    [NumberInputComponent(
-        Label = "Query suggestion window (days)",
-        Order = 11,
-        Tooltip = "How far back popular queries are counted from the query log.",
-        ExplanationText = "Feeds the Search - Suggestions widget on an index configured (in code) to suggest popular queries or both. A short window follows what visitors search for now; a long one is steadier but slower to change.")]
-    public int QuerySuggestionDays { get; set; }
 
     /// <summary>Gets or sets how many days of clicks the popularity signal is computed from.</summary>
     [MinimumIntegerValueValidationRule(1)]
     [NumberInputComponent(
         Label = "Popularity lookback (days)",
-        Order = 12,
+        Order = 140,
         Tooltip = "How many days of result clicks the popularity signal is computed from.",
         ExplanationText = "Used by the 'XpSearch.PopularitySignal' scheduled task. The signal ranks results higher on an index that has popularity boosting turned on, and it is what the index's Suggestions listing draws on. Older clicks stop counting, so a short window reacts faster to what is popular now.")]
     public int PopularityLookbackDays { get; set; }
@@ -134,7 +145,7 @@ public class SearchSettingsModel : IIndexScopedModel
     [MinimumIntegerValueValidationRule(1)]
     [NumberInputComponent(
         Label = "Popularity documents per index",
-        Order = 13,
+        Order = 150,
         Tooltip = "How many of the most-clicked documents the popularity signal keeps.",
         ExplanationText = "The 'XpSearch.PopularitySignal' task stores this many documents for this index; only those can be boosted when popularity boosting is on. Everything below the cut simply ranks as it did before.")]
     public int PopularityDocumentLimit { get; set; }
@@ -143,7 +154,7 @@ public class SearchSettingsModel : IIndexScopedModel
     [MinimumIntegerValueValidationRule(1)]
     [NumberInputComponent(
         Label = "Popularity suggestion queries",
-        Order = 14,
+        Order = 160,
         Tooltip = "How many of this index's most frequent queries are examined for a suggested boost rule.",
         ExplanationText = "Decides how many rows the 'XpSearch.PopularitySignal' task can put on this index's Suggestions listing for review. Raise it for more candidates to approve, lower it for a shorter list.")]
     public int PopularitySuggestionQueries { get; set; }
@@ -152,7 +163,7 @@ public class SearchSettingsModel : IIndexScopedModel
     [MinimumIntegerValueValidationRule(1)]
     [NumberInputComponent(
         Label = "Synonym reformulation window (seconds)",
-        Order = 15,
+        Order = 180,
         Tooltip = "How long after a search with no click a following, successful search still counts as the same visitor rephrasing.",
         ExplanationText = "Used by the 'XpSearch.PopularitySignal' task when it mines candidate pairs for the Synonym suggestions listing. A wider window finds more pairs and more coincidences; a narrow one finds fewer, cleaner ones.")]
     public int SynonymWindowSeconds { get; set; }
@@ -161,7 +172,7 @@ public class SearchSettingsModel : IIndexScopedModel
     [MinimumIntegerValueValidationRule(1)]
     [NumberInputComponent(
         Label = "Synonym minimum occurrences",
-        Order = 16,
+        Order = 190,
         Tooltip = "How often the same rephrasing has to happen before it is suggested.",
         ExplanationText = "The noise filter on the Synonym suggestions listing: a pair seen fewer times than this is never offered for review. Raise it on a busy site, lower it on a quiet one where nothing ever reaches the listing.")]
     public int SynonymMinimumOccurrences { get; set; }
