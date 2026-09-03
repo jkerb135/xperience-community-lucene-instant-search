@@ -1,7 +1,7 @@
 // kentico-violet — the shipped default palette (TH-1, TH-8).
 //
-// A palette is data only: the twelve values the theme's custom properties start from. It states
-// every one, so copying this file is all it takes to make your own (docs/guides/theming.md,
+// A palette is data only: the values the theme's custom properties start from. It states every
+// one, so copying this file is all it takes to make your own (docs/guides/theming.md,
 // "Two shipped palettes"). Nothing else in themes/src/scss/ holds a colour literal.
 //
 // Source of the accent: `--color-background-tag-xperience-violet: #af00fa` and
@@ -10,17 +10,32 @@
 // which match brand.kentico.com's Violet 60/70. The 70 stop is the hover target the theme reaches
 // with `color-mix`, so it is not a token of its own.
 //
+// The accent has THREE roles, and violet is dark enough to fill all three with one colour:
+//   accent      the fill and the decoration — button background, selected pill, slider, focus ring
+//   accent-ink  the accent used AS TEXT on the surface — links, result titles, the correction
+//   on-accent   the text placed ON an accent fill — the primary button's label
+// Here `accent-ink` is literally `var(--xps-color-accent)` and `on-accent` is
+// `var(--xps-color-surface)`, so a host that overrides the accent alone still re-skins the whole
+// theme coherently. A palette whose accent is too light for body text pins its own ink instead —
+// see tokens/_kentico-orange.scss.
+//
 // Contrast against the surface of the same mode (WCAG 2.1 relative luminance, measured by
-// themes/scripts/check.mjs): accent 5.00:1, text 15.52:1, muted 6.05:1 light;
-// accent 6.91:1, text 15.88:1, muted 7.55:1 dark.
+// themes/scripts/check.mjs): accent/ink 5.00:1, text 15.52:1, muted 6.05:1, on-accent 5.00:1
+// light; accent/ink 6.91:1, text 15.88:1, muted 7.55:1, on-accent 6.91:1 dark.
 $color-accent: #af00fa;
+$color-accent-ink: var(--xps-color-accent);
+$color-on-accent: var(--xps-color-surface);
 $color-text: #1f2430;
 $color-muted: #5c6370;
 $color-surface: #fff;
 $color-border: #e3e5ea;
 
 // Opt-in dark mode (data-xps-theme="auto"): the same family re-derived against the dark surface.
+// The two indirections are restated so a palette that pins one of them in light mode can hand it
+// back in dark mode without a second rule.
 $dark-color-accent: #c983f7;
+$dark-color-accent-ink: var(--xps-color-accent);
+$dark-color-on-accent: var(--xps-color-surface);
 $dark-color-text: #f2f0f5;
 $dark-color-muted: #aaa6b4;
 $dark-color-surface: #17161d;

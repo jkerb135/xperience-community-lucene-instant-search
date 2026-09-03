@@ -8,7 +8,7 @@
 
 #{r.$root} .xps-filter-sort__badge {
   background-color: var(--xps-color-accent);
-  color: var(--xps-color-surface);
+  color: var(--xps-color-on-accent);
   border-radius: 999px;
   font-size: 0.75em;
   font-weight: 600;
@@ -79,7 +79,7 @@
 #{r.$root} .xps-sheet__pill--selected {
   background-color: var(--xps-color-accent);
   border-color: var(--xps-color-accent);
-  color: var(--xps-color-surface);
+  color: var(--xps-color-on-accent);
   font-weight: 600;
 }
 
@@ -97,5 +97,5 @@
 #{r.$root} .xps-sheet__clear {
   background-color: transparent;
   border-color: transparent;
-  color: var(--xps-color-accent);
+  color: var(--xps-color-accent-ink);
 }

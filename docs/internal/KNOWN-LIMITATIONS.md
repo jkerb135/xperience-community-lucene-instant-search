@@ -1330,3 +1330,23 @@ and how to lift it.
   needs its box put in `_boxes.scss` rather than written inline in the shell partial.
 - **Upgrade path:** none worth taking while the two layers must work independently; dropping the
   shell-only story would collapse it to one emission.
+
+## The orange primary button is the brand fill with a white label, at 3.39:1 (`tokens/_kentico-orange.scss`, TH-8)
+
+- **Simplified:** kentico-orange's `--xps-color-accent` is Kentico's brand Heritage Orange
+  `#f05a22`, and `--xps-color-on-accent` is white — the owner's call (2026-09-03) that the primary
+  button must look like the brand. White on `#f05a22` measures **3.39:1**. The palette does split
+  the accent's roles rather than paint everything at that ratio: `--xps-color-accent-ink` (`#c64300`,
+  5.00:1) carries every accent-coloured *text* — links, result titles, the did-you-mean correction,
+  see-all — and `--xps-color-accent` is only the fill, the border and the focus ring, where WCAG
+  1.4.11's 3:1 applies and 3.39 clears it.
+- **Ceiling:** the *label on an accent fill* (primary button, selected sheet pill, the filter badge)
+  fails WCAG 2.1 AA 1.4.3, which asks 4.5:1 for text below 18.66px bold / 24px regular. Only
+  kentico-orange is affected; kentico-violet is 5.00:1 light and 6.91:1 dark, and orange's dark mode
+  is 7.61:1. `themes/scripts/check.mjs` asserts 3:1 on that one pair — labelled
+  "owner-accepted (brand button)" — and prints the measured number on every build, so the day the
+  decision is revisited the evidence is already on screen.
+- **Upgrade path:** a host sets `.xps { --xps-color-on-accent: #1f2430; }` for 4.57:1 today, no fork
+  and no rebuild; the guide's orange paragraph says so. Shipping that as the default is a one-line
+  change to `$color-on-accent` in `tokens/_kentico-orange.scss`. The other AA-clean option is a
+  larger, bolder button label (≥18.66px bold), which is a board change, not a token change.

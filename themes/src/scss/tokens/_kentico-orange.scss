@@ -1,34 +1,48 @@
 // kentico-orange — the second shipped palette (TH-8).
 //
-// Same design, Kentico's orange instead of the Xperience violet. Both accents come from the same
-// token family in @kentico/xperience-admin-components (dist/entry.js), so this is the admin's own
-// orange, not a guess:
+// Same design, Kentico's orange instead of the Xperience violet. The brand orange is
+// Heritage Orange #f05a22 (brand.kentico.com, "What do we look like → Colors"; owner-authorized
+// use, spec amendment 2026-08-25). It is a bright orange: 3.39:1 on white, which is fine for a
+// fill, a border or a slider — WCAG 1.4.11 asks 3:1 of non-text UI — and short of the 4.5:1 body
+// text owes. So this palette splits the accent's roles instead of darkening the brand:
 //
-//   --color-background-tag-kentico-orange:   #c64300
-//   --gradient-dark-kentico-orange:  linear-gradient(135deg, #c64300, #953000)
-//   --gradient-light-kentico-orange: linear-gradient(135deg, #ffb59b, #ff8852)
+//   accent      #f05a22  the brand, used for every fill and decoration
+//   accent-ink  #c64300  the text-safe shade, used wherever the accent is TEXT on the surface
+//   on-accent   white    the label on an accent fill
 //
-// Kentico tuned the two tag colours to the same readability: #c64300 on white is 5.00:1, exactly
-// what #af00fa measures. The dark accent is the light gradient's darker stop #ff8852 (7.61:1 on
-// the dark surface) — the lighter stop #ffb59b reads as a wash next to the body text.
+// #c64300 is Kentico's own darker orange, not a shade invented here:
+// `--color-background-tag-kentico-orange: #c64300` and the first stop of
+// `--gradient-dark-kentico-orange: linear-gradient(135deg, #c64300, #953000)` in
+// @kentico/xperience-admin-components (dist/entry.js). It measures 5.00:1 on white — the same
+// readability Kentico gave the violet tag.
 //
-// The dark stop #953000 is the hover/pressed target, which the theme already reaches by mixing the
-// accent with the text colour; like violet's #7f09b7 it is therefore not a token. Everything else
-// derived from the accent — the tints behind chips, the button hover, the highlight band, the
-// focus ring — is a `color-mix` of `--xps-color-accent`, so this file is the whole difference.
+// White on #f05a22 is 3.39:1. That is the owner's decision for the primary button (2026-09-03):
+// the brand fill with a white label, accepted below AA for normal-size text. It is recorded in
+// docs/internal/KNOWN-LIMITATIONS.md, and a host that needs AA overrides
+// `--xps-color-on-accent: #1f2430` (4.57:1). themes/scripts/check.mjs prints the number on every
+// build rather than letting it pass silently.
+//
+// Dark mode: the fill lightens to #ff8852 (the darker stop of
+// `--gradient-light-kentico-orange: linear-gradient(135deg, #ffb59b, #ff8852)`), which is 7.61:1
+// on the dark surface — light enough to be the ink as well, so the ink goes back to following the
+// accent. White on #ff8852 is only 2.36:1, so the label on a dark-mode fill is the dark surface
+// colour (7.61:1), exactly as violet's already is.
 //
 // The neutrals are violet's, unchanged: they are not brand colours, they are the paper the design
-// is printed on, and the boards specify one set. Contrast holds for both accents against them
-// (measured by themes/scripts/check.mjs, which checks every palette).
+// is printed on, and the boards specify one set.
 @use 'kentico-violet' as neutrals;
 
-$color-accent: #c64300;
+$color-accent: #f05a22;
+$color-accent-ink: #c64300;
+$color-on-accent: neutrals.$color-on-accent;
 $color-text: neutrals.$color-text;
 $color-muted: neutrals.$color-muted;
 $color-surface: neutrals.$color-surface;
 $color-border: neutrals.$color-border;
 
 $dark-color-accent: #ff8852;
+$dark-color-accent-ink: neutrals.$dark-color-accent-ink;
+$dark-color-on-accent: neutrals.$dark-color-on-accent;
 $dark-color-text: neutrals.$dark-color-text;
 $dark-color-muted: neutrals.$dark-color-muted;
 $dark-color-surface: neutrals.$dark-color-surface;
