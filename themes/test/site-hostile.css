@@ -1,0 +1,222 @@
+/* An adversarial HOST stylesheet for scripts/check-isolation.mjs, loaded AFTER shell.css and
+   default.css. Every rule is lifted from the Dancing Goat sample site's real stylesheets
+   (src/wwwroot/Content/Styles/Site.css and Landing-page.css) and re-pointed at the elements the
+   search markup is made of. Nothing here knows about `xps-`.
+
+   Rules of this file:
+   - specificity never exceeds (0,2,1) — two classes plus one element, e.g. `.section h3`,
+     `.product-filter input[type="checkbox"]`. That is the tier the theme promises to win;
+   - no `!important` (a host that shouts that loudly has opted out of everything, ours included);
+   - no page-level typography (`body { font-family / font-size / line-height }`): the widget root
+     pins those from its own tokens, and a host that re-skins through `--xps-*` is not "bleeding".
+
+   The wrapper classes the checker puts around each fixture — .container, .section, .landing-page,
+   .product-filter, .row — are the ones Dancing Goat wraps its own content in. */
+
+/* --- Site.css: normalize + typography ------------------------------------------------------ */
+
+* {
+  box-sizing: content-box;
+}
+
+a {
+  color: #b49669;
+  text-decoration: underline;
+  background: transparent;
+}
+
+a:hover,
+a:focus {
+  color: #846331;
+  text-decoration: none;
+}
+
+b,
+strong {
+  font-weight: bold;
+}
+
+mark {
+  background: #ff0;
+  color: #000;
+}
+
+h1,
+h2,
+h3,
+.h1,
+.h2,
+.h3 {
+  line-height: 1.4;
+  color: #846331;
+  margin-bottom: 0.7rem;
+}
+
+h2 {
+  font-weight: 500;
+  font-size: 3rem;
+  margin-top: 3rem;
+  margin-bottom: 2rem;
+  line-height: 1;
+}
+
+h3 {
+  font-weight: 500;
+  font-size: 2rem;
+  letter-spacing: 1px;
+}
+
+p {
+  margin: 0 0 0.625rem;
+  margin-bottom: 0.7rem;
+}
+
+ol,
+ul {
+  list-style: square inside;
+  padding-left: 40px;
+  margin: 24px 0;
+}
+
+li {
+  margin: 8px 0;
+  cursor: text;
+}
+
+img {
+  border: 5px ridge #999;
+}
+
+svg:not(:root) {
+  overflow: hidden;
+}
+
+/* --- Site.css: forms ----------------------------------------------------------------------- */
+
+button,
+input,
+optgroup,
+select,
+textarea {
+  color: #1c1c1c;
+  font: italic 700 18px/2 Georgia, serif;
+  margin: 6px;
+  letter-spacing: 3px;
+}
+
+button {
+  overflow: visible;
+  cursor: not-allowed;
+  appearance: button;
+  text-transform: uppercase;
+  padding: 14px 22px;
+  background: #ffcc00;
+  border: 3px double #660000;
+  border-radius: 0;
+  box-shadow: 0 0 6px #660000;
+  text-align: right;
+}
+
+input[type="text"],
+input[type="search"],
+input[type="number"],
+input[type="email"] {
+  border: 1px solid #bebebe;
+  background: #f0fff0;
+  padding: 10px;
+  border-radius: 12px;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  box-sizing: border-box;
+  padding: 3px;
+  margin: 5px;
+  appearance: auto;
+}
+
+input[type="range"] {
+  appearance: auto;
+  background: #f0fff0;
+  border: 2px solid #009999;
+}
+
+select {
+  text-transform: none;
+  background: #f0fff0;
+  border: 3px dotted #009999;
+  padding: 9px;
+  border-radius: 11px;
+  appearance: auto;
+}
+
+label {
+  cursor: default;
+  color: #08768c;
+}
+
+kbd {
+  font-family: monospace, monospace;
+  font-size: 1em;
+  background: #eee;
+  border: 1px solid #999;
+  border-radius: 0;
+}
+
+/* --- Site.css / Landing-page.css: the site's own components -------------------------------- */
+
+.container button,
+.container a {
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.section h2,
+.section h3 {
+  color: #846331;
+  font-family: 'Source Sans Pro', sans-serif;
+  text-align: center;
+}
+
+.section p {
+  margin-bottom: 1.4rem;
+  text-align: center;
+}
+
+.landing-page ul li {
+  list-style: disc outside;
+  margin: 12px 0;
+  padding-left: 6px;
+}
+
+.landing-page button,
+.landing-page a {
+  color: #ffffff;
+  background-color: #272219;
+  font-size: 0.875rem;
+  line-height: 2.14286;
+  border: none;
+  padding: 0.5rem 1rem;
+}
+
+.product-filter label {
+  padding-left: 0.25rem;
+  cursor: help;
+}
+
+.product-filter input[type="checkbox"] {
+  margin: 0;
+  padding: 0;
+  appearance: auto;
+}
+
+.row div,
+.row span {
+  letter-spacing: 0.5px;
+  color: #1c1c1c;
+}
+
+.row p,
+.row h3 {
+  font-family: Georgia, serif;
+}

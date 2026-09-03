@@ -1303,12 +1303,30 @@ and how to lift it.
   roving-tabindex row of real buttons - a second keyboard model in the same popup, which is why it
   was not done for one control.
 
-## The Load more empty state never probes for the unfiltered count (`loadMore`, TH-6)
+## The theme wins over host stylesheets up to (0,2,1), not beyond (`default.css`, TH-7)
 
-- **Simplified:** `loadMore` renders the `results` widget's empty state, recovery offers included,
-  but not its debounced unfiltered probe, so its clear-filters button reads "Clear filters" instead
-  of "Clear filters and show N results".
-- **Ceiling:** the narrow-screen layout (MB-1 swaps `results`+`pagination` for `loadMore` under
-  1024px) says less about what clearing the filters would bring back than the wide one.
-- **Upgrade path:** lift the probe out of `results.ts` into a small helper both widgets call, keyed by
-  query the way `probedQuery` already is.
+- **Simplified:** `default.css` states its root class three times (`.xps.xps.xps`), so its element
+  reset sits at (0,3,0) and its component rules at (0,4,0)+. That beats every selector a site can
+  write without knowing our class names, which is where a real one stops (`button`, `.section h3`,
+  `.landing-page ul li`, `.product-filter input[type="checkbox"]`). It is specificity, not
+  `!important`, and the repetition is ugly in a way no CSS feature fixes today — `@layer` cannot
+  help, because an unlayered host rule beats a layered one whatever its specificity.
+- **Ceiling:** a host rule at (0,3,0) or more, or any `!important`, still wins — deliberately: that
+  is how a site overrides one control on purpose (documented in `docs/guides/theming.md`). Page-level
+  utilities the host puts on its own elements (`xps-toolbar`, `xps-mount`, `xps-stack`) are outside
+  the boundary and are not checked. `themes/scripts/check-isolation.mjs` measures the promise
+  against `themes/test/site-hostile.css` only — a host rule shape nobody wrote into that file is
+  not covered.
+- **Upgrade path:** if the repetition ever has to go, the boundary is a shadow root, not a stronger
+  selector; short of that, extend `site-hostile.css` when a real site finds a hole.
+
+## The control box model is emitted by both stylesheets (`_boxes.scss`, TH-7)
+
+- **Simplified:** the shell must state the box of every control (a shell-only site needs usable
+  controls), and the theme must state it again at its own specificity (or a host `.landing-page
+  button { padding: … }` resizes it). Both read the same mixins in `src/scss/_boxes.scss`, so the
+  values have one source, but they are in the shipped CSS twice.
+- **Ceiling:** ~20 rules' worth of duplicate declarations, about 1 KB before gzip, and a new control
+  needs its box put in `_boxes.scss` rather than written inline in the shell partial.
+- **Upgrade path:** none worth taking while the two layers must work independently; dropping the
+  shell-only story would collapse it to one emission.

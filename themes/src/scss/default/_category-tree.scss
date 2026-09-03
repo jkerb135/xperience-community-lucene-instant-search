@@ -1,3 +1,6 @@
+@use '../boxes' as b;
+@use 'root' as r;
+
 // The tree's title and counts are in the shared block of _facet-list.scss.
 @use 'facet-list';
 
@@ -5,7 +8,8 @@
  * categoryTree
  * ------------------------------------------------------------------------ */
 
-.xps-category-tree__link {
+#{r.$root} .xps-category-tree__link {
+  @include b.category-tree-link;
   color: var(--xps-color-text);
   text-decoration: none;
 
@@ -14,11 +18,12 @@
   }
 }
 
-.xps-category-tree__item--selected > .xps-category-tree__link {
+#{r.$root} .xps-category-tree__item--selected > .xps-category-tree__link {
   color: var(--xps-color-accent);
   font-weight: 600;
 }
 
-.xps-category-tree__item > .xps-category-tree__list {
+#{r.$root} .xps-category-tree__item > .xps-category-tree__list {
+  @include b.category-tree-sublist;
   border-inline-start: 1px solid var(--xps-color-border);
 }

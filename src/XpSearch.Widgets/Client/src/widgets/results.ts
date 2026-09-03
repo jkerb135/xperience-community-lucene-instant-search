@@ -146,6 +146,53 @@ export const CLEAR_CLASS = 'xps-results__clear';
 /** How long a filtered empty state waits before probing for the unfiltered count. */
 const PROBE_DEBOUNCE_MS = 250;
 
+/** The bit of `SearchInstance` the probe needs — anything that can ask for a count. */
+type Prober = { probe(overrides: { filters: undefined }): Promise<{ total: number }> };
+
+/**
+ * The filtered empty state's "there are N results without them" count, shared by `results` and by
+ * `loadMore` (TH-7): one debounced unfiltered probe per query, its answer remembered.
+ *
+ * `probedQuery` is the query the count belongs to and the staleness test with it: the unfiltered
+ * total depends on the query and on nothing else, so an answer for a query that is no longer the
+ * current one is thrown away, and a query already probed is never probed again.
+ */
+export function createUnfilteredProbe(): {
+  count(search: Prober, query: string, repaint: () => void): number | undefined;
+  dispose(): void;
+} {
+  let probedQuery: string | undefined;
+  let probedCount: number | undefined;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+
+  return {
+    count(search, query, repaint) {
+      if (probedQuery !== query) {
+        probedQuery = query;
+        probedCount = undefined;
+        if (timer !== undefined) clearTimeout(timer);
+        timer = setTimeout(() => {
+          search.probe({ filters: undefined }).then(({ total }) => {
+            if (probedQuery !== query) return; // stale: the query moved on while the probe ran
+            // Zero is not worth saying — "clearing shows 0 results" is not a recovery. The
+            // countless copy stands, and so it does when the probe fails.
+            if (total > 0) {
+              probedCount = total;
+              repaint();
+            }
+          }, () => {});
+        }, PROBE_DEBOUNCE_MS);
+      }
+      return probedQuery === query ? probedCount : undefined;
+    },
+    dispose() {
+      if (timer !== undefined) clearTimeout(timer);
+      probedQuery = undefined;
+      probedCount = undefined;
+    },
+  };
+}
+
 /**
  * The magnifier-with-minus above the empty-state copy: nothing found, on the 24px grid, in
  * `currentColor` so a re-skin needs no new asset.
@@ -236,42 +283,11 @@ export function results<TAttributes extends Record<string, unknown> = Record<str
   /** Runs a query the empty state offered as a way out: the correction, or a popular search. */
   let recover: (query: string) => void = () => {};
 
-  // The unfiltered count of the filtered empty state. `probedQuery` is the query the count belongs
-  // to, which is also the staleness test: the unfiltered total depends on the query and on nothing
-  // else, so a probe whose query is no longer the current one is thrown away, and a query already
-  // probed is never probed again.
-  let probedQuery: string | undefined;
-  let probedCount: number | undefined;
-  let probeTimer: ReturnType<typeof setTimeout> | undefined;
+  /** The unfiltered count of the filtered empty state (ES-1), shared with `loadMore`. */
+  const probe = createUnfilteredProbe();
 
   type PaintOptions = ResultsRenderState<TAttributes> &
     RenderOptions<ResultsWidgetParams<TAttributes> & ResultsBehaviorParams<TAttributes>>;
-
-  /**
-   * Debounced unfiltered probe for the filtered empty state. It renders nothing itself: the count
-   * lands in `probedCount` and the empty state is painted again with it.
-   */
-  const probeUnfiltered = (options: PaintOptions): void => {
-    const query = options.state.query;
-    if (probedQuery === query) return; // answered, in flight, or already failed for this query
-    probedQuery = query;
-    probedCount = undefined;
-    if (probeTimer !== undefined) clearTimeout(probeTimer);
-    probeTimer = setTimeout(() => {
-      options.search.probe({ filters: undefined }).then(
-        ({ total }) => {
-          if (probedQuery !== query) return; // stale: the query moved on while the probe ran
-          // Zero is not worth saying — "clearing shows 0 results" is not a recovery. The countless
-          // copy stands, and so it does when the probe fails.
-          if (total > 0) {
-            probedCount = total;
-            paint(options, false);
-          }
-        },
-        () => {}
-      );
-    }, PROBE_DEBOUNCE_MS);
-  };
 
   const paint = (options: PaintOptions, isFirstRender: boolean): void => {
     const templates = options.params.templates ?? {};
@@ -330,14 +346,14 @@ export function results<TAttributes extends Record<string, unknown> = Record<str
       const filters = options.state.filters;
       const hasRefinements =
         filters.numeric.length > 0 || filters.facets.some((facet) => facet.values.length > 0);
-      if (hasRefinements) probeUnfiltered(options);
+      const counted = hasRefinements
+        ? probe.count(options.search, query, () => paint(options, false))
+        : undefined;
       const data: EmptyTemplateData = {
         query,
         hasRefinements,
         clearRefinements,
-        ...(hasRefinements && probedQuery === query && probedCount !== undefined
-          ? { unfilteredCount: probedCount }
-          : {}),
+        ...(counted === undefined ? {} : { unfilteredCount: counted }),
         ...(options.results?.didYouMean === undefined ? {} : { didYouMean: options.results.didYouMean }),
         ...(options.results?.popularSearches === undefined
           ? {}
@@ -370,8 +386,7 @@ export function results<TAttributes extends Record<string, unknown> = Record<str
   };
 
   const widget = withResults<TAttributes, ResultsWidgetParams<TAttributes>>(paint, () => {
-    if (probeTimer !== undefined) clearTimeout(probeTimer);
-    probedQuery = undefined;
+    probe.dispose();
     container.textContent = '';
   })(params);
 

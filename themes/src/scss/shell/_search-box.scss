@@ -1,4 +1,5 @@
 @use '../variables' as v;
+@use '../boxes' as b;
 
 /* --------------------------------------------------------------------------
  * searchBox
@@ -39,11 +40,7 @@
 .xps-search-box__input {
   flex: 1 1 auto;
   min-width: 0;
-  min-height: v.$control-min-height;
-  padding: v.$half;
-  /* Room for the icon on one side, the reset button on the other. */
-  padding-inline-start: 2.25rem;
-  padding-inline-end: 2.25rem;
+  @include b.search-box-input;
 }
 
 .xps-search-box__loading {
@@ -61,8 +58,7 @@
 .xps-search-box__reset {
   position: absolute;
   inset-inline-end: calc(var(--xps-search-box-trailing) + v.$quarter);
-  min-width: v.$control-min-height;
-  padding-inline: v.$half;
+  @include b.search-box-reset;
 }
 
 .xps-search-box__submit {

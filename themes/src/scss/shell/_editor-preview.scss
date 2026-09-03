@@ -17,22 +17,12 @@
 
 .xps-editor-preview__badge {
   align-self: flex-start;
-  opacity: 0.7;
 }
 
 .xps-editor-preview__body {
   display: flex;
   flex-direction: column;
   gap: v.$half;
-}
-
-.xps-editor-preview__note {
-  opacity: 0.7;
-}
-
-/* A placeholder that pulses forever in the builder is a distraction, not information. */
-.xps-editor-preview .xps-skeleton {
-  animation: none;
 }
 
 /* Counts are short; without a width the placeholder bar would eat the row. */

@@ -47,6 +47,28 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
   settings* page and on each Page Builder widget property, saying the one rule: widgets own their
   sizes, the index owns the caps, and API callers that send no size get the code default.
 
+- **Fixed (themes, widgets):** with `default.css` loaded, a widget is now a **closed styling
+  boundary** — no site stylesheet can change anything inside one. The theme states its root class
+  three times (`.xps.xps.xps`), which puts its element reset at (0,3,0) and its component rules at
+  (0,4,0)+, above the (0,2,1) a site reaches without knowing our class names (`button`,
+  `.section h3`, `.landing-page ul li`, `.product-filter input[type="checkbox"]`); no `!important`
+  is involved, and the `--xps-*` tokens stay on the plain `.xps` so overriding them still works.
+  Two new tokens, `--xps-font-size` (`1rem`) and `--xps-line-height` (`1.5`), stop a host `body`
+  rule rescaling the design. `themes/npm run check` gained `check-isolation.mjs`, which renders
+  every fixture twice in a real browser — with and without Dancing Goat's own CSS re-pointed at our
+  markup — and compares 40 computed properties of every element. With it: the mobile Filter & sort
+  sheet keeps its own buttons and heading colour, the facet and sheet checkboxes are themed
+  (`accent-color`, 16px), the suggestion rows read from the start edge whatever the page centres,
+  the empty state's Clear-filters button keeps its size and contrast, and the did-you-mean
+  correction is the accent link the board draws. `shell.css` is structure only again: the skeleton
+  paint and pulse, the disabled/preview opacities and three `text-align`s moved into the theme.
+- **Fixed (widgets):** a refinement that returns nothing no longer takes the filter controls with
+  it. `facetList` keeps a selected value the response no longer carries (checked, count 0, new
+  `xps-facet-list__item--empty` modifier, never disabled) and `categoryTree` keeps the selected
+  category as a real link instead of hiding the whole tree — so the visitor can untick what they
+  chose instead of only "Clear all". `loadMore` now runs the same unfiltered probe as `results`, so
+  the counted empty state ("There are 7 results without them" + the primary button) also appears in
+  Load more mode.
 - **Fixed (widgets, themes):** the autocomplete panel and the empty states now match the design
   artboards. Panel: a clock glyph on recent rows and a magnifier on suggestion rows, per-source
   option modifiers (`--recent` / `--query` / `--document`), page rows in accent semibold over their

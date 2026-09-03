@@ -1,16 +1,28 @@
 @use '../theme-variables' as t;
+@use '../boxes' as b;
+@use 'root' as r;
 
 /* xperience-search — default.css
  * Generated from themes/src/scss/default.scss — run `npm run build` in themes/, do not edit by hand.
- * The opt-in visual theme. Load it after shell.css. Every visual value in this file goes
- * through one of the custom properties below, so a site re-skins the whole widget set by
- * overriding variables in its own stylesheet — no build step, no fork.
+ * The opt-in visual theme: this file IS the design (docs/internal/design/*.dc.html). Load it after
+ * shell.css, which carries the structure it hangs on. Every visual value goes through one of the
+ * custom properties below, so a site re-skins the whole widget set by overriding variables in its
+ * own stylesheet — no build step, no fork.
  *
  *   .xps { --xps-color-accent: #b8005c; --xps-radius: 0; }
  *
  * Colour literals appear only in the variable blocks. `themes/scripts/check.mjs` enforces that.
+ *
+ * Every rule is written inside the theme root `.xps.xps.xps` (src/scss/default/_root.scss), which
+ * is what makes a widget a closed styling boundary: no host stylesheet up to (0,2,1) can change
+ * anything inside one. `themes/scripts/check-isolation.mjs` proves it, fixture by fixture,
+ * property by property, against test/site-hostile.css.
  */
 
+/* The tokens are declared on the PLAIN root class, at (0,1,0): they are the documented override
+   surface (docs/guides/theming.md), so a site's own `.xps { --xps-color-accent: … }` — or a rule
+   for one widget — has to be able to win. Everything the tokens feed is stated below at the theme
+   root's (0,3,0)+, where a site cannot reach it by accident. */
 .xps {
   --xps-color-accent: #{t.$color-accent};
   --xps-color-text: #{t.$color-text};
@@ -20,9 +32,24 @@
   --xps-radius: #{t.$radius};
   --xps-space: #{t.$space};
   --xps-font: #{t.$font};
+  --xps-font-size: #{t.$font-size};
+  --xps-line-height: #{t.$line-height};
+}
 
+#{r.$root} {
+  /* Everything inside a widget inherits its typography from here, and only from here. The family
+     is `inherit` by default on purpose — the widgets are meant to read as part of the host page —
+     but it is a token, so a site that wants the design's own face sets `--xps-font`. */
   font-family: var(--xps-font);
+  font-size: var(--xps-font-size);
+  font-style: normal;
+  font-weight: 400;
+  line-height: var(--xps-line-height);
+  letter-spacing: normal;
+  text-align: start;
+  text-transform: none;
   color: var(--xps-color-text);
+  background-color: transparent;
 }
 
 /* Opt-in dark mode: add data-xps-theme="auto" to the same element that carries `xps`.
@@ -40,21 +67,104 @@
 }
 
 /* --------------------------------------------------------------------------
+ * The boundary (TH-7)
+ *
+ * Every element inside a widget takes its appearance from this file. The reset states the
+ * neutral value of everything a host stylesheet could otherwise reach — at (0,3,0), above the
+ * (0,2,1) a site reaches without knowing our class names, and below the (0,4,0) of the component
+ * rules that follow, which are what actually paint the design.
+ * ------------------------------------------------------------------------ */
+
+#{r.$root} *,
+#{r.$root} *::before,
+#{r.$root} *::after {
+  color: inherit;
+  background-color: transparent;
+  background-image: none;
+  border-width: 0;
+  border-style: solid;
+  border-color: var(--xps-color-border);
+  border-radius: 0;
+  box-shadow: none;
+  font-family: inherit;
+  font-size: inherit;
+  font-style: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  text-align: inherit;
+  text-transform: none;
+  text-decoration: none;
+  list-style: none;
+  box-sizing: border-box;
+  outline: 0;
+  appearance: none;
+  cursor: auto;
+}
+
+/* The box model of the text-level elements, which the shell only ever zeroes as well: a host's
+   `.landing-page ul li { margin: 12px 0 }` or `.section p { margin-bottom: 1.4rem }` stops here.
+   Controls and links keep their margins reset too; their padding is the shell's, restated below
+   at this file's specificity. */
+#{r.$root} :is(p, h1, h2, h3, h4, h5, h6, ul, ol, li, dl, dt, dd, figure, blockquote, hr, form, fieldset, legend, table, pre),
+#{r.$root} :is(a, button, input, select, textarea, label, kbd, mark, img, svg) {
+  margin: 0;
+  padding: 0;
+}
+
+/* Screen-reader-only text is a box the reset above would otherwise flatten. */
+#{r.$root} .xps-sr-only {
+  @include b.sr-only;
+}
+
+/* --------------------------------------------------------------------------
+ * Element defaults — (0,3,1), above the reset, below every component rule.
+ * ------------------------------------------------------------------------ */
+
+/* Headings inside a widget are labels, not page furniture: the design gives them the body size in
+   semibold and lets the component say otherwise (the sheet title, the group titles). */
+#{r.$root} :is(h1, h2, h3, h4, h5, h6) {
+  font-size: 1em;
+  font-weight: 600;
+}
+
+#{r.$root} :is(b, strong) {
+  font-weight: 600;
+}
+
+#{r.$root} a {
+  color: var(--xps-color-accent);
+  text-decoration: none;
+}
+
+#{r.$root} a:hover {
+  text-decoration: underline;
+}
+
+#{r.$root} :is(a, button, label, select, summary) {
+  cursor: pointer;
+}
+
+#{r.$root} :is(:disabled, [aria-disabled="true"]) {
+  cursor: default;
+  opacity: 0.55;
+}
+
+/* The focus ring is the theme's: accent, never removed, always offset clear of the control. */
+#{r.$root}:focus-visible,
+#{r.$root} :focus-visible {
+  outline: 2px solid var(--xps-color-accent);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
  * Shared primitives
  * ------------------------------------------------------------------------ */
 
-.xps a {
-  color: var(--xps-color-accent);
-}
-
-.xps :focus-visible {
-  outline-color: var(--xps-color-accent);
-}
-
 /* A highlighter band under unchanged text, not a tinted box: the text colour is never the signal
    (the <mark> element and the band both are), and the underline survives a dense snippet. */
-.xps-highlight {
-  background: linear-gradient(
+#{r.$root} .xps-highlight {
+  background-image: linear-gradient(
     to top,
     color-mix(in srgb, var(--xps-color-accent) 18%, transparent) 42%,
     transparent 42%
@@ -62,16 +172,34 @@
   color: inherit;
 }
 
-.xps-skeleton {
+#{r.$root} .xps-skeleton {
+  background-color: currentColor;
   color: var(--xps-color-muted);
   border-radius: calc(var(--xps-radius) / 2);
+  opacity: 0.12;
+  animation: xps-skeleton-pulse 1.4s ease-in-out infinite;
 }
 
-.xps-button {
+@keyframes xps-skeleton-pulse {
+  50% {
+    opacity: 0.05;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #{r.$root} .xps-skeleton {
+    animation: none;
+  }
+}
+
+#{r.$root} .xps-button {
+  @include b.button;
   background-color: var(--xps-color-surface);
   color: var(--xps-color-text);
   border: 1px solid var(--xps-color-border);
   border-radius: var(--xps-radius);
+  font-weight: 600;
+  text-align: center;
 
   &:hover:not(:disabled) {
     background-color: color-mix(in srgb, var(--xps-color-accent) 8%, var(--xps-color-surface));
@@ -79,7 +207,7 @@
   }
 }
 
-.xps-button--primary {
+#{r.$root} .xps-button--primary {
   background-color: var(--xps-color-accent);
   border-color: var(--xps-color-accent);
   color: var(--xps-color-surface);
@@ -92,11 +220,12 @@
 
 /* The muted-link button: "Clear all" next to a heading or a chips row, where a filled box would
    shout. Still a real <button>, still focusable, still 2.25rem tall for the pointer. */
-.xps-button--link {
+#{r.$root} .xps-button--link {
+  @include b.button-link;
   background-color: transparent;
   border-color: transparent;
   color: var(--xps-color-muted);
-  padding-inline: 0;
+  font-weight: 400;
 
   &:hover:not(:disabled) {
     background-color: transparent;
@@ -106,17 +235,20 @@
   }
 }
 
-.xps-chip {
+#{r.$root} .xps-chip {
+  @include b.chip;
   background-color: color-mix(in srgb, var(--xps-color-accent) 8%, var(--xps-color-surface));
   border: 1px solid color-mix(in srgb, var(--xps-color-accent) 30%, var(--xps-color-border));
   border-radius: var(--xps-radius);
+  font-size: 0.8125em;
 }
 
-.xps-chip__attribute {
+#{r.$root} .xps-chip__attribute {
   color: var(--xps-color-muted);
 }
 
-.xps-chip__remove {
+#{r.$root} .xps-chip__remove {
+  @include b.chip-remove;
   background-color: transparent;
   border: 0;
   border-radius: var(--xps-radius);

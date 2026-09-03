@@ -281,9 +281,9 @@ The server-rendered first paint renders the glyph and the same "No results for �
 nothing else: the recovery offers are client-side by design, so they appear as soon as the widget
 hydrates.
 
-`loadMore` renders this same empty state — including the recovery offers — and hides its own
-"No more results" control while it is showing, so the narrow-screen layout is not a dead end. It
-does not run the unfiltered probe, so its clear-filters button stays in the countless form.
+`loadMore` renders this same empty state — the recovery offers and the counted "There are N results
+without them" included, from the same unfiltered probe — and hides its own "No more results" control
+while it is showing, so the narrow-screen layout is not a dead end either.
 
 The widget delegates clicks on `xps-results__clear` to `clearRefinements`, so a template that only
 returns markup needs no handler of its own. `clearRefinements` is handed to the template as well,
@@ -342,7 +342,7 @@ facetList({
 
 Markup: `<div class="xps xps-facet-list">` (plus `--searchable`) with `__title`, then `__body`
 holding the optional `__search` block, `__list` (a `<ul>` labelled by the title), one `__item` per
-value — modifiers `--selected` and `--disabled` — and the `__show-more` button. When the facet
+value — modifiers `--selected`, `--disabled` and `--empty` — and the `__show-more` button. When the facet
 search matches nothing, the list is `hidden` and `__no-results` is shown.
 
 **Folding.** By default the title is a `<button class="xps-facet-list__toggle" aria-expanded>` with
@@ -353,6 +353,13 @@ Accessibility: real `<input type="checkbox">` elements inside `<label>` (§5.6),
 the click target and no `for`/`id` pairing is needed. The show-more button carries `aria-expanded` and
 is `disabled` rather than removed, so focus survives. A value that drops to count 0 renders `disabled`
 rather than disappearing.
+
+**A refinement that finds nothing keeps its own row.** When the response carries no values for the
+attribute — because the visitor's selection narrowed the search to zero hits — the selected values
+are still rendered, checked, with a count of `0` and the `--empty` modifier, and never `disabled`:
+unticking one is the way back. `__no-results` ("No matching filters") shows only when there is
+neither a response value nor a selection. `categoryTree` does the same with the selected category,
+and the chips, Clear all and the range inputs read the state, so they never disappear either.
 
 The visible text of each value is the server's `label` — the taxonomy tag title — while the value sent
 back in `filters.facets` is its code name, so a facet list never displays an internal identifier.

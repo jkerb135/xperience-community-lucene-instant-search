@@ -830,6 +830,64 @@ describe('facetList', () => {
     expect((root.querySelector('input') as HTMLInputElement).checked).toBe(true);
   });
 
+  /**
+   * TH-7 (owner item 128): a refinement that narrows the search to nothing takes the facet counts
+   * with it. The value the visitor picked has to stay on screen, checked, so it can be un-picked —
+   * otherwise the only way back is Clear all.
+   */
+  it('keeps a selected value the response no longer carries, checked and at zero', async () => {
+    let answer: SearchResponse = RESPONSE;
+    const host = container('facet');
+    search = start(
+      [facetList({ container: host, attribute: 'contentType', label: 'Content type' })],
+      async () => answer
+    );
+    const root = host.querySelector('.xps-facet-list') as HTMLElement;
+    await settled(search);
+
+    answer = { ...RESPONSE, results: [], total: 0, totalPages: 0, facets: {} };
+    search.actions.toggleFacet('contentType', 'Recipe').search();
+    await vi.waitFor(() => expect(search?.results?.total).toBe(0));
+
+    const items = [...root.querySelectorAll('.xps-facet-list__item')];
+    expect(items).toHaveLength(1);
+    expect(items[0]?.querySelector('.xps-facet-list__value')?.textContent).toBe('Recipe');
+    expect(items[0]?.querySelector('.xps-facet-list__count')?.textContent).toBe('0');
+    expect(classesOf(items[0])).toEqual([
+      'xps-facet-list__item',
+      'xps-facet-list__item--selected',
+      'xps-facet-list__item--empty',
+    ]);
+    const checkbox = items[0]?.querySelector('input') as HTMLInputElement;
+    expect(checkbox.checked).toBe(true);
+    // Never disabled: this row is the way out.
+    expect(checkbox.disabled).toBe(false);
+    expect(root.querySelector<HTMLElement>('.xps-facet-list__no-results')?.hidden).toBe(true);
+
+    // Unticking it drops the filter and re-queries without it.
+    const before = calls.length;
+    checkbox.click();
+    expect(search.state.filters.facets[0]?.values ?? []).toEqual([]);
+    await vi.waitFor(() => expect(calls.length).toBeGreaterThan(before));
+    expect(calls[calls.length - 1]?.body['filters']).toBeUndefined();
+  });
+
+  it('says "No matching filters" only when there is nothing selected either', async () => {
+    const host = container('facet');
+    search = start([facetList({ container: host, attribute: 'contentType' })], {
+      ...RESPONSE,
+      results: [],
+      total: 0,
+      totalPages: 0,
+      facets: {},
+    });
+    const root = host.querySelector('.xps-facet-list') as HTMLElement;
+    await settled(search);
+
+    expect(root.querySelectorAll('.xps-facet-list__item')).toHaveLength(0);
+    expect(root.querySelector<HTMLElement>('.xps-facet-list__no-results')?.hidden).toBe(false);
+  });
+
   it('orders items with sortSelect', async () => {
     const root = mount({ sortBy: ['name:asc'] });
     await settled(search!);
@@ -932,6 +990,39 @@ describe('categoryTree', () => {
     [...(list?.children ?? [])].map(
       (item) => item.querySelector('.xps-category-tree__value')?.textContent ?? ''
     );
+
+  /** TH-7 (owner item 128): the tree used to empty itself — and hide — at zero hits. */
+  it('keeps the selected category when the response carries no values at all', async () => {
+    let answer: SearchResponse = RESPONSE;
+    const host = container('tree');
+    search = start(
+      [categoryTree({ container: host, attribute: 'category', label: 'Categories' })],
+      async () => answer
+    );
+    const root = host.querySelector('.xps-category-tree') as HTMLElement;
+    await settled(search);
+
+    answer = { ...RESPONSE, results: [], total: 0, totalPages: 0, facets: {} };
+    search.actions.toggleFacet('category', 'espresso').search();
+    await vi.waitFor(() => expect(search?.results?.total).toBe(0));
+
+    expect(root.hidden).toBe(false);
+    const items = [...root.querySelectorAll('.xps-category-tree__item')];
+    expect(items).toHaveLength(1);
+    expect(items[0]?.querySelector('.xps-category-tree__value')?.textContent).toBe('espresso');
+    expect(items[0]?.querySelector('.xps-category-tree__count')?.textContent).toBe('0');
+    expect(classesOf(items[0])).toEqual([
+      'xps-category-tree__item',
+      'xps-category-tree__item--selected',
+    ]);
+    // A real link, not the disabled span a count of zero usually gets: clicking it clears.
+    const link = items[0]?.querySelector('.xps-category-tree__link') as HTMLAnchorElement;
+    expect(link.tagName).toBe('A');
+    expect(link.getAttribute('aria-current')).toBe('true');
+
+    link.click();
+    await vi.waitFor(() => expect(search?.state.filters.facets).toEqual([]));
+  });
 
   it('renders the nested lists of the markup contract', async () => {
     const root = mount();
@@ -1296,6 +1387,45 @@ describe('clearFilters', () => {
 });
 
 describe('activeFilters', () => {
+  /**
+   * TH-7: the chips, the Clear all button and the range's own from/to all read the STATE, not the
+   * response, so a refinement that returns nothing keeps every way back on screen.
+   */
+  it('keeps the chips, Clear all and the range values when the search returns nothing', async () => {
+    const chips = container('chips');
+    const clear = container('clear');
+    const range = container('range');
+    let answer: SearchResponse = RESPONSE;
+    search = start(
+      [
+        activeFilters({ container: chips, attributeLabels: { contentType: 'Content type' } }),
+        clearFilters({ container: clear }),
+        rangeFilter({ container: range, attribute: 'price', label: 'Price', min: 0, max: 500 }),
+      ],
+      async () => answer
+    );
+    await settled(search);
+
+    answer = { ...RESPONSE, results: [], total: 0, totalPages: 0, facets: {} };
+    search.actions
+      .toggleFacet('contentType', 'Recipe')
+      .setNumericFilter('price', 'gte', 10)
+      .setNumericFilter('price', 'lte', 20)
+      .search();
+    await vi.waitFor(() => expect(search?.results?.total).toBe(0));
+
+    // One chip for the facet value, one per numeric bound.
+    const labels = [...chips.querySelectorAll('.xps-chip__label')].map((chip) => text(chip));
+    expect(labels).toHaveLength(3);
+    expect(labels[0]).toContain('Recipe');
+    expect(labels.join(' ')).toContain('10');
+    expect(
+      (clear.querySelector('.xps-clear-filters__button') as HTMLButtonElement).disabled
+    ).toBe(false);
+    const inputs = [...range.querySelectorAll<HTMLInputElement>('.xps-range-filter__input')];
+    expect(inputs.map((input) => input.value)).toEqual(['10', '20']);
+  });
+
   it('renders a removable chip per refinement', async () => {
     const host = container('chips');
     search = start([
@@ -1775,6 +1905,50 @@ describe('loadMore', () => {
     expect(search?.state.query).toBe('espresso');
     expect(host.querySelector('.xps-results__empty')).toBeNull();
     expect(button.hidden).toBe(false);
+  });
+
+  /**
+   * TH-7: the same counted empty state the desktop `results` widget renders — MB-1 swaps this
+   * widget in under 1024px, and a filtered dead end has to offer the same way out there.
+   */
+  it('counts the empty state from an unfiltered probe in Load more mode too', async () => {
+    const host = container('more');
+    const fetchFn = (async (url: string, init: RequestInit) => {
+      const body = JSON.parse(String(init.body)) as Record<string, unknown>;
+      calls.push({ url: String(url), body });
+      const answer =
+        body['probe'] === true
+          ? { ...RESPONSE, results: [], total: 7, totalPages: 1 }
+          : { ...RESPONSE, results: [], total: 0, totalPages: 0 };
+      return new Response(JSON.stringify(answer), {
+        status: 200,
+        headers: { [API_VERSION_HEADER]: '1' },
+      });
+    }) as unknown as typeof fetch;
+    search = createSearch({ index: 'site-content', fetchFn, debounceMs: 0 });
+    started.push(search);
+    search.addWidgets([loadMore({ container: host })]);
+    search.start();
+
+    search.actions.setQuery('xyzzy').toggleFacet('contentType', 'Article').search();
+    await vi.waitFor(() => expect(host.querySelector('.xps-results__clear')).not.toBeNull());
+    await vi.waitFor(() =>
+      expect(host.querySelector('.xps-results__clear')?.textContent).toBe(
+        'Clear filters and show 7 results'
+      )
+    );
+    expect(text(host.querySelector('.xps-results__empty'))).toContain(
+      'There are 7 results without them.'
+    );
+    // The probe is one unfiltered, flagged request; it left the widget's own state alone.
+    const probes = calls.filter((call) => call.body['probe'] === true);
+    expect(probes).toHaveLength(1);
+    expect(probes[0]?.body['filters']).toBeUndefined();
+    expect(search.state.filters.facets.map((facet) => facet.attribute)).toEqual(['contentType']);
+
+    // And the button clears them, through the same delegated handler.
+    host.querySelector<HTMLButtonElement>('.xps-results__clear')!.click();
+    await vi.waitFor(() => expect(search?.state.filters.facets).toEqual([]));
   });
 });
 

@@ -68,7 +68,8 @@ const cssClasses = new Set();
 for (const [name, css] of [['src/shell.css', shell], ['src/default.css', theme]]) {
   for (const { selector, body } of blocks(css)) {
     if (isKeyframeStep(selector)) continue;
-    for (const one of selector.split(',')) {
+    // Split on the commas BETWEEN selectors, not on the ones inside `:is(a, button)`.
+    for (const one of selector.replace(/\([^()]*\)/g, '()').split(',')) {
       if (!/(^|[^\w-])\.?xps[\w-]*/.test(one)) fail(name, `selector "${one.trim()}" is not scoped to xps-`);
     }
     for (const m of selector.matchAll(/\.(xps[\w-]*)/g)) cssClasses.add(m[1]);
@@ -79,9 +80,12 @@ for (const [name, css] of [['src/shell.css', shell], ['src/default.css', theme]]
 }
 
 // (vi) the shipped palette is actually readable, and re-skinnable through the one token.
+// The theme's RULES are stated inside `.xps.xps.xps` (src/scss/default/_root.scss), but the tokens
+// stay on the plain `.xps`: they are the documented override surface.
+const ROOT = '.xps';
 const RATIOS = [
-  ['light', '.xps'],
-  ['dark', '.xps[data-xps-theme=auto]'],
+  ['light', ROOT],
+  ['dark', `${ROOT}[data-xps-theme=auto]`],
 ];
 const channel = (c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
 const luminance = (hex) => {
@@ -102,7 +106,7 @@ const tokensOf = (selector) => {
 
 for (const [mode, selector] of RATIOS) {
   const t = tokensOf(selector);
-  const surface = t['--xps-color-surface'] ?? tokensOf('.xps')['--xps-color-surface'];
+  const surface = t['--xps-color-surface'] ?? tokensOf(ROOT)['--xps-color-surface'];
   for (const token of ['--xps-color-accent', '--xps-color-text', '--xps-color-muted']) {
     // Accent is link text and white-on-accent button fill; muted is the counts and the path line.
     // All three are body text, so all three owe AA's 4.5:1 against the surface they sit on.

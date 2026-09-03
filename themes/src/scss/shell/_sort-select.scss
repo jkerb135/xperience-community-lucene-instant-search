@@ -1,4 +1,5 @@
 @use '../variables' as v;
+@use '../boxes' as b;
 
 /* --------------------------------------------------------------------------
  * sortSelect
@@ -23,16 +24,14 @@
 }
 
 .xps-select__control {
-  min-height: v.$control-min-height;
-  padding: v.$quarter v.$half;
+  @include b.select-control;
 }
 
 /* Only a select that ships its own chevron drops the platform arrow — a custom widget that
    renders the bare xps-select block keeps the native one. */
 .xps-select__field .xps-select__control {
   appearance: none;
-  width: 100%;
-  padding-inline-end: calc(var(--xps-space) * 1.75);
+  @include b.select-control-with-chevron;
 }
 
 .xps-select__chevron {
@@ -43,6 +42,3 @@
   pointer-events: none;
 }
 
-.xps-select--disabled {
-  opacity: 0.6;
-}

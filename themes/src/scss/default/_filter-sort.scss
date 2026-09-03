@@ -1,9 +1,12 @@
+@use '../boxes' as b;
+@use 'root' as r;
+
 /* --------------------------------------------------------------------------
  * filterSort — accent badge, choice-pill sort row, hairline section rules,
  * dimmed backdrop, primary apply button.
  * ------------------------------------------------------------------------ */
 
-.xps-filter-sort__badge {
+#{r.$root} .xps-filter-sort__badge {
   background-color: var(--xps-color-accent);
   color: var(--xps-color-surface);
   border-radius: 999px;
@@ -13,30 +16,35 @@
 }
 
 /* The page behind is dimmed, not tinted: the text colour at 40% works on any host background. */
-.xps-sheet__backdrop {
+#{r.$root} .xps-sheet__backdrop {
   background-color: color-mix(in srgb, var(--xps-color-text) 40%, transparent);
 }
 
-.xps-sheet__panel {
+#{r.$root} .xps-sheet__panel {
   background-color: var(--xps-color-surface);
   color: var(--xps-color-text);
   border-radius: calc(var(--xps-radius) * 2) calc(var(--xps-radius) * 2) 0 0;
 }
 
-.xps-sheet__header {
+#{r.$root} .xps-sheet__header {
   border-bottom: 1px solid var(--xps-color-border);
 }
 
-.xps-sheet__title {
+/* The sheet's own heading, not the site's: a host `h2 { color: … ; font-size: 3rem }` used to
+   walk straight into it (TH-7, deferred cosmetic item). */
+#{r.$root} .xps-sheet__title {
   font-size: 1.125rem;
   font-weight: 600;
+  color: var(--xps-color-text);
 }
 
-.xps-sheet__close {
+#{r.$root} .xps-sheet__close {
+  @include b.sheet-close;
   background-color: transparent;
   border: 0;
   border-radius: 999px;
   color: var(--xps-color-muted);
+  line-height: 1;
 
   &:hover {
     color: var(--xps-color-text);
@@ -45,45 +53,48 @@
 }
 
 /* Hairline between sections, none above the first one. */
-.xps-sheet__section + .xps-sheet__section {
+#{r.$root} .xps-sheet__section + .xps-sheet__section {
   border-top: 1px solid var(--xps-color-border);
 }
 
-.xps-sheet__section-title {
+#{r.$root} .xps-sheet__section-title {
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--xps-color-muted);
 }
 
-.xps-sheet__pill {
+#{r.$root} .xps-sheet__pill {
+  @include b.sheet-pill;
   background-color: var(--xps-color-surface);
   color: var(--xps-color-text);
   border: 1px solid var(--xps-color-border);
   border-radius: 999px;
+  font-weight: 400;
 
   &:hover {
     border-color: color-mix(in srgb, var(--xps-color-accent) 40%, var(--xps-color-border));
   }
 }
 
-.xps-sheet__pill--selected {
+#{r.$root} .xps-sheet__pill--selected {
   background-color: var(--xps-color-accent);
   border-color: var(--xps-color-accent);
   color: var(--xps-color-surface);
+  font-weight: 600;
 }
 
-.xps-sheet__value-count {
+#{r.$root} .xps-sheet__value-count {
   color: var(--xps-color-muted);
   font-size: 0.875em;
   font-variant-numeric: tabular-nums;
 }
 
-.xps-sheet__footer {
+#{r.$root} .xps-sheet__footer {
   background-color: var(--xps-color-surface);
   border-top: 1px solid var(--xps-color-border);
 }
 
-.xps-sheet__clear {
+#{r.$root} .xps-sheet__clear {
   background-color: transparent;
   border-color: transparent;
   color: var(--xps-color-accent);

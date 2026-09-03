@@ -1,15 +1,18 @@
+@use '../boxes' as b;
+@use 'root' as r;
+
 /* --------------------------------------------------------------------------
  * suggestions
  * ------------------------------------------------------------------------ */
 
-.xps-suggestions__panel {
+#{r.$root} .xps-suggestions__panel {
   background-color: var(--xps-color-surface);
   border: 1px solid var(--xps-color-border);
   border-radius: var(--xps-radius);
   box-shadow: 0 8px 24px color-mix(in srgb, var(--xps-color-text) 15%, transparent);
 }
 
-.xps-suggestions__group-title {
+#{r.$root} .xps-suggestions__group-title {
   color: var(--xps-color-muted);
   font-size: 0.6875em;
   font-weight: 700;
@@ -18,61 +21,69 @@
 }
 
 /* A rule between sources, lighter than the panel's own edge. */
-.xps-suggestions__group + .xps-suggestions__group {
+#{r.$root} .xps-suggestions__group + .xps-suggestions__group {
   border-top: 1px solid color-mix(in srgb, var(--xps-color-border) 60%, var(--xps-color-surface));
 }
 
-.xps-suggestions__group-clear {
+#{r.$root} .xps-suggestions__group-clear {
+  @include b.button-inline;
   font-size: 0.75em;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
-.xps-suggestions__option--active,
-.xps-suggestions__option:hover {
+#{r.$root} .xps-suggestions__option {
+  /* Rows read from the start edge, whatever the host page centres. */
+  text-align: start;
+}
+
+#{r.$root} .xps-suggestions__option--active,
+#{r.$root} .xps-suggestions__option:hover {
   background-color: color-mix(in srgb, var(--xps-color-accent) 10%, transparent);
 }
 
-.xps-suggestions__option-icon {
+#{r.$root} .xps-suggestions__option-icon {
   color: var(--xps-color-muted);
 }
 
 /* A page is a destination, not a query: its title reads as the link it is. */
-.xps-suggestions__option--document .xps-suggestions__option-title {
+#{r.$root} .xps-suggestions__option--document .xps-suggestions__option-title {
   color: var(--xps-color-accent);
   font-weight: 600;
 }
 
-.xps-suggestions__option-meta,
-.xps-suggestions__empty {
+#{r.$root} .xps-suggestions__option-meta,
+#{r.$root} .xps-suggestions__empty {
   color: var(--xps-color-muted);
   font-size: 0.875em;
 }
 
-.xps-suggestions__option-remove {
+#{r.$root} .xps-suggestions__option-remove {
   color: var(--xps-color-muted);
+  cursor: pointer;
 
   &:hover {
     color: var(--xps-color-text);
   }
 }
 
-.xps-suggestions__footer {
+#{r.$root} .xps-suggestions__footer {
   background-color: color-mix(in srgb, var(--xps-color-border) 25%, var(--xps-color-surface));
   border-top: 1px solid var(--xps-color-border);
 }
 
-.xps-suggestions__see-all {
+#{r.$root} .xps-suggestions__see-all {
   color: var(--xps-color-accent);
   font-size: 0.75em;
 }
 
-.xps-suggestions__hints {
+#{r.$root} .xps-suggestions__hints {
   color: var(--xps-color-muted);
   font-size: 0.75em;
 }
 
-.xps-suggestions__key {
+#{r.$root} .xps-suggestions__key {
+  @include b.keycap;
   background-color: var(--xps-color-surface);
   border: 1px solid var(--xps-color-border);
   border-bottom-width: 2px;

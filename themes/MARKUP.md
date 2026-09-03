@@ -43,15 +43,45 @@ class named here appears in a fixture.
 7. **Text is never a `div` that acts like a control.** Buttons are `<button>`, checkboxes are
    `<input type="checkbox">`, links that navigate are `<a href>`.
 
+## The two layers, and the one root selector
+
+**`shell.css` is structure only** — layout, box model, positioning, sizing, visibility and state
+mechanics, focus and screen-reader mechanics. No colours, backgrounds, border colours or styles,
+fonts, shadows or radii live in it. **`default.css` is the design** (`docs/internal/design/*.dc.html`).
+A custom theme replaces `default.css` and starts from that bare structure; `themes/scripts/check.mjs`
+enforces the split on every build.
+
+**One root selector: `.xps`.** `default.css` states it three times — `.xps.xps.xps` — on every rule
+it owns, so each lands at (0,3,0) or more:
+
+| Tier | Example | What it is |
+|---|---|---|
+| (0,1,0) | `.xps { --xps-color-accent: … }` | the tokens, deliberately weak: they are the documented override surface |
+| (0,3,0) | `.xps.xps.xps *` | the element reset — every property a host stylesheet could otherwise reach |
+| (0,3,1) | `.xps.xps.xps h3` | element defaults (headings, `strong`, links, cursors) |
+| (0,4,0)+ | `.xps.xps.xps .xps-button` | the component rules, which paint the design |
+
+A site's own stylesheet reaches (0,2,1) without knowing our class names (`button`, `.section h3`,
+`.landing-page ul li`, `.product-filter input[type="checkbox"]`), so with the theme loaded a widget
+is a **closed styling boundary**: nothing outside it decides how anything inside it looks.
+`themes/scripts/check-isolation.mjs` renders every fixture twice — with and without
+`themes/test/site-hostile.css`, which is Dancing Goat's own CSS re-pointed at our markup — and
+compares `getComputedStyle` of every element, property by property. No `!important` anywhere: a host
+that deliberately wants its own style writes a selector at least as specific as the theme's
+(see `docs/guides/theming.md`, "Specificity and host styles").
+
+Page-level utilities the host puts on its *own* elements (`xps-toolbar`, `xps-stack`, `xps-cluster`,
+`xps-mount`, `xps-sidebar__*`) are outside that boundary by definition — they are the host's boxes.
+
 ## Theming hooks
 
 - `data-xps-theme="auto"` on the element carrying `xps` opts that subtree into the
   `prefers-color-scheme: dark` variable set in `default.css`. It is opt-in because the theme does
   not control the host page's background. Renderers should pass the attribute through from
   configuration, never set it themselves.
-- Shell gives `xps-suggestions__panel` position but no surface, and leaves `xps-highlight` at the
-  browser's default `<mark>` styling — both need a colour, which shell does not have. A site
-  running shell alone supplies them.
+- Shell gives `xps-suggestions__panel` position but no surface, leaves `xps-highlight` unpainted and
+  the skeletons untinted — all of them need a colour, which shell does not have. A site running
+  shell alone supplies them.
 
 ## Utilities (available to custom widgets — spec §5.7)
 
@@ -211,6 +241,7 @@ Fixture: `fixtures/facet-list.html`. Root `<div class="xps xps-facet-list">`.
 | `xps-facet-list__item` | `<li>` | |
 | `xps-facet-list__item--selected` | modifier | `isActive` — the checkbox is `checked`. |
 | `xps-facet-list__item--disabled` | modifier | `canApply === false` — the checkbox is `disabled`. |
+| `xps-facet-list__item--empty` | modifier | Selected, and this response carries no hit for it — a refinement that narrowed the search to nothing. The row stays, checked, with a count of `0`, and is **never** `disabled`: unticking it is the way back (TH-7). |
 | `xps-facet-list__label` | `<label>` | Wraps the input, so the whole row is the click target; no `for` needed. |
 | `xps-facet-list__checkbox` | `<input type="checkbox">` | A real checkbox (§5.6), never a styled div. |
 | `xps-facet-list__value` | `<span>` | May contain `<mark class="xps-highlight">` in the searchable variant. |

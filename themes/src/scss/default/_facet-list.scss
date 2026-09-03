@@ -1,52 +1,80 @@
+@use '../boxes' as b;
+@use 'root' as r;
+
 /* --------------------------------------------------------------------------
  * facetList — the title and the muted-count rules are shared with toggleFilter,
  * categoryTree and rangeFilter.
  * ------------------------------------------------------------------------ */
 
-.xps-facet-list__title,
-.xps-category-tree__title,
-.xps-range-filter__title,
-.xps-sidebar__header {
+#{r.$root} .xps-facet-list__title,
+#{r.$root} .xps-category-tree__title,
+#{r.$root} .xps-range-filter__title,
+#{r.$root} .xps-sidebar__header {
   font-size: 1rem;
   font-weight: 600;
+  color: var(--xps-color-text);
   padding-bottom: calc(var(--xps-space) / 3);
   border-bottom: 2px solid var(--xps-color-text);
 }
 
 /* The sidebar heading sits in the same rule as a group title, so its own <h2> only has to stop
    being a browser headline. */
-.xps-sidebar__title {
+#{r.$root} .xps-sidebar__title {
   font-size: inherit;
   font-weight: inherit;
 }
 
-.xps-facet-list__chevron,
-.xps-category-tree__chevron {
+/* The collapsible group heading is a <button>: it keeps the heading's type and none of the
+   control's. The shell states the same neutralisation for a shell-only site. */
+#{r.$root} .xps-facet-list__toggle,
+#{r.$root} .xps-category-tree__toggle {
+  @include b.group-toggle;
+  background-color: transparent;
+  border: 0;
+  font: inherit;
+  text-align: start;
+  color: inherit;
+}
+
+#{r.$root} .xps-facet-list__chevron,
+#{r.$root} .xps-category-tree__chevron {
   color: var(--xps-color-muted);
 }
 
-.xps-facet-list__item--selected .xps-facet-list__value {
+#{r.$root} .xps-facet-list__item--selected .xps-facet-list__value {
   font-weight: 600;
 }
 
-.xps-facet-list__count,
-.xps-toggle-filter__count,
-.xps-category-tree__count,
-.xps-facet-list__no-results,
-.xps-range-filter__values,
-.xps-range-filter__input-label {
+#{r.$root} .xps-facet-list__count,
+#{r.$root} .xps-toggle-filter__count,
+#{r.$root} .xps-category-tree__count,
+#{r.$root} .xps-facet-list__no-results,
+#{r.$root} .xps-range-filter__values,
+#{r.$root} .xps-range-filter__input-label {
   color: var(--xps-color-muted);
   font-size: 0.875em;
 }
 
 /* Plain muted text, no pill: counts change on every refinement, so they line up instead. */
-.xps-facet-list__count,
-.xps-toggle-filter__count,
-.xps-category-tree__count {
+#{r.$root} .xps-facet-list__count,
+#{r.$root} .xps-toggle-filter__count,
+#{r.$root} .xps-category-tree__count {
   font-variant-numeric: tabular-nums;
 }
 
-.xps-facet-list__show-more {
+/* A value the visitor picked that this response has no hit for: still there, still untickable,
+   just quiet (TH-7). */
+#{r.$root} .xps-facet-list__item--empty .xps-facet-list__value,
+#{r.$root} .xps-facet-list__item--empty .xps-facet-list__count {
+  color: var(--xps-color-muted);
+}
+
+#{r.$root} .xps-facet-list__item--disabled .xps-facet-list__label,
+#{r.$root} .xps-toggle-filter--disabled .xps-toggle-filter__label {
+  opacity: 0.55;
+}
+
+#{r.$root} .xps-facet-list__show-more {
   background-color: transparent;
   border-color: transparent;
   color: var(--xps-color-accent);

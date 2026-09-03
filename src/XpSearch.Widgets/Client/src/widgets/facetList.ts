@@ -58,9 +58,12 @@ const itemHtml = (item: FacetListItem, attribute: string, needle: string): Rende
   // A value nobody can reach any more (count 0, not selected) is a disabled row, not a missing
   // one — the list keeps its shape between searches.
   const disabled = item.count === 0 && !item.isActive;
+  // A value the visitor picked that this response has no hit for (TH-7): still checked, still
+  // untickable, marked so the theme can quieten it.
+  const empty = item.count === 0 && item.isActive;
   const modifiers = `${item.isActive ? ' xps-facet-list__item--selected' : ''}${
     disabled ? ' xps-facet-list__item--disabled' : ''
-  }`;
+  }${empty ? ' xps-facet-list__item--empty' : ''}`;
   return html`<li class="xps-facet-list__item${modifiers}">
     <label class="xps-facet-list__label">
       <input class="xps-facet-list__checkbox" type="checkbox" name="${attribute}" value="${item.value}"${
