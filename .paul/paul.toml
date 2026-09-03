@@ -1,4 +1,4 @@
-name = "xperience-search"
+﻿name = "xperience-search"
 version = "0.9.0"
 status = "active"
 path = "libraries/xperience-search"
@@ -21,7 +21,7 @@ status = "planning"
 plans_completed = 0
 
 [loop]
-position = "PLAN"
+position = "APPLY"
 plan = "06-01"
 plan_path = "phases/06-analytics-retention-setting/06-01-PLAN.md"
 

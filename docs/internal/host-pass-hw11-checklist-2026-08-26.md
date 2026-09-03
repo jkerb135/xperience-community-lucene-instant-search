@@ -489,3 +489,27 @@ every command below resolves on the current main; these items confirm the runnin
 115. **If any of these still says "command not found"**, capture the page name from the message and
      the assembly the host loaded (`XpSearch.Admin.dll` timestamp in the host's `bin`) *before*
      reporting — that message names the page it looked on, and the answer is usually the timestamp.
+
+## §X — AR-1 analytics retention setting (2026-09-02)
+
+The retention threshold moved from a C# option to an admin setting, default 365 days, and the
+`XpSearch.QueryLogRetention` task now also prunes answered suggestions. The AR-1 report says whether
+the setting shipped in the built-in **Settings** application or on the library's own *Analytics
+settings* page — walk whichever location it names.
+
+116. **Visible with the default.** Open the setting location. **Remove search analytics older than
+     X days** is listed with value **365**. (Settings app: the search box at the top finds it by
+     typing "search analytics".)
+117. **The task honours it.** Set the value to **1**, save. Open **Scheduled tasks** → the
+     `XpSearch query log retention` configuration → **Run**. *Last result* reads
+     `Deleted N query log rows, N popularity suggestions, N synonym suggestions older than <cutoff>` —
+     the cutoff is yesterday, and the analytics dashboard's volume report drops everything older.
+     Set the value back to something sane (e.g. 365) afterwards.
+118. **Validation.** Set the value to **0** and save → the save is refused with a validation
+     message; the stored value is unchanged.
+119. **Survives a restart.** Set the value to **90**, restart the host, reopen the setting → still
+     **90** (the installer seeds once and never overwrites).
+120. **Suggestions.** On an index with an *accepted* or *dismissed* popularity or synonym suggestion
+     older than the cutoff (set the value to 1 again to make yesterday's answered suggestion old),
+     run the task → that answered row is gone from the listing's history; every **pending**
+     suggestion is still listed.
