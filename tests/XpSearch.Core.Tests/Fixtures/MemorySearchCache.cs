@@ -14,6 +14,9 @@ internal sealed class MemorySearchCache : ISearchCache
 
     internal int Evictions { get; private set; }
 
+    /// <summary>Every index name <see cref="Evict"/> was called with, in order.</summary>
+    internal List<string> Evicted { get; } = [];
+
     public async Task<SearchResponse> GetOrAddAsync(
         string indexName,
         string key,
@@ -40,6 +43,7 @@ internal sealed class MemorySearchCache : ISearchCache
     public void Evict(string indexName)
     {
         Evictions++;
+        Evicted.Add(indexName);
         entries.Remove(indexName);
     }
 }

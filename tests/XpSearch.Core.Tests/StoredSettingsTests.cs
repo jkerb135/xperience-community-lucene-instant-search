@@ -95,6 +95,7 @@ internal sealed class StoredSettingsTests
         };
 
         var cache = new OptionsCache<XpSearchIndexSettings>();
+        var responses = new MemorySearchCache();
         var monitor = Monitor(options, source, cache);
 
         var before = monitor.Get(IndexB);
@@ -102,13 +103,28 @@ internal sealed class StoredSettingsTests
         Assert.That(monitor.Get(IndexA).MaxPageSize, Is.EqualTo(25));
 
         source[IndexA] = new SearchSettingsValues { MaxPageSize = 26 };
-        new XpSearchIndexSettingsInvalidator(cache).Invalidate(IndexA);
+        new XpSearchIndexSettingsInvalidator(cache, responses).Invalidate(IndexA);
 
         Expect.Multiple(() =>
         {
             Assert.That(monitor.Get(IndexA).MaxPageSize, Is.EqualTo(26), "the saved index is read again");
             Assert.That(monitor.Get(IndexB), Is.SameAs(before), "no other index is rebuilt");
+
+            // A request that omits pageSize computes the same cache key before and after the save, so
+            // the settings alone would not reach a cached response.
+            Assert.That(responses.Evicted, Is.EqualTo(new[] { IndexA }).AsCollection);
         });
+    }
+
+    /// <summary>A row with no index name reaches neither cache: there is nothing to invalidate.</summary>
+    [Test]
+    public void SavingARowWithNoIndex_EvictsNothing()
+    {
+        var responses = new MemorySearchCache();
+
+        new XpSearchIndexSettingsInvalidator(new OptionsCache<XpSearchIndexSettings>(), responses).Invalidate(null);
+
+        Assert.That(responses.Evicted, Is.Empty);
     }
 
     [Test]
