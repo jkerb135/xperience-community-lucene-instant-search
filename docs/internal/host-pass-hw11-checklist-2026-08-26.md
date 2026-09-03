@@ -513,6 +513,20 @@ Open the boards beside the demo: `docs/internal/design/Autocomplete.dc.html` and
      recovery card renders and the **No more results** control is hidden. (Its button reads
      "Clear filters" without a count — recorded limitation.)
 
+Owner walk 2026-09-03: 126, 127, 121 pass. **128 failed** (filters disappear when the hits don't
+carry the facet) and **129 failed** (the Filter & sort sheet's buttons take Dancing Goat's CSS) →
+unit TH-7. Re-walk as 130–131 once TH-7 is merged:
+
+130. **No bleed.** Under 1024px open **Filter & sort**: buttons, header, checkboxes and the sort
+     control match `MobileFilters.dc.html` (white/violet per the board, theme heading colour, themed
+     checkboxes). At desktop width: suggestion option text is left-aligned; the empty state's
+     **Clear filters and show N results** button matches the board's contrast and width. In the
+     browser dev tools, the winning rules on those elements are `xps` rules, none from the site CSS.
+131. **Refinements at zero hits.** `/search?q=coffee`, tick a facet value, then narrow the query
+     (or tick a second value) until the hit count is 0 → the ticked values stay listed and checked
+     with count 0, the active-filter chips remain, the counted empty state shows, and unticking a
+     value re-runs the search. Repeat under 1024px (Load more mode).
+
 ## §Y — AR-2 per-index search settings (2026-09-03)
 
 Supersedes §X: the settings moved from one global page to **Lucene Search → an index → Search

@@ -182,7 +182,8 @@ verified live — "There are 2 results without them / Clear filters and show 2 r
 **Research:** Unlikely — the artboards are checked in at `docs/internal/design/` and are the spec.
 
 **Plans:**
-- [ ] 07-01: TH-6 — spec `docs/internal/units/TH-6.md`; PLAN written 2026-09-03
+- [x] 07-01: TH-6 — merged 0f52194 (2026-09-03); owner: 126/127/121 pass, 128/129 → TH-7
+- [ ] 07-02: TH-7 — theme hardening against site styles (closed styling boundary, hostile-CSS computed-style check) + selected refinements at zero hits; spec `docs/internal/units/TH-7.md`, dispatched 2026-09-03
 
 ---
 *Roadmap created: 2026-09-01*
