@@ -152,7 +152,8 @@ internal sealed class SynonymMiningTests
             log,
             signals,
             mined,
-            new StaticOptionsMonitor<XpSearchOptions>(new XpSearchOptions()),
+            TestIndexRegistry.Of(TestCorpus.IndexName),
+            new PerIndexSettings(new XpSearchOptions()),
             NullLogger<XpSearchPopularityTask>.Instance);
 
         await task.Execute(null!, CancellationToken.None);

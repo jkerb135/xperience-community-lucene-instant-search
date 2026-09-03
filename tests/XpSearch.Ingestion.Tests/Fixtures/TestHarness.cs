@@ -280,17 +280,19 @@ internal sealed class TestHarness : IDisposable
     internal ISearchPipeline Pipeline()
     {
         var options = new StaticOptionsMonitor<XpSearchOptions>(new XpSearchOptions());
+        var settings = new StaticOptionsMonitor<XpSearchIndexSettings>(
+            XpSearchIndexSettings.FromOptions(options.CurrentValue));
 
         return new SearchPipeline(
             Index,
             new FixedSchemaProvider(Schema.Fields),
             [
-                new NormalizeRequestStage(options),
+                new NormalizeRequestStage(options, settings),
                 new BuildQueryStage(new DisabledTypoToleranceSource()),
                 new FacetFilterStage(),
                 new NumericFilterStage(),
                 new ExecuteSearchStage(Index),
-                new CollectFacetsStage(new TaxonomyFacetProvider(Index), options),
+                new CollectFacetsStage(new TaxonomyFacetProvider(Index), settings),
                 new HighlightStage(new LuceneHighlighter()),
                 new ProjectResponseStage()
             ]);

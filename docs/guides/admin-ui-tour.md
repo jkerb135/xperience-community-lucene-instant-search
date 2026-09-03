@@ -44,6 +44,7 @@ edited or deleted through this URL.
 | Sidebar entry | URL under `…/edit/{indexId}/` | Child pages |
 |---|---|---|
 | **Settings** | `settings` | — |
+| **Search settings** | `search-settings` | — |
 | **Rules** | `rules` | `rules/create`, `rules/{ruleId}/edit`, `rules/from-query/{seed}` |
 | **Suggestions** | `suggestions` | — |
 | **Synonyms** | `synonyms` | `synonyms/create`, `synonyms/{id}/edit` |
@@ -68,6 +69,16 @@ field.
 This page evaluates *Update*, and it is the page a row click lands on.
 
 Depth: [Indexing strategy](indexing-strategy.md).
+
+### Search settings
+
+This library's own numbers for the index: response cache lifetime, query length, page sizes, facet
+and result-window ceilings, suggestion limits, and every analytics window — headed by **Remove search
+analytics older than X days**. The form opens on whatever the host's `AddXpSearch` lambda configured;
+saving it makes this index's values its own, live on the next search and without touching any other
+index.
+
+Depth: [Per-index settings in the administration](search-api.md#per-index-settings-in-the-administration).
 
 ### Rules
 

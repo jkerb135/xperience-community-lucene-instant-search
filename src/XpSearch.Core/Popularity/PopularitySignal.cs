@@ -79,13 +79,19 @@ public interface IPopularitySignalStore
 
     /// <summary>
     /// Deletes one batch of suggestions a human already answered and that are older than the retention
-    /// window (AR-1). Pending suggestions are never touched.
+    /// window of its index (AR-2). Pending suggestions are never touched.
     /// </summary>
+    /// <param name="indexName">Code name of the index whose rows are pruned.</param>
     /// <param name="cutoffUtc">Rows computed before this instant are deleted.</param>
     /// <param name="batchSize">How many rows to delete at most.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>How many rows were deleted; fewer than <paramref name="batchSize"/> means there are no more.</returns>
-    Task<int> DeleteAnsweredOlderThanAsync(DateTime cutoffUtc, int batchSize, CancellationToken cancellationToken);
+    Task<int> DeleteAnsweredOlderThanAsync(string indexName, DateTime cutoffUtc, int batchSize, CancellationToken cancellationToken);
+
+    /// <summary>Gets the distinct index names the suggestions are stored for, registered or not (AR-2).</summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The index names.</returns>
+    Task<IReadOnlyList<string>> SuggestionIndexNamesAsync(CancellationToken cancellationToken);
 }
 
 /// <summary>Whether retention may delete a suggestion row (AR-1).</summary>

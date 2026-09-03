@@ -64,18 +64,28 @@ makes `XpSearch.QueryLogRetention` selectable; the platform has no documented AP
 *configuration*, so the guide tells the developer to create it once in the *Scheduled tasks*
 application.
 
-**Amended (AR-1, 2026-09-02): the threshold is an administration setting, not a code option.**
-Retention is a post-go-live knob — the person who decides how long query text may be kept is the one
-in the administration, the way Kentico's own *Delete inactive contacts* setting works — so the window
-lives in a stored row that an editor changes without a deployment. Default **365** days, minimum 1,
-1000 rows per batch. `Analytics.RetentionDays` stays on `XpSearchOptions`, but only to seed that row on
-first start; the running task reads the options, which the stored row has overwritten
-(`IConfigureOptions<XpSearchOptions>` + an `IOptionsChangeTokenSource`, so a save is live). The row is
-read straight from the database on each rebuild — the options monitor is the only cache in that path,
-which is what makes a save take effect on the very next search. The same
-run now also prunes *answered* popularity and synonym suggestions, the only rows nothing else deleted.
-Kentico's `SettingsKeyInfo` is deliberately not used: Kentico's own guidance for settings of your own
-is a custom object type with your own UI, and its cache-dependency support covers built-in keys only.
+**Amended (AR-1, 2026-09-02; superseded by AR-2 below): the threshold is an administration setting,
+not a code option.** Retention is a post-go-live knob — the person who decides how long query text may
+be kept is the one in the administration, the way Kentico's own *Delete inactive contacts* setting
+works — so the window lives in a stored row that an editor changes without a deployment. Default
+**365** days, minimum 1, 1000 rows per batch. The same run now also prunes *answered* popularity and
+synonym suggestions, the only rows nothing else deleted. Kentico's `SettingsKeyInfo` is deliberately
+not used: Kentico's own guidance for settings of your own is a custom object type with your own UI,
+and its cache-dependency support covers built-in keys only.
+
+**Amended (AR-2, 2026-09-03): the setting is per index, as named options.** Every value AR-1 made
+editable belongs to one index — two indexes on one site can honestly want different retention, cache
+lifetimes and page sizes, and a single global row could only be the loudest index's answer. So the
+storage is one row per index and the read path is
+`IOptionsMonitor<XpSearchIndexSettings>.Get(indexCodeName)`: `IConfigureNamedOptions` copies the
+lambda's root values as the defaults and overlays that index's row, and the monitor keeps one built
+instance per name. Saving an index drops **only that name** from `IOptionsMonitorCache`
+(`TryRemove`, driven by the row's insert/update/delete events), so a save is live on the next search
+without rebuilding any other index. Nothing is seeded: an index answers with the code defaults until
+someone saves it. The row is read straight from the database on each rebuild — the options monitor is
+the only cache in that path, which is what makes a save take effect on the very next search. The
+retention task walks the registered indexes, prunes each with its own window, and prunes rows of
+indexes that are no longer registered with the unnamed (code-default) instance.
 
 ## Consequences
 

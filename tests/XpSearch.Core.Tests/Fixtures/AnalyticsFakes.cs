@@ -46,9 +46,21 @@ internal sealed class InMemoryQueryLogStore : IQueryLogStore
         return Task.FromResult(rows);
     }
 
-    public Task<int> DeleteOlderThanAsync(DateTime cutoffUtc, int batchSize, CancellationToken cancellationToken)
+    public Task<IReadOnlyList<string>> IndexNamesAsync(CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<string>>([.. Rows.Select(row => row.IndexName).Distinct(StringComparer.OrdinalIgnoreCase)]);
+
+    /// <summary>Every retention call, and the index it was scoped to (AR-2).</summary>
+    internal List<(string IndexName, DateTime CutoffUtc, int BatchSize)> Pruned { get; } = [];
+
+    public Task<int> DeleteOlderThanAsync(string indexName, DateTime cutoffUtc, int batchSize, CancellationToken cancellationToken)
     {
-        var doomed = Rows.Where(row => row.Timestamp < cutoffUtc).OrderBy(row => row.Timestamp).Take(batchSize).ToList();
+        Pruned.Add((indexName, cutoffUtc, batchSize));
+
+        var doomed = Rows
+            .Where(row => string.Equals(row.IndexName, indexName, StringComparison.OrdinalIgnoreCase) && row.Timestamp < cutoffUtc)
+            .OrderBy(row => row.Timestamp)
+            .Take(batchSize)
+            .ToList();
 
         foreach (var row in doomed)
         {

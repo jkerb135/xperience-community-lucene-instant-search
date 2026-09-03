@@ -101,9 +101,22 @@ public sealed class InfoPopularitySignalStore : IPopularitySignalStore
     }
 
     /// <inheritdoc />
-    public async Task<int> DeleteAnsweredOlderThanAsync(DateTime cutoffUtc, int batchSize, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<string>> SuggestionIndexNamesAsync(CancellationToken cancellationToken)
     {
         var rows = await suggestions.Get()
+            .Column(nameof(XpSearchPopularitySuggestionInfo.SuggestionIndexName))
+            .Distinct()
+            .GetEnumerableTypedResultAsync(cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+
+        return [.. rows.Select(row => row.SuggestionIndexName).Where(name => !string.IsNullOrWhiteSpace(name))];
+    }
+
+    /// <inheritdoc />
+    public async Task<int> DeleteAnsweredOlderThanAsync(string indexName, DateTime cutoffUtc, int batchSize, CancellationToken cancellationToken)
+    {
+        var rows = await suggestions.Get()
+            .WhereEquals(nameof(XpSearchPopularitySuggestionInfo.SuggestionIndexName), indexName)
             .WhereNotEquals(nameof(XpSearchPopularitySuggestionInfo.SuggestionState), (int)PopularitySuggestionState.Pending)
             .WhereLessThan(nameof(XpSearchPopularitySuggestionInfo.SuggestionComputed), cutoffUtc)
             .OrderByAscending(nameof(XpSearchPopularitySuggestionInfo.SuggestionComputed))

@@ -36,7 +36,8 @@ public sealed class CachedSearchPipeline : ISearchPipeline
 {
     private readonly ISearchPipeline inner;
     private readonly ISearchCache cache;
-    private readonly IOptionsMonitor<XpSearchOptions> options;
+    private readonly IOptionsMonitor<XpSearchIndexSettings> settings;
+    private readonly ILuceneIndexAccessor accessor;
     private readonly IContactGroupResolver contactGroups;
     private readonly IExperimentAssignmentResolver experiments;
     private readonly ISearchRequestJournal journal;
@@ -46,7 +47,11 @@ public sealed class CachedSearchPipeline : ISearchPipeline
     /// <summary>Initializes a new instance of the <see cref="CachedSearchPipeline"/> class.</summary>
     /// <param name="inner">The pipeline that does the work on a cache miss.</param>
     /// <param name="cache">The response cache.</param>
-    /// <param name="options">The current search options.</param>
+    /// <param name="settings">The current per-index settings (AR-2).</param>
+    /// <param name="accessor">
+    /// The Lucene seam, asked for the registered spelling of the requested index: the settings of an
+    /// index are named options, and names are compared ordinally.
+    /// </param>
     /// <param name="contactGroups">
     /// Answers which contact groups the visitor is in. The decorator needs them before the pipeline
     /// runs, because they belong in the cache key; the answer is memoized for the request, so the
@@ -72,7 +77,8 @@ public sealed class CachedSearchPipeline : ISearchPipeline
     public CachedSearchPipeline(
         ISearchPipeline inner,
         ISearchCache cache,
-        IOptionsMonitor<XpSearchOptions> options,
+        IOptionsMonitor<XpSearchIndexSettings> settings,
+        ILuceneIndexAccessor accessor,
         IContactGroupResolver contactGroups,
         IExperimentAssignmentResolver experiments,
         ISearchRequestJournal journal,
@@ -81,7 +87,8 @@ public sealed class CachedSearchPipeline : ISearchPipeline
     {
         ArgumentNullException.ThrowIfNull(inner);
         ArgumentNullException.ThrowIfNull(cache);
-        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(accessor);
         ArgumentNullException.ThrowIfNull(contactGroups);
         ArgumentNullException.ThrowIfNull(experiments);
         ArgumentNullException.ThrowIfNull(journal);
@@ -92,7 +99,8 @@ public sealed class CachedSearchPipeline : ISearchPipeline
         this.typoTolerance = typoTolerance;
         this.inner = inner;
         this.cache = cache;
-        this.options = options;
+        this.settings = settings;
+        this.accessor = accessor;
         this.contactGroups = contactGroups;
         this.experiments = experiments;
         this.journal = journal;
@@ -103,14 +111,22 @@ public sealed class CachedSearchPipeline : ISearchPipeline
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        string queryText = NormalizeRequestStage.Normalize(request.Query, options.CurrentValue.MaxQueryLength);
+        // The settings are read before the pipeline validates anything, so the name has to be resolved
+        // here too; an unregistered index keeps the name it asked for and fails inside the pipeline.
+        string index = (string.IsNullOrWhiteSpace(request.Index) ? null : accessor.ResolveName(request.Index))
+            ?? request.Index
+            ?? string.Empty;
+
+        var indexSettings = settings.Get(index);
+
+        string queryText = NormalizeRequestStage.Normalize(request.Query, indexSettings.MaxQueryLength);
         long start = Stopwatch.GetTimestamp();
 
         var experiment = await experiments
-            .GetAssignmentAsync(request.Index ?? string.Empty, cancellationToken)
+            .GetAssignmentAsync(index, cancellationToken)
             .ConfigureAwait(false);
 
-        if (options.CurrentValue.CacheTtl <= TimeSpan.Zero || string.IsNullOrWhiteSpace(request.Index))
+        if (indexSettings.CacheTtl <= TimeSpan.Zero || string.IsNullOrWhiteSpace(index))
         {
             var uncached = await inner.ExecuteAsync(request, cancellationToken).ConfigureAwait(false);
 
@@ -120,13 +136,13 @@ public sealed class CachedSearchPipeline : ISearchPipeline
         }
 
         var groups = await contactGroups.GetContactGroupsAsync(cancellationToken).ConfigureAwait(false);
-        var signal = await popularity.GetSignalAsync(request.Index, cancellationToken).ConfigureAwait(false);
-        bool fuzzy = await typoTolerance.IsEnabledAsync(request.Index, cancellationToken).ConfigureAwait(false);
+        var signal = await popularity.GetSignalAsync(index, cancellationToken).ConfigureAwait(false);
+        bool fuzzy = await typoTolerance.IsEnabledAsync(index, cancellationToken).ConfigureAwait(false);
 
         string key = SearchCacheKey.Compute(request, queryText, groups, experiment, signal.Version, fuzzy);
 
         var cached = await cache
-            .GetOrAddAsync(request.Index, key, token => inner.ExecuteAsync(request, token), cancellationToken)
+            .GetOrAddAsync(index, key, token => inner.ExecuteAsync(request, token), cancellationToken)
             .ConfigureAwait(false);
 
         string queryId = string.IsNullOrWhiteSpace(request.QueryId) ? Guid.NewGuid().ToString() : request.QueryId;

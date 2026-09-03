@@ -35,6 +35,7 @@ internal sealed class SuggestModeTests
             new StaticSchemaProvider(TestCorpus.Schema),
             queries,
             new StaticOptionsMonitor<XpSearchOptions>(options),
+            new PerIndexSettings(options),
             logger);
     }
 

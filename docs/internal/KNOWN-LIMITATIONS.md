@@ -1265,14 +1265,25 @@ and how to lift it.
 - **Upgrade path:** add a tombstone column (answered pairs kept as state-only rows with no query text)
   and delete only the payload columns, or keep a hash of the pair in a separate small table.
 
-## New settings columns are recognised by their zero value (`XpSearchAnalyticsModuleInstaller.SeedSettings`, AR-1)
+## A settings column that was never written is recognised by its zero value (`SearchSettingsValues.ApplyTo`, AR-2)
 
 - **Simplified:** an upgrade that adds a column to `XpSearch.Settings` leaves existing rows with 0 in
-  it. The installer fills any column that reads 0 from the effective code-configured options instead
-  of asking `CombineWithForm` which fields it actually added.
-- **Ceiling:** the cache lifetime column is excluded from the repair, because 0 is a legal value there
-  (no response caching) - so a *future* upgrade that adds a column where 0 is meaningful would need
-  the same exclusion, and an administrator cannot store 0 in any of the other columns anyway (the form
-  validates 1 or more).
+  it. The overlay treats any of the fifteen "1 or more" values that reads as 0 or less as "nobody set
+  this" and keeps the code-configured default, instead of asking `CombineWithForm` which fields it
+  actually added.
+- **Ceiling:** the cache lifetime is exempt, because 0 is a legal value there (no response caching) -
+  so a *future* upgrade that adds a column where 0 is meaningful would need the same exemption. An
+  administrator cannot store 0 in any of the other columns anyway (the form validates 1 or more).
 - **Upgrade path:** compare the field list before and after `CombineWithForm` in `InstallClass` and
-  hand the added column names to the seeding step.
+  backfill the added columns on the existing rows.
+
+## Orphaned index rows are pruned with the code defaults (`XpSearchQueryLogRetentionTask.Execute`, AR-2)
+
+- **Simplified:** analytics rows naming an index that is not registered any more (deleted or renamed)
+  are pruned with the unnamed options instance - the `AddXpSearch` lambda's values - because the
+  settings page they would have been edited on is gone with the index.
+- **Ceiling:** an index whose administrator had set a longer window than the code default loses its
+  rows earlier than they asked once the index is deleted; one whose window was shorter keeps them
+  longer. Either way the rows belong to nothing.
+- **Upgrade path:** keep the index's settings row when the index is deleted and read the window from
+  it, or delete the analytics rows with the index.

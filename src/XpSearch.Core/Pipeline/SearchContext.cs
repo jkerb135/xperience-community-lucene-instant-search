@@ -45,6 +45,7 @@ public sealed class SearchContext
         FacetsConfig = facetsConfig;
         CancellationToken = cancellationToken;
         QueryText = request.Query ?? string.Empty;
+        IndexName = request.Index ?? string.Empty;
     }
 
     /// <summary>Gets the <see cref="Stopwatch"/> timestamp taken when the search started.</summary>
@@ -58,6 +59,13 @@ public sealed class SearchContext
 
     /// <summary>Gets the schema of the index being searched.</summary>
     public IndexSchema Schema { get; }
+
+    /// <summary>
+    /// Gets or sets the registered code name of the index being searched, which is what per-index
+    /// settings are keyed by (AR-2). <see cref="SearchPipeline"/> resolves it; it falls back to the
+    /// name the request asked for.
+    /// </summary>
+    public string IndexName { get; set; }
 
     /// <summary>Gets the analyzer of the index being searched.</summary>
     public Analyzer Analyzer { get; }

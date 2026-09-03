@@ -1,5 +1,7 @@
 using Microsoft.Extensions.Options;
 
+using NSubstitute;
+
 using XpSearch.Core.Abstractions;
 using XpSearch.Core.Contract;
 using XpSearch.Core.Facets;
@@ -39,6 +41,53 @@ internal sealed class StaticOptionsMonitor<T> : IOptionsMonitor<T>
     public IDisposable? OnChange(Action<T, string?> listener) => null;
 }
 
+/// <summary>
+/// The per-index settings of AR-2 derived from one <see cref="XpSearchOptions"/> instance, for every
+/// name: the consumers take <see cref="IOptionsMonitor{TOptions}"/> of them, and a test that mutates
+/// the options after wiring still sees its change, exactly like a save in the administration.
+/// </summary>
+internal sealed class PerIndexSettings : IOptionsMonitor<XpSearchIndexSettings>
+{
+    private readonly XpSearchOptions options;
+    private readonly Dictionary<string, XpSearchIndexSettings> overrides = new(StringComparer.Ordinal);
+
+    internal PerIndexSettings(XpSearchOptions options) => this.options = options;
+
+    public XpSearchIndexSettings CurrentValue => XpSearchIndexSettings.FromOptions(options);
+
+    /// <summary>Sets what one index answers with, the way a stored row would.</summary>
+    internal XpSearchIndexSettings this[string indexName]
+    {
+        set => overrides[indexName] = value;
+    }
+
+    public XpSearchIndexSettings Get(string? name) =>
+        overrides.GetValueOrDefault(name ?? string.Empty) ?? CurrentValue;
+
+    public IDisposable? OnChange(Action<XpSearchIndexSettings, string?> listener) => null;
+}
+
+/// <summary>An index registry that knows exactly the given index names, and nothing else (AR-2).</summary>
+internal static class TestIndexRegistry
+{
+    /// <summary>Builds the registry.</summary>
+    /// <param name="indexNames">The registered index code names.</param>
+    /// <returns>The accessor.</returns>
+    internal static ILuceneIndexAccessor Of(params string[] indexNames)
+    {
+        var accessor = Substitute.For<ILuceneIndexAccessor>();
+
+        accessor.IndexNames().Returns(indexNames);
+        accessor.Exists(Arg.Any<string>()).Returns(call => Resolve(indexNames, call.Arg<string>()) is not null);
+        accessor.ResolveName(Arg.Any<string>()).Returns(call => Resolve(indexNames, call.Arg<string>()));
+
+        return accessor;
+    }
+
+    private static string? Resolve(string[] indexNames, string asked) =>
+        indexNames.FirstOrDefault(name => string.Equals(name, asked, StringComparison.OrdinalIgnoreCase));
+}
+
 /// <summary>Answers one fixed typo tolerance setting for every index (FZ-1).</summary>
 internal sealed class FixedTypoToleranceSource : ITypoToleranceSource
 {
@@ -67,12 +116,13 @@ internal sealed class TestHarness : IDisposable
         Index = new TestSearchIndex(TestCorpus.IndexName, TestCorpus.Documents, withTaxonomy);
 
         var wrapped = new StaticOptionsMonitor<XpSearchOptions>(Options);
+        var perIndex = new PerIndexSettings(Options);
 
         Pipeline = new SearchPipeline(
             Index,
             new StaticSchemaProvider(TestCorpus.Schema),
             [
-                new NormalizeRequestStage(wrapped),
+                new NormalizeRequestStage(wrapped, perIndex),
                 new QueryRewriteStage(tuning ?? new EmptyRelevanceTuningSource(), time ?? TimeProvider.System),
                 new SynonymExpansionStage(tuning ?? new EmptyRelevanceTuningSource()),
                 new StopwordRemovalStage(),
@@ -82,7 +132,7 @@ internal sealed class TestHarness : IDisposable
                 new BoostRulesStage(),
                 new ExecuteSearchStage(Index),
                 new PinnedAndBuriedStage(Index),
-                new CollectFacetsStage(new TaxonomyFacetProvider(Index), wrapped),
+                new CollectFacetsStage(new TaxonomyFacetProvider(Index), perIndex),
                 new HighlightStage(new LuceneHighlighter()),
                 new ProjectResponseStage(),
                 .. extraStages

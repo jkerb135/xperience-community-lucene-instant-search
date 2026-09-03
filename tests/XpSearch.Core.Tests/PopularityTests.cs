@@ -367,7 +367,8 @@ internal sealed class PopularityTests
             log,
             store,
             new FakeSynonymSuggestionStore(),
-            new StaticOptionsMonitor<XpSearchOptions>(options ?? new XpSearchOptions()),
+            TestIndexRegistry.Of(TestCorpus.IndexName),
+            new PerIndexSettings(options ?? new XpSearchOptions()),
             NullLogger<XpSearchPopularityTask>.Instance);
 
     private static SearchContext Context() =>

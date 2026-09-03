@@ -100,11 +100,15 @@ Widgets one.
   guarded by `tests/XpSearch.Admin.Tests/PageCommandDiscoveryTests.cs`, which asks Kentico's real
   `UITree`; add the client's command name there. A host "command not found" is usually a stale host
   build — the host `ProjectReference`s the MAIN worktree's `src/`.
-- Global admin setting (AR-1): add a column to `XpSearchSettingsInfo` + a field to
+- Per-index admin setting (AR-2): add a property to `XpSearchIndexSettings` (default read off
+  `XpSearchOptions`) + a column on `XpSearchSettingsInfo` + a field in
   `XpSearchAnalyticsModuleInstaller.SettingsForm()`/`SettingsColumns`, a property on
   `SearchSettingsValues` (with its `From`/`ApplyTo`/`StoredSearchSettings` lines), and a field on
-  `GlobalSettingsModel` in `XpSearch.Admin`. Consumers read `IOptionsMonitor<XpSearchOptions>`
-  `.CurrentValue` per operation — never `IOptions<>`, or a saved setting needs a restart.
+  `SearchSettingsModel` in `XpSearch.Admin`. Consumers read
+  `IOptionsMonitor<XpSearchIndexSettings>.Get(index)` **per operation**, with the index name resolved
+  through `ILuceneIndexAccessor.ResolveName` (named options compare ordinally) — never `IOptions<>`,
+  or a saved setting needs a restart. `XpSearchOptions.Indexes[...]` stays for code-only per-index
+  members.
 - Scheduled/background work: follow the analytics retention task registration.
 - Creating an Info object (`new XpSearch…Info { … }`): set EVERY field its installer form declares
   without `allowEmpty`, including booleans and the GUID. Kentico serializes only the fields that were

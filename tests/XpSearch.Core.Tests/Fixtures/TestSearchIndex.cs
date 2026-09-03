@@ -49,6 +49,10 @@ internal sealed class TestSearchIndex : ILuceneIndexAccessor, IDisposable
 
     public bool Exists(string name) => string.Equals(name, indexName, StringComparison.OrdinalIgnoreCase);
 
+    public string? ResolveName(string name) => Exists(name) ? indexName : null;
+
+    public IReadOnlyList<string> IndexNames() => [indexName];
+
     public Analyzer GetAnalyzer(string name) => analyzer;
 
     public IReadOnlyList<string> IndexNamesForStrategy(Type strategyType) => [indexName];

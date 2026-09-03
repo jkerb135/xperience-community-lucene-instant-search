@@ -96,22 +96,30 @@ internal static class Program
 
         var options = new XpSearchOptions();
         var wrapped = new StaticOptionsMonitor<XpSearchOptions>(options);
+        var settings = new StaticOptionsMonitor<XpSearchIndexSettings>(XpSearchIndexSettings.FromOptions(options));
         var tuning = new BenchTuningSource();
         var schema = new StaticSchemaProvider();
 
-        var plain = BuildPipeline(index, schema, wrapped, tuning, fuzzy: false);
-        var fuzzy = BuildPipeline(index, schema, wrapped, tuning, fuzzy: true);
+        var plain = BuildPipeline(index, schema, wrapped, settings, tuning, fuzzy: false);
+        var fuzzy = BuildPipeline(index, schema, wrapped, settings, tuning, fuzzy: true);
         var cached = new CachedSearchPipeline(
             plain,
             new MemorySearchCache(),
-            wrapped,
+            settings,
+            index,
             new NoContactGroups(),
             new NoExperiment(),
             new NoJournal(),
             new NoPopularity(),
             new FixedTypoToleranceSource(false));
 
-        var suggest = new DocumentSuggestService(index, schema, new NoQuerySuggestions(), wrapped, NullLogger<DocumentSuggestService>.Instance);
+        var suggest = new DocumentSuggestService(
+            index,
+            schema,
+            new NoQuerySuggestions(),
+            wrapped,
+            settings,
+            NullLogger<DocumentSuggestService>.Instance);
 
         var workloads = BuildWorkloads(plain, fuzzy, cached, suggest, iterations);
 
@@ -158,13 +166,14 @@ internal static class Program
         BenchIndex index,
         StaticSchemaProvider schema,
         Microsoft.Extensions.Options.IOptionsMonitor<XpSearchOptions> options,
+        Microsoft.Extensions.Options.IOptionsMonitor<XpSearchIndexSettings> settings,
         BenchTuningSource tuning,
         bool fuzzy) =>
         new(
             index,
             schema,
             [
-                new NormalizeRequestStage(options),
+                new NormalizeRequestStage(options, settings),
                 new QueryRewriteStage(tuning, TimeProvider.System),
                 new SynonymExpansionStage(tuning),
                 new StopwordRemovalStage(),
@@ -174,7 +183,7 @@ internal static class Program
                 new BoostRulesStage(),
                 new ExecuteSearchStage(index),
                 new PinnedAndBuriedStage(index),
-                new CollectFacetsStage(new TaxonomyFacetProvider(index), options),
+                new CollectFacetsStage(new TaxonomyFacetProvider(index), settings),
                 new HighlightStage(new LuceneHighlighter()),
                 new ProjectResponseStage()
             ]);

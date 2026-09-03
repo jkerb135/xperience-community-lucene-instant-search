@@ -59,10 +59,16 @@ public interface IQueryLogStore
     /// <returns>The matching rows.</returns>
     Task<IReadOnlyList<QueryLogEntry>> ReadAsync(string indexName, DateTime fromUtc, DateTime toUtc, CancellationToken cancellationToken);
 
-    /// <summary>Deletes at most one batch of rows older than a cut-off.</summary>
+    /// <summary>Deletes at most one batch of an index's rows older than a cut-off.</summary>
+    /// <param name="indexName">Code name of the index whose rows are pruned (AR-2).</param>
     /// <param name="cutoffUtc">Rows with an older timestamp are deleted.</param>
     /// <param name="batchSize">The largest number of rows to delete in this call.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>How many rows were deleted.</returns>
-    Task<int> DeleteOlderThanAsync(DateTime cutoffUtc, int batchSize, CancellationToken cancellationToken);
+    Task<int> DeleteOlderThanAsync(string indexName, DateTime cutoffUtc, int batchSize, CancellationToken cancellationToken);
+
+    /// <summary>Gets the distinct index names the log holds rows for, registered or not (AR-2).</summary>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The index names.</returns>
+    Task<IReadOnlyList<string>> IndexNamesAsync(CancellationToken cancellationToken);
 }

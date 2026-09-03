@@ -56,6 +56,17 @@ public sealed class LuceneIndexAccessor : ILuceneIndexAccessor
     public bool Exists(string indexName) => indexManager.GetIndex(indexName) is not null;
 
     /// <inheritdoc />
+    public string? ResolveName(string indexName) =>
+        string.IsNullOrEmpty(indexName)
+            ? null
+            : indexManager.GetAllIndices()
+                .FirstOrDefault(index => string.Equals(index.IndexName, indexName, StringComparison.OrdinalIgnoreCase))
+                ?.IndexName;
+
+    /// <inheritdoc />
+    public IReadOnlyList<string> IndexNames() => [.. indexManager.GetAllIndices().Select(index => index.IndexName)];
+
+    /// <inheritdoc />
     public Analyzer GetAnalyzer(string indexName) => Require(indexName).LuceneAnalyzer;
 
     /// <inheritdoc />

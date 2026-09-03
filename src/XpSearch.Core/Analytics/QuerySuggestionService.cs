@@ -22,41 +22,40 @@ public interface IQuerySuggestionSource
 }
 
 /// <summary>
-/// The default <see cref="IQuerySuggestionSource"/>: counts the query log of the last
-/// <c>XpSearchOptions.Analytics.QuerySuggestionDays</c> days, keeping only queries that found
-/// something.
+/// The default <see cref="IQuerySuggestionSource"/>: counts the query log of the index's last
+/// <c>QuerySuggestionDays</c> days, keeping only queries that found something.
 /// </summary>
 /// <remarks>
-/// Results are cached per index, prefix and limit for <c>XpSearchOptions.CacheTtl</c>, because
+/// Results are cached per index, prefix and limit for the index's own <c>CacheTtl</c>, because
 /// autocomplete fires on every keystroke and yesterday's popularity does not change between them.
 /// </remarks>
 public sealed class QuerySuggestionService : IQuerySuggestionSource
 {
     private readonly IQueryLogStore store;
-    private readonly IOptionsMonitor<XpSearchOptions> options;
+    private readonly IOptionsMonitor<XpSearchIndexSettings> settings;
     private readonly Func<DateTime> clock;
     private readonly ConcurrentDictionary<string, CacheEntry> cache = new(StringComparer.Ordinal);
 
     /// <summary>Initializes a new instance of the <see cref="QuerySuggestionService"/> class.</summary>
     /// <param name="store">Where the query log lives.</param>
-    /// <param name="options">The current search options.</param>
-    public QuerySuggestionService(IQueryLogStore store, IOptionsMonitor<XpSearchOptions> options)
-        : this(store, options, () => DateTime.UtcNow)
+    /// <param name="settings">The current per-index settings (AR-2).</param>
+    public QuerySuggestionService(IQueryLogStore store, IOptionsMonitor<XpSearchIndexSettings> settings)
+        : this(store, settings, () => DateTime.UtcNow)
     {
     }
 
     /// <summary>Initializes a new instance of the <see cref="QuerySuggestionService"/> class with a clock.</summary>
     /// <param name="store">Where the query log lives.</param>
-    /// <param name="options">The current search options.</param>
+    /// <param name="settings">The current per-index settings (AR-2).</param>
     /// <param name="clock">Supplies the current UTC time; tests use it to expire the cache.</param>
-    public QuerySuggestionService(IQueryLogStore store, IOptionsMonitor<XpSearchOptions> options, Func<DateTime> clock)
+    public QuerySuggestionService(IQueryLogStore store, IOptionsMonitor<XpSearchIndexSettings> settings, Func<DateTime> clock)
     {
         ArgumentNullException.ThrowIfNull(store);
-        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(clock);
 
         this.store = store;
-        this.options = options;
+        this.settings = settings;
         this.clock = clock;
     }
 
@@ -69,15 +68,16 @@ public sealed class QuerySuggestionService : IQuerySuggestionSource
         }
 
         var now = clock();
+        var indexSettings = settings.Get(indexName);
         string key = $"{indexName}|{prefix}|{limit}";
 
-        if (cache.TryGetValue(key, out var cached) && now - cached.Created <= options.CurrentValue.CacheTtl)
+        if (cache.TryGetValue(key, out var cached) && now - cached.Created <= indexSettings.CacheTtl)
         {
             return cached.Suggestions;
         }
 
         var rows = await store
-            .ReadAsync(indexName, now.AddDays(-Math.Max(1, options.CurrentValue.Analytics.QuerySuggestionDays)), now, cancellationToken)
+            .ReadAsync(indexName, now.AddDays(-Math.Max(1, indexSettings.QuerySuggestionDays)), now, cancellationToken)
             .ConfigureAwait(false);
 
         IReadOnlyList<string> suggestions =

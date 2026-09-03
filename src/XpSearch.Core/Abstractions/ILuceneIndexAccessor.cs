@@ -23,6 +23,20 @@ public interface ILuceneIndexAccessor
     /// <returns><see langword="true"/> when the index exists.</returns>
     bool Exists(string indexName);
 
+    /// <summary>Gets the registered code name of an index, however a request spelled its case.</summary>
+    /// <param name="indexName">Code name of the index as it was asked for.</param>
+    /// <returns>The registered code name, or <see langword="null"/> when no such index is registered.</returns>
+    /// <remarks>
+    /// Per-index settings are named options and <c>IOptionsMonitor.Get</c> compares names ordinally, so
+    /// every lookup keyed by index name goes through this first; index code names are sanitised by the
+    /// administration, so case is the only way a request can differ from the registered name.
+    /// </remarks>
+    string? ResolveName(string indexName);
+
+    /// <summary>Gets the code names of every registered index.</summary>
+    /// <returns>The index names.</returns>
+    IReadOnlyList<string> IndexNames();
+
     /// <summary>Gets the analyzer the index was built with, used for both querying and highlighting.</summary>
     /// <param name="indexName">Code name of the index.</param>
     /// <returns>The index's analyzer.</returns>

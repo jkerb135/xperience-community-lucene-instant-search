@@ -12,25 +12,26 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
-- **Breaking (core):** the global values of `XpSearchOptions` (cache lifetime, query length, page
-  sizes, facet and result-window ceilings, suggestion limits, and every `Analytics` number) are now
-  owned by the administration. `services.AddXpSearch(o => …)` still accepts them, but they are used
-  **once**: the first application start writes them into a single `XpSearch.Settings` row, and from
-  then on *Search ingestion → Settings* is the source of truth — later edits to the lambda are
-  ignored for those values. To go back to what the code says, delete the row from
-  `XpSearch_Settings` and restart. Per-index settings (`o.Indexes["…"]`) and the indexing options are
-  unaffected. Code that resolved `IOptions<XpSearchOptions>` from the container should resolve
-  `IOptionsMonitor<XpSearchOptions>` and read `.CurrentValue` per operation, or it will not see a
-  saved change until the application restarts; the library's own services already do.
-  `Analytics.RetentionDays` also changed default, 180 → **365** days.
-- **Added (core, admin):** a **Settings** page in the Search ingestion application edits every global
-  search setting, headed by *"Remove search analytics older than X days"* (default 365). The values
-  are stored in one row, loaded over the host's configuration through
-  `IConfigureOptions<XpSearchOptions>`, and a save is in effect on the next search without an
-  application restart (an `IOptionsChangeTokenSource` fires on the row's insert/update event).
-  The `XpSearch.QueryLogRetention` task now prunes with that window and additionally deletes
-  *answered* popularity and synonym suggestions older than it — pending suggestions are never
-  touched — and its *Last result* message reports all three counts.
+- **Breaking (core):** the root values of `XpSearchOptions` (cache lifetime, query length, page sizes,
+  facet and result-window ceilings, suggestion limits, and every `Analytics` number) are now the
+  **defaults for every index**, and the administration overrides them **per index** on *Lucene Search
+  → index → Search settings*. `services.AddXpSearch(o => …)` keeps configuring the defaults, and an
+  index nobody saved settings for uses them unchanged; a saved index uses its own row from then on.
+  Code that read one of those sixteen values off `IOptions<XpSearchOptions>` should read
+  `IOptionsMonitor<XpSearchIndexSettings>.Get(indexCodeName)` per operation instead — the root
+  properties are still there, but they are no longer what a given index answers with. Per-index
+  code-only settings (`o.Indexes["…"]`: sort keys, suggest field and mode, did-you-mean, popular
+  searches) and the indexing options are unaffected. `Analytics.RetentionDays` also changed default,
+  180 → **365** days.
+- **Added (core, admin):** a **Search settings** page per index (*Lucene Search → index → Search
+  settings*) edits all sixteen values, headed by *"Remove search analytics older than X days"*
+  (default 365). Each index's row is loaded over the code defaults through
+  `IConfigureNamedOptions<XpSearchIndexSettings>`, and a save is in effect on the next search without
+  an application restart — only the saved index's settings are rebuilt. The
+  `XpSearch.QueryLogRetention` task now prunes **each index with its own window**, deletes *answered*
+  popularity and synonym suggestions along with the query log rows — pending suggestions are never
+  touched — prunes rows left behind by indexes that are no longer registered with the code defaults,
+  and reports one line per index as its *Last result*.
 
 - **Fixed (widgets):** the `./widgets` barrel now tree-shakes. `DEFAULT_WIDGETS` references every
   widget as a value, so having it in the barrel dragged all fourteen widgets into any bundle that
