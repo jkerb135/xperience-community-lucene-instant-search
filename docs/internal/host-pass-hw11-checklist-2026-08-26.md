@@ -490,7 +490,28 @@ every command below resolves on the current main; these items confirm the runnin
      the assembly the host loaded (`XpSearch.Admin.dll` timestamp in the host's `bin`) *before*
      reporting — that message names the page it looked on, and the answer is usually the timestamp.
 
-## §X — AR-1 analytics retention setting (2026-09-02)
+## §Y — AR-2 per-index search settings (2026-09-03)
+
+Supersedes §X: the settings moved from one global page to **Lucene Search → an index → Search
+settings** (named options per index; the host lambda's root values are the defaults for every
+index; a row exists only after a save). Items 116–120 below are kept for history only.
+
+121. **Per-index page, no global page.** Lucene Search → **DancingGoatSample** → **Search settings**
+     lists the sixteen values with the code defaults (retention **365**, default page size **20**).
+     **Search ingestion** no longer has a Settings entry.
+122. **Live, and only that index.** Set **Default page size** to **3**, save, then run the API probe
+     from item 116a (no `pageSize` in the body) → `pageSize 3` within seconds. Run the same probe
+     against a second index (create one in Lucene Search if there is none; any strategy) → still
+     `20`. Set DancingGoatSample back to 20 → `20`. No restart at any point.
+123. **Retention per index.** Set DancingGoatSample's retention to **1**, save, run the
+     `XpSearch query log retention` task → *Last result* names the index and its three deleted
+     counts; a second index's rows (if any) are untouched. Restore the value.
+124. **Survives a restart.** Set a value, restart the host, reopen → unchanged.
+125. **Orphan rows use the defaults.** Delete (or rename) a test index that has a settings row and
+     log rows, run the task → the event/console log names the orphan index and the rows are pruned
+     with the default window.
+
+## §X — AR-1 analytics retention setting (2026-09-02) — SUPERSEDED by §Y
 
 Every global `XpSearchOptions` / `Analytics` value is now editable on **Search ingestion →
 Settings** (the library's own admin application), seeded once from the host's `AddXpSearch`

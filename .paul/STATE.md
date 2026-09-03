@@ -30,7 +30,7 @@ Progress:
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ○        ○     [06-02 plan created, awaiting approval]
+  ✓        ◉        ○     [06-02 APPLY: AR-2 spec committed (9adfdfb), implementer dispatched]
 ```
 
 ## Accumulated Context
