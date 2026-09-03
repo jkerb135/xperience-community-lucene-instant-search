@@ -1,0 +1,77 @@
+{
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "title": "Desktop results page",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1000
+    },
+    {
+      "file": "Autocomplete.dc.html",
+      "title": "Autocomplete panel",
+      "x": 1560,
+      "y": 0,
+      "w": 720,
+      "h": 680
+    },
+    {
+      "file": "Mobile.dc.html",
+      "title": "Mobile results",
+      "x": 1560,
+      "y": 820,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "MobileFilters.dc.html",
+      "title": "Mobile filter sheet",
+      "x": 2050,
+      "y": 820,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "States.dc.html",
+      "title": "Edge states",
+      "x": 0,
+      "y": 1140,
+      "w": 1440,
+      "h": 680
+    }
+  ],
+  "annotations": [
+    {
+      "id": "tokens-note",
+      "x": 0,
+      "y": -260,
+      "w": 460,
+      "text": "Kentico brand palette (brand.kentico.com): accent = Violet 60 #AF00FA (5:1 on white, AA for links), hover/dark = Violet 70 #7F09B7, highlight marks = Violet 20 #EBD8FF, chip/hover tint = Violet 10 #F7F1FF. Heritage Orange #F05A22 fails AA for link text (~3:1), so it stays out of the interactive default; a host wanting it swaps one token. Editorial spin kept: highlighter-underline marks, 2px facet rules, tabular counts, micro-labels, underline pagination."
+    },
+    {
+      "id": "new-vs-current",
+      "x": 500,
+      "y": -300,
+      "w": 480,
+      "text": "New vs. today's default template (needs your approval):\n1. Breadcrumb/section path line on the result card\n2. Content-type micro-label (accent, uppercase)\n3. Facet value counts right-aligned\n4. Filetype icon slot for documents/PDFs\n5. Richer no-results states (clear-filters shortcut, did-you-mean, popular searches)\n6. Keyboard-hint footer on autocomplete\n7. Mobile Filter & Sort sheet with live 'Show N results' apply button"
+    },
+    {
+      "id": "mobile-note",
+      "x": 1560,
+      "y": 700,
+      "w": 400,
+      "text": "Below 1024px the facet sidebar becomes the Filter & Sort button (active count badge) + scrolling chips; load-more replaces pagination. The sheet shows a pending Product selection, so its apply button previews 8 of the current 14."
+    },
+    {
+      "id": "scenario-note",
+      "x": 1020,
+      "y": -260,
+      "w": 380,
+      "text": "Sample scenario is consistent throughout: query 'coffee grinder', Category: Grinders filter active, 14 results (Product 8 / Article 3 / Page 2 / Document 1). Version picker: v1 = Satellite-style blue, v2 = terracotta editorial, v3 = Kentico violet (current)."
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}

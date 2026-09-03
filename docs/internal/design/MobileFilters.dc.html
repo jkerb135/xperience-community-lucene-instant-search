@@ -1,0 +1,95 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    a { color: #AF00FA; text-decoration: none; }
+    a:hover { color: #7F09B7; text-decoration: underline; }
+  </style>
+</helmet>
+<div style="width: 390px; height: 844px; background: rgba(31, 36, 48, 0.4); display: flex; flex-direction: column; justify-content: flex-end;">
+  <div style="background: #ffffff; color: #1f2430; border-radius: 12px 12px 0 0; display: flex; flex-direction: column; height: 92%; box-shadow: 0 -8px 32px rgba(31, 36, 48, 0.2);">
+
+    <!-- sheet header -->
+    <div style="display: flex; align-items: center; justify-content: space-between; padding: 18px 20px; border-bottom: 1px solid #e3e5ea;">
+      <div style="font-size: 17px; font-weight: 700;">Filter &amp; Sort</div>
+      <div style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 999px; background: #f2f3f5;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5c6370" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; padding: 8px 20px; overflow: hidden; flex-grow: 1;">
+
+      <!-- sort -->
+      <div style="display: flex; flex-direction: column; gap: 10px; padding: 16px 0; border-bottom: 1px solid #eef0f3;">
+        <div style="font-size: 14px; font-weight: 600;">Sort by</div>
+        <div style="display: flex; gap: 8px;">
+          <div style="font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 999px; background: #AF00FA; color: #ffffff;">Relevance</div>
+          <div style="font-size: 13px; padding: 8px 14px; border-radius: 999px; border: 1px solid #e3e5ea;">Newest</div>
+          <div style="font-size: 13px; padding: 8px 14px; border-radius: 999px; border: 1px solid #e3e5ea;">Price</div>
+        </div>
+      </div>
+
+      <!-- Content type group, expanded -->
+      <div style="display: flex; flex-direction: column; gap: 14px; padding: 16px 0; border-bottom: 1px solid #eef0f3;">
+        <div style="display: flex; align-items: center; justify-content: space-between; font-size: 14px; font-weight: 600;">
+          Content type
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5c6370" stroke-width="2" stroke-linecap="round"><path d="M18 15l-6-6-6 6"></path></svg>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 14px; font-size: 15px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 20px; height: 20px; border-radius: 5px; background: #AF00FA; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"></path></svg></div>
+            <span style="font-weight: 600;">Product</span>
+            <span style="margin-left: auto; font-size: 13px; color: #8a909b; font-variant-numeric: tabular-nums;">8</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 20px; height: 20px; border-radius: 5px; border: 1px solid #c9cdd4; background: #ffffff; flex-shrink: 0;"></div>
+            <span>Article</span>
+            <span style="margin-left: auto; font-size: 13px; color: #8a909b; font-variant-numeric: tabular-nums;">3</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 20px; height: 20px; border-radius: 5px; border: 1px solid #c9cdd4; background: #ffffff; flex-shrink: 0;"></div>
+            <span>Page</span>
+            <span style="margin-left: auto; font-size: 13px; color: #8a909b; font-variant-numeric: tabular-nums;">2</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 20px; height: 20px; border-radius: 5px; border: 1px solid #c9cdd4; background: #ffffff; flex-shrink: 0;"></div>
+            <span>Document</span>
+            <span style="margin-left: auto; font-size: 13px; color: #8a909b; font-variant-numeric: tabular-nums;">1</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- collapsed groups -->
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 18px 0; border-bottom: 1px solid #eef0f3; font-size: 14px; font-weight: 600;">
+        <div style="display: flex; align-items: center; gap: 8px;">Category <span style="font-size: 12px; font-weight: 400; color: #5c6370;">&middot; Grinders</span></div>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5c6370" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"></path></svg>
+      </div>
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 18px 0; border-bottom: 1px solid #eef0f3; font-size: 14px; font-weight: 600;">
+        Price
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5c6370" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"></path></svg>
+      </div>
+      <div style="display: flex; align-items: center; justify-content: space-between; padding: 18px 0; font-size: 14px; font-weight: 600;">
+        In stock only
+        <div style="width: 40px; height: 24px; border-radius: 999px; background: #e3e5ea; display: flex; align-items: center; padding: 2px;">
+          <div style="width: 20px; height: 20px; border-radius: 999px; background: #ffffff; box-shadow: 0 1px 2px rgba(31, 36, 48, 0.2);"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- sticky apply bar -->
+    <div style="display: flex; align-items: center; gap: 12px; padding: 14px 20px 24px 20px; border-top: 1px solid #e3e5ea; background: #ffffff;">
+      <a style="font-size: 14px; white-space: nowrap;">Clear all</a>
+      <div style="display: flex; align-items: center; justify-content: center; height: 48px; flex-grow: 1; background: #AF00FA; color: #ffffff; border-radius: 6px; font-size: 15px; font-weight: 600;">Show 8 results</div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

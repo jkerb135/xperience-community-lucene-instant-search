@@ -30,7 +30,8 @@ Phases: 3 of 6 complete (plus inserted 1.1)
 | 3 | Verification closure & defect burn-down | TBD | In progress (owner items) | - |
 | 4 | Remaining spec scope | 5 | Complete (2026-09-02) | 2026-09-02 |
 | 5 | Packaging & release (spec Phase 8) | TBD | Not started | - |
-| 6 | Analytics retention setting & cleanup task | 2 | In progress (06-01 done; 06-02 per-index) | - |
+| 6 | Analytics retention setting & cleanup task | 2 | In progress (06-01 done; 06-02 per-index, AR-3 + UX-1 final round in flight) | - |
+| 7 | Artboard parity: autocomplete panel + edge states | 1 | Planning (07-01 written 2026-09-03) | - |
 
 ## Phase Details
 
@@ -173,6 +174,15 @@ verified live — "There are 2 results without them / Clear filters and show 2 r
 **Plans:**
 - [x] 06-01: AR-1 — global settings row + Search ingestion → Settings page + IConfigureOptions overlay (live), retention 365 + answered-suggestion prune — merged 07928a7 + fix 76bef0e (2026-09-02); owner redirected at checkpoint → per index
 - [ ] 06-02: AR-2 — settings per index via named options (`IOptionsMonitor<XpSearchIndexSettings>.Get(indexCodeName)`), Settings page in each index's tuning section, per-name invalidation, retention per index; replaces the global page/row
+
+### Phase 7: Artboard parity: autocomplete panel + edge states
+
+**Goal:** The default theme reproduces the *Autocomplete panel* and *Edge states* artboards exactly (row icons, recent-row remove, prefix band highlight, Pages meta line; centred white-card empty states with pill chips), and Load more mode gains the missing empty state.
+**Depends on:** Nothing hard (runs in parallel with the Phase 6 close-out; different files). Should land before Phase 5 packaging.
+**Research:** Unlikely — the artboards are checked in at `docs/internal/design/` and are the spec.
+
+**Plans:**
+- [ ] 07-01: TH-6 — spec `docs/internal/units/TH-6.md`; PLAN written 2026-09-03
 
 ---
 *Roadmap created: 2026-09-01*
