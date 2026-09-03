@@ -500,9 +500,14 @@ and the `XpSearch.QueryLogRetention` task now also prunes answered suggestions.
 116. **Visible with the defaults.** Open **Search ingestion → Settings**. Every row of the AR-1
      spec's table is listed; **Remove search analytics older than X days** shows **365**, and
      **Maximum page size** shows the value the host lambda set (100 unless Program.cs changed it).
-116a. **Live without a restart.** Set **Default page size** to **3**, save, then run a search on
-     the demo page — the first page shows three results. Set it back to 20 and confirm the page
-     shows twenty again, still without restarting.
+116a. **Live without a restart.** The demo's results widget sends its own page size (the
+     *Results per page* property), so the demo page cannot show this — the API can. Set
+     **Default page size** to **3**, save, then within a few seconds run in a terminal:
+     `Invoke-RestMethod -Method Post -Uri http://localhost:27340/api/xpsearch/query -ContentType application/json -Body '{"index":"DancingGoatSample","query":"coffee"}' | Select-Object pageSize`
+     → `pageSize 3`. Set it back to 20, re-run → `20`. No restart in between. (First walk
+     2026-09-02: the value only showed up after ~30 minutes — the row read sat behind a Kentico
+     cache entry whose dependency did not fire; fixed by reading the row directly on each
+     options rebuild, which only happens on a save.)
 117. **The task honours it.** Set the value to **1**, save. Open **Scheduled tasks** → the
      `XpSearch query log retention` configuration → **Run**. *Last result* reads
      `Deleted N query log rows, N popularity suggestions, N synonym suggestions older than <cutoff>` —
