@@ -490,6 +490,28 @@ every command below resolves on the current main; these items confirm the runnin
      the assembly the host loaded (`XpSearch.Admin.dll` timestamp in the host's `bin`) *before*
      reporting — that message names the page it looked on, and the answer is usually the timestamp.
 
+## §Z — TH-6 artboard parity: autocomplete panel + edge states (2026-09-03)
+
+Open the boards beside the demo: `docs/internal/design/Autocomplete.dc.html` and `States.dc.html`
+(self-contained HTML). The lead's screenshots are in the session; these are the owner's eyes.
+
+126. **Panel.** On `/search`, search "coffee" once (creates a recent), clear the box, type `gri` →
+     the panel shows **Recent** (clock glyph, X at the row end; hovering the X tints it; **Delete**
+     on the highlighted recent row removes it without closing the panel), **Suggestions** (magnifier
+     glyph, violet band under the typed prefix), **Pages** (accent semibold title, muted type line —
+     type only: price/category are not on the wire, recorded gap), keycap footer. Compare with
+     `Autocomplete.dc.html`.
+127. **No results, recovery.** `/search?q=expreso` at desktop width → a white bordered card, centred
+     36px glyph, "No results for “expreso”" 16px semibold, "Did you mean **espresso**?" (click runs
+     it), **POPULAR SEARCHES** label with **pill** chips. No "Try fewer words" line. Compare with the
+     right column of `States.dc.html`.
+128. **No results, with filters.** Search a real term, tick a facet that yields 0 → the card shows
+     "No results for “…” with these filters", "There are **N results** without them.", and the
+     violet **Clear filters and show N results** button (38px tall). Middle column of the board.
+129. **Load more mode.** Narrow the window under 1024px, reload `/search?q=expreso` → the same
+     recovery card renders and the **No more results** control is hidden. (Its button reads
+     "Clear filters" without a count — recorded limitation.)
+
 ## §Y — AR-2 per-index search settings (2026-09-03)
 
 Supersedes §X: the settings moved from one global page to **Lucene Search → an index → Search
