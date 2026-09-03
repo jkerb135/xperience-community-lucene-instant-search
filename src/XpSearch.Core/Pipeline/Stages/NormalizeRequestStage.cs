@@ -16,13 +16,18 @@ public sealed class NormalizeRequestStage : ISearchStage
     private const long ContractMaxPageSize = 1000;
 
     private readonly IOptionsMonitor<XpSearchOptions> options;
+    private readonly IOptionsMonitor<XpSearchIndexSettings> settings;
 
     /// <summary>Initializes a new instance of the <see cref="NormalizeRequestStage"/> class.</summary>
-    /// <param name="options">The current search options.</param>
-    public NormalizeRequestStage(IOptionsMonitor<XpSearchOptions> options)
+    /// <param name="options">The current search options, for the index's code-only members.</param>
+    /// <param name="settings">The current per-index settings (AR-2).</param>
+    public NormalizeRequestStage(IOptionsMonitor<XpSearchOptions> options, IOptionsMonitor<XpSearchIndexSettings> settings)
     {
         ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(settings);
+
         this.options = options;
+        this.settings = settings;
     }
 
     /// <inheritdoc />
@@ -34,11 +39,12 @@ public sealed class NormalizeRequestStage : ISearchStage
         ArgumentNullException.ThrowIfNull(context);
 
         var request = context.Request;
+        var indexSettings = settings.Get(context.IndexName);
 
-        context.QueryText = Normalize(request.Query, options.CurrentValue.MaxQueryLength);
+        context.QueryText = Normalize(request.Query, indexSettings.MaxQueryLength);
         context.Page = ValidatePage(request.Page);
-        context.PageSize = ValidatePageSize(request.PageSize);
-        ValidateResultWindow(context.Page, context.PageSize);
+        context.PageSize = ValidatePageSize(request.PageSize, indexSettings);
+        ValidateResultWindow(context.Page, context.PageSize, indexSettings);
 
         context.RequestedFacets = ValidateFacets(request.Facets, context.Schema);
         context.FacetFilters = ValidateFacetFilters(request.Filters?.Facets, context.Schema);
@@ -86,11 +92,11 @@ public sealed class NormalizeRequestStage : ISearchStage
         return (int)page.Value;
     }
 
-    private int ValidatePageSize(long? pageSize)
+    private static int ValidatePageSize(long? pageSize, XpSearchIndexSettings settings)
     {
         if (pageSize is null)
         {
-            return options.CurrentValue.DefaultPageSize;
+            return settings.DefaultPageSize;
         }
 
         if (pageSize < 1 || pageSize > ContractMaxPageSize)
@@ -102,18 +108,18 @@ public sealed class NormalizeRequestStage : ISearchStage
 
         // The contract ceiling is rejected above; the configured ceiling is clamped, and the clamped
         // value is what the response reports back.
-        return (int)Math.Min(pageSize.Value, options.CurrentValue.MaxPageSize);
+        return (int)Math.Min(pageSize.Value, settings.MaxPageSize);
     }
 
-    private void ValidateResultWindow(int page, int pageSize)
+    private static void ValidateResultWindow(int page, int pageSize, XpSearchIndexSettings settings)
     {
         long window = (long)page * pageSize;
 
-        if (window > options.CurrentValue.MaxResultWindow)
+        if (window > settings.MaxResultWindow)
         {
             throw new SearchValidationException(
                 "page",
-                $"page multiplied by pageSize must not exceed {options.CurrentValue.MaxResultWindow} results.");
+                $"page multiplied by pageSize must not exceed {settings.MaxResultWindow} results.");
         }
     }
 

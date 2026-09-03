@@ -2,13 +2,12 @@ using CMS.DataEngine;
 
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.Extensions.Primitives;
 
 namespace XpSearch.Core.Options;
 
 /// <summary>
-/// The global search settings as plain numbers (AR-1), free of the storage row: what an administrator
-/// edits, what is stored, and what the options overlay writes onto <see cref="XpSearchOptions"/>.
+/// One index's search settings as plain numbers (AR-2), free of the storage row: what an administrator
+/// edits, what is stored, and what the named options overlay writes onto <see cref="XpSearchIndexSettings"/>.
 /// </summary>
 /// <remarks>
 /// A separate type because a Kentico Info object cannot be constructed without the application's IoC
@@ -64,62 +63,71 @@ public sealed record SearchSettingsValues
     /// <summary>Gets how often a reformulation has to happen before it is suggested.</summary>
     public int SynonymMinimumOccurrences { get; init; }
 
-    /// <summary>Reads the values off options, which is what a first start seeds the stored row with.</summary>
-    /// <param name="options">The options to read.</param>
+    /// <summary>Reads the values off an index's settings, which is what its form is filled from.</summary>
+    /// <param name="settings">The settings to read.</param>
     /// <returns>The values.</returns>
-    public static SearchSettingsValues From(XpSearchOptions options)
+    public static SearchSettingsValues From(XpSearchIndexSettings settings)
     {
-        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(settings);
 
         return new SearchSettingsValues
         {
-            CacheTtlSeconds = (int)Math.Max(0, options.CacheTtl.TotalSeconds),
-            MaxQueryLength = options.MaxQueryLength,
-            DefaultPageSize = options.DefaultPageSize,
-            MaxPageSize = options.MaxPageSize,
-            MaxFacetValues = options.MaxFacetValues,
-            MaxResultWindow = options.MaxResultWindow,
-            DefaultSuggestLimit = options.DefaultSuggestLimit,
-            MaxSuggestLimit = options.MaxSuggestLimit,
-            RetentionDays = options.Analytics.RetentionDays,
-            RetentionBatchSize = options.Analytics.RetentionBatchSize,
-            QuerySuggestionDays = options.Analytics.QuerySuggestionDays,
-            PopularityLookbackDays = options.Analytics.PopularityLookbackDays,
-            PopularityDocumentLimit = options.Analytics.PopularityDocumentLimit,
-            PopularitySuggestionQueries = options.Analytics.PopularitySuggestionQueries,
-            SynonymWindowSeconds = options.Analytics.SynonymWindowSeconds,
-            SynonymMinimumOccurrences = options.Analytics.SynonymMinimumOccurrences
+            CacheTtlSeconds = (int)Math.Max(0, settings.CacheTtl.TotalSeconds),
+            MaxQueryLength = settings.MaxQueryLength,
+            DefaultPageSize = settings.DefaultPageSize,
+            MaxPageSize = settings.MaxPageSize,
+            MaxFacetValues = settings.MaxFacetValues,
+            MaxResultWindow = settings.MaxResultWindow,
+            DefaultSuggestLimit = settings.DefaultSuggestLimit,
+            MaxSuggestLimit = settings.MaxSuggestLimit,
+            RetentionDays = settings.RetentionDays,
+            RetentionBatchSize = settings.RetentionBatchSize,
+            QuerySuggestionDays = settings.QuerySuggestionDays,
+            PopularityLookbackDays = settings.PopularityLookbackDays,
+            PopularityDocumentLimit = settings.PopularityDocumentLimit,
+            PopularitySuggestionQueries = settings.PopularitySuggestionQueries,
+            SynonymWindowSeconds = settings.SynonymWindowSeconds,
+            SynonymMinimumOccurrences = settings.SynonymMinimumOccurrences
         };
     }
 
-    /// <summary>Writes the values onto options, overwriting whatever the host's lambda configured.</summary>
-    /// <param name="options">The options to overwrite.</param>
-    public void ApplyTo(XpSearchOptions options)
+    /// <summary>Writes the stored values over the code-configured ones.</summary>
+    /// <param name="settings">The settings to overwrite.</param>
+    /// <remarks>
+    /// A column an upgrade added exists but was never written, and reads as 0; since every value but
+    /// the cache lifetime has to be one or greater, a non-positive number means "nobody set this" and
+    /// the code default stands.
+    /// </remarks>
+    public void ApplyTo(XpSearchIndexSettings settings)
     {
-        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(settings);
 
-        options.CacheTtl = TimeSpan.FromSeconds(Math.Max(0, CacheTtlSeconds));
-        options.MaxQueryLength = MaxQueryLength;
-        options.DefaultPageSize = DefaultPageSize;
-        options.MaxPageSize = MaxPageSize;
-        options.MaxFacetValues = MaxFacetValues;
-        options.MaxResultWindow = MaxResultWindow;
-        options.DefaultSuggestLimit = DefaultSuggestLimit;
-        options.MaxSuggestLimit = MaxSuggestLimit;
-        options.Analytics.RetentionDays = RetentionDays;
-        options.Analytics.RetentionBatchSize = RetentionBatchSize;
-        options.Analytics.QuerySuggestionDays = QuerySuggestionDays;
-        options.Analytics.PopularityLookbackDays = PopularityLookbackDays;
-        options.Analytics.PopularityDocumentLimit = PopularityDocumentLimit;
-        options.Analytics.PopularitySuggestionQueries = PopularitySuggestionQueries;
-        options.Analytics.SynonymWindowSeconds = SynonymWindowSeconds;
-        options.Analytics.SynonymMinimumOccurrences = SynonymMinimumOccurrences;
+        // Zero is a legal cache lifetime - it turns response caching off - so this one is always applied.
+        settings.CacheTtl = TimeSpan.FromSeconds(Math.Max(0, CacheTtlSeconds));
+
+        settings.MaxQueryLength = Or(MaxQueryLength, settings.MaxQueryLength);
+        settings.DefaultPageSize = Or(DefaultPageSize, settings.DefaultPageSize);
+        settings.MaxPageSize = Or(MaxPageSize, settings.MaxPageSize);
+        settings.MaxFacetValues = Or(MaxFacetValues, settings.MaxFacetValues);
+        settings.MaxResultWindow = Or(MaxResultWindow, settings.MaxResultWindow);
+        settings.DefaultSuggestLimit = Or(DefaultSuggestLimit, settings.DefaultSuggestLimit);
+        settings.MaxSuggestLimit = Or(MaxSuggestLimit, settings.MaxSuggestLimit);
+        settings.RetentionDays = Or(RetentionDays, settings.RetentionDays);
+        settings.RetentionBatchSize = Or(RetentionBatchSize, settings.RetentionBatchSize);
+        settings.QuerySuggestionDays = Or(QuerySuggestionDays, settings.QuerySuggestionDays);
+        settings.PopularityLookbackDays = Or(PopularityLookbackDays, settings.PopularityLookbackDays);
+        settings.PopularityDocumentLimit = Or(PopularityDocumentLimit, settings.PopularityDocumentLimit);
+        settings.PopularitySuggestionQueries = Or(PopularitySuggestionQueries, settings.PopularitySuggestionQueries);
+        settings.SynonymWindowSeconds = Or(SynonymWindowSeconds, settings.SynonymWindowSeconds);
+        settings.SynonymMinimumOccurrences = Or(SynonymMinimumOccurrences, settings.SynonymMinimumOccurrences);
     }
+
+    private static int Or(int stored, int fallback) => stored > 0 ? stored : fallback;
 }
 
 /// <summary>
-/// Turns the stored settings row into <see cref="SearchSettingsValues"/> and back (AR-1). The one place
-/// the column mapping lives: the installer's seeding and the administration's Settings page both use it.
+/// Turns a stored settings row into <see cref="SearchSettingsValues"/> and back (AR-2). The one place
+/// the column mapping lives: the overlay and the administration's Search settings page both use it.
 /// </summary>
 public static class StoredSearchSettings
 {
@@ -153,14 +161,17 @@ public static class StoredSearchSettings
 
     /// <summary>Builds an unsaved row carrying every column (RK-2: an unset column would insert NULL).</summary>
     /// <param name="values">The values to store.</param>
+    /// <param name="indexName">Code name of the index the row belongs to.</param>
     /// <returns>The row.</returns>
-    public static XpSearchSettingsInfo NewRow(SearchSettingsValues values)
+    public static XpSearchSettingsInfo NewRow(SearchSettingsValues values, string indexName)
     {
         ArgumentNullException.ThrowIfNull(values);
+        ArgumentException.ThrowIfNullOrWhiteSpace(indexName);
 
         return new XpSearchSettingsInfo
         {
             SettingsGuid = Guid.NewGuid(),
+            SettingsIndexName = indexName,
             SettingsCacheTtlSeconds = values.CacheTtlSeconds,
             SettingsMaxQueryLength = values.MaxQueryLength,
             SettingsDefaultPageSize = values.DefaultPageSize,
@@ -181,21 +192,22 @@ public static class StoredSearchSettings
     }
 }
 
-/// <summary>Reads the single stored settings row, or nothing when the installation has none yet.</summary>
+/// <summary>Reads one index's stored settings row, or nothing when it has none.</summary>
 internal interface IStoredSearchSettingsSource
 {
-    /// <summary>Reads the stored values.</summary>
-    /// <returns>The stored values, or <see langword="null"/> when there is no row yet.</returns>
-    SearchSettingsValues? Get();
+    /// <summary>Reads the stored values of an index.</summary>
+    /// <param name="indexName">Code name of the index.</param>
+    /// <returns>The stored values, or <see langword="null"/> when the index has no row.</returns>
+    SearchSettingsValues? Get(string indexName);
 }
 
 /// <summary>
 /// Reads the row from the database, straight, on every call.
 /// </summary>
 /// <remarks>
-/// Deliberately uncached: <see cref="IOptionsMonitor{TOptions}"/> holds the built options until
-/// <see cref="XpSearchSettingsChangeTokenSource"/> fires, so this runs at most once per save, and a
-/// cache in front of it can only serve the values the save just replaced.
+/// Deliberately uncached: <see cref="IOptionsMonitor{TOptions}"/> holds each index's built settings
+/// until <see cref="XpSearchIndexSettingsInvalidator"/> drops that name, so this runs once per index
+/// per save, and a cache in front of it can only serve the values the save just replaced.
 /// </remarks>
 internal sealed class InfoStoredSearchSettingsSource : IStoredSearchSettingsSource
 {
@@ -208,96 +220,122 @@ internal sealed class InfoStoredSearchSettingsSource : IStoredSearchSettingsSour
         this.rows = rows;
     }
 
-    public SearchSettingsValues? Get()
+    public SearchSettingsValues? Get(string indexName)
     {
-        var row = rows.Get().TopN(1).FirstOrDefault();
+        var row = rows.Get()
+            .WhereEquals(nameof(XpSearchSettingsInfo.SettingsIndexName), indexName)
+            .TopN(1)
+            .FirstOrDefault();
 
         return row is null ? null : StoredSearchSettings.Read(row);
     }
 }
 
 /// <summary>
-/// Loads the stored global settings into <see cref="XpSearchOptions"/> (AR-1). Registered after the
-/// host's <c>AddXpSearch(o =&gt; ...)</c> lambda, so what an administrator saved wins over code.
+/// Builds one index's <see cref="XpSearchIndexSettings"/> (AR-2): the host's
+/// <c>AddXpSearch(o =&gt; ...)</c> values first, then that index's stored row over them.
 /// </summary>
 /// <remarks>
-/// A host with no database (unit tests, first start before the installer ran) keeps the code-configured
-/// values: a failed read is logged at Debug and swallowed, because options binding runs on the first
-/// search and must not take the request down.
+/// A class implementing <see cref="IConfigureNamedOptions{TOptions}"/> is registered as an
+/// <see cref="IConfigureOptions{TOptions}"/>, and the unnamed instance gets the code defaults alone.
+/// A host with no database (unit tests, first start before the installer ran) keeps them too: a failed
+/// read is logged at Debug and swallowed, because options binding runs on the first search and must
+/// not take the request down.
 /// </remarks>
-internal sealed class XpSearchStoredSettingsConfigureOptions : IConfigureOptions<XpSearchOptions>
+internal sealed class XpSearchIndexSettingsSetup : IConfigureNamedOptions<XpSearchIndexSettings>
 {
+    private readonly IOptions<XpSearchOptions> defaults;
     private readonly IStoredSearchSettingsSource source;
-    private readonly ILogger<XpSearchStoredSettingsConfigureOptions> logger;
+    private readonly ILogger<XpSearchIndexSettingsSetup> logger;
 
-    public XpSearchStoredSettingsConfigureOptions(
+    public XpSearchIndexSettingsSetup(
+        IOptions<XpSearchOptions> defaults,
         IStoredSearchSettingsSource source,
-        ILogger<XpSearchStoredSettingsConfigureOptions> logger)
+        ILogger<XpSearchIndexSettingsSetup> logger)
     {
+        ArgumentNullException.ThrowIfNull(defaults);
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(logger);
 
+        this.defaults = defaults;
         this.source = source;
         this.logger = logger;
     }
 
-    public void Configure(XpSearchOptions options)
+    public void Configure(XpSearchIndexSettings options) =>
+        Configure(Microsoft.Extensions.Options.Options.DefaultName, options);
+
+    public void Configure(string? name, XpSearchIndexSettings options)
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        SearchSettingsValues? values;
+        options.SetDefaultsFrom(defaults.Value);
 
-        try
+        if (string.IsNullOrEmpty(name))
         {
-            values = source.Get();
-        }
-        catch (Exception exception)
-        {
-            logger.LogDebug(exception, "The stored search settings could not be read; the configured values are used.");
-
             return;
         }
 
-        values?.ApplyTo(options);
+        try
+        {
+            source.Get(name)?.ApplyTo(options);
+        }
+        catch (Exception exception)
+        {
+            logger.LogDebug(
+                exception,
+                "The stored search settings of index '{Index}' could not be read; the configured values are used.",
+                name);
+        }
     }
 }
 
 /// <summary>
-/// Makes <see cref="IOptionsMonitor{TOptions}"/> reload <see cref="XpSearchOptions"/> when the stored
-/// settings row is saved, so an administrator's change is live without an application restart.
+/// Drops one index's built <see cref="XpSearchIndexSettings"/> when its stored row is saved, so an
+/// administrator's change is live without an application restart and no other index is rebuilt.
 /// </summary>
 /// <remarks>
-/// The trigger is the object type's own insert/update event
+/// The trigger is the object type's own insert/update/delete event
 /// (https://docs.kentico.com/documentation/developers-and-admins/customization/handle-global-events),
 /// which fires wherever the row is written from.
 /// </remarks>
-internal sealed class XpSearchSettingsChangeTokenSource : IOptionsChangeTokenSource<XpSearchOptions>, IDisposable
+internal sealed class XpSearchIndexSettingsInvalidator
 {
-    private CancellationTokenSource changed = new();
+    private readonly IOptionsMonitorCache<XpSearchIndexSettings> cache;
+    private bool started;
 
-    public XpSearchSettingsChangeTokenSource()
+    public XpSearchIndexSettingsInvalidator(IOptionsMonitorCache<XpSearchIndexSettings> cache)
     {
+        ArgumentNullException.ThrowIfNull(cache);
+
+        this.cache = cache;
+    }
+
+    /// <summary>Subscribes to the row's save events. Calling it twice subscribes once.</summary>
+    internal void Start()
+    {
+        if (started)
+        {
+            return;
+        }
+
+        started = true;
+
         XpSearchSettingsInfo.TYPEINFO.Events.Insert.After += OnSaved;
         XpSearchSettingsInfo.TYPEINFO.Events.Update.After += OnSaved;
+        XpSearchSettingsInfo.TYPEINFO.Events.Delete.After += OnSaved;
     }
 
-    public string Name => Microsoft.Extensions.Options.Options.DefaultName;
-
-    public IChangeToken GetChangeToken() => new CancellationChangeToken(Volatile.Read(ref changed).Token);
-
-    public void Dispose()
+    /// <summary>Forgets one index's settings, so the next <c>Get</c> reads its row again.</summary>
+    /// <param name="indexName">Code name of the index whose row changed.</param>
+    internal void Invalidate(string? indexName)
     {
-        XpSearchSettingsInfo.TYPEINFO.Events.Insert.After -= OnSaved;
-        XpSearchSettingsInfo.TYPEINFO.Events.Update.After -= OnSaved;
-
-        Volatile.Read(ref changed).Dispose();
+        if (!string.IsNullOrEmpty(indexName))
+        {
+            cache.TryRemove(indexName);
+        }
     }
 
-    private void OnSaved(object? sender, ObjectEventArgs e)
-    {
-        var previous = Interlocked.Exchange(ref changed, new CancellationTokenSource());
-
-        previous.Cancel();
-        previous.Dispose();
-    }
+    private void OnSaved(object? sender, ObjectEventArgs e) =>
+        Invalidate((e?.Object as XpSearchSettingsInfo)?.SettingsIndexName);
 }

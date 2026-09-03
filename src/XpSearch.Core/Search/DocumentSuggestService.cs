@@ -34,6 +34,7 @@ public sealed class DocumentSuggestService : ISuggestService
     private readonly IIndexSchemaProvider schemaProvider;
     private readonly IQuerySuggestionSource querySuggestions;
     private readonly IOptionsMonitor<XpSearchOptions> options;
+    private readonly IOptionsMonitor<XpSearchIndexSettings> settings;
     private readonly ILogger<DocumentSuggestService> logger;
 
     // One warning per index, however many suggest requests it serves.
@@ -43,25 +44,29 @@ public sealed class DocumentSuggestService : ISuggestService
     /// <param name="accessor">The Lucene seam.</param>
     /// <param name="schemaProvider">Supplies the schema of the index being suggested from.</param>
     /// <param name="querySuggestions">Answers for an index configured for query suggestions.</param>
-    /// <param name="options">The current search options.</param>
+    /// <param name="options">The current search options, for the index's code-only members.</param>
+    /// <param name="settings">The current per-index settings (AR-2).</param>
     /// <param name="logger">Logger.</param>
     public DocumentSuggestService(
         ILuceneIndexAccessor accessor,
         IIndexSchemaProvider schemaProvider,
         IQuerySuggestionSource querySuggestions,
         IOptionsMonitor<XpSearchOptions> options,
+        IOptionsMonitor<XpSearchIndexSettings> settings,
         ILogger<DocumentSuggestService> logger)
     {
         ArgumentNullException.ThrowIfNull(accessor);
         ArgumentNullException.ThrowIfNull(schemaProvider);
         ArgumentNullException.ThrowIfNull(querySuggestions);
         ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(settings);
         ArgumentNullException.ThrowIfNull(logger);
 
         this.accessor = accessor;
         this.schemaProvider = schemaProvider;
         this.querySuggestions = querySuggestions;
         this.options = options;
+        this.settings = settings;
         this.logger = logger;
     }
 
@@ -82,6 +87,9 @@ public sealed class DocumentSuggestService : ISuggestService
 
         var indexOptions = options.CurrentValue.Indexes[request.Index];
 
+        // The per-index settings are named options, whose names are compared ordinally (AR-2).
+        string index = accessor.ResolveName(request.Index) ?? request.Index;
+
         string prefix = NormalizePrefix(request.Query);
 
         if (prefix.Length == 0)
@@ -89,19 +97,19 @@ public sealed class DocumentSuggestService : ISuggestService
             return Empty();
         }
 
-        int limit = ValidateLimit(request.Limit);
+        int limit = ValidateLimit(request.Limit, settings.Get(index));
 
         if (indexOptions.SuggestMode == SuggestMode.QuerySuggestions)
         {
             return new SuggestResponse
             {
-                Suggestions = [.. await SuggestQueriesAsync(request.Index, prefix, limit, cancellationToken).ConfigureAwait(false)]
+                Suggestions = [.. await SuggestQueriesAsync(index, prefix, limit, cancellationToken).ConfigureAwait(false)]
             };
         }
 
         if (indexOptions.SuggestMode == SuggestMode.Mixed)
         {
-            var queries = await SuggestQueriesAsync(request.Index, prefix, limit, cancellationToken).ConfigureAwait(false);
+            var queries = await SuggestQueriesAsync(index, prefix, limit, cancellationToken).ConfigureAwait(false);
             var documents = await SuggestDocumentsAsync(request, indexOptions, prefix, limit, cancellationToken).ConfigureAwait(false);
 
             return new SuggestResponse { Suggestions = [.. Mix(queries, documents, limit)] };
@@ -230,11 +238,11 @@ public sealed class DocumentSuggestService : ISuggestService
 
     private static string NormalizePrefix(string? query) => (query ?? string.Empty).Trim().ToLowerInvariant();
 
-    private int ValidateLimit(long? limit)
+    private static int ValidateLimit(long? limit, XpSearchIndexSettings settings)
     {
         if (limit is null)
         {
-            return options.CurrentValue.DefaultSuggestLimit;
+            return settings.DefaultSuggestLimit;
         }
 
         if (limit < 1)
@@ -242,7 +250,7 @@ public sealed class DocumentSuggestService : ISuggestService
             throw new SearchValidationException("limit", "limit must be one or greater.");
         }
 
-        return (int)Math.Min(limit.Value, options.CurrentValue.MaxSuggestLimit);
+        return (int)Math.Min(limit.Value, settings.MaxSuggestLimit);
     }
 
     private static Query BuildQuery(string prefix, SchemaField suggestField, string? language)

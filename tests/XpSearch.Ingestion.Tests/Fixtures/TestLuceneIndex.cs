@@ -69,6 +69,10 @@ internal sealed class TestLuceneIndex : ILuceneIndexAccessor, ILuceneClient, IDi
 
     public bool Exists(string indexName) => string.Equals(indexName, IndexName, StringComparison.OrdinalIgnoreCase);
 
+    public string? ResolveName(string indexName) => Exists(indexName) ? IndexName : null;
+
+    public IReadOnlyList<string> IndexNames() => [IndexName];
+
     public Analyzer GetAnalyzer(string indexName) => analyzer;
 
     public IReadOnlyList<string> IndexNamesForStrategy(Type strategyType) => [IndexName];

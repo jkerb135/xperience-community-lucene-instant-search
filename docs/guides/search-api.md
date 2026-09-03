@@ -440,11 +440,10 @@ services.AddXpSearch(options =>
 
 lets a request send `"sort": "newest"`. Anything else is a `400` keyed `sort`.
 
-**`pageSize`** above the contract's ceiling of 1000 is a `400`; above the server's configured ceiling
-(`XpSearchOptions.MaxPageSize`, 100 by default) it is silently clamped, and the response reports the
-clamped value. Deep paging is bounded too: `page * pageSize` must not exceed
-`XpSearchOptions.MaxResultWindow` (10000 by default), because Lucene ranks every document up to that
-depth. That ceiling has a measured cost behind it — see
+**`pageSize`** above the contract's ceiling of 1000 is a `400`; above the index's configured ceiling
+(*Maximum page size*, 100 by default) it is silently clamped, and the response reports the clamped
+value. Deep paging is bounded too: `page * pageSize` must not exceed the index's *Maximum result
+window* (10000 by default), because Lucene ranks every document up to that depth. That ceiling has a measured cost behind it — see
 [Performance and sizing](performance-and-sizing.md), which also says how deep paging, facets, typo
 tolerance and corpus size actually behave.
 
@@ -459,10 +458,10 @@ returned. The result `id` is always returned and is never an attribute.
 highlight tags are inserted, so a snippet is safe to render as HTML and markup in the source content comes
 back escaped.
 
-### Global settings in the administration
+### Per-index settings in the administration
 
-Every global number on `XpSearchOptions` is edited in the administration under **Search ingestion →
-Settings**, not in code:
+Every number on the root of `XpSearchOptions` is a **default for all indexes**, and each index can
+override it in the administration under **Lucene Search → the index → Search settings**:
 
 | Setting | Default | Accepted |
 |---|---|---|
@@ -483,14 +482,20 @@ Settings**, not in code:
 | Synonym reformulation window (seconds) | 60 | 1 or more |
 | Synonym minimum occurrences | 3 | 1 or more |
 
-**The `AddXpSearch(options => …)` lambda seeds these once.** The first application start writes one
-`XpSearch.Settings` row from whatever the lambda configured (or the shipped defaults); from then on the
-Settings page owns them and editing the lambda changes nothing. Saving the page takes effect on the
-next search, without an application restart. To go back to what the code says, delete the row from the
-`XpSearch_Settings` table and restart — the next start seeds it again.
+**The `AddXpSearch(options => …)` lambda sets the defaults.** Nothing is written to the database until
+someone saves an index's Search settings page; an index with no row answers with the lambda's values,
+so changing the lambda still changes every index that was never saved. A save takes effect on the next
+search of **that index**, without an application restart and without rebuilding any other index's
+settings. To go back to what the code says for one index, delete its row from the `XpSearch_Settings`
+table.
 
-What stays in code, because it names content types and fields rather than a policy: everything
-per index (`options.Indexes["…"]` — sort keys, suggest field and mode, did-you-mean, popular searches)
+In code, the settings in effect for an index are
+`IOptionsMonitor<XpSearchIndexSettings>.Get(indexCodeName)`, read per operation. Read it with the
+index's registered code name; the library resolves the name a request sends to it, so a request may
+spell the index's case however it likes.
+
+What stays in code, because it names content types and fields rather than a policy: the rest of
+`options.Indexes["…"]` — sort keys, suggest field and mode, did-you-mean, popular searches —
 and the indexing options (`AddXpSearch(…, indexing => …)`: flattened links and contributed fields).
 
 ### One schema, two type sets

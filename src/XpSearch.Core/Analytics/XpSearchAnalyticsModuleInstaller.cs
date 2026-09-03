@@ -1,9 +1,6 @@
 using CMS.DataEngine;
 using CMS.FormEngine;
-using CMS.Helpers;
 using CMS.Modules;
-
-using Microsoft.Extensions.Options;
 
 namespace XpSearch.Core.Analytics;
 
@@ -21,7 +18,7 @@ public sealed class XpSearchAnalyticsModuleInstaller
     /// <summary>Code name of the module the class belongs to.</summary>
     public const string ResourceName = "CMS.Integration.XpSearchAnalytics";
 
-    /// <summary>The columns of <see cref="Options.XpSearchSettingsInfo"/> that carry a global setting (AR-1).</summary>
+    /// <summary>The columns of <see cref="Options.XpSearchSettingsInfo"/> that carry a per-index setting (AR-2).</summary>
     private static readonly string[] SettingsColumns =
     [
         nameof(Options.XpSearchSettingsInfo.SettingsCacheTtlSeconds),
@@ -44,24 +41,19 @@ public sealed class XpSearchAnalyticsModuleInstaller
 
     private readonly IInfoProvider<ResourceInfo> resources;
     private readonly IInfoProvider<Options.XpSearchSettingsInfo> settings;
-    private readonly IOptions<Options.XpSearchOptions> options;
 
     /// <summary>Initializes a new instance of the <see cref="XpSearchAnalyticsModuleInstaller"/> class.</summary>
     /// <param name="resources">Provider of <see cref="ResourceInfo"/>, used to create the module.</param>
-    /// <param name="settings">Provider of the global settings row (AR-1).</param>
-    /// <param name="options">The code-configured options the settings row is seeded from.</param>
+    /// <param name="settings">Provider of the per-index settings rows (AR-2).</param>
     public XpSearchAnalyticsModuleInstaller(
         IInfoProvider<ResourceInfo> resources,
-        IInfoProvider<Options.XpSearchSettingsInfo> settings,
-        IOptions<Options.XpSearchOptions> options)
+        IInfoProvider<Options.XpSearchSettingsInfo> settings)
     {
         ArgumentNullException.ThrowIfNull(resources);
         ArgumentNullException.ThrowIfNull(settings);
-        ArgumentNullException.ThrowIfNull(options);
 
         this.resources = resources;
         this.settings = settings;
-        this.options = options;
     }
 
     /// <summary>The form definition of <see cref="XpSearchQueryLogInfo"/>.</summary>
@@ -169,13 +161,14 @@ public sealed class XpSearchAnalyticsModuleInstaller
         return form;
     }
 
-    /// <summary>The form definition of <see cref="Options.XpSearchSettingsInfo"/> (AR-1).</summary>
+    /// <summary>The form definition of <see cref="Options.XpSearchSettingsInfo"/> (AR-2).</summary>
     /// <returns>The fields, on top of the primary key the basic definition creates.</returns>
     public static FormInfo SettingsForm()
     {
         var form = FormHelper.GetBasicFormDefinition(nameof(Options.XpSearchSettingsInfo.SettingsID));
 
         Add(form, nameof(Options.XpSearchSettingsInfo.SettingsGuid), FieldDataType.Guid);
+        Add(form, nameof(Options.XpSearchSettingsInfo.SettingsIndexName), FieldDataType.Text, size: 100);
 
         foreach (string column in SettingsColumns)
         {
@@ -210,43 +203,23 @@ public sealed class XpSearchAnalyticsModuleInstaller
         InstallClass(resource, Fuzzy.XpSearchFuzzyIndexInfo.TYPEINFO, "XpSearch typo tolerance", FuzzyIndexForm());
         InstallClass(resource, Options.XpSearchSettingsInfo.TYPEINFO, "XpSearch settings", SettingsForm());
 
-        SeedSettings();
+        DeleteGlobalSettingsRows();
     }
 
     /// <summary>
-    /// Writes the single settings row the first time, from the effective code-configured options. An
-    /// existing row is left alone - the administration owns it from then on - except for columns an
-    /// upgrade added, which read as 0 and are given the configured value.
+    /// Deletes the settings rows that belong to no index - AR-1's single global row, which an
+    /// installation upgraded from that never-released shape still carries. Nothing is seeded: an index
+    /// has a row only once someone saved its Search settings page.
     /// </summary>
-    private void SeedSettings()
+    private void DeleteGlobalSettingsRows()
     {
-        var stored = settings.Get().TopN(1).FirstOrDefault();
-        var seed = Options.StoredSearchSettings.NewRow(Options.SearchSettingsValues.From(options.Value));
+        var orphans = settings.Get()
+            .WhereEmpty(nameof(Options.XpSearchSettingsInfo.SettingsIndexName))
+            .ToList();
 
-        if (stored is null)
+        foreach (var row in orphans)
         {
-            settings.Set(seed);
-
-            return;
-        }
-
-        bool repaired = false;
-
-        // A column added by a later upgrade exists but has no value. Zero is a legal value only for the
-        // cache lifetime, so every other column reading 0 is a column nobody ever wrote.
-        foreach (string column in SettingsColumns.Where(column =>
-            !string.Equals(column, nameof(Options.XpSearchSettingsInfo.SettingsCacheTtlSeconds), StringComparison.Ordinal)))
-        {
-            if (ValidationHelper.GetInteger(stored.GetValue(column), 0) <= 0)
-            {
-                stored.SetValue(column, seed.GetValue(column));
-                repaired = true;
-            }
-        }
-
-        if (repaired)
-        {
-            settings.Set(stored);
+            settings.Delete(row);
         }
     }
 

@@ -12,11 +12,11 @@ using XpSearch.Core.Options;
 namespace XpSearch.Core.Options;
 
 /// <summary>
-/// The single row holding the global search settings an administrator edits (AR-1). Everything on it
-/// is copied onto <see cref="XpSearchOptions"/> by <see cref="XpSearchStoredSettingsConfigureOptions"/>.
+/// One index's search settings as an administrator edits them (AR-2). Everything on it is copied onto
+/// that index's <see cref="XpSearchIndexSettings"/> by <see cref="XpSearchIndexSettingsSetup"/>.
 /// </summary>
 /// <remarks>
-/// One row per installation: the values are global, not per index and not per channel. Kentico's own
+/// One row per index, written only by a save on the Search settings page. Kentico's own
 /// <c>SettingsKeyInfo</c> is not used because the documented way to add settings of your own is a
 /// custom object type with your own UI
 /// (https://docs.kentico.com/guides/development/customizations-and-integrations/create-basic-module).
@@ -80,6 +80,14 @@ public class XpSearchSettingsInfo : AbstractInfo<XpSearchSettingsInfo, IInfoProv
     {
         get => ValidationHelper.GetGuid(GetValue(nameof(SettingsGuid)), default, CultureInfo.InvariantCulture);
         set => SetValue(nameof(SettingsGuid), value);
+    }
+
+    /// <summary>Gets or sets the code name of the index the settings belong to.</summary>
+    [DatabaseField]
+    public virtual string SettingsIndexName
+    {
+        get => ValidationHelper.GetString(GetValue(nameof(SettingsIndexName)), string.Empty, CultureInfo.InvariantCulture);
+        set => SetValue(nameof(SettingsIndexName), value);
     }
 
     /// <summary>Gets or sets how long an identical query is served from cache, in seconds.</summary>

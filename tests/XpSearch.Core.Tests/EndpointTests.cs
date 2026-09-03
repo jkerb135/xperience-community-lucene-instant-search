@@ -47,15 +47,17 @@ internal sealed class EndpointTests
         builder.WebHost.UseUrls("http://127.0.0.1:0");
 
         var options = new StaticOptionsMonitor<XpSearchOptions>(new XpSearchOptions());
+        var settings = new PerIndexSettings(options.CurrentValue);
         builder.Services.AddSingleton(options);
+        builder.Services.AddSingleton<IOptionsMonitor<XpSearchIndexSettings>>(settings);
         builder.Services.AddSingleton<ILuceneIndexAccessor>(index);
         builder.Services.AddSingleton<IIndexSchemaProvider>(new StaticSchemaProvider(TestCorpus.Schema));
-        builder.Services.AddSingleton<ISearchStage>(new NormalizeRequestStage(options));
+        builder.Services.AddSingleton<ISearchStage>(new NormalizeRequestStage(options, settings));
         builder.Services.AddSingleton<ISearchStage>(new BuildQueryStage(new XpSearch.Core.Fuzzy.DisabledTypoToleranceSource()));
         builder.Services.AddSingleton<ISearchStage, FacetFilterStage>();
         builder.Services.AddSingleton<ISearchStage, NumericFilterStage>();
         builder.Services.AddSingleton<ISearchStage>(new ExecuteSearchStage(index));
-        builder.Services.AddSingleton<ISearchStage>(new CollectFacetsStage(new TaxonomyFacetProvider(index), options));
+        builder.Services.AddSingleton<ISearchStage>(new CollectFacetsStage(new TaxonomyFacetProvider(index), settings));
         builder.Services.AddSingleton<ISearchStage>(new HighlightStage(new LuceneHighlighter()));
         builder.Services.AddSingleton<ISearchStage, ProjectResponseStage>();
         builder.Services.AddSingleton<ISearchPipeline, SearchPipeline>();

@@ -24,18 +24,18 @@ public sealed class ProgressiveSearchCache : ISearchCache
     private const string KeyPrefix = "xpsearch";
 
     private readonly IProgressiveCache cache;
-    private readonly IOptionsMonitor<XpSearchOptions> options;
+    private readonly IOptionsMonitor<XpSearchIndexSettings> settings;
 
     /// <summary>Initializes a new instance of the <see cref="ProgressiveSearchCache"/> class.</summary>
     /// <param name="cache">Xperience's progressive cache.</param>
-    /// <param name="options">The configured search options.</param>
-    public ProgressiveSearchCache(IProgressiveCache cache, IOptionsMonitor<XpSearchOptions> options)
+    /// <param name="settings">The current per-index settings; the lifetime is the index's own (AR-2).</param>
+    public ProgressiveSearchCache(IProgressiveCache cache, IOptionsMonitor<XpSearchIndexSettings> settings)
     {
         ArgumentNullException.ThrowIfNull(cache);
-        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(settings);
 
         this.cache = cache;
-        this.options = options;
+        this.settings = settings;
     }
 
     /// <inheritdoc />
@@ -55,7 +55,7 @@ public sealed class ProgressiveSearchCache : ISearchCache
                 settings.CacheDependency = CacheHelper.GetCacheDependency(DependencyKey(indexName));
                 return await factory(token).ConfigureAwait(false);
             },
-            new CacheSettings(options.CurrentValue.CacheTtl.TotalMinutes, KeyPrefix, indexName, key),
+            new CacheSettings(settings.Get(indexName).CacheTtl.TotalMinutes, KeyPrefix, indexName, key),
             cancellationToken);
     }
 

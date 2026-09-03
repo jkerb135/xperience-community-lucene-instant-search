@@ -20,10 +20,10 @@ deliberately): synonym group `espresso expresso`, stopword list `the a an of and
 | `ingestion--api-keys.png` | `/admin/xpsearch-tuning/api-keys` | ≥1 API key (dev-sample) | `src/XpSearch.Admin/UIPages/ApiKeys.cs` | 2026-09-01 |
 | `ingestion--api-key-create.png` | `…/api-keys/create` | — | `src/XpSearch.Admin/UIPages/ApiKeys.cs` | 2026-09-01 |
 | `ingestion--log.png` | `/admin/xpsearch-tuning/ingestion-log` | ingestion smoke-test rows | `src/XpSearch.Admin/UIPages/IngestionLog.cs` | 2026-09-01 |
-| `ingestion--settings.png` | `/admin/xpsearch-tuning/settings` | seeded settings row (written on first start) | `src/XpSearch.Admin/UIPages/GlobalSettings.cs` | STALE - never captured (AR-1) |
 | `lucene--index-listing.png` | `/admin/lucene/indexes` | 2 indexes registered | Kentico Lucene listing + `src/XpSearch.Admin/UIPages/IndexTuning.cs` | 2026-09-01 |
 | `index--edit.png` | `/admin/lucene/indexes/edit/2` | — | `src/XpSearch.Admin/UIPages/IndexTuning.cs` | 2026-09-01 |
 | `tuning--settings.png` | `…/edit/2/settings` | — | `src/XpSearch.Admin/UIPages/IndexTuning.cs` | 2026-09-01 |
+| `index--search-settings.png` | `…/edit/2/search-settings` | — (the form shows the code defaults until saved) | `src/XpSearch.Admin/UIPages/SearchSettings.cs` | STALE - never captured (AR-2) |
 | `tuning--status.png` | `…/edit/2/status` | built index (35 entries) | `src/XpSearch.Admin/UIPages/IndexStatus.cs`, `Client/src/status/IndexStatusTemplate.tsx` | 2026-09-01 |
 | `tuning--analytics.png` | `…/edit/2/analytics` | query-log rows (HW-11 seeding) | `src/XpSearch.Admin/UIPages/Analytics/AnalyticsDashboardPage.cs`, `Client/src/analytics/AnalyticsDashboardTemplate.tsx` | 2026-09-01 |
 | `tuning--query-tester.png` | `…/edit/2/query-tester` (runs "coffee") | indexed content | `src/XpSearch.Admin/UIPages/QueryTester/QueryTesterPage.cs`, `Client/src/query-tester/QueryTesterTemplate.tsx` | 2026-09-01 |

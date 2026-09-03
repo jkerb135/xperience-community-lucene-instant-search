@@ -50,5 +50,8 @@ public class XpSearchAnalyticsModule : Module
         services!.GetService<XpSearchAnalyticsModuleInstaller>()?.Install();
         services!.GetService<XpSearchActivityTypeInstaller>()?.Install();
         services!.GetService<XpSearchContactGroupRuleInstaller>()?.Install();
+
+        // AR-2: from here on, saving an index's settings row drops that index's cached options instance.
+        services!.GetService<Options.XpSearchIndexSettingsInvalidator>()?.Start();
     }
 }

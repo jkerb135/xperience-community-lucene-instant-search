@@ -78,6 +78,10 @@ internal sealed class BenchIndex : ILuceneIndexAccessor, IDisposable
 
     public bool Exists(string name) => string.Equals(name, IndexName, StringComparison.OrdinalIgnoreCase);
 
+    public string? ResolveName(string name) => Exists(name) ? IndexName : null;
+
+    public IReadOnlyList<string> IndexNames() => [IndexName];
+
     public Analyzer GetAnalyzer(string name) => analyzer;
 
     public IReadOnlyList<string> IndexNamesForStrategy(Type strategyType) => [IndexName];

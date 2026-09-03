@@ -53,6 +53,9 @@ internal sealed class PageCommandDiscoveryTests
         (typeof(ExperimentDetailPage), ["Load", "SetSplit", "Start", "Conclude"]),
         (typeof(IndexStatusPage), ["Load", "Rebuild"]),
         (typeof(QueryTesterPage), ["Run", "OpenStatus"]),
+
+        // AR-2: the per-index settings form submits through ModelEditPage's own command.
+        (typeof(SearchSettingsPage), ["Submit"]),
     ];
 
     /// <summary>Every page of ours the platform has registered in the UI tree.</summary>

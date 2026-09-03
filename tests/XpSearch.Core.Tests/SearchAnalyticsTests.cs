@@ -117,7 +117,7 @@ internal sealed class SearchAnalyticsTests
     {
         var now = Day.AddDays(3);
         var options = new XpSearchOptions();
-        var service = new QuerySuggestionService(store, new StaticOptionsMonitor<XpSearchOptions>(options), () => now);
+        var service = new QuerySuggestionService(store, new PerIndexSettings(options), () => now);
 
         var before = await service.SuggestAsync(TestCorpus.IndexName, "k", 10, CancellationToken.None);
 
@@ -196,7 +196,7 @@ internal sealed class SearchAnalyticsTests
             CancellationToken.None);
 
     private Task<IReadOnlyList<string>> Suggestions(string prefix, int limit) =>
-        new QuerySuggestionService(store, new StaticOptionsMonitor<XpSearchOptions>(new XpSearchOptions()), () => Day.AddDays(3))
+        new QuerySuggestionService(store, new PerIndexSettings(new XpSearchOptions()), () => Day.AddDays(3))
             .SuggestAsync(TestCorpus.IndexName, prefix, limit, CancellationToken.None);
 
     private void Add(string query, DateTime timestamp, int results, int ms, int? clicked = null, int? experimentId = null, string? variant = null) =>

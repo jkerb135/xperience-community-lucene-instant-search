@@ -123,8 +123,11 @@ internal sealed class NoPopularity : IPopularitySignalStore
     public Task ReplaceAsync(string indexName, PopularityAggregate aggregate, DateTime computedUtc, CancellationToken cancellationToken) =>
         Task.CompletedTask;
 
-    public Task<int> DeleteAnsweredOlderThanAsync(DateTime cutoffUtc, int batchSize, CancellationToken cancellationToken) =>
+    public Task<int> DeleteAnsweredOlderThanAsync(string indexName, DateTime cutoffUtc, int batchSize, CancellationToken cancellationToken) =>
         Task.FromResult(0);
+
+    public Task<IReadOnlyList<string>> SuggestionIndexNamesAsync(CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<string>>([]);
 }
 
 /// <summary>No query log, so <c>/suggest</c> measures the document path only.</summary>

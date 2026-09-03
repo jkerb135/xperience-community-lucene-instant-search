@@ -169,6 +169,10 @@ services.AddXpSearch(options =>
 });
 ```
 
+These are the **defaults for every index**. One index overrides them under **Lucene Search → the
+index → Search settings**, and the task then mines that index with its own numbers — see
+[Per-index settings in the administration](search-api.md#per-index-settings-in-the-administration).
+
 The lookback window is also how popularity forgets: a run replaces the index's rows completely, so a
 document that stops being clicked simply stops being in them. There is no decay curve to configure.
 

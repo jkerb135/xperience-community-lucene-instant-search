@@ -61,11 +61,12 @@ public static class XpSearchServiceCollectionExtensions
 
         services.Configure(configure);
 
-        // AR-1: the administration's Settings page wins over the host's lambda, so the overlay is
-        // registered after it, and its change token makes a save live without a restart.
+        // AR-2: the root values above are every index's defaults; each index's Search settings page
+        // overrides them, and a save drops only that index's cached instance.
         services.TryAddSingleton<IStoredSearchSettingsSource, InfoStoredSearchSettingsSource>();
-        services.TryAddEnumerable(ServiceDescriptor.Singleton<Options.IConfigureOptions<XpSearchOptions>, XpSearchStoredSettingsConfigureOptions>());
-        services.TryAddEnumerable(ServiceDescriptor.Singleton<Options.IOptionsChangeTokenSource<XpSearchOptions>, XpSearchSettingsChangeTokenSource>());
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<Options.IConfigureOptions<XpSearchIndexSettings>, XpSearchIndexSettingsSetup>());
+        services.TryAddSingleton<XpSearchIndexSettingsInvalidator>();
 
         var indexingOptions = new XpSearchIndexingOptions();
         configureIndexing(indexingOptions);
@@ -163,7 +164,8 @@ public static class XpSearchServiceCollectionExtensions
         services.TryAddSingleton<ISearchPipeline>(provider => new CachedSearchPipeline(
             provider.GetRequiredService<RecoverySearchPipeline>(),
             provider.GetRequiredService<ISearchCache>(),
-            provider.GetRequiredService<Options.IOptionsMonitor<XpSearchOptions>>(),
+            provider.GetRequiredService<Options.IOptionsMonitor<XpSearchIndexSettings>>(),
+            provider.GetRequiredService<ILuceneIndexAccessor>(),
             provider.GetRequiredService<IContactGroupResolver>(),
             provider.GetRequiredService<IExperimentAssignmentResolver>(),
             provider.GetRequiredService<ISearchRequestJournal>(),

@@ -490,33 +490,36 @@ every command below resolves on the current main; these items confirm the runnin
      the assembly the host loaded (`XpSearch.Admin.dll` timestamp in the host's `bin`) *before*
      reporting — that message names the page it looked on, and the answer is usually the timestamp.
 
-## §X — AR-1 analytics retention setting (2026-09-02)
+## §X — AR-2 per-index search settings (2026-09-03, replaces AR-1's global page)
 
-Every global `XpSearchOptions` / `Analytics` value is now editable on **Search ingestion →
-Settings** (the library's own admin application), seeded once from the host's `AddXpSearch`
-lambda and loaded through `ConfigureOptions` with live updates; retention defaults to 365 days,
-and the `XpSearch.QueryLogRetention` task now also prunes answered suggestions.
+All sixteen values are now editable **per index** on **Lucene Search → the index → Search
+settings**, over the defaults the host's `AddXpSearch` lambda sets; a save is live for that index
+only. Retention defaults to 365 days, and the `XpSearch.QueryLogRetention` task prunes each index
+with its own window and also prunes answered suggestions.
 
-116. **Visible with the defaults.** Open **Search ingestion → Settings**. Every row of the AR-1
-     spec's table is listed; **Remove search analytics older than X days** shows **365**, and
-     **Maximum page size** shows the value the host lambda set (100 unless Program.cs changed it).
+116. **Visible with the defaults.** Open **Lucene Search → DancingGoatSample → Search settings**.
+     Every row of the AR-1 spec's table is listed, **Index** is read-only, **Remove search analytics
+     older than X days** shows **365**, and **Maximum page size** shows the value the host lambda set
+     (100 unless Program.cs changed it). Nothing was written to the database yet.
 116a. **Live without a restart.** The demo's results widget sends its own page size (the
      *Results per page* property), so the demo page cannot show this — the API can. Set
      **Default page size** to **3**, save, then within a few seconds run in a terminal:
      `Invoke-RestMethod -Method Post -Uri http://localhost:27340/api/xpsearch/query -ContentType application/json -Body '{"index":"DancingGoatSample","query":"coffee"}' | Select-Object pageSize`
-     → `pageSize 3`. Set it back to 20, re-run → `20`. No restart in between. (First walk
+     → `pageSize 3`. Set it back to 20, re-run → `20`. No restart in between. (AR-1's first walk
      2026-09-02: the value only showed up after ~30 minutes — the row read sat behind a Kentico
      cache entry whose dependency did not fire; fixed by reading the row directly on each
      options rebuild, which only happens on a save.)
+116b. **Only that index.** With a second index registered, save **Default page size 3** on one and
+     query the other → the other still answers **20**.
 117. **The task honours it.** Set the value to **1**, save. Open **Scheduled tasks** → the
      `XpSearch query log retention` configuration → **Run**. *Last result* reads
-     `Deleted N query log rows, N popularity suggestions, N synonym suggestions older than <cutoff>` —
-     the cutoff is yesterday, and the analytics dashboard's volume report drops everything older.
-     Set the value back to something sane (e.g. 365) afterwards.
+     `DancingGoatSample: N query log rows, N popularity suggestions, N synonym suggestions (older than <date>)`,
+     one segment per index — the cutoff is yesterday, and the analytics dashboard's volume report
+     drops everything older. Set the value back to something sane (e.g. 365) afterwards.
 118. **Validation.** Set the value to **0** and save → the save is refused with a validation
      message; the stored value is unchanged.
-119. **Survives a restart.** Set the value to **90**, restart the host, reopen the setting → still
-     **90** (the installer seeds once and never overwrites).
+119. **Survives a restart.** Set the value to **90**, restart the host, reopen the page → still
+     **90** (the installer never overwrites a saved row, and seeds nothing).
 120. **Suggestions.** On an index with an *accepted* or *dismissed* popularity or synonym suggestion
      older than the cutoff (set the value to 1 again to make yesterday's answered suggestion old),
      run the task → that answered row is gone from the listing's history; every **pending**

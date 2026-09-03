@@ -15,8 +15,8 @@ builder.Services.AddKenticoLucene(lucene => lucene
 
 builder.Services.AddXpSearch(options =>
 {
-    // Global numbers like this one only seed the administration's Settings page on the first start;
-    // after that they are edited under Search ingestion -> Settings (see search-api.md).
+    // Numbers like this one are the default for every index; an index overrides them under
+    // Lucene Search -> the index -> Search settings (see search-api.md).
     options.CacheTtl = TimeSpan.FromSeconds(60);
     // The attribute /suggest prefix-matches and shows. Do not leave it at its "title" default:
     // that is the item name, which on a real site is a slug ("CoffeePlunger-p2e57tss").
@@ -235,8 +235,8 @@ index when suggestions are served from the default.
 
 Everything that shapes results for an index lives inside the index:
 
-**Lucene Search → indexes → click the index → the *Edit index* sidebar** — Settings, Rules, Synonyms,
-Stopwords, Field weights, Query tester, Analytics and Status
+**Lucene Search → indexes → click the index → the *Edit index* sidebar** — Settings, Search settings,
+Rules, Synonyms, Stopwords, Field weights, Query tester, Analytics and Status
 (`/admin/lucene/indexes/edit/{id}/rules` and friends). Clicking an index row in the listing opens
 the sidebar directly.
 

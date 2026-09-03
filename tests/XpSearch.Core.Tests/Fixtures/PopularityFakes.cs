@@ -18,18 +18,21 @@ internal sealed class FakeSynonymSuggestionStore : ISynonymSuggestionStore
         return Task.CompletedTask;
     }
 
-    /// <summary>Every retention call, and how many rows each was told it could delete (AR-1).</summary>
-    internal List<(DateTime CutoffUtc, int BatchSize)> Pruned { get; } = [];
+    /// <summary>Every retention call: the index it pruned and how many rows it could delete (AR-2).</summary>
+    internal List<(string IndexName, DateTime CutoffUtc, int BatchSize)> Pruned { get; } = [];
 
-    /// <summary>How many answered rows the store pretends to hold.</summary>
-    internal int Answered { get; set; }
+    /// <summary>How many answered rows the store pretends to hold, per index.</summary>
+    internal Dictionary<string, int> Answered { get; } = new(StringComparer.OrdinalIgnoreCase);
 
-    public Task<int> DeleteAnsweredOlderThanAsync(DateTime cutoffUtc, int batchSize, CancellationToken cancellationToken)
+    public Task<IReadOnlyList<string>> IndexNamesAsync(CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<string>>([.. Answered.Keys]);
+
+    public Task<int> DeleteAnsweredOlderThanAsync(string indexName, DateTime cutoffUtc, int batchSize, CancellationToken cancellationToken)
     {
-        Pruned.Add((cutoffUtc, batchSize));
+        Pruned.Add((indexName, cutoffUtc, batchSize));
 
-        int deleted = Math.Min(Answered, batchSize);
-        Answered -= deleted;
+        int deleted = Math.Min(Answered.GetValueOrDefault(indexName), batchSize);
+        Answered[indexName] = Answered.GetValueOrDefault(indexName) - deleted;
 
         return Task.FromResult(deleted);
     }
@@ -63,18 +66,21 @@ internal sealed class FakePopularitySignalStore : IPopularitySignalStore
         return Task.CompletedTask;
     }
 
-    /// <summary>Every retention call, and how many rows each was told it could delete (AR-1).</summary>
-    internal List<(DateTime CutoffUtc, int BatchSize)> Pruned { get; } = [];
+    /// <summary>Every retention call: the index it pruned and how many rows it could delete (AR-2).</summary>
+    internal List<(string IndexName, DateTime CutoffUtc, int BatchSize)> Pruned { get; } = [];
 
-    /// <summary>How many answered rows the store pretends to hold.</summary>
-    internal int Answered { get; set; }
+    /// <summary>How many answered rows the store pretends to hold, per index.</summary>
+    internal Dictionary<string, int> Answered { get; } = new(StringComparer.OrdinalIgnoreCase);
 
-    public Task<int> DeleteAnsweredOlderThanAsync(DateTime cutoffUtc, int batchSize, CancellationToken cancellationToken)
+    public Task<IReadOnlyList<string>> SuggestionIndexNamesAsync(CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<string>>([.. Answered.Keys]);
+
+    public Task<int> DeleteAnsweredOlderThanAsync(string indexName, DateTime cutoffUtc, int batchSize, CancellationToken cancellationToken)
     {
-        Pruned.Add((cutoffUtc, batchSize));
+        Pruned.Add((indexName, cutoffUtc, batchSize));
 
-        int deleted = Math.Min(Answered, batchSize);
-        Answered -= deleted;
+        int deleted = Math.Min(Answered.GetValueOrDefault(indexName), batchSize);
+        Answered[indexName] = Answered.GetValueOrDefault(indexName) - deleted;
 
         return Task.FromResult(deleted);
     }

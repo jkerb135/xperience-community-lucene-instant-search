@@ -91,9 +91,22 @@ public sealed class InfoQueryLogStore : IQueryLogStore
     }
 
     /// <inheritdoc />
-    public async Task<int> DeleteOlderThanAsync(DateTime cutoffUtc, int batchSize, CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<string>> IndexNamesAsync(CancellationToken cancellationToken)
     {
         var rows = await provider.Get()
+            .Column(nameof(XpSearchQueryLogInfo.LogIndexName))
+            .Distinct()
+            .GetEnumerableTypedResultAsync(cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+
+        return [.. rows.Select(row => row.LogIndexName).Where(name => !string.IsNullOrWhiteSpace(name))];
+    }
+
+    /// <inheritdoc />
+    public async Task<int> DeleteOlderThanAsync(string indexName, DateTime cutoffUtc, int batchSize, CancellationToken cancellationToken)
+    {
+        var rows = await provider.Get()
+            .WhereEquals(nameof(XpSearchQueryLogInfo.LogIndexName), indexName)
             .WhereLessThan(nameof(XpSearchQueryLogInfo.LogTimestamp), cutoffUtc)
             .OrderByAscending(nameof(XpSearchQueryLogInfo.LogTimestamp))
             .TopN(batchSize)

@@ -4,6 +4,8 @@ using Kentico.Xperience.Admin.Base;
 using Kentico.Xperience.Admin.Base.FormAnnotations;
 using Kentico.Xperience.Admin.Base.Forms;
 
+using Kentico.Xperience.Lucene.Core.Indexing;
+
 using Microsoft.Extensions.Options;
 
 using XpSearch.Admin.UIPages;
@@ -12,21 +14,25 @@ using XpSearch.Core.Options;
 using IFormItemCollectionProvider = Kentico.Xperience.Admin.Base.Forms.Internal.IFormItemCollectionProvider;
 
 [assembly: UIPage(
-    parentType: typeof(SearchTuningApplication),
-    slug: "settings",
-    uiPageType: typeof(GlobalSettingsPage),
-    name: "Settings",
+    parentType: typeof(IndexTuningSection),
+    slug: "search-settings",
+    uiPageType: typeof(SearchSettingsPage),
+    name: "Search settings",
     templateName: TemplateNames.EDIT,
-    order: 900)]
+    order: 110)]
 
 namespace XpSearch.Admin.UIPages;
 
 /// <summary>
-/// The global search settings (AR-1): every value that is not per index. The host's
-/// <c>AddXpSearch(o =&gt; ...)</c> lambda seeds them once; from then on this form owns them.
+/// The search settings of one index (AR-2): every value the host's <c>AddXpSearch(o =&gt; ...)</c>
+/// lambda sets as a default for all indexes, overridable per index here.
 /// </summary>
-public class GlobalSettingsModel
+public class SearchSettingsModel : IIndexScopedModel
 {
+    /// <summary>Gets or sets the code name of the index the settings belong to. Set from the URL, not editable.</summary>
+    [TextInputComponent(Label = "Index", Order = 0)]
+    public string IndexName { get; set; } = string.Empty;
+
     /// <summary>Gets or sets how long an identical query is served from cache, in seconds. 0 turns caching off.</summary>
     [MinimumIntegerValueValidationRule(0)]
     [NumberInputComponent(Label = "Response cache lifetime (seconds)", Order = 1, Tooltip = "How long an identical query is served from cache. 0 turns response caching off.")]
@@ -72,12 +78,12 @@ public class GlobalSettingsModel
     [NumberInputComponent(Label = "Maximum suggestion count", Order = 8)]
     public int MaxSuggestLimit { get; set; }
 
-    /// <summary>Gets or sets how many days of search analytics are kept.</summary>
+    /// <summary>Gets or sets how many days of this index's search analytics are kept.</summary>
     [MinimumIntegerValueValidationRule(1)]
     [NumberInputComponent(
         Label = "Remove search analytics older than X days",
         Order = 9,
-        Tooltip = "Query log rows and answered popularity/synonym suggestions older than this are deleted by the 'XpSearch.QueryLogRetention' scheduled task. Suggestions still waiting for an answer are never deleted.")]
+        Tooltip = "This index's query log rows and answered popularity/synonym suggestions older than this are deleted by the 'XpSearch.QueryLogRetention' scheduled task. Suggestions still waiting for an answer are never deleted.")]
     public int RetentionDays { get; set; }
 
     /// <summary>Gets or sets how many rows the retention task deletes per batch.</summary>
@@ -95,7 +101,7 @@ public class GlobalSettingsModel
     [NumberInputComponent(Label = "Popularity lookback (days)", Order = 12)]
     public int PopularityLookbackDays { get; set; }
 
-    /// <summary>Gets or sets how many documents per index the popularity signal keeps.</summary>
+    /// <summary>Gets or sets how many of this index's documents the popularity signal keeps.</summary>
     [MinimumIntegerValueValidationRule(1)]
     [NumberInputComponent(Label = "Popularity documents per index", Order = 13)]
     public int PopularityDocumentLimit { get; set; }
@@ -115,31 +121,31 @@ public class GlobalSettingsModel
     [NumberInputComponent(Label = "Synonym minimum occurrences", Order = 16)]
     public int SynonymMinimumOccurrences { get; set; }
 
-    /// <summary>Reads the current values off the options.</summary>
-    /// <param name="options">The options in effect, stored values included.</param>
+    /// <summary>Reads the settings in effect for the index.</summary>
+    /// <param name="settings">The index's settings, its stored row included.</param>
     /// <returns>The model the form renders.</returns>
-    public static GlobalSettingsModel From(XpSearchOptions options)
+    public static SearchSettingsModel From(XpSearchIndexSettings settings)
     {
-        ArgumentNullException.ThrowIfNull(options);
+        var values = SearchSettingsValues.From(settings);
 
-        return new GlobalSettingsModel
+        return new SearchSettingsModel
         {
-            CacheTtlSeconds = (int)Math.Max(0, options.CacheTtl.TotalSeconds),
-            MaxQueryLength = options.MaxQueryLength,
-            DefaultPageSize = options.DefaultPageSize,
-            MaxPageSize = options.MaxPageSize,
-            MaxFacetValues = options.MaxFacetValues,
-            MaxResultWindow = options.MaxResultWindow,
-            DefaultSuggestLimit = options.DefaultSuggestLimit,
-            MaxSuggestLimit = options.MaxSuggestLimit,
-            RetentionDays = options.Analytics.RetentionDays,
-            RetentionBatchSize = options.Analytics.RetentionBatchSize,
-            QuerySuggestionDays = options.Analytics.QuerySuggestionDays,
-            PopularityLookbackDays = options.Analytics.PopularityLookbackDays,
-            PopularityDocumentLimit = options.Analytics.PopularityDocumentLimit,
-            PopularitySuggestionQueries = options.Analytics.PopularitySuggestionQueries,
-            SynonymWindowSeconds = options.Analytics.SynonymWindowSeconds,
-            SynonymMinimumOccurrences = options.Analytics.SynonymMinimumOccurrences
+            CacheTtlSeconds = values.CacheTtlSeconds,
+            MaxQueryLength = values.MaxQueryLength,
+            DefaultPageSize = values.DefaultPageSize,
+            MaxPageSize = values.MaxPageSize,
+            MaxFacetValues = values.MaxFacetValues,
+            MaxResultWindow = values.MaxResultWindow,
+            DefaultSuggestLimit = values.DefaultSuggestLimit,
+            MaxSuggestLimit = values.MaxSuggestLimit,
+            RetentionDays = values.RetentionDays,
+            RetentionBatchSize = values.RetentionBatchSize,
+            QuerySuggestionDays = values.QuerySuggestionDays,
+            PopularityLookbackDays = values.PopularityLookbackDays,
+            PopularityDocumentLimit = values.PopularityDocumentLimit,
+            PopularitySuggestionQueries = values.PopularitySuggestionQueries,
+            SynonymWindowSeconds = values.SynonymWindowSeconds,
+            SynonymMinimumOccurrences = values.SynonymMinimumOccurrences
         };
     }
 
@@ -168,55 +174,60 @@ public class GlobalSettingsModel
 }
 
 /// <summary>
-/// Edits the single global settings row (AR-1). Saving it invalidates the options overlay, so the new
-/// values are in effect on the next search without an application restart.
+/// Edits one index's settings row (AR-2). The form shows the settings in effect - the code-configured
+/// defaults until someone saves - and a save is live on the next search without a restart.
 /// </summary>
-public class GlobalSettingsPage : TuningEditPage<GlobalSettingsModel>
+public class SearchSettingsPage : IndexScopedEditPage<SearchSettingsModel>
 {
     private readonly IInfoProvider<XpSearchSettingsInfo> rows;
-    private readonly IOptionsMonitor<XpSearchOptions> options;
+    private readonly IOptionsMonitor<XpSearchIndexSettings> settings;
 
-    /// <summary>Initializes a new instance of the <see cref="GlobalSettingsPage"/> class.</summary>
+    /// <summary>Initializes a new instance of the <see cref="SearchSettingsPage"/> class.</summary>
     /// <param name="formItemCollectionProvider">Builds the form components.</param>
     /// <param name="formDataBinder">Binds the submitted values.</param>
+    /// <param name="storageService">Reads the stored index configuration.</param>
     /// <param name="pageLinkGenerator">Generates admin URLs.</param>
-    /// <param name="rows">Provider of the stored settings row.</param>
-    /// <param name="options">The options in effect, which is what the form shows.</param>
-    public GlobalSettingsPage(
+    /// <param name="rows">Provider of the stored settings rows.</param>
+    /// <param name="settings">The settings in effect, which is what the form shows.</param>
+    public SearchSettingsPage(
         IFormItemCollectionProvider formItemCollectionProvider,
         IFormDataBinder formDataBinder,
+        ILuceneConfigurationStorageService storageService,
         IPageLinkGenerator pageLinkGenerator,
         IInfoProvider<XpSearchSettingsInfo> rows,
-        IOptionsMonitor<XpSearchOptions> options)
-        : base(formItemCollectionProvider, formDataBinder, pageLinkGenerator)
+        IOptionsMonitor<XpSearchIndexSettings> settings)
+        : base(formItemCollectionProvider, formDataBinder, storageService, pageLinkGenerator)
     {
         ArgumentNullException.ThrowIfNull(rows);
-        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(settings);
 
         this.rows = rows;
-        this.options = options;
+        this.settings = settings;
     }
 
     /// <inheritdoc />
-    protected override GlobalSettingsModel CreateModel() => GlobalSettingsModel.From(options.CurrentValue);
+    protected override SearchSettingsModel CreateModel() => SearchSettingsModel.From(settings.Get(IndexName));
 
     /// <inheritdoc />
-    protected override Task<string> PersistAsync(GlobalSettingsModel submitted, CancellationToken cancellationToken)
+    protected override Task<string> PersistAsync(SearchSettingsModel submitted, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(submitted);
 
-        var row = StoredSearchSettings.NewRow(submitted.ToValues());
-        var stored = rows.Get().TopN(1).FirstOrDefault();
+        var row = StoredSearchSettings.NewRow(submitted.ToValues(), submitted.IndexName);
+        var stored = rows.Get()
+            .WhereEquals(nameof(XpSearchSettingsInfo.SettingsIndexName), submitted.IndexName)
+            .TopN(1)
+            .FirstOrDefault();
 
         if (stored is not null)
         {
-            // Keep the identity of the seeded row, so this is an update rather than a second row.
+            // Keep the identity of the existing row, so this is an update rather than a second row.
             row.SettingsID = stored.SettingsID;
             row.SettingsGuid = stored.SettingsGuid;
         }
 
         rows.Set(row);
 
-        return Task.FromResult("The search settings were saved.");
+        return Task.FromResult($"The search settings of '{submitted.IndexName}' were saved.");
     }
 }

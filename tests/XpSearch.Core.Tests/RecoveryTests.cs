@@ -174,7 +174,8 @@ internal sealed class RecoveryTests
         var pipeline = new CachedSearchPipeline(
             Recovery(),
             new MemorySearchCache(),
-            new StaticOptionsMonitor<XpSearchOptions>(new XpSearchOptions()),
+            new PerIndexSettings(new XpSearchOptions()),
+            TestIndexRegistry.Of(TestCorpus.IndexName),
             new StubContactGroupResolver(),
             new StubExperimentResolver(),
             new SearchRequestJournal(activities, new QueryContextMap(), queue, channel, NullLogger<SearchRequestJournal>.Instance),

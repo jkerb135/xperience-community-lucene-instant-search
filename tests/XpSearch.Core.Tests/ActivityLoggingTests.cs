@@ -335,7 +335,8 @@ internal sealed class ActivityLoggingTests
         var pipeline = new CachedSearchPipeline(
             inner,
             new MemorySearchCache(),
-            new StaticOptionsMonitor<XpSearchOptions>(options ?? new XpSearchOptions()),
+            new PerIndexSettings(options ?? new XpSearchOptions()),
+            TestIndexRegistry.Of(TestCorpus.IndexName),
             new StubContactGroupResolver(),
             new StubExperimentResolver(experiment),
             new SearchRequestJournal(activities, contexts, queue, channel, NullLogger<SearchRequestJournal>.Instance),

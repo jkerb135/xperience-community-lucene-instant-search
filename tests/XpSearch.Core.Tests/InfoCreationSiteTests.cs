@@ -32,6 +32,7 @@ public class InfoCreationSiteTests
             [nameof(XpSearchPopularitySuggestionInfo)] = XpSearchAnalyticsModuleInstaller.PopularitySuggestionForm(),
             [nameof(XpSearchSynonymSuggestionInfo)] = XpSearchAnalyticsModuleInstaller.SynonymSuggestionForm(),
             [nameof(Core.Fuzzy.XpSearchFuzzyIndexInfo)] = XpSearchAnalyticsModuleInstaller.FuzzyIndexForm(),
+            [nameof(Core.Options.XpSearchSettingsInfo)] = XpSearchAnalyticsModuleInstaller.SettingsForm(),
         };
 
         string root = SourceRoot();

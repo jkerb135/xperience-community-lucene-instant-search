@@ -246,7 +246,8 @@ internal sealed class CachingTests
             new CachedSearchPipeline(
                 inner,
                 cache,
-                new StaticOptionsMonitor<XpSearchOptions>(effective),
+                new PerIndexSettings(effective),
+                TestIndexRegistry.Of(TestCorpus.IndexName),
                 new StubContactGroupResolver(),
                 new StubExperimentResolver(),
                 Substitute.For<ISearchRequestJournal>(),
@@ -260,7 +261,8 @@ internal sealed class CachingTests
         new(
             new FixedPipeline(response),
             new MemorySearchCache(),
-            new StaticOptionsMonitor<XpSearchOptions>(new XpSearchOptions()),
+            new PerIndexSettings(new XpSearchOptions()),
+            TestIndexRegistry.Of(TestCorpus.IndexName),
             new StubContactGroupResolver(),
             new StubExperimentResolver(),
             Substitute.For<ISearchRequestJournal>(),

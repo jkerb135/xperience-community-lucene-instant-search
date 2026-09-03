@@ -57,7 +57,11 @@ public sealed class SearchPipeline : ISearchPipeline
             schema,
             accessor.GetAnalyzer(request.Index),
             accessor.GetFacetsConfig(request.Index),
-            cancellationToken);
+            cancellationToken)
+        {
+            // Per-index settings are named options, and names are compared ordinally (AR-2).
+            IndexName = accessor.ResolveName(request.Index) ?? request.Index
+        };
 
         foreach (var stage in stages)
         {
