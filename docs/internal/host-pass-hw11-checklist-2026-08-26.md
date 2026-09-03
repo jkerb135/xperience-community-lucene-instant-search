@@ -526,6 +526,11 @@ unit TH-7. Re-walk as 130–131 once TH-7 is merged:
      (or tick a second value) until the hit count is 0 → the ticked values stay listed and checked
      with count 0, the active-filter chips remain, the counted empty state shows, and unticking a
      value re-runs the search. Repeat under 1024px (Load more mode).
+132. **Orange palette (TH-8).** `/search` renders the **Kentico orange** palette: accent `#c64300`
+     on result titles, primary buttons, selected pills, the prefix band and the focus ring; dark
+     mode (`data-xps-theme="dark"` or OS dark) uses `#ff8852`. Everything else (layout, neutrals,
+     typography) is identical to the violet boards. The library's own default is still violet: the
+     guide's *Two shipped palettes* section shows the one-line switch the demo made.
 
 ## §Y — AR-2 per-index search settings (2026-09-03)
 
