@@ -497,8 +497,11 @@ settings** (named options per index; the host lambda's root values are the defau
 index; a row exists only after a save). Items 116–120 below are kept for history only.
 
 121. **Per-index page, no global page.** Lucene Search → **DancingGoatSample** → **Search settings**
-     lists the sixteen values with the code defaults (retention **365**, default page size **20**).
-     **Search ingestion** no longer has a Settings entry.
+     lists the fourteen values with the code defaults (retention **365**, maximum page size **100**;
+     AR-3 removed *Default page size* and *Default suggestion count* — widgets own their sizes).
+     Every field shows a tooltip and an explanation (UX-1). **Search ingestion** no longer has a
+     Settings entry. On this AR-2-era database the start-up also **dropped** the two retired columns
+     from `XpSearch_Settings` (lead checks the table) — saving the page must succeed.
 122. **Live, and only that index.** (AR-3: widgets own their sizes, the index owns the caps — the
      demo's Results widget asks for **6**.) Set **Maximum page size** to **2**, save, reload
      `/search?query=coffee` → the first page shows **two** cards on the first reload (the save also
