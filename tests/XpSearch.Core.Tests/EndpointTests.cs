@@ -46,7 +46,7 @@ internal sealed class EndpointTests
         builder.Logging.ClearProviders();
         builder.WebHost.UseUrls("http://127.0.0.1:0");
 
-        var options = Microsoft.Extensions.Options.Options.Create(new XpSearchOptions());
+        var options = new StaticOptionsMonitor<XpSearchOptions>(new XpSearchOptions());
         builder.Services.AddSingleton(options);
         builder.Services.AddSingleton<ILuceneIndexAccessor>(index);
         builder.Services.AddSingleton<IIndexSchemaProvider>(new StaticSchemaProvider(TestCorpus.Schema));

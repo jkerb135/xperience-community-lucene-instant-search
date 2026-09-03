@@ -20,6 +20,16 @@ public interface ISynonymSuggestionStore
         IReadOnlyList<ReformulationPair> pairs,
         DateTime computedUtc,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Deletes one batch of suggestions a human already answered and that were last seen before the
+    /// retention window (AR-1). Pending suggestions are never touched.
+    /// </summary>
+    /// <param name="cutoffUtc">Rows last seen before this instant are deleted.</param>
+    /// <param name="batchSize">How many rows to delete at most.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>How many rows were deleted; fewer than <paramref name="batchSize"/> means there are no more.</returns>
+    Task<int> DeleteAnsweredOlderThanAsync(DateTime cutoffUtc, int batchSize, CancellationToken cancellationToken);
 }
 
 /// <summary>Stores the mined synonym candidates in the <c>XpSearch.SynonymSuggestion</c> module class (SY-1).</summary>
@@ -79,5 +89,28 @@ public sealed class InfoSynonymSuggestionStore : ISynonymSuggestionStore
                 SynonymSuggestionState = (int)PopularitySuggestionState.Pending
             });
         }
+    }
+
+    /// <inheritdoc />
+    public async Task<int> DeleteAnsweredOlderThanAsync(DateTime cutoffUtc, int batchSize, CancellationToken cancellationToken)
+    {
+        var rows = await suggestions.Get()
+            .WhereNotEquals(nameof(XpSearchSynonymSuggestionInfo.SynonymSuggestionState), (int)PopularitySuggestionState.Pending)
+            .WhereLessThan(nameof(XpSearchSynonymSuggestionInfo.SynonymSuggestionLastSeen), cutoffUtc)
+            .OrderByAscending(nameof(XpSearchSynonymSuggestionInfo.SynonymSuggestionLastSeen))
+            .TopN(batchSize)
+            .GetEnumerableTypedResultAsync(cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+
+        int deleted = 0;
+
+        foreach (var row in rows.Where(row =>
+            SuggestionRetention.IsPrunable(row.SynonymSuggestionState, row.SynonymSuggestionLastSeen, cutoffUtc)))
+        {
+            suggestions.Delete(row);
+            deleted++;
+        }
+
+        return deleted;
     }
 }

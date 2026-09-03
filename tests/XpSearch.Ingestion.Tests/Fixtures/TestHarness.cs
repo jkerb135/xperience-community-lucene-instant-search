@@ -279,7 +279,7 @@ internal sealed class TestHarness : IDisposable
     /// <returns>The pipeline.</returns>
     internal ISearchPipeline Pipeline()
     {
-        var options = Microsoft.Extensions.Options.Options.Create(new XpSearchOptions());
+        var options = new StaticOptionsMonitor<XpSearchOptions>(new XpSearchOptions());
 
         return new SearchPipeline(
             Index,

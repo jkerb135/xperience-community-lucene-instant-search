@@ -1,4 +1,4 @@
-﻿using Kentico.Xperience.Lucene.Core.Indexing;
+using Kentico.Xperience.Lucene.Core.Indexing;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
@@ -60,6 +60,12 @@ public static class XpSearchServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(configureIndexing);
 
         services.Configure(configure);
+
+        // AR-1: the administration's Settings page wins over the host's lambda, so the overlay is
+        // registered after it, and its change token makes a save live without a restart.
+        services.TryAddSingleton<IStoredSearchSettingsSource, InfoStoredSearchSettingsSource>();
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<Options.IConfigureOptions<XpSearchOptions>, XpSearchStoredSettingsConfigureOptions>());
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<Options.IOptionsChangeTokenSource<XpSearchOptions>, XpSearchSettingsChangeTokenSource>());
 
         var indexingOptions = new XpSearchIndexingOptions();
         configureIndexing(indexingOptions);
@@ -150,14 +156,14 @@ public static class XpSearchServiceCollectionExtensions
         // belongs to the cached entry, and its verification search must not re-enter itself.
         services.TryAddSingleton(provider => new RecoverySearchPipeline(
             provider.GetRequiredService<SearchPipeline>(),
-            provider.GetRequiredService<Options.IOptions<XpSearchOptions>>(),
+            provider.GetRequiredService<Options.IOptionsMonitor<XpSearchOptions>>(),
             provider.GetRequiredService<IQuerySuggestionSource>(),
             provider.GetRequiredService<ILuceneIndexAccessor>(),
             provider.GetRequiredService<IIndexSchemaProvider>()));
         services.TryAddSingleton<ISearchPipeline>(provider => new CachedSearchPipeline(
             provider.GetRequiredService<RecoverySearchPipeline>(),
             provider.GetRequiredService<ISearchCache>(),
-            provider.GetRequiredService<Options.IOptions<XpSearchOptions>>(),
+            provider.GetRequiredService<Options.IOptionsMonitor<XpSearchOptions>>(),
             provider.GetRequiredService<IContactGroupResolver>(),
             provider.GetRequiredService<IExperimentAssignmentResolver>(),
             provider.GetRequiredService<ISearchRequestJournal>(),

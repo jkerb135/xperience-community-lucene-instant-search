@@ -11,18 +11,18 @@ namespace XpSearch.Core.Pipeline.Stages;
 public sealed class CollectFacetsStage : ISearchStage
 {
     private readonly IFacetProvider provider;
-    private readonly XpSearchOptions options;
+    private readonly IOptionsMonitor<XpSearchOptions> options;
 
     /// <summary>Initializes a new instance of the <see cref="CollectFacetsStage"/> class.</summary>
     /// <param name="provider">The facet provider to read counts from.</param>
-    /// <param name="options">The configured search options.</param>
-    public CollectFacetsStage(IFacetProvider provider, IOptions<XpSearchOptions> options)
+    /// <param name="options">The current search options.</param>
+    public CollectFacetsStage(IFacetProvider provider, IOptionsMonitor<XpSearchOptions> options)
     {
         ArgumentNullException.ThrowIfNull(provider);
         ArgumentNullException.ThrowIfNull(options);
 
         this.provider = provider;
-        this.options = options.Value;
+        this.options = options;
     }
 
     /// <inheritdoc />
@@ -35,7 +35,7 @@ public sealed class CollectFacetsStage : ISearchStage
 
         if (context.RequestedFacets.Count > 0)
         {
-            context.FacetValues = provider.GetFacets(context, context.RequestedFacets, options.MaxFacetValues);
+            context.FacetValues = provider.GetFacets(context, context.RequestedFacets, options.CurrentValue.MaxFacetValues);
         }
 
         return Task.CompletedTask;

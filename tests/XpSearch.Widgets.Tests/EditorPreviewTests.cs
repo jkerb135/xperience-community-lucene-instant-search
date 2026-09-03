@@ -22,12 +22,12 @@ internal sealed class EditorPreviewTests
     private readonly XpSearchMountRenderer renderer = new();
     private readonly FakeIndexCatalog catalog = new(Index, "products");
 
-    private static IOptions<XpSearchOptions> SortOptions()
+    private static IOptionsMonitor<XpSearchOptions> SortOptions()
     {
         var options = new XpSearchOptions();
         options.Indexes[Index].SortKeys["newest"] = new SortKey("PublishedAt", Descending: true);
 
-        return Microsoft.Extensions.Options.Options.Create(options);
+        return new StaticOptionsMonitor<XpSearchOptions>(options);
     }
 
     /// <summary>Every widget, configured enough to render, in the mode under test.</summary>

@@ -23,6 +23,22 @@ internal sealed class StaticSchemaProvider : IIndexSchemaProvider
         Task.FromResult(schema);
 }
 
+/// <summary>
+/// One options instance behind <see cref="IOptionsMonitor{TOptions}"/>, which is what the consumers
+/// take since AR-1. Mutating the instance is visible at once, exactly like a save in the administration.
+/// </summary>
+/// <typeparam name="T">The options type.</typeparam>
+internal sealed class StaticOptionsMonitor<T> : IOptionsMonitor<T>
+{
+    internal StaticOptionsMonitor(T value) => CurrentValue = value;
+
+    public T CurrentValue { get; }
+
+    public T Get(string? name) => CurrentValue;
+
+    public IDisposable? OnChange(Action<T, string?> listener) => null;
+}
+
 /// <summary>Answers one fixed typo tolerance setting for every index (FZ-1).</summary>
 internal sealed class FixedTypoToleranceSource : ITypoToleranceSource
 {
@@ -50,7 +66,7 @@ internal sealed class TestHarness : IDisposable
         Options = options ?? new XpSearchOptions();
         Index = new TestSearchIndex(TestCorpus.IndexName, TestCorpus.Documents, withTaxonomy);
 
-        var wrapped = Microsoft.Extensions.Options.Options.Create(Options);
+        var wrapped = new StaticOptionsMonitor<XpSearchOptions>(Options);
 
         Pipeline = new SearchPipeline(
             Index,

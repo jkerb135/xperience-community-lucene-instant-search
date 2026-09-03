@@ -34,7 +34,7 @@ internal sealed class SuggestModeTests
             index,
             new StaticSchemaProvider(TestCorpus.Schema),
             queries,
-            Microsoft.Extensions.Options.Options.Create(options),
+            new StaticOptionsMonitor<XpSearchOptions>(options),
             logger);
     }
 

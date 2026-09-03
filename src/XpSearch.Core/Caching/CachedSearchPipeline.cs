@@ -36,7 +36,7 @@ public sealed class CachedSearchPipeline : ISearchPipeline
 {
     private readonly ISearchPipeline inner;
     private readonly ISearchCache cache;
-    private readonly XpSearchOptions options;
+    private readonly IOptionsMonitor<XpSearchOptions> options;
     private readonly IContactGroupResolver contactGroups;
     private readonly IExperimentAssignmentResolver experiments;
     private readonly ISearchRequestJournal journal;
@@ -46,7 +46,7 @@ public sealed class CachedSearchPipeline : ISearchPipeline
     /// <summary>Initializes a new instance of the <see cref="CachedSearchPipeline"/> class.</summary>
     /// <param name="inner">The pipeline that does the work on a cache miss.</param>
     /// <param name="cache">The response cache.</param>
-    /// <param name="options">The configured search options.</param>
+    /// <param name="options">The current search options.</param>
     /// <param name="contactGroups">
     /// Answers which contact groups the visitor is in. The decorator needs them before the pipeline
     /// runs, because they belong in the cache key; the answer is memoized for the request, so the
@@ -72,7 +72,7 @@ public sealed class CachedSearchPipeline : ISearchPipeline
     public CachedSearchPipeline(
         ISearchPipeline inner,
         ISearchCache cache,
-        IOptions<XpSearchOptions> options,
+        IOptionsMonitor<XpSearchOptions> options,
         IContactGroupResolver contactGroups,
         IExperimentAssignmentResolver experiments,
         ISearchRequestJournal journal,
@@ -92,7 +92,7 @@ public sealed class CachedSearchPipeline : ISearchPipeline
         this.typoTolerance = typoTolerance;
         this.inner = inner;
         this.cache = cache;
-        this.options = options.Value;
+        this.options = options;
         this.contactGroups = contactGroups;
         this.experiments = experiments;
         this.journal = journal;
@@ -103,14 +103,14 @@ public sealed class CachedSearchPipeline : ISearchPipeline
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        string queryText = NormalizeRequestStage.Normalize(request.Query, options.MaxQueryLength);
+        string queryText = NormalizeRequestStage.Normalize(request.Query, options.CurrentValue.MaxQueryLength);
         long start = Stopwatch.GetTimestamp();
 
         var experiment = await experiments
             .GetAssignmentAsync(request.Index ?? string.Empty, cancellationToken)
             .ConfigureAwait(false);
 
-        if (options.CacheTtl <= TimeSpan.Zero || string.IsNullOrWhiteSpace(request.Index))
+        if (options.CurrentValue.CacheTtl <= TimeSpan.Zero || string.IsNullOrWhiteSpace(request.Index))
         {
             var uncached = await inner.ExecuteAsync(request, cancellationToken).ConfigureAwait(false);
 

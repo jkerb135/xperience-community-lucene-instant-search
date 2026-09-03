@@ -33,30 +33,30 @@ public interface IQuerySuggestionSource
 public sealed class QuerySuggestionService : IQuerySuggestionSource
 {
     private readonly IQueryLogStore store;
-    private readonly XpSearchOptions options;
+    private readonly IOptionsMonitor<XpSearchOptions> options;
     private readonly Func<DateTime> clock;
     private readonly ConcurrentDictionary<string, CacheEntry> cache = new(StringComparer.Ordinal);
 
     /// <summary>Initializes a new instance of the <see cref="QuerySuggestionService"/> class.</summary>
     /// <param name="store">Where the query log lives.</param>
-    /// <param name="options">The configured search options.</param>
-    public QuerySuggestionService(IQueryLogStore store, IOptions<XpSearchOptions> options)
+    /// <param name="options">The current search options.</param>
+    public QuerySuggestionService(IQueryLogStore store, IOptionsMonitor<XpSearchOptions> options)
         : this(store, options, () => DateTime.UtcNow)
     {
     }
 
     /// <summary>Initializes a new instance of the <see cref="QuerySuggestionService"/> class with a clock.</summary>
     /// <param name="store">Where the query log lives.</param>
-    /// <param name="options">The configured search options.</param>
+    /// <param name="options">The current search options.</param>
     /// <param name="clock">Supplies the current UTC time; tests use it to expire the cache.</param>
-    public QuerySuggestionService(IQueryLogStore store, IOptions<XpSearchOptions> options, Func<DateTime> clock)
+    public QuerySuggestionService(IQueryLogStore store, IOptionsMonitor<XpSearchOptions> options, Func<DateTime> clock)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(clock);
 
         this.store = store;
-        this.options = options.Value;
+        this.options = options;
         this.clock = clock;
     }
 
@@ -71,13 +71,13 @@ public sealed class QuerySuggestionService : IQuerySuggestionSource
         var now = clock();
         string key = $"{indexName}|{prefix}|{limit}";
 
-        if (cache.TryGetValue(key, out var cached) && now - cached.Created <= options.CacheTtl)
+        if (cache.TryGetValue(key, out var cached) && now - cached.Created <= options.CurrentValue.CacheTtl)
         {
             return cached.Suggestions;
         }
 
         var rows = await store
-            .ReadAsync(indexName, now.AddDays(-Math.Max(1, options.Analytics.QuerySuggestionDays)), now, cancellationToken)
+            .ReadAsync(indexName, now.AddDays(-Math.Max(1, options.CurrentValue.Analytics.QuerySuggestionDays)), now, cancellationToken)
             .ConfigureAwait(false);
 
         IReadOnlyList<string> suggestions =

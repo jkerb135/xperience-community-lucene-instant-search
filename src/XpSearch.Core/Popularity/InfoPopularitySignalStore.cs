@@ -100,6 +100,29 @@ public sealed class InfoPopularitySignalStore : IPopularitySignalStore
         indexes.Set(settings);
     }
 
+    /// <inheritdoc />
+    public async Task<int> DeleteAnsweredOlderThanAsync(DateTime cutoffUtc, int batchSize, CancellationToken cancellationToken)
+    {
+        var rows = await suggestions.Get()
+            .WhereNotEquals(nameof(XpSearchPopularitySuggestionInfo.SuggestionState), (int)PopularitySuggestionState.Pending)
+            .WhereLessThan(nameof(XpSearchPopularitySuggestionInfo.SuggestionComputed), cutoffUtc)
+            .OrderByAscending(nameof(XpSearchPopularitySuggestionInfo.SuggestionComputed))
+            .TopN(batchSize)
+            .GetEnumerableTypedResultAsync(cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+
+        int deleted = 0;
+
+        foreach (var row in rows.Where(row =>
+            SuggestionRetention.IsPrunable(row.SuggestionState, row.SuggestionComputed, cutoffUtc)))
+        {
+            suggestions.Delete(row);
+            deleted++;
+        }
+
+        return deleted;
+    }
+
     /// <summary>Reads one index's settings row, or <see langword="null"/> when it has none yet.</summary>
     /// <param name="indexName">Code name of the index.</param>
     /// <param name="cancellationToken">Cancellation token.</param>

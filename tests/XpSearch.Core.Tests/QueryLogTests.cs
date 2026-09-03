@@ -14,6 +14,7 @@ using XpSearch.Core.Analytics;
 using XpSearch.Core.Contract;
 using XpSearch.Core.Endpoints;
 using XpSearch.Core.Options;
+using XpSearch.Core.Popularity;
 using XpSearch.Core.Tests.Fixtures;
 
 namespace XpSearch.Core.Tests;
@@ -66,19 +67,98 @@ internal sealed class QueryLogTests
         options.Analytics.RetentionDays = 30;
         options.Analytics.RetentionBatchSize = 2;
 
-        await store.AppendAsync(Entry("old", DateTime.UtcNow.AddDays(-90)), CancellationToken.None);
+        await store.AppendAsync(Entry("old", DateTime.UtcNow.AddDays(-400)), CancellationToken.None);
         await store.AppendAsync(Entry("older", DateTime.UtcNow.AddDays(-60)), CancellationToken.None);
         await store.AppendAsync(Entry("oldest", DateTime.UtcNow.AddDays(-31)), CancellationToken.None);
         await store.AppendAsync(Entry("recent", DateTime.UtcNow.AddDays(-29)), CancellationToken.None);
+        await store.AppendAsync(Entry("newest", DateTime.UtcNow.AddDays(-10)), CancellationToken.None);
 
-        var task = new XpSearchQueryLogRetentionTask(
+        await Retention(store, options).Execute(null!, CancellationToken.None);
+
+        Assert.That(store.Rows.Select(row => row.QueryText), Is.EqualTo(new[] { "recent", "newest" }).AsCollection);
+    }
+
+    [Test]
+    public async Task RetentionTask_WithNoConfiguredWindow_KeepsTheLastYear()
+    {
+        var store = new InMemoryQueryLogStore();
+
+        await store.AppendAsync(Entry("ancient", DateTime.UtcNow.AddDays(-400)), CancellationToken.None);
+        await store.AppendAsync(Entry("old", DateTime.UtcNow.AddDays(-300)), CancellationToken.None);
+
+        // Nothing configured anything: the option's own default, 365, is the window.
+        await Retention(store, new XpSearchOptions()).Execute(null!, CancellationToken.None);
+
+        Assert.That(store.Rows.Select(row => row.QueryText), Is.EqualTo(new[] { "old" }).AsCollection);
+    }
+
+    [Test]
+    public async Task RetentionTask_PrunesAnsweredSuggestionsWithTheSameCutoff()
+    {
+        var store = new InMemoryQueryLogStore();
+        var popularity = new FakePopularitySignalStore { Answered = 3 };
+        var synonyms = new FakeSynonymSuggestionStore { Answered = 1 };
+        var options = new XpSearchOptions();
+        options.Analytics.RetentionDays = 30;
+        options.Analytics.RetentionBatchSize = 2;
+
+        var logger = new RecordingRetentionLogger();
+
+        await Retention(store, options, popularity, synonyms, logger).Execute(null!, CancellationToken.None);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(popularity.Pruned.Select(call => call.BatchSize), Is.EqualTo(new[] { 2, 2 }).AsCollection);
+            Assert.That(synonyms.Pruned.Select(call => call.BatchSize), Is.EqualTo(new[] { 2 }).AsCollection);
+            Assert.That(popularity.Pruned[0].CutoffUtc, Is.EqualTo(synonyms.Pruned[0].CutoffUtc));
+            Assert.That(popularity.Pruned[0].CutoffUtc, Is.EqualTo(DateTime.UtcNow.AddDays(-30)).Within(TimeSpan.FromMinutes(1)));
+
+            // The same string the task returns as its result, which is the Last result column.
+            Assert.That(
+                logger.Messages.Single(),
+                Does.StartWith("Deleted 0 query log rows, 3 popularity suggestions, 1 synonym suggestion older than "));
+        });
+    }
+
+    [TestCase(0, 10, false, Description = "a pending row is never pruned, however old")]
+    [TestCase(1, 10, true, Description = "an accepted row older than the cutoff is pruned")]
+    [TestCase(2, 1, false, Description = "a dismissed row inside the window is kept")]
+    public void PrunableSuggestion_IsAnsweredAndOlderThanTheCutoff(int state, int ageDays, bool expected)
+    {
+        var cutoff = DateTime.UtcNow.AddDays(-5);
+
+        Assert.That(SuggestionRetention.IsPrunable(state, DateTime.UtcNow.AddDays(-ageDays), cutoff), Is.EqualTo(expected));
+    }
+
+    private static XpSearchQueryLogRetentionTask Retention(
+        IQueryLogStore store,
+        XpSearchOptions options,
+        FakePopularitySignalStore? popularity = null,
+        FakeSynonymSuggestionStore? synonyms = null,
+        ILogger<XpSearchQueryLogRetentionTask>? logger = null) =>
+        new(
             store,
-            Microsoft.Extensions.Options.Options.Create(options),
-            NullLogger<XpSearchQueryLogRetentionTask>.Instance);
+            popularity ?? new FakePopularitySignalStore(),
+            synonyms ?? new FakeSynonymSuggestionStore(),
+            new StaticOptionsMonitor<XpSearchOptions>(options),
+            logger ?? NullLogger<XpSearchQueryLogRetentionTask>.Instance);
 
-        await task.Execute(null!, CancellationToken.None);
+    /// <summary>Captures what the task reported, which is also what it returns as its result message.</summary>
+    private sealed class RecordingRetentionLogger : ILogger<XpSearchQueryLogRetentionTask>
+    {
+        public List<string> Messages { get; } = [];
 
-        Assert.That(store.Rows.Select(row => row.QueryText), Is.EqualTo(new[] { "recent" }).AsCollection);
+        public IDisposable? BeginScope<TState>(TState state)
+            where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+            ArgumentNullException.ThrowIfNull(formatter);
+
+            Messages.Add(formatter(state, exception));
+        }
     }
 
     [Test]

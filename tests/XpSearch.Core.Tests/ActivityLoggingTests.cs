@@ -335,7 +335,7 @@ internal sealed class ActivityLoggingTests
         var pipeline = new CachedSearchPipeline(
             inner,
             new MemorySearchCache(),
-            Microsoft.Extensions.Options.Options.Create(options ?? new XpSearchOptions()),
+            new StaticOptionsMonitor<XpSearchOptions>(options ?? new XpSearchOptions()),
             new StubContactGroupResolver(),
             new StubExperimentResolver(experiment),
             new SearchRequestJournal(activities, contexts, queue, channel, NullLogger<SearchRequestJournal>.Instance),

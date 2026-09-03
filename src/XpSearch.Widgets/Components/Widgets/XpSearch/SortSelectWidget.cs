@@ -49,7 +49,7 @@ public sealed class SortSelectWidgetProperties : XpSearchMountWidgetProperties
 /// <summary>Renders the <c>sortSelect</c> mount.</summary>
 public sealed class SortSelectWidgetViewComponent : XpSearchMountWidgetViewComponent<SortSelectWidgetProperties>
 {
-    private readonly IOptions<XpSearchOptions> searchOptions;
+    private readonly IOptionsMonitor<XpSearchOptions> searchOptions;
 
     /// <summary>Initializes a new instance of the <see cref="SortSelectWidgetViewComponent"/> class.</summary>
     /// <param name="renderer">Renders the mount element.</param>
@@ -60,7 +60,7 @@ public sealed class SortSelectWidgetViewComponent : XpSearchMountWidgetViewCompo
         IXpSearchMountRenderer renderer,
         IXpSearchEditorContext editorContext,
         IXpSearchIndexCatalog indexCatalog,
-        IOptions<XpSearchOptions> searchOptions)
+        IOptionsMonitor<XpSearchOptions> searchOptions)
         : base(renderer, editorContext, indexCatalog)
     {
         ArgumentNullException.ThrowIfNull(searchOptions);
@@ -124,5 +124,5 @@ public sealed class SortSelectWidgetViewComponent : XpSearchMountWidgetViewCompo
     }
 
     private XpSearchIndexOptions? IndexOptions() =>
-        searchOptions.Value.Indexes.TryGetValue(CurrentIndex, out var options) ? options : null;
+        searchOptions.CurrentValue.Indexes.TryGetValue(CurrentIndex, out var options) ? options : null;
 }

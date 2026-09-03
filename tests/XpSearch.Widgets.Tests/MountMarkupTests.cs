@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 
 using Microsoft.Extensions.Options;
 
@@ -23,12 +23,12 @@ internal sealed class MountMarkupTests
     private readonly FakeIndexCatalog catalog = new(Index, "other-index");
     private readonly FakeEditorContext editor = new(XpSearchEditorMode.Live);
 
-    private static IOptions<XpSearchOptions> SearchOptions()
+    private static IOptionsMonitor<XpSearchOptions> SearchOptions()
     {
         var options = new XpSearchOptions();
         options.Indexes[Index].SortKeys["newest"] = new SortKey("PublishedAt", Descending: true);
 
-        return Microsoft.Extensions.Options.Options.Create(options);
+        return new StaticOptionsMonitor<XpSearchOptions>(options);
     }
 
     private string Render<TProperties>(XpSearchMountWidgetViewComponent<TProperties> component, TProperties properties)

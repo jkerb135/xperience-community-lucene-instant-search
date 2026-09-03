@@ -12,6 +12,26 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Breaking (core):** the global values of `XpSearchOptions` (cache lifetime, query length, page
+  sizes, facet and result-window ceilings, suggestion limits, and every `Analytics` number) are now
+  owned by the administration. `services.AddXpSearch(o => …)` still accepts them, but they are used
+  **once**: the first application start writes them into a single `XpSearch.Settings` row, and from
+  then on *Search ingestion → Settings* is the source of truth — later edits to the lambda are
+  ignored for those values. To go back to what the code says, delete the row from
+  `XpSearch_Settings` and restart. Per-index settings (`o.Indexes["…"]`) and the indexing options are
+  unaffected. Code that resolved `IOptions<XpSearchOptions>` from the container should resolve
+  `IOptionsMonitor<XpSearchOptions>` and read `.CurrentValue` per operation, or it will not see a
+  saved change until the application restarts; the library's own services already do.
+  `Analytics.RetentionDays` also changed default, 180 → **365** days.
+- **Added (core, admin):** a **Settings** page in the Search ingestion application edits every global
+  search setting, headed by *"Remove search analytics older than X days"* (default 365). The values
+  are stored in one row, loaded over the host's configuration through
+  `IConfigureOptions<XpSearchOptions>`, and a save is in effect on the next search without an
+  application restart (an `IOptionsChangeTokenSource` fires on the row's insert/update event).
+  The `XpSearch.QueryLogRetention` task now prunes with that window and additionally deletes
+  *answered* popularity and synonym suggestions older than it — pending suggestions are never
+  touched — and its *Last result* message reports all three counts.
+
 - **Fixed (widgets):** the `./widgets` barrel now tree-shakes. `DEFAULT_WIDGETS` references every
   widget as a value, so having it in the barrel dragged all fourteen widgets into any bundle that
   imported one of them (60 KB where 24 KB was asked for); it moved to a chunk of its own and is

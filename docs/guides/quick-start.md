@@ -15,6 +15,8 @@ builder.Services.AddKenticoLucene(lucene => lucene
 
 builder.Services.AddXpSearch(options =>
 {
+    // Global numbers like this one only seed the administration's Settings page on the first start;
+    // after that they are edited under Search ingestion -> Settings (see search-api.md).
     options.CacheTtl = TimeSpan.FromSeconds(60);
     // The attribute /suggest prefix-matches and shows. Do not leave it at its "title" default:
     // that is the item name, which on a real site is a slug ("CoffeePlunger-p2e57tss").

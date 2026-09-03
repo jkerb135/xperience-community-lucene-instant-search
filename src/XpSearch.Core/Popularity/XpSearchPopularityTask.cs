@@ -38,20 +38,20 @@ public sealed class XpSearchPopularityTask : IScheduledTask
     private readonly IQueryLogStore log;
     private readonly IPopularitySignalStore store;
     private readonly ISynonymSuggestionStore synonyms;
-    private readonly XpSearchOptions options;
+    private readonly IOptionsMonitor<XpSearchOptions> options;
     private readonly ILogger<XpSearchPopularityTask> logger;
 
     /// <summary>Initializes a new instance of the <see cref="XpSearchPopularityTask"/> class.</summary>
     /// <param name="log">Where the query log lives.</param>
     /// <param name="store">Where the signal is stored.</param>
     /// <param name="synonyms">Where the mined synonym candidates are stored (SY-1).</param>
-    /// <param name="options">The configured search options.</param>
+    /// <param name="options">The current search options.</param>
     /// <param name="logger">Logger.</param>
     public XpSearchPopularityTask(
         IQueryLogStore log,
         IPopularitySignalStore store,
         ISynonymSuggestionStore synonyms,
-        IOptions<XpSearchOptions> options,
+        IOptionsMonitor<XpSearchOptions> options,
         ILogger<XpSearchPopularityTask> logger)
     {
         ArgumentNullException.ThrowIfNull(log);
@@ -63,14 +63,14 @@ public sealed class XpSearchPopularityTask : IScheduledTask
         this.log = log;
         this.store = store;
         this.synonyms = synonyms;
-        this.options = options.Value;
+        this.options = options;
         this.logger = logger;
     }
 
     /// <inheritdoc />
     public async Task<ScheduledTaskExecutionResult> Execute(ScheduledTaskConfigurationInfo task, CancellationToken cancellationToken)
     {
-        var analytics = options.Analytics;
+        var analytics = options.CurrentValue.Analytics;
         var now = DateTime.UtcNow;
         var from = now.AddDays(-Math.Max(1, analytics.PopularityLookbackDays));
 
