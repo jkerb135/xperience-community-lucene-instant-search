@@ -44,6 +44,11 @@ deliberately): synonym group `espresso expresso`, stopword list `the a an of and
 | `experiments--variant-rules-draft.png` | `…/edit/2/experiments/2/rules` | draft "Docs demo experiment" (left in place) | `ExperimentPages.cs`, `ExperimentScope.cs`, `Rules.cs` | **PENDING** — run `npm run capture -- experiments--variant-rules-draft experiments--variant-rules-readonly` while the capture profile is signed in (session was lost 2026-09-01; sign in once in the window it opens) |
 | `experiments--variant-rules-readonly.png` | `…/edit/2/experiments/1/rules` | concluded experiment 1 (read-only banner, empty after discard) | `ExperimentPages.cs`, `ExperimentScope.cs`, `Rules.cs` | **PENDING** — same run as above |
 
+No row covers the front-end widgets, so TH-6 (autocomplete panel + empty states + the Load more
+empty state) has nothing to mark stale here: the theme is verified against
+`docs/internal/design/*.dc.html` and `themes/test/section-*.html`. Add
+`widgets--autocomplete-panel` and `widgets--empty-states` rows when the guides start showing them.
+
 Pending captures worth adding once data exists: `tuning--popularity-suggestions` and
 `tuning--synonym-suggestions` with ≥1 mined row (current captures show empty tables; recapture
 after a popularity-task run produces suggestions).

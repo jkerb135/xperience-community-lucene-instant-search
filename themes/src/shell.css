@@ -274,10 +274,21 @@
   gap: calc(var(--xps-space) * 2);
 }
 
+/* A dead end is a card of its own: the copy is centred in it, and only the popular searches keep
+   the card's full width (design board `States.dc.html`). */
 .xps-results__empty {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: calc(var(--xps-space) / 2);
+  padding: calc(var(--xps-space) * 2);
+  text-align: center;
+}
+
+.xps-results__clear {
+  min-height: 2.375rem;
+  margin-top: calc(var(--xps-space) / 2);
+  padding-inline: 1.125rem;
 }
 
 /* The two ways out of a dead end: the correction reads as one sentence, the popular searches
@@ -287,6 +298,15 @@
   padding-block: 0;
 }
 
+.xps-results__popular {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--xps-space) / 2);
+  padding-top: calc(var(--xps-space) / 2);
+  text-align: start;
+}
+
 .xps-results__popular-list {
   display: flex;
   flex-wrap: wrap;
@@ -294,6 +314,12 @@
   list-style: none;
   margin: 0;
   padding: 0;
+}
+
+/* A pill, not the boxed chip the active filters use. */
+.xps-results__popular-button {
+  min-height: 0;
+  padding: 0.3125rem 0.75rem;
 }
 
 .xps-result {
@@ -347,8 +373,8 @@
 /* The glyph above the empty state's copy. 24px grid, sized like a heading, centred with the block. */
 .xps-results__empty-icon {
   display: block;
-  width: 2rem;
-  height: 2rem;
+  width: 2.25rem;
+  height: 2.25rem;
 }
 
 /* --------------------------------------------------------------------------
@@ -725,7 +751,7 @@
 }
 
 .xps-suggestions__group-title {
-  padding: calc(var(--xps-space) / 2) var(--xps-space);
+  padding: var(--xps-space) var(--xps-space) calc(var(--xps-space) / 4);
 }
 
 /* The recents group heading: its Clear control sits at the far end of the same row. */
@@ -742,11 +768,44 @@
   padding-block: 0;
 }
 
+/* A recent row and its remove control: one row, the option taking everything the X leaves. */
+.xps-suggestions__row {
+  display: flex;
+  align-items: center;
+}
+
+.xps-suggestions__row .xps-suggestions__option {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .xps-suggestions__option {
   display: flex;
-  flex-direction: column;
-  gap: calc(var(--xps-space) / 4);
+  align-items: center;
+  gap: 0.625rem;
   padding: calc(var(--xps-space) / 2) var(--xps-space);
+  cursor: pointer;
+}
+
+/* A document row stacks its title over its meta line; the other two are one line with a glyph. */
+.xps-suggestions__option--document {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: calc(var(--xps-space) / 4);
+}
+
+.xps-suggestions__option-icon {
+  flex: 0 0 auto;
+  width: 0.9375rem;
+  height: 0.9375rem;
+}
+
+.xps-suggestions__option-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  padding: calc(var(--xps-space) / 2);
   cursor: pointer;
 }
 
@@ -770,10 +829,12 @@
 }
 
 .xps-suggestions__key {
-  display: inline-block;
-  min-width: 1.25em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
   padding: 0 calc(var(--xps-space) / 4);
-  text-align: center;
 }
 
 /* Keyboard hints are noise on a touch keyboard. */

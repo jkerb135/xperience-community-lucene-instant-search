@@ -136,6 +136,8 @@ describe('accessibility (axe-core)', () => {
   }, 20_000);
 
   it('reports no violations with the suggestions popup open', async () => {
+    // Seeded so the popup also shows the recents group, its Clear and the per-row remove control.
+    localStorage.setItem('xps-recent:site-content', JSON.stringify(['espresso machine']));
     const search = page();
     await vi.waitFor(() => expect(search.results).not.toBeNull(), { timeout: 3000 });
     // Closed first: the listbox is in the DOM either way, so aria-controls cannot dangle.
@@ -149,8 +151,10 @@ describe('accessibility (axe-core)', () => {
     });
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
     expect(input.getAttribute('aria-activedescendant')).not.toBeNull();
+    expect(document.querySelector('.xps-suggestions__option-remove')).not.toBeNull();
     expect(await violations()).toEqual([]);
     search.dispose();
+    localStorage.clear();
   }, 20_000);
 
   it('reports no violations with the facet and category groups collapsed', async () => {

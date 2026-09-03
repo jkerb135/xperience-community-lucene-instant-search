@@ -45,3 +45,16 @@
   <div class="xps-load-more__sentinel" aria-hidden="true"></div>
   <button class="xps-button xps-load-more__load-more" type="button" disabled>No more results</button>
 </div>
+
+<!-- nothing found: the same empty state the results widget renders (TH-6), between the list and the
+     sentinel, with the load-more control hidden — there is nothing left to offer. -->
+<div class="xps xps-load-more xps-load-more--exhausted">
+  <p class="xps-load-more__status xps-sr-only" role="status">No results</p>
+  <ol class="xps-load-more__list"></ol>
+  <div class="xps-results__empty">
+    <svg class="xps-results__empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"></circle><path d="M8 11h6"></path><path d="m20 20-4.35-4.35"></path></svg>
+    <p class="xps-results__empty-title">No results for “xyzzy”</p>
+  </div>
+  <div class="xps-load-more__sentinel" aria-hidden="true"></div>
+  <button class="xps-button xps-load-more__load-more" type="button" disabled hidden>No more results</button>
+</div>

@@ -50,7 +50,7 @@ export interface EmptyTemplateData {
  * A template can make any element run a query by giving it this attribute: the widget's own click
  * handler reads it, so a custom empty state gets the same recovery clicks the default one has.
  */
-const RECOVER_ATTRIBUTE = 'data-xps-recover';
+export const RECOVER_ATTRIBUTE = 'data-xps-recover';
 
 export interface ResultsTemplates<TAttributes extends Record<string, unknown>> {
   item?: (result: Result<TAttributes>, helpers: TemplateHelpers) => Renderable;
@@ -141,7 +141,7 @@ export function defaultResultItem<TAttributes extends Record<string, unknown>>(
 }
 
 /** The button the empty state's Clear filters is delegated through (see the root click handler). */
-const CLEAR_CLASS = 'xps-results__clear';
+export const CLEAR_CLASS = 'xps-results__clear';
 
 /** How long a filtered empty state waits before probing for the unfiltered count. */
 const PROBE_DEBOUNCE_MS = 250;
@@ -174,7 +174,21 @@ const recovery = ({ didYouMean, popularSearches }: EmptyTemplateData): Renderabl
     </div>`
   }`;
 
-const defaultEmpty = (data: EmptyTemplateData): Renderable => {
+/** The headline of the empty state, in the four shapes the two variants take (design board). */
+const headline = (query: string, withFilters: boolean): Renderable =>
+  html`<p class="xps-results__empty-title">${
+    query === ''
+      ? withFilters
+        ? 'No results with these filters.'
+        : 'No results.'
+      : html`No results for &ldquo;${query}&rdquo;${withFilters ? ' with these filters' : ''}`
+  }</p>`;
+
+/**
+ * The default empty state, shared by `results` and by `loadMore`. Kept in step with
+ * `ServerRenderedResults`' first paint (`card-parity.test.ts`).
+ */
+export const defaultEmpty = (data: EmptyTemplateData): Renderable => {
   const { query, hasRefinements, unfilteredCount } = data;
   const icon = html.raw(EMPTY_ICON);
   const recover = recovery(data);
@@ -186,20 +200,21 @@ const defaultEmpty = (data: EmptyTemplateData): Renderable => {
     const without = counted
       ? html`<p>There are <strong>${resultCount(unfilteredCount)}</strong> without them.</p>`
       : '';
-    return query === ''
-      ? html`${icon}<p>No results with these filters.</p>${without}${clear}${recover}`
-      : html`${icon}<p>No results for <strong>${query}</strong> with these filters.</p>${without}${clear}${recover}`;
+    return html`${icon}${headline(query, true)}${without}${clear}${recover}`;
   }
-  return query === ''
-    ? html`${icon}<p>No results.</p>${recover}<p>Try a different search term, or clear some filters.</p>`
-    : html`${icon}<p>No results for <strong>${query}</strong>.</p>${recover}<p>Try fewer words, or clear some filters.</p>`;
+  return html`${icon}${headline(query, false)}${recover}`;
 };
+
+/** The empty state in its block, which is what both widgets put in the DOM. */
+export const emptyState = (data: EmptyTemplateData): Renderable =>
+  html`<div class="xps-results__empty">${defaultEmpty(data)}</div>`;
 
 const skeleton = (): Renderable =>
   html`<article class="xps-result xps-result--skeleton" aria-hidden="true">
     <div class="xps-result__media"><span class="xps-skeleton xps-skeleton--block"></span></div>
     <div class="xps-result__body">
       <span class="xps-skeleton xps-skeleton--title"></span>
+      <span class="xps-skeleton xps-skeleton--text"></span>
       <span class="xps-skeleton xps-skeleton--text"></span>
     </div>
   </article>`;
@@ -328,9 +343,9 @@ export function results<TAttributes extends Record<string, unknown> = Record<str
           ? {}
           : { popularSearches: options.results.popularSearches }),
       };
-      body = html`<div class="xps-results__empty">${
-        templates.empty ? templates.empty(data, helpers) : defaultEmpty(data)
-      }</div>`;
+      body = templates.empty
+        ? html`<div class="xps-results__empty">${templates.empty(data, helpers)}</div>`
+        : emptyState(data);
       announcement = query === '' ? 'No results.' : `No results for “${query}”`;
     } else if (options.items.length > 0) {
       body = list(

@@ -56,8 +56,18 @@ public sealed class ServerRenderedResults
     private const string ListClose = "</ol></div>";
     private const string ItemOpen = "<li class=\"xps-results__item\">";
     private const string ItemClose = "</li>";
-    private const string Empty = "<div data-xps-server-rendered class=\"xps xps-results xps-results--empty\">"
-        + "<div class=\"xps-results__empty\"><p>No results.</p></div></div>";
+    /// <summary>
+    /// The magnifier-with-minus above the empty-state copy. Byte-identical to the client's
+    /// <c>EMPTY_ICON</c>; the widgets client's <c>card-parity.test.ts</c> fails if one of the two moves.
+    /// </summary>
+    internal const string EmptyIcon = "<svg class=\"xps-results__empty-icon\" viewBox=\"0 0 24 24\" fill=\"none\""
+        + " stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\""
+        + " aria-hidden=\"true\" focusable=\"false\"><circle cx=\"11\" cy=\"11\" r=\"7\"></circle>"
+        + "<path d=\"M8 11h6\"></path><path d=\"m20 20-4.35-4.35\"></path></svg>";
+
+    private const string EmptyOpen = "<div data-xps-server-rendered class=\"xps xps-results xps-results--empty\">"
+        + "<div class=\"xps-results__empty\">" + EmptyIcon + "<p class=\"xps-results__empty-title\">";
+    private const string EmptyClose = "</p></div></div>";
 
     /// <summary>
     /// The document glyph the media slot falls back to for a result with a file type but no image.
@@ -118,9 +128,10 @@ public sealed class ServerRenderedResults
         ArgumentNullException.ThrowIfNull(options);
 
         SearchResponse response;
+        SearchRequest request;
         try
         {
-            var request = await BuildRequestAsync(viewContext, options, cancellationToken).ConfigureAwait(false);
+            request = await BuildRequestAsync(viewContext, options, cancellationToken).ConfigureAwait(false);
             response = await pipeline.ExecuteAsync(request, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
@@ -134,7 +145,7 @@ public sealed class ServerRenderedResults
 
         if (response.Results is not { Length: > 0 })
         {
-            return render(new HtmlString(Empty));
+            return render(EmptyState(request.Query));
         }
 
         var template = ResolveTemplate(options.TemplateIdentifier);
@@ -160,6 +171,28 @@ public sealed class ServerRenderedResults
         }
 
         return render(content.AppendHtml(ListClose));
+    }
+
+    /// <summary>
+    /// The empty state, as the client's default renderer draws it (<c>themes/MARKUP.md</c>): the
+    /// glyph, then the headline naming the query. The recovery offers the client adds below it -
+    /// the correction and the popular searches - are left to the hydrated render.
+    /// </summary>
+    private static IHtmlContent EmptyState(string? query)
+    {
+        var state = new HtmlContentBuilder().AppendHtml(EmptyOpen);
+
+        if (string.IsNullOrEmpty(query))
+        {
+            state.Append("No results.");
+        }
+        else
+        {
+            // The same entities the client's headline emits, so the two are byte-identical.
+            state.AppendHtml("No results for &ldquo;").Append(query).AppendHtml("&rdquo;");
+        }
+
+        return state.AppendHtml(EmptyClose);
     }
 
     /// <summary>

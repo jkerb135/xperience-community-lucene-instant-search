@@ -10,7 +10,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { toHtml } from '../templates/html';
-import { defaultResultItem } from './results';
+import { defaultResultItem, emptyState } from './results';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const widgets = join(here, '../../..'); // src/XpSearch.Widgets
@@ -86,5 +86,41 @@ describe('the default card renders the same markup in all three renderers', () =
     expect(icon).toContain('<svg class="xps-result__icon"');
     expect(clientFile).toContain(icon);
     expect(razor).toContain(icon);
+  });
+});
+
+/**
+ * TH-6: the empty state exists twice — the client's `defaultEmpty` and `ServerRenderedResults`'
+ * first paint. The server one has no recovery offers (they need the response the client fetches),
+ * so what is pinned is the glyph, the headline element and the headline's wording.
+ */
+describe('the empty state matches between the client and the server-rendered first paint', () => {
+  const emptyIcon = literals(between(csharp, 'internal const string EmptyIcon', 'private const string EmptyOpen'));
+  /** `EmptyOpen` + `EmptyClose`, with the icon constant spliced in where it is concatenated. */
+  const serverEmpty = literals(
+    between(csharp, 'private const string EmptyOpen', 'internal const string FileIcon')
+  ).replace('<div class="xps-results__empty">', `<div class="xps-results__empty">${emptyIcon}`);
+  const clientEmpty = toHtml(
+    emptyState({ query: 'espresso', hasRefinements: false, clearRefinements: () => {} })
+  );
+
+  it('uses one byte-identical empty-state glyph', () => {
+    expect(emptyIcon).toContain('<svg class="xps-results__empty-icon"');
+    expect(clientEmpty).toContain(emptyIcon);
+  });
+
+  it('carries the same elements in the same order', () => {
+    expect(serverEmpty).toContain('class="xps xps-results xps-results--empty"'); // the mount root
+    expect(cardClasses(serverEmpty)).toEqual(cardClasses(clientEmpty));
+  });
+
+  it('words the headline the same way, entity for entity', () => {
+    expect(clientEmpty).toContain(
+      '<p class="xps-results__empty-title">No results for &ldquo;espresso&rdquo;</p>'
+    );
+    expect(csharp).toContain(
+      'state.AppendHtml("No results for &ldquo;").Append(query).AppendHtml("&rdquo;");'
+    );
+    expect(csharp).toContain('state.Append("No results.");');
   });
 });

@@ -155,7 +155,8 @@ Fixture: `fixtures/results.html`. Root `<div class="xps xps-results">`.
 | `xps-results__status` | `<p role="status" class="xps-sr-only">` | **The live region** (§5.6). Text changes to `"{n} results for “{query}”"`, `"No results…"`, `"Searching…"`. `role="status"` implies `aria-live="polite"`. |
 | `xps-results__list` | `<ol>` | Ordered — result rank is meaningful. |
 | `xps-results__item` | `<li>` | One per result; wraps the item template output. |
-| `xps-results__empty` | `<div>` | The `templates.empty` output. |
+| `xps-results__empty` | `<div>` | The `templates.empty` output. A card of its own, with the copy centred in it; also rendered by `loadMore`, which shows the same empty state. |
+| `xps-results__empty-title` | `<p>` | The headline: `No results for “{query}”`, with ` with these filters` appended while refinements narrow it. |
 | `xps-results__empty-icon` | `<svg aria-hidden="true" focusable="false">` | The magnifier-with-minus above the empty-state copy, in both variants. 24px grid, `currentColor`, no external asset. |
 | `xps-results__clear` | `<button type="button" class="xps-button xps-button--primary">` | Only in the empty state, and only while filters are applied: clears them. Reads "Clear filters and show N results" once an unfiltered probe has answered with a count, and "Clear filters" until then (and if it never does). Delegated from the results root, so re-rendering it is safe. |
 | `xps-results__did-you-mean` | `<p>` | Only in the empty state, and only when the response carried `didYouMean`: "Did you mean **<correction>**?" around the button below. |
@@ -388,7 +389,11 @@ the `xps-result` template exactly as `results` does.
 | `xps-load-more__list` | `<ol>` | Appended to, never rebuilt — appending keeps scroll position and focus. |
 | `xps-load-more__item` | `<li>` | |
 | `xps-load-more__sentinel` | `<div aria-hidden="true">` | 1px intersection-observer target for the scroll path. |
-| `xps-load-more__load-more` | `<button type="button" class="xps-button">` | The keyboard path. Always present; `disabled` when exhausted. |
+| `xps-load-more__load-more` | `<button type="button" class="xps-button">` | The keyboard path. Always present; `disabled` when exhausted, and `hidden` while the search found nothing. |
+
+A search with no results renders the `results` widget's `xps-results__empty` block between the list
+and the sentinel — one empty state for both widgets, including the `data-xps-recover` offers, but
+without the unfiltered probe that counts the results behind the filters.
 
 ## suggestions
 
@@ -408,10 +413,14 @@ Implements the WAI-ARIA APG combobox-with-listbox pattern:
 | `xps-suggestions__list` | `<ul role="listbox" id aria-label>` | Always present, even when empty, so `aria-controls` never dangles. |
 | `xps-suggestions__group` | `<li role="group" aria-labelledby>` | One per source, in order: recent searches (client-side), query suggestions, matching documents. Omit the group wrapper when there is only one ungrouped source and put `role="option"` on `<li>` directly — except for the recents, whose group is always labelled because the label row carries the Clear control. |
 | `xps-suggestions__group-title` | `<div id>` | Labels the group. Not an option. |
-| `xps-suggestions__group-header` | `<div>` | Only the recents group: the title row, with the Clear control at its far end. Every other group renders the bare title. |
-| `xps-suggestions__group-clear` | `<button type="button" class="xps-button xps-button--link" data-xps-recent-clear>` | Empties this visitor's recent searches and closes the group. Outside the title element, so the group name stays "Recent searches". |
+| `xps-suggestions__group-header` | `<div>` | Only the recents: their title row, with the Clear control at its far end. It sits **before the listbox**, not inside it — a `<button>` is not something a listbox may own — and the recents' group points at its title with `aria-labelledby`. Every other group renders the bare title inside itself. |
+| `xps-suggestions__group-clear` | `<button type="button" class="xps-button xps-button--link" data-xps-recent-clear>` | Empties this visitor's recent searches and closes the group. Outside the title element, so the group name stays "Recent searches", and outside the listbox. |
+| `xps-suggestions__row` | `<div>` | Only a recent row: wraps the option and its remove control. The control is a **sibling** of the option, never a child — a focusable descendant of `role="option"` is swallowed by the option's accessible name. |
 | `xps-suggestions__option` | `<div role="option" id aria-selected>` | Ids follow `…-option-{index}` in visual order. |
+| `xps-suggestions__option--recent` / `xps-suggestions__option--query` / `xps-suggestions__option--document` | modifier | Which source the row came from, so the theme can give each its own glyph and weight. |
 | `xps-suggestions__option--active` | modifier | The `aria-activedescendant` target; also `aria-selected="true"`. Exactly one at a time, or none. |
+| `xps-suggestions__option-icon` | `<svg aria-hidden="true" focusable="false">` | The row's leading glyph — a clock on a recent row, a magnifier on a suggestion, none on a document row — and the X inside the remove control. 24px grid, `currentColor`, no external asset. |
+| `xps-suggestions__option-remove` | `<span data-xps-recent-remove title aria-hidden="true">` | Drops one recent search from this visitor's list without closing the panel. A pointer affordance only — a listbox owns options and groups and nothing else, so a focusable control cannot live in it; the keyboard and assistive-tech path is **Delete on the active recent row** (plus the group's Clear). |
 | `xps-suggestions__option-title` | `<span>` | May contain `<mark class="xps-highlight">`. |
 | `xps-suggestions__option-meta` | `<span>` | Secondary line for a matching document. |
 | `xps-suggestions__empty` | `<p role="status">` | Open with no suggestions. |
