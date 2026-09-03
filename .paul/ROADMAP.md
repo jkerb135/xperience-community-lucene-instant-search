@@ -30,7 +30,7 @@ Phases: 3 of 6 complete (plus inserted 1.1)
 | 3 | Verification closure & defect burn-down | TBD | In progress (owner items) | - |
 | 4 | Remaining spec scope | 5 | Complete (2026-09-02) | 2026-09-02 |
 | 5 | Packaging & release (spec Phase 8) | TBD | Not started | - |
-| 6 | Analytics retention setting & cleanup task | 2 | In progress (06-01 done; 06-02 per-index, AR-3 + UX-1 final round in flight) | - |
+| 6 | Analytics retention setting & cleanup task | 2 | Complete (2026-09-03) | 2026-09-03 |
 | 7 | Artboard parity: autocomplete panel + edge states | 1 | Planning (07-01 written 2026-09-03) | - |
 
 ## Phase Details
@@ -173,7 +173,7 @@ verified live — "There are 2 results without them / Clear filters and show 2 r
 
 **Plans:**
 - [x] 06-01: AR-1 — global settings row + Search ingestion → Settings page + IConfigureOptions overlay (live), retention 365 + answered-suggestion prune — merged 07928a7 + fix 76bef0e (2026-09-02); owner redirected at checkpoint → per index
-- [ ] 06-02: AR-2 — settings per index via named options (`IOptionsMonitor<XpSearchIndexSettings>.Get(indexCodeName)`), Settings page in each index's tuning section, per-name invalidation, retention per index; replaces the global page/row
+- [x] 06-02: AR-2 per-index named options (9a11388) + eviction fix (583fb6b) + UX-1 tooltips + AR-3 widgets-own-sizes (4f6751f) — owner walked §Y 121–125, all pass 2026-09-03. PHASE 6 COMPLETE
 
 ### Phase 7: Artboard parity: autocomplete panel + edge states
 
