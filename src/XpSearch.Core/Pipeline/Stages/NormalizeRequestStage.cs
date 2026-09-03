@@ -43,7 +43,7 @@ public sealed class NormalizeRequestStage : ISearchStage
 
         context.QueryText = Normalize(request.Query, indexSettings.MaxQueryLength);
         context.Page = ValidatePage(request.Page);
-        context.PageSize = ValidatePageSize(request.PageSize, indexSettings);
+        context.PageSize = ValidatePageSize(request.PageSize, indexSettings, options.CurrentValue.DefaultPageSize);
         ValidateResultWindow(context.Page, context.PageSize, indexSettings);
 
         context.RequestedFacets = ValidateFacets(request.Facets, context.Schema);
@@ -92,11 +92,12 @@ public sealed class NormalizeRequestStage : ISearchStage
         return (int)page.Value;
     }
 
-    private static int ValidatePageSize(long? pageSize, XpSearchIndexSettings settings)
+    // The default is code-only (AR-3): the per-index settings own the ceiling, not the default.
+    private static int ValidatePageSize(long? pageSize, XpSearchIndexSettings settings, int defaultPageSize)
     {
         if (pageSize is null)
         {
-            return settings.DefaultPageSize;
+            return Math.Min(defaultPageSize, settings.MaxPageSize);
         }
 
         if (pageSize < 1 || pageSize > ContractMaxPageSize)

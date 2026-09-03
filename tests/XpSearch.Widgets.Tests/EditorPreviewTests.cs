@@ -177,7 +177,7 @@ internal sealed class EditorPreviewTests
 
         Expect.Multiple(() =>
         {
-            Assert.That(Cards(Preview(0)), Is.EqualTo(3));
+            Assert.That(Cards(Preview(1)), Is.EqualTo(1));
             Assert.That(Cards(Preview(2)), Is.EqualTo(2));
             Assert.That(Cards(Preview(50)), Is.EqualTo(4));
         });

@@ -14,7 +14,7 @@ namespace XpSearch.Core.Rendering;
 
 /// <summary>What a caller wants server-rendered (spec §5.8): the Results widget, or a host's own view.</summary>
 /// <param name="Index">The index to search.</param>
-/// <param name="ResultsPerPage">Page size; zero keeps the index's own.</param>
+/// <param name="ResultsPerPage">Page size; required, one or greater (AR-3), and capped by the index's maximum.</param>
 /// <param name="Fields">Attributes to retrieve; empty keeps the index defaults.</param>
 /// <param name="TemplateIdentifier">The registered result template the editor picked, if any.</param>
 /// <param name="TitleAttribute">Attribute the default card's title comes from; empty means <c>title</c>.</param>
@@ -238,10 +238,7 @@ public sealed class ServerRenderedResults
     {
         var request = new SearchRequest { Index = options.Index };
 
-        if (options.ResultsPerPage > 0)
-        {
-            request.PageSize = options.ResultsPerPage;
-        }
+        request.PageSize = options.ResultsPerPage;
 
         if (options.Fields.Count > 0)
         {

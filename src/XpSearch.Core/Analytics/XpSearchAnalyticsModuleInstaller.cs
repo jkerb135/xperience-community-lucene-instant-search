@@ -23,11 +23,9 @@ public sealed class XpSearchAnalyticsModuleInstaller
     [
         nameof(Options.XpSearchSettingsInfo.SettingsCacheTtlSeconds),
         nameof(Options.XpSearchSettingsInfo.SettingsMaxQueryLength),
-        nameof(Options.XpSearchSettingsInfo.SettingsDefaultPageSize),
         nameof(Options.XpSearchSettingsInfo.SettingsMaxPageSize),
         nameof(Options.XpSearchSettingsInfo.SettingsMaxFacetValues),
         nameof(Options.XpSearchSettingsInfo.SettingsMaxResultWindow),
-        nameof(Options.XpSearchSettingsInfo.SettingsDefaultSuggestLimit),
         nameof(Options.XpSearchSettingsInfo.SettingsMaxSuggestLimit),
         nameof(Options.XpSearchSettingsInfo.SettingsRetentionDays),
         nameof(Options.XpSearchSettingsInfo.SettingsRetentionBatchSize),

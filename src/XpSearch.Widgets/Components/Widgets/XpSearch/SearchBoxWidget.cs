@@ -58,10 +58,12 @@ public sealed class SearchBoxWidgetProperties : XpSearchMountWidgetProperties
     public bool EnableSuggestions { get; set; }
 
     /// <summary>Gets or sets how many suggestions are offered. Only used when suggestions are on.</summary>
+    [RequiredValidationRule]
+    [MinimumIntegerValueValidationRule(1)]
     [NumberInputComponent(
         Label = "Maximum suggestions",
         Tooltip = "How many suggestions the panel offers.",
-        ExplanationText = "The index's Search settings cap it: a value above 'Maximum suggestion count' comes back trimmed to that. 0 asks for the built-in 5 rather than the index's 'Default suggestion count', which only applies to callers that send no number at all.",
+        ExplanationText = "Suggestions this input offers. Capped by the index's 'Maximum suggestion count'.",
         Order = OrderFirstWidgetProperty + 27)]
     [VisibleIfTrue(nameof(EnableSuggestions))]
     public int SuggestionLimit { get; set; } = 5;

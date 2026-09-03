@@ -3,6 +3,18 @@
 Intentional simplifications, one entry each: where it lives, what was simplified, the ceiling it hits,
 and how to lift it.
 
+## Removed settings leave two dead columns (`SettingsForm` in `XpSearch.Core/Analytics/XpSearchAnalyticsModuleInstaller.cs`)
+
+- **Simplified:** AR-3 dropped *Default page size* and *Default suggestion count* from the form,
+  `XpSearchSettingsInfo` and `SearchSettingsValues`. `CombineWithForm` only adds fields, so an install
+  created before AR-3 keeps `SettingsDefaultPageSize` and `SettingsDefaultSuggestLimit` in
+  `XpSearch_Settings`; nothing reads or writes them any more. No DDL is issued.
+- **Ceiling:** two unused int columns on existing installs. A new row no longer sets them, so the
+  insert relies on the default constraint Kentico gives a required int column (RK-2's rule in
+  reverse); verify the first save on an upgraded host.
+- **Upgrade path:** a one-off `DataClassInfo` field removal on `XpSearch.Settings` (edit the class
+  form, drop the two fields) once no supported install predates AR-3.
+
 ## Integrated suggestions search twice per keystroke (`searchBox` in `Client/src/widgets/searchBox.ts`)
 
 - **Simplified:** with `params.suggestions` set, the input handler calls both

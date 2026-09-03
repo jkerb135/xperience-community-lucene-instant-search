@@ -44,10 +44,12 @@ public sealed class SuggestionsWidgetProperties : XpSearchMountWidgetProperties
     public string Mode { get; set; } = ModeDocuments;
 
     /// <summary>Gets or sets how many suggestions are offered.</summary>
+    [RequiredValidationRule]
+    [MinimumIntegerValueValidationRule(1)]
     [NumberInputComponent(
         Label = "Maximum items",
         Tooltip = "How many suggestions the panel offers.",
-        ExplanationText = "The index's 'Maximum suggestion count' caps it: a higher number comes back trimmed to that.",
+        ExplanationText = "Suggestions this widget offers. Capped by the index's 'Maximum suggestion count'.",
         Order = OrderFirstWidgetProperty + 10)]
     public int MaxItems { get; set; } = 5;
 

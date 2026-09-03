@@ -17,14 +17,20 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
   **defaults for every index**, and the administration overrides them **per index** on *Lucene Search
   → index → Search settings*. `services.AddXpSearch(o => …)` keeps configuring the defaults, and an
   index nobody saved settings for uses them unchanged; a saved index uses its own row from then on.
-  Code that read one of those sixteen values off `IOptions<XpSearchOptions>` should read
+  Code that read one of those values off `IOptions<XpSearchOptions>` should read
   `IOptionsMonitor<XpSearchIndexSettings>.Get(indexCodeName)` per operation instead — the root
   properties are still there, but they are no longer what a given index answers with. Per-index
   code-only settings (`o.Indexes["…"]`: sort keys, suggest field and mode, did-you-mean, popular
   searches) and the indexing options are unaffected. `Analytics.RetentionDays` also changed default,
-  180 → **365** days.
+  180 → **365** days. **Fourteen** of those values are per index: *Default page size* and *Default
+  suggestion count* are not, because widgets carry their own sizes — `XpSearchOptions.DefaultPageSize`
+  and `DefaultSuggestLimit` remain code-only, for API callers that omit `pageSize` / `limit`, and
+  `XpSearchIndexSettings` no longer has them. The Results widget's *Results per page* and the two
+  suggestion counts (*Maximum suggestions*, *Maximum items*) are now **required, one or greater**
+  (Results defaults to 20); `ServerResultsOptions.ResultsPerPage` no longer treats 0 as "use the
+  index's default". Widgets own their sizes; the index owns the caps.
 - **Added (core, admin):** a **Search settings** page per index (*Lucene Search → index → Search
-  settings*) edits all sixteen values, headed by *"Remove search analytics older than X days"*
+  settings*) edits all fourteen values, headed by *"Remove search analytics older than X days"*
   (default 365). Each index's row is loaded over the code defaults through
   `IConfigureNamedOptions<XpSearchIndexSettings>`, and a save is in effect on the next search without
   an application restart — only the saved index's settings are rebuilt, and that index's cached
@@ -36,8 +42,8 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 - **Changed (admin, widgets):** every setting and widget property now explains what it does and what
   it interacts with — a tooltip and an explanation line on each field of the per-index *Search
-  settings* page and on each Page Builder widget property — and the Results widget's page-size label
-  is now *Results per page (0 = index setting)*.
+  settings* page and on each Page Builder widget property, saying the one rule: widgets own their
+  sizes, the index owns the caps, and API callers that send no size get the code default.
 
 - **Fixed (widgets):** the `./widgets` barrel now tree-shakes. `DEFAULT_WIDGETS` references every
   widget as a value, so having it in the barrel dragged all fourteen widgets into any bundle that

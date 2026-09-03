@@ -78,7 +78,7 @@ Then, per widget:
 | Widget | Properties |
 |---|---|
 | Search box | Placeholder · Show reset button · Focus on page load · Suggest as the visitor types · Maximum suggestions (capped by the index's *Maximum suggestion count*) and Offer recent searches (shown once suggesting is on) · Sync search state to the URL — see [Shareable result URLs](#shareable-result-urls) and [One page, one search field](#one-page-one-search-field) |
-| Results | Results per page (0 = index setting) — 0 uses the index's *Default page size*, any other value overrides it for this widget only and is capped by *Maximum page size* · Result template · Fields to show (a selector over the index fields — `title`, `url`, `contentType`, `language` or any stored field of your content types; once it is not empty it is the whole list) · Title attribute · Link attribute · Snippet attributes — see [Pointing a card at other attributes](#pointing-a-card-at-other-attributes) |
+| Results | Results per page — required, one or greater (20 by default), capped by the index's *Maximum page size*; it is the page size of the whole search instance · Result template · Fields to show (a selector over the index fields — `title`, `url`, `contentType`, `language` or any stored field of your content types; once it is not empty it is the whole list) · Title attribute · Link attribute · Snippet attributes — see [Pointing a card at other attributes](#pointing-a-card-at-other-attributes) |
 | Facet list | Attribute · Label · Operator (any / all of the selected values) · Values shown (a display limit over what the response carried, so the index's *Maximum values per facet* is the real ceiling) · Show a "show more" button · Title folds the group (on by default — see [Folding groups](#folding-groups)) |
 | Category tree | Attribute · Label · Nodes per level (same ceiling as above) · Title folds the tree (on by default). Pick a **taxonomy** attribute: the tree comes from the tag hierarchy, and a flat attribute renders as one level. Selection is one value at a time, because a parent's count already includes its children |
 | Pagination | Style (numbered pages / load more button) — "load more" emits a `loadMore` mount instead of a `pagination` one, so place one or the other, never both. It steps by the search's page size and cannot go past the index's *Maximum result window* |
@@ -98,17 +98,20 @@ map rather than the only place the wording lives.
 
 #### How widget properties and index settings interact
 
-Three layers decide a value, in one direction:
+One rule: **widgets own their sizes; the index owns the caps; API callers that send no size get the
+code default.**
 
-1. **The widget property**, when it is set — for numbers, above 0 — wins, for that placement alone.
-2. **The index setting** (*Lucene Search → the index → Search settings*) applies to every request that
-   does not name the value, a widget left at 0 included.
-3. **The code default** (`AddXpSearch(o => …)`) applies to an index nobody saved settings for.
-
-Ceilings are the other direction: *Maximum page size*, *Maximum values per facet* and *Maximum
-suggestion count* clamp whatever a widget or an API caller asks for, so a widget property can lower a
-number but never raise it past its index's ceiling. *Maximum result window* is the one that refuses
-rather than clamps: a request whose `page × pageSize` exceeds it returns a validation error.
+- **Widget properties** decide what a placement asks for. The sizes — the Results widget's *Results
+  per page*, the search box's *Maximum suggestions*, the Suggestions widget's *Maximum items* — are
+  required and one or greater, so a widget always sends its own number.
+- **Index settings** (*Lucene Search → the index → Search settings*) are the ceilings and the
+  policies: *Maximum page size*, *Maximum values per facet* and *Maximum suggestion count* clamp
+  whatever a widget or an API caller asks for, so a widget property can lower a number but never
+  raise it past its index's ceiling. *Maximum result window* refuses rather than clamps: a request
+  whose `page × pageSize` exceeds it returns a validation error.
+- **Code defaults** (`AddXpSearch(o => …)`) supply an index's settings until someone saves that
+  index's page, and `DefaultPageSize` / `DefaultSuggestLimit` answer an API caller that sends no size
+  at all. No widget uses those two.
 
 #### One page, one search field
 

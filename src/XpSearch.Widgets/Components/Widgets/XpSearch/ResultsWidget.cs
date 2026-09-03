@@ -26,13 +26,15 @@ namespace XpSearch.Widgets.Components.Widgets.XpSearch;
 /// <summary>Editor properties of the results widget (spec §7.3).</summary>
 public sealed class ResultsWidgetProperties : XpSearchMountWidgetProperties
 {
-    /// <summary>Gets or sets how many results a page shows. Zero keeps the API's configured default.</summary>
+    /// <summary>Gets or sets how many results a page shows. Always set (AR-3): the widget owns its size.</summary>
+    [RequiredValidationRule]
+    [MinimumIntegerValueValidationRule(1)]
     [NumberInputComponent(
-        Label = "Results per page (0 = index setting)",
+        Label = "Results per page",
         Tooltip = "How many results one page of the list shows.",
-        ExplanationText = "0 = the index's 'Default page size'; any other value overrides it for this widget only, capped by the index's 'Maximum page size'. It sets the page size of the whole search instance, so the Search - Pagination widget beside it pages in these steps.",
+        ExplanationText = "Results on each page of this widget. Capped by the index's 'Maximum page size'. It is the page size of the whole search instance, so the Search - Pagination widget beside it pages in these steps.",
         Order = OrderFirstWidgetProperty)]
-    public int ResultsPerPage { get; set; }
+    public int ResultsPerPage { get; set; } = 20;
 
     /// <summary>Gets or sets the identifier of a registered result template (spec §5.8).</summary>
     [DropDownComponent(
@@ -98,6 +100,9 @@ public sealed class ResultsWidgetProperties : XpSearchMountWidgetProperties
 /// <summary>Renders the <c>results</c> mount.</summary>
 public sealed class ResultsWidgetViewComponent : XpSearchMountWidgetViewComponent<ResultsWidgetProperties>
 {
+    /// <summary>What a widget saved before AR-3 - when 0 meant "use the index's default" - is read as.</summary>
+    private const int FallbackResultsPerPage = 20;
+
     private static readonly char[] LineSeparators = ['\r', '\n'];
 
     private readonly ServerRenderedResults? serverResults;
@@ -165,17 +170,13 @@ public sealed class ResultsWidgetViewComponent : XpSearchMountWidgetViewComponen
         ArgumentNullException.ThrowIfNull(properties);
         ArgumentNullException.ThrowIfNull(instanceConfig);
 
-        // The page size the server actually applied, not the one the widget asked for: with the
-        // property left unset the pipeline's own default decides it, and the hydration query must ask
-        // for the same page the visitor is already looking at.
-        int pageSize = firstPaint?.PageSize ?? properties.ResultsPerPage;
-        if (pageSize > 0)
+        // The page size the server actually applied, not the one the widget asked for: the index's
+        // maximum may have clamped it, and the hydration query must ask for the same page the visitor
+        // is already looking at.
+        instanceConfig["initialState"] = new Dictionary<string, object?>(StringComparer.Ordinal)
         {
-            instanceConfig["initialState"] = new Dictionary<string, object?>(StringComparer.Ordinal)
-            {
-                ["pageSize"] = pageSize
-            };
-        }
+            ["pageSize"] = firstPaint?.PageSize ?? PageSize(properties)
+        };
 
         // Only when the server really answered a search: the client then reuses the id instead of
         // journaling the same page load twice.
@@ -213,7 +214,7 @@ public sealed class ResultsWidgetViewComponent : XpSearchMountWidgetViewComponen
             viewContext,
             new ServerResultsOptions(
                 CurrentIndex,
-                properties.ResultsPerPage,
+                PageSize(properties),
                 EffectiveFields(properties),
                 properties.ResultTemplate,
                 properties.TitleAttribute,
@@ -231,7 +232,7 @@ public sealed class ResultsWidgetViewComponent : XpSearchMountWidgetViewComponen
         ArgumentNullException.ThrowIfNull(properties);
 
         // Four cards is enough to read as a list; a page size of 50 must not fill the builder.
-        int cards = Math.Clamp(properties.ResultsPerPage <= 0 ? 3 : properties.ResultsPerPage, 1, 4);
+        int cards = Math.Clamp(PageSize(properties), 1, 4);
         var list = EditorPreview.El("ol", "xps-results__list");
 
         for (int card = 0; card < cards; card++)
@@ -252,12 +253,15 @@ public sealed class ResultsWidgetViewComponent : XpSearchMountWidgetViewComponen
             .AppendHtml(EditorPreview.Note(string.Format(
                 CultureInfo.CurrentUICulture,
                 WidgetResources.Preview_Note_Results,
-                properties.ResultsPerPage > 0
-                    ? properties.ResultsPerPage.ToString(CultureInfo.CurrentUICulture)
-                    : WidgetResources.Preview_Unset,
+                PageSize(properties).ToString(CultureInfo.CurrentUICulture),
                 string.IsNullOrWhiteSpace(properties.ResultTemplate) ? WidgetResources.Preview_Unset : properties.ResultTemplate.Trim(),
                 fields.Count > 0 ? string.Join(", ", fields) : WidgetResources.Preview_Unset)));
     }
+
+    // The property is required and one or greater from AR-3 on, but a widget saved while 0 meant "use
+    // the index's default" still holds 0, and 0 is a validation error on the wire.
+    private static int PageSize(ResultsWidgetProperties properties) =>
+        properties.ResultsPerPage > 0 ? properties.ResultsPerPage : FallbackResultsPerPage;
 
     /// <summary>
     /// The fields to retrieve: what the selector holds, or - for a widget saved before the selector

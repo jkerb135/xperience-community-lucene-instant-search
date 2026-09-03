@@ -266,7 +266,7 @@ internal sealed class MountMarkupTests
     }
 
     [Test]
-    public void Results_leaves_the_defaults_alone_when_the_editor_set_nothing()
+    public void Results_leaves_the_display_options_alone_but_always_carries_its_page_size()
     {
         var component = new ResultsWidgetViewComponent(renderer, editor, catalog);
 
@@ -276,9 +276,23 @@ internal sealed class MountMarkupTests
         Expect.Multiple(() =>
         {
             Assert.That(Rendered.Attribute(markup, "data-xps-config"), Is.EqualTo("{}"));
-            Assert.That(instance.TryGetProperty("initialState", out _), Is.False);
+            // AR-3: the widget owns its size, so the page size is always in the instance options.
+            Assert.That(instance.GetProperty("initialState").GetProperty("pageSize").GetInt32(), Is.EqualTo(20));
             Assert.That(instance.TryGetProperty("fields", out _), Is.False);
         });
+    }
+
+    [Test]
+    public void Results_saved_before_the_size_was_required_falls_back_to_twenty()
+    {
+        var component = new ResultsWidgetViewComponent(renderer, editor, catalog);
+
+        // A widget stored while 0 meant "use the index's default" still holds 0; 0 is a validation
+        // error on the wire, so the mount must not hand it to the client.
+        string markup = Render(component, new ResultsWidgetProperties { Index = Index, ResultsPerPage = 0 });
+
+        var instance = Rendered.Json(markup, "data-xps-instance-config");
+        Assert.That(instance.GetProperty("initialState").GetProperty("pageSize").GetInt32(), Is.EqualTo(20));
     }
 
     [Test]

@@ -467,11 +467,9 @@ override it in the administration under **Lucene Search → the index → Search
 |---|---|---|---|
 | Response cache lifetime (seconds) | 60 | 0 or more (0 = no response caching) | Every search of the index — all widgets and every API caller |
 | Maximum query length | 256 | 1–1000 | Every search request; the text is truncated, not refused. Suggest requests are unaffected |
-| Default page size | 20 | 1–1000 | The Results widget with *Results per page (0 = index setting)* left at 0, and any caller that omits `pageSize` |
 | Maximum page size | 100 | 1–1000 | Clamps the Results widget's *Results per page* and every caller's `pageSize`; the clamped value is reported back |
 | Maximum values per facet | 100 | 1 or more | The ceiling the Facet list's *Values shown* and the Category tree's *Nodes per level* display from |
 | Maximum result window | 10000 | 1 or more | How deep the Pagination widget (and any caller) may page; a deeper request is refused |
-| Default suggestion count | 5 | 1–100 | Callers of `/suggest` that omit `limit`. The Suggestions widget and the search box always send their own number |
 | Maximum suggestion count | 20 | 1–100 | Clamps the Suggestions widget's *Maximum items* and the search box's *Maximum suggestions* |
 | Remove search analytics older than X days | 365 | 1 or more | The `XpSearch.QueryLogRetention` task; sets the history depth of the Analytics page |
 | Retention batch size | 1000 | 1 or more | The `XpSearch.QueryLogRetention` task's delete batches |
@@ -489,6 +487,12 @@ search of **that index**, without an application restart and without rebuilding 
 settings; it also drops that index's cached responses, so the next request reflects the new values
 rather than waiting out the old cache lifetime. To go back to what the code says for one index, delete
 its row from the `XpSearch_Settings` table.
+
+**Widgets own their sizes; the index owns the caps; API callers that send no size get the code
+default.** `XpSearchOptions.DefaultPageSize` (20) and `XpSearchOptions.DefaultSuggestLimit` (5) stay in
+code and are not per index: they answer a request that omits `pageSize` / `limit`, which no widget
+ever does — the Results widget's *Results per page* and the two suggestion counts are required, one or
+greater. The maximums above still clamp both widgets and callers.
 
 In code, the settings in effect for an index are
 `IOptionsMonitor<XpSearchIndexSettings>.Get(indexCodeName)`, read per operation. Read it with the

@@ -43,7 +43,7 @@ public class SearchSettingsModel : IIndexScopedModel
         Label = "Response cache lifetime (seconds)",
         Order = 1,
         Tooltip = "How long an identical query is served from cache. 0 turns response caching off.",
-        ExplanationText = "Applies to every search of this index - all search widgets and every API caller. A save applies to the next search; answers already in the cache are served until they expire, so raise this only as far as stale results are acceptable.")]
+        ExplanationText = "Applies to every search of this index - all search widgets and every API caller. A save applies to the next request; the index's cached responses are dropped with it.")]
     public int CacheTtlSeconds { get; set; }
 
     /// <summary>Gets or sets the maximum accepted length of the query text.</summary>
@@ -56,16 +56,6 @@ public class SearchSettingsModel : IIndexScopedModel
         ExplanationText = "What a visitor types into the Search - Search box beyond this many characters is cut off before the search runs; the request is not refused. Applies to every API caller too. Suggestion requests are not affected.")]
     public int MaxQueryLength { get; set; }
 
-    /// <summary>Gets or sets the page size used when a request omits one.</summary>
-    [MinimumIntegerValueValidationRule(1)]
-    [MaximumIntegerValueValidationRule(1000)]
-    [NumberInputComponent(
-        Label = "Default page size",
-        Order = 3,
-        Tooltip = "Results per page when a request does not ask for a size.",
-        ExplanationText = "The Search - Results widget uses it unless its own 'Results per page (0 = index setting)' is above 0, and the JavaScript client uses it whenever pageSize is omitted. Numbered pagination and the load more button page through results of this size.")]
-    public int DefaultPageSize { get; set; }
-
     /// <summary>Gets or sets the server-side page size ceiling.</summary>
     [MinimumIntegerValueValidationRule(1)]
     [MaximumIntegerValueValidationRule(1000)]
@@ -73,7 +63,7 @@ public class SearchSettingsModel : IIndexScopedModel
         Label = "Maximum page size",
         Order = 4,
         Tooltip = "Larger requested page sizes are clamped to this.",
-        ExplanationText = "Caps the Search - Results widget's 'Results per page (0 = index setting)' and every API caller; the clamped value is what the response reports back. Keep it at or above the default page size.")]
+        ExplanationText = "Widgets own their sizes and the index owns the caps: this clamps the Search - Results widget's 'Results per page' and every API caller, and the clamped value is what the response reports back.")]
     public int MaxPageSize { get; set; }
 
     /// <summary>Gets or sets the maximum number of values returned per facet dimension.</summary>
@@ -93,16 +83,6 @@ public class SearchSettingsModel : IIndexScopedModel
         Tooltip = "Page multiplied by page size may not exceed this; a deeper request is refused.",
         ExplanationText = "How deep the Search - Pagination widget can go: with a page size of 20, a window of 10000 is 500 pages, and a link past that returns a validation error instead of results.")]
     public int MaxResultWindow { get; set; }
-
-    /// <summary>Gets or sets the number of suggestions returned when a request omits a limit.</summary>
-    [MinimumIntegerValueValidationRule(1)]
-    [MaximumIntegerValueValidationRule(100)]
-    [NumberInputComponent(
-        Label = "Default suggestion count",
-        Order = 7,
-        Tooltip = "How many suggestions are returned when a request does not ask for a number.",
-        ExplanationText = "Read by callers of the suggest endpoint that omit a limit. The Search - Suggestions widget and the search box's own suggestions always send their configured number, so this setting does not change what they show.")]
-    public int DefaultSuggestLimit { get; set; }
 
     /// <summary>Gets or sets the ceiling on the suggestion limit.</summary>
     [MinimumIntegerValueValidationRule(1)]
@@ -197,11 +177,9 @@ public class SearchSettingsModel : IIndexScopedModel
         {
             CacheTtlSeconds = values.CacheTtlSeconds,
             MaxQueryLength = values.MaxQueryLength,
-            DefaultPageSize = values.DefaultPageSize,
             MaxPageSize = values.MaxPageSize,
             MaxFacetValues = values.MaxFacetValues,
             MaxResultWindow = values.MaxResultWindow,
-            DefaultSuggestLimit = values.DefaultSuggestLimit,
             MaxSuggestLimit = values.MaxSuggestLimit,
             RetentionDays = values.RetentionDays,
             RetentionBatchSize = values.RetentionBatchSize,
@@ -221,11 +199,9 @@ public class SearchSettingsModel : IIndexScopedModel
         {
             CacheTtlSeconds = Math.Max(0, CacheTtlSeconds),
             MaxQueryLength = MaxQueryLength,
-            DefaultPageSize = DefaultPageSize,
             MaxPageSize = MaxPageSize,
             MaxFacetValues = MaxFacetValues,
             MaxResultWindow = MaxResultWindow,
-            DefaultSuggestLimit = DefaultSuggestLimit,
             MaxSuggestLimit = MaxSuggestLimit,
             RetentionDays = RetentionDays,
             RetentionBatchSize = RetentionBatchSize,

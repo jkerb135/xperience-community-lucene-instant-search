@@ -23,9 +23,6 @@ public sealed record SearchSettingsValues
     /// <summary>Gets the maximum accepted length of the query text.</summary>
     public int MaxQueryLength { get; init; }
 
-    /// <summary>Gets the page size used when a request omits one.</summary>
-    public int DefaultPageSize { get; init; }
-
     /// <summary>Gets the server-side page size ceiling.</summary>
     public int MaxPageSize { get; init; }
 
@@ -34,9 +31,6 @@ public sealed record SearchSettingsValues
 
     /// <summary>Gets how deep paging may go.</summary>
     public int MaxResultWindow { get; init; }
-
-    /// <summary>Gets the number of suggestions returned when a request omits a limit.</summary>
-    public int DefaultSuggestLimit { get; init; }
 
     /// <summary>Gets the ceiling on the suggestion limit.</summary>
     public int MaxSuggestLimit { get; init; }
@@ -76,11 +70,9 @@ public sealed record SearchSettingsValues
         {
             CacheTtlSeconds = (int)Math.Max(0, settings.CacheTtl.TotalSeconds),
             MaxQueryLength = settings.MaxQueryLength,
-            DefaultPageSize = settings.DefaultPageSize,
             MaxPageSize = settings.MaxPageSize,
             MaxFacetValues = settings.MaxFacetValues,
             MaxResultWindow = settings.MaxResultWindow,
-            DefaultSuggestLimit = settings.DefaultSuggestLimit,
             MaxSuggestLimit = settings.MaxSuggestLimit,
             RetentionDays = settings.RetentionDays,
             RetentionBatchSize = settings.RetentionBatchSize,
@@ -108,11 +100,9 @@ public sealed record SearchSettingsValues
         settings.CacheTtl = TimeSpan.FromSeconds(Math.Max(0, CacheTtlSeconds));
 
         settings.MaxQueryLength = Or(MaxQueryLength, settings.MaxQueryLength);
-        settings.DefaultPageSize = Or(DefaultPageSize, settings.DefaultPageSize);
         settings.MaxPageSize = Or(MaxPageSize, settings.MaxPageSize);
         settings.MaxFacetValues = Or(MaxFacetValues, settings.MaxFacetValues);
         settings.MaxResultWindow = Or(MaxResultWindow, settings.MaxResultWindow);
-        settings.DefaultSuggestLimit = Or(DefaultSuggestLimit, settings.DefaultSuggestLimit);
         settings.MaxSuggestLimit = Or(MaxSuggestLimit, settings.MaxSuggestLimit);
         settings.RetentionDays = Or(RetentionDays, settings.RetentionDays);
         settings.RetentionBatchSize = Or(RetentionBatchSize, settings.RetentionBatchSize);
@@ -144,11 +134,9 @@ public static class StoredSearchSettings
         {
             CacheTtlSeconds = row.SettingsCacheTtlSeconds,
             MaxQueryLength = row.SettingsMaxQueryLength,
-            DefaultPageSize = row.SettingsDefaultPageSize,
             MaxPageSize = row.SettingsMaxPageSize,
             MaxFacetValues = row.SettingsMaxFacetValues,
             MaxResultWindow = row.SettingsMaxResultWindow,
-            DefaultSuggestLimit = row.SettingsDefaultSuggestLimit,
             MaxSuggestLimit = row.SettingsMaxSuggestLimit,
             RetentionDays = row.SettingsRetentionDays,
             RetentionBatchSize = row.SettingsRetentionBatchSize,
@@ -176,11 +164,9 @@ public static class StoredSearchSettings
             SettingsIndexName = indexName,
             SettingsCacheTtlSeconds = values.CacheTtlSeconds,
             SettingsMaxQueryLength = values.MaxQueryLength,
-            SettingsDefaultPageSize = values.DefaultPageSize,
             SettingsMaxPageSize = values.MaxPageSize,
             SettingsMaxFacetValues = values.MaxFacetValues,
             SettingsMaxResultWindow = values.MaxResultWindow,
-            SettingsDefaultSuggestLimit = values.DefaultSuggestLimit,
             SettingsMaxSuggestLimit = values.MaxSuggestLimit,
             SettingsRetentionDays = values.RetentionDays,
             SettingsRetentionBatchSize = values.RetentionBatchSize,

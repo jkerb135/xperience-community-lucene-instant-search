@@ -497,14 +497,15 @@ settings** (named options per index; the host lambda's root values are the defau
 index; a row exists only after a save). Items 116–120 below are kept for history only.
 
 121. **Per-index page, no global page.** Lucene Search → **DancingGoatSample** → **Search settings**
-     lists the sixteen values with the code defaults (retention **365**, default page size **20**).
-     **Search ingestion** no longer has a Settings entry.
-122. **Live, and only that index.** Set **Default page size** to **3**, save, then reload
-     `/search?query=coffee` → the first page shows three cards (the demo's Results widget has
-     *Results per page* = 0 since 2026-09-03, i.e. "use the index setting"; a widget with its own
-     number overrides the setting on purpose). The API probe from 116a shows the same `pageSize 3`.
-     A second index (create one in Lucene Search if there is none) still answers `20`. Set
-     DancingGoatSample back to 20 → twenty cards. No restart at any point.
+     lists the fourteen values with the code defaults (retention **365**, maximum page size **100**).
+     *Default page size* and *Default suggestion count* are gone (AR-3): widgets carry their own
+     sizes. **Search ingestion** no longer has a Settings entry.
+122. **Live, and only that index.** Set **Maximum page size** to **3**, save, then reload
+     `/search?query=coffee` → the first page shows three cards: the demo's Results widget asks for
+     its own *Results per page* (required, one or greater) and the index's maximum clamps it. The
+     API probe from 116a shows the same `pageSize 3`. A second index (create one in Lucene Search if
+     there is none) still answers its own maximum. Set DancingGoatSample back to 100 → the widget's
+     own number again. No restart at any point.
 123. **Retention per index.** Set DancingGoatSample's retention to **1**, save, run the
      `XpSearch query log retention` task → *Last result* names the index and its three deleted
      counts; a second index's rows (if any) are untouched. Restore the value.
