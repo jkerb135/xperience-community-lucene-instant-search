@@ -2131,7 +2131,28 @@ describe('suggestions', () => {
     await vi.waitFor(() => expect(host.querySelector('.xps-suggestions__empty')).not.toBeNull());
     const empty = host.querySelector('.xps-suggestions__empty')!;
     expect(empty.getAttribute('role')).toBe('status');
-    expect(text(empty)).toBe('No suggestions for “xyzzy”.');
+    // The design board's dead end: glyph, headline, advice — and a listbox that is still there,
+    // empty, so `aria-controls` cannot dangle while `aria-expanded` says the popup is open.
+    expect([...empty.children].map((child) => child.getAttribute('class'))).toEqual([
+      'xps-suggestions__empty-icon',
+      'xps-suggestions__empty-title',
+      'xps-suggestions__empty-hint',
+    ]);
+    expect(text(empty.querySelector('.xps-suggestions__empty-title'))).toBe(
+      'No suggestions for “xyzzy”'
+    );
+    expect(text(empty.querySelector('.xps-suggestions__empty-hint'))).toBe(
+      'Press Enter to search anyway, or try a different spelling.'
+    );
+    expect(empty.querySelector('.xps-suggestions__empty-icon')?.getAttribute('aria-hidden')).toBe(
+      'true'
+    );
+    expect(input.getAttribute('aria-expanded')).toBe('true');
+    expect(host.querySelector('.xps-suggestions__list')?.children.length).toBe(0);
+    // Footer reduced to the two actions that still apply: Enter searches anyway, Esc closes.
+    const footer = host.querySelector('.xps-suggestions__footer')!;
+    expect(text(footer)).toBe('↵ search esc close');
+    expect(host.querySelector('.xps-suggestions__see-all')).toBeNull();
     expect(host.querySelector<HTMLElement>('.xps-suggestions__reset')?.hidden).toBe(false);
 
     host
@@ -2371,14 +2392,18 @@ describe('searchBox with integrated suggestions', () => {
   ];
 
   /** One instance carrying whichever widgets the test wants, answering `/suggest` for real. */
-  const startSuggesting = (build: (host: HTMLElement) => Widget, hostId: string): HTMLElement => {
+  const startSuggesting = (
+    build: (host: HTMLElement) => Widget,
+    hostId: string,
+    suggested: Suggestion[] = SUGGESTIONS
+  ): HTMLElement => {
     const host = container(hostId);
     const fetchFn = (async (url: string, init: RequestInit) => {
       calls.push({
         url: String(url),
         body: JSON.parse(String(init.body)) as Record<string, unknown>,
       });
-      const body = String(url).endsWith(SUGGEST_ROUTE) ? { suggestions: SUGGESTIONS } : RESPONSE;
+      const body = String(url).endsWith(SUGGEST_ROUTE) ? { suggestions: suggested } : RESPONSE;
       return new Response(JSON.stringify(body), {
         status: 200,
         headers: { [API_VERSION_HEADER]: '1' },
@@ -2545,6 +2570,33 @@ describe('searchBox with integrated suggestions', () => {
     expect(panel(box)).toBe(panel(standalone));
     expect(panel(box)).toContain('xps-suggestions__option-meta');
     expect(panel(box)).toContain('xps-suggestions__hints');
+  });
+
+  it('renders the same empty state as the standalone widget, and still submits on Enter', async () => {
+    const box = startSuggesting(
+      (host) => searchBox({ container: host, suggestions: { debounceMs: 0 } }),
+      'search',
+      []
+    );
+    const input = box.querySelector('input')!;
+    await settled(search!);
+    input.value = 'zzq';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await vi.waitFor(() => expect(box.querySelector('.xps-suggestions__empty')).not.toBeNull());
+
+    expect(text(box.querySelector('.xps-suggestions__empty-title'))).toBe(
+      'No suggestions for “zzq”'
+    );
+    // No group headers and no see-all: only the two actions the dead end still offers.
+    expect(box.querySelector('.xps-suggestions__group-title')).toBeNull();
+    expect(box.querySelector('.xps-suggestions__see-all')).toBeNull();
+    expect(text(box.querySelector('.xps-suggestions__footer'))).toBe('↵ search esc close');
+    expect(input.getAttribute('aria-expanded')).toBe('true');
+
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    await vi.waitFor(() => expect(search!.state.query).toBe('zzq'));
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(box.querySelector<HTMLElement>('.xps-suggestions__panel')?.hidden).toBe(true);
   });
 
   it('keeps the keyboard hints, without a "see all" link that leads nowhere', async () => {

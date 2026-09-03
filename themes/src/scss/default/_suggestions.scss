@@ -52,10 +52,29 @@
   font-weight: 600;
 }
 
-#{r.$root} .xps-suggestions__option-meta,
-#{r.$root} .xps-suggestions__empty {
+#{r.$root} .xps-suggestions__option-meta {
   color: var(--xps-color-muted);
   font-size: 0.875em;
+}
+
+/* The dead end: a muted glyph over the headline, the advice under it, all centred. */
+#{r.$root} .xps-suggestions__empty {
+  text-align: center;
+}
+
+#{r.$root} .xps-suggestions__empty-icon {
+  color: var(--xps-color-muted);
+}
+
+#{r.$root} .xps-suggestions__empty-title {
+  color: var(--xps-color-text);
+  font-size: 0.875em;
+  font-weight: 600;
+}
+
+#{r.$root} .xps-suggestions__empty-hint {
+  color: var(--xps-color-muted);
+  font-size: 0.8125em;
 }
 
 #{r.$root} .xps-suggestions__option-remove {

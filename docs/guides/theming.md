@@ -294,6 +294,7 @@ surface:
 | `xps-chip` | Removable token: `xps-chip__label`, `xps-chip__attribute`, `xps-chip__remove`. |
 | `xps-select` | Labelled select: `xps-select__label` (a real `<label for>`) and `xps-select__control` (the native `<select>`), plus `xps-select--disabled`. Wrap the control in `xps-select__field` with an `xps-select__chevron` `<svg>` for the design's own arrow; without that wrapper the platform arrow stays. The only themed `<select>` in the product — `sortSelect` renders this same block, and so should your drop-down. |
 | `xps-toolbar` | One row, first child left, last child right, wrapping when narrow — the stats/sort row above the results. |
+| `xps-sidebar` | The filter column. The one composition class the theme paints: a card (surface, border, radius, `1.25rem` padding, soft shadow) around the refinement widgets. Put `xps` on the same element — the theme's rule for it is `.xps.xps.xps.xps-sidebar`. |
 | `xps-sidebar__header` | The filter column's heading row: `xps-sidebar__title` plus a trailing clear-all, under the same rule a facet-group title carries. |
 | `xps-skeleton` | Loading placeholder, with `--title`, `--text` and `--block` sizes. |
 | `xps-highlight` | The class on `<mark>` elements emitted by the `highlight` template helper. |
