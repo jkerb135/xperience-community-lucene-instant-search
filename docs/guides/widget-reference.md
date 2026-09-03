@@ -840,6 +840,12 @@ labelled, and its `__group-header` row (title plus the `__group-clear` button) i
 the listbox, because a button is not something a listbox may own. Each recent option sits in a
 `__row` beside its `__option-remove`.
 
+When nothing matches the typed text the panel shows a centred empty state instead of the rows —
+`__empty` (`role="status"`) with `__empty-icon`, `__empty-title` ("No suggestions for “{query}”")
+and `__empty-hint` ("Press Enter to search anyway, or try a different spelling.") — and a footer
+holding only the two hints that still apply, ↵ search and esc close. Enter still submits the typed
+query; Escape still closes.
+
 Accessibility: the WAI-ARIA APG
 [combobox-with-listbox pattern](https://www.w3.org/WAI/ARIA/apg/patterns/combobox/). DOM focus never
 leaves the input — `aria-activedescendant` names the active option — and the listbox element is in
@@ -881,10 +887,12 @@ no overrides. Everything below is the shipped default — the facet groups fold 
 of the box, the count is bold because the widget emits it that way, the sort select carries the
 chevron the theme draws. Anything you want to change has a hook named in the comment beside it.
 
-Three composition classes hold the widgets: `xps-toolbar` (one row, first child left, last child
-right, wrapping when narrow), `xps-sidebar__header` (heading plus a trailing clear-all) and the
-`xps-stack` / `xps-cluster` utilities. They are colourless structure — they hold mounts, they are
-not widgets.
+Four composition classes hold the widgets: `xps-toolbar` (one row, first child left, last child
+right, wrapping when narrow), `xps-sidebar` (the filter column), `xps-sidebar__header` (heading plus
+a trailing clear-all) and the `xps-stack` / `xps-cluster` utilities. All but `xps-sidebar` are
+colourless structure — they hold mounts, they are not widgets. `xps-sidebar` is the one the theme
+paints: it draws the design's card (surface, border, `6px` radius, `1.25rem` padding, soft shadow)
+around the column, which is why that element carries `xps` as well.
 
 The runnable file is `src/XpSearch.Widgets/Client/demo/results-page.html`; `npm run repo:demo` in
 the client serves it against the mock search server at `/demo/results-page.html`, and
@@ -901,7 +909,7 @@ the client serves it against the mock search server at `/demo/results-page.html`
      data-xps-config='{"placeholder":"Search…","suggestions":{"limit":5}}'></div>
 
 <div class="layout">                          <!-- your own two-column grid -->
-  <aside class="xps-stack">
+  <aside class="xps xps-sidebar">              <!-- the filter column, drawn as the design's card -->
 
     <!-- customize: the heading is yours; `label` renames the button
          in Page Builder, place "Search - Clear filters" beside your heading -->

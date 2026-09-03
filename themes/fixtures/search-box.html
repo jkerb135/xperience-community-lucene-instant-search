@@ -117,3 +117,38 @@
     </button>
   </div>
 </form>
+
+<!-- integrated suggestions with nothing to suggest: the same empty state the standalone widget
+     renders, and a footer reduced to the two actions that still apply. -->
+<form class="xps xps-search-box xps-suggestions--open" role="search" action="/search" method="get" novalidate>
+  <label class="xps-search-box__label xps-sr-only" for="xps-search-6-search-box-input">Search this site</label>
+  <div class="xps-search-box__field">
+    <svg class="xps-search-box__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.6-3.6"></path></svg>
+    <input class="xps-search-box__input"
+           id="xps-search-6-search-box-input"
+           type="search"
+           name="q"
+           value="zzq"
+           placeholder="Search…"
+           role="combobox"
+           aria-expanded="true"
+           aria-controls="xps-search-6-search-box-listbox"
+           aria-autocomplete="list"
+           autocomplete="off">
+    <span class="xps-search-box__loading xps-skeleton" aria-hidden="true"></span>
+    <button class="xps-button xps-search-box__reset" type="reset" aria-label="Clear the search query">
+      <span aria-hidden="true">&times;</span>
+    </button>
+  </div>
+  <div class="xps-suggestions__panel">
+    <ul class="xps-suggestions__list" id="xps-search-6-search-box-listbox" role="listbox" aria-label="Search suggestions"></ul>
+    <div class="xps-suggestions__empty" role="status">
+      <svg class="xps-suggestions__empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4.2-4.2"></path><path d="M8 11h6"></path></svg>
+      <div class="xps-suggestions__empty-title">No suggestions for &ldquo;zzq&rdquo;</div>
+      <div class="xps-suggestions__empty-hint">Press Enter to search anyway, or try a different spelling.</div>
+    </div>
+    <div class="xps-suggestions__footer">
+      <span class="xps-suggestions__hints" aria-hidden="true"><kbd class="xps-suggestions__key">&crarr;</kbd> search <kbd class="xps-suggestions__key">esc</kbd> close</span>
+    </div>
+  </div>
+</form>

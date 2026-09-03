@@ -153,6 +153,17 @@ describe('accessibility (axe-core)', () => {
     expect(input.getAttribute('aria-activedescendant')).not.toBeNull();
     expect(document.querySelector('.xps-suggestions__option-remove')).not.toBeNull();
     expect(await violations()).toEqual([]);
+
+    // TH-9: nothing matches — the listbox stays in the DOM but empty, `aria-expanded` stays true,
+    // and the empty state is a live region rather than an option.
+    input.value = 'zzqzzq';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await vi.waitFor(() => expect(document.querySelector('.xps-suggestions__empty')).not.toBeNull(), {
+      timeout: 3000,
+    });
+    expect(input.getAttribute('aria-expanded')).toBe('true');
+    expect(document.querySelectorAll('.xps-suggestions__list > *').length).toBe(0);
+    expect(await violations()).toEqual([]);
     search.dispose();
     localStorage.clear();
   }, 20_000);

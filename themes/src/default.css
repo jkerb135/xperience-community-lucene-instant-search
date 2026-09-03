@@ -229,6 +229,16 @@
   text-decoration: underline;
 }
 
+/* The filter column is a card (design board `Main.dc.html`). The class sits on the host's own
+   element, which carries `xps` too, so the selector is compound rather than a descendant one. */
+.xps.xps.xps.xps-sidebar {
+  padding: 1.25rem;
+  background-color: var(--xps-color-surface);
+  border: 1px solid var(--xps-color-border);
+  border-radius: var(--xps-radius);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--xps-color-text) 8%, transparent);
+}
+
 .xps.xps.xps .xps-chip {
   padding: calc(var(--xps-space) / 4) calc(var(--xps-space) / 2);
   background-color: color-mix(in srgb, var(--xps-color-accent) 8%, var(--xps-color-surface));
@@ -854,10 +864,29 @@
   font-weight: 600;
 }
 
-.xps.xps.xps .xps-suggestions__option-meta,
-.xps.xps.xps .xps-suggestions__empty {
+.xps.xps.xps .xps-suggestions__option-meta {
   color: var(--xps-color-muted);
   font-size: 0.875em;
+}
+
+/* The dead end: a muted glyph over the headline, the advice under it, all centred. */
+.xps.xps.xps .xps-suggestions__empty {
+  text-align: center;
+}
+
+.xps.xps.xps .xps-suggestions__empty-icon {
+  color: var(--xps-color-muted);
+}
+
+.xps.xps.xps .xps-suggestions__empty-title {
+  color: var(--xps-color-text);
+  font-size: 0.875em;
+  font-weight: 600;
+}
+
+.xps.xps.xps .xps-suggestions__empty-hint {
+  color: var(--xps-color-muted);
+  font-size: 0.8125em;
 }
 
 .xps.xps.xps .xps-suggestions__option-remove {

@@ -73,6 +73,8 @@ that deliberately wants its own style writes a selector at least as specific as 
 
 Page-level utilities the host puts on its *own* elements (`xps-toolbar`, `xps-stack`, `xps-cluster`,
 `xps-mount`, `xps-sidebar__*`) are outside that boundary by definition — they are the host's boxes.
+`xps-sidebar` itself is the exception: the theme paints it, so it carries `xps` and is checked like
+any widget root.
 
 ## Theming hooks
 
@@ -110,6 +112,7 @@ to know to inherit accessible defaults.
 | `xps-button--link` | Muted-link button (default theme only): no box, underlines on hover, still a real `<button>` at full hit size. What `clearFilters` renders. |
 | `xps-select` | Labelled-select box: flex row, `gap` half `--xps-space`. Children: `xps-select__label` (a real `<label for>`; add `xps-sr-only` to hide it) and `xps-select__control` (the native `<select>`, styled like every other form control by the default theme). Wrap the control in `xps-select__field` with an `xps-select__chevron` `<svg>` beside it for the design's own arrow — that wrapper, and only that wrapper, drops the platform arrow, so a bare `xps-select` keeps it. Modifier `xps-select--disabled` pairs with the `disabled` attribute on the control (rule 5). The only themed `<select>` in the product — `sortSelect` renders this same block, and a custom widget that needs a drop-down should too. |
 | `xps-toolbar` | The row above the results: stats left, sort right, wrapping onto two rows when the column is narrow. Colourless; it holds widget mounts and is not a widget. |
+| `xps-sidebar` | Fixture: `fixtures/sidebar.html`. The filter column: a vertical stack of the heading row and every refinement widget the host put in it. Unlike the two above it this one is **painted** — the theme gives it the design's card (surface, 1px border, radius, `1.25rem` padding, soft shadow) — so the element carries `xps` as well and the theme's rule for it is compound (`.xps.xps.xps.xps-sidebar`), not a descendant rule. Put both classes on the one element that holds the mounts; wrapping the mounts in a second element breaks a host rule that keys on them being direct children. |
 | `xps-sidebar__header` | The filter column's heading row: `xps-sidebar__title` (any heading element) and a trailing "Clear all". Carries the same rule under it as a facet-group title. |
 | `xps-chip` | Removable-token box. Children: `xps-chip__label`, optional `xps-chip__attribute` (the facet name inside the label), `xps-chip__remove` (a `<button>` with an `aria-label` naming what is removed). |
 | `xps-skeleton` | Loading placeholder: `currentColor` at low opacity with a pulse animation, suppressed under `prefers-reduced-motion`. Modifiers `--title`, `--text`, `--block`. |
@@ -471,8 +474,9 @@ Implements the WAI-ARIA APG combobox-with-listbox pattern:
 | `xps-suggestions__option-remove` | `<span data-xps-recent-remove title aria-hidden="true">` | Drops one recent search from this visitor's list without closing the panel. A pointer affordance only — a listbox owns options and groups and nothing else, so a focusable control cannot live in it; the keyboard and assistive-tech path is **Delete on the active recent row** (plus the group's Clear). |
 | `xps-suggestions__option-title` | `<span>` | May contain `<mark class="xps-highlight">`. |
 | `xps-suggestions__option-meta` | `<span>` | Secondary line for a matching document. |
-| `xps-suggestions__empty` | `<p role="status">` | Open with no suggestions. |
-| `xps-suggestions__footer` | `<div>` | Holds `xps-suggestions__hints` and `xps-suggestions__see-all` (`<a href>`), in that order. The link is dropped when the widget searches in place; the standalone widget then drops the whole footer, the integrated search box keeps it for the hints. |
+| `xps-suggestions__empty` | `<div role="status">` | Open with no suggestions: a centred block of `xps-suggestions__empty-icon` (a 28px magnifier-with-minus `<svg aria-hidden>`), `xps-suggestions__empty-title` (`No suggestions for “{query}”`) and `xps-suggestions__empty-hint` (`Press Enter to search anyway, or try a different spelling.`). The listbox stays in the DOM, empty, and `aria-expanded` stays `true`. |
+| `xps-suggestions__empty-icon` / `xps-suggestions__empty-title` / `xps-suggestions__empty-hint` | `<svg>` / `<div>` / `<div>` | The three parts of that block, in that order. |
+| `xps-suggestions__footer` | `<div>` | Holds `xps-suggestions__hints` and `xps-suggestions__see-all` (`<a href>`), in that order. The link is dropped when the widget searches in place; the standalone widget then drops the whole footer, the integrated search box keeps it for the hints. Under the empty state both consumers render it with the two hints that still apply — `&crarr;` search, `esc` close — and no link. |
 | `xps-suggestions__hints` | `<span aria-hidden="true">` | Decorative keyboard hints. Hidden from assistive tech (the combobox roles already convey the model) and from coarse pointers. |
 | `xps-suggestions__key` | `<kbd>` | One keycap inside the hints cluster. |
 | `xps-suggestions__see-all` | `<a href>` | Link to the full results page. |

@@ -22,6 +22,9 @@ import { groupOf } from './recentSearches';
  */
 const KEYBOARD_HINTS = html`<span class="xps-suggestions__hints" aria-hidden="true"><kbd class="xps-suggestions__key">&uarr;</kbd><kbd class="xps-suggestions__key">&darr;</kbd> navigate <kbd class="xps-suggestions__key">&crarr;</kbd> select <kbd class="xps-suggestions__key">esc</kbd> close</span>`;
 
+/** The empty state's footer: only the two actions that still apply with nothing to navigate. */
+const EMPTY_HINTS = html`<span class="xps-suggestions__hints" aria-hidden="true"><kbd class="xps-suggestions__key">&crarr;</kbd> search <kbd class="xps-suggestions__key">esc</kbd> close</span>`;
+
 /**
  * The leading glyph of a row, on the 24px grid, in `currentColor` so a re-skin needs no asset:
  * a clock for a recent search, a magnifier for a query suggestion. A document row has none — its
@@ -37,6 +40,10 @@ const ICONS = {
 
 /** The X of a recent row's remove control. */
 const REMOVE_ICON = `${ICON_OPEN}<path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg>`;
+
+/** The empty state's glyph: the magnifier with a minus in it (design board `Autocomplete.dc.html`). */
+const EMPTY_ICON =
+  '<svg class="xps-suggestions__empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4.2-4.2"></path><path d="M8 11h6"></path></svg>';
 
 /** The two elements the pattern spans, and the widget's own id scheme (MARKUP.md rule 4). */
 export interface ComboboxParts {
@@ -218,7 +225,7 @@ export function renderPanel(
   render(
     html`${header}<ul class="xps-suggestions__list" id="${id('listbox')}" role="listbox" aria-label="Search suggestions">${body}</ul>
     ${isOpen && ordered.length === 0
-      ? html`<p class="xps-suggestions__empty" role="status">No suggestions for &ldquo;${query}&rdquo;.</p>`
+      ? html`<div class="xps-suggestions__empty" role="status">${html.raw(EMPTY_ICON)}<div class="xps-suggestions__empty-title">No suggestions for &ldquo;${query}&rdquo;</div><div class="xps-suggestions__empty-hint">Press Enter to search anyway, or try a different spelling.</div></div><div class="xps-suggestions__footer">${EMPTY_HINTS}</div>`
       : ''}
     ${(api.seeAllUrl !== null || hints) && ordered.length > 0
       ? html`<div class="xps-suggestions__footer">${KEYBOARD_HINTS}${

@@ -12,7 +12,7 @@ const checkOnly = process.argv.includes('--check');
 const ORDER = [
   'search-box', 'suggestions', 'result-stats', 'sort-select', 'results', 'facet-list',
   'toggle-filter', 'active-filters', 'clear-filters', 'filter-sort', 'pagination',
-  'range-filter', 'category-tree', 'load-more', 'utilities', 'mount', 'editor-preview',
+  'range-filter', 'category-tree', 'load-more', 'sidebar', 'utilities', 'mount', 'editor-preview',
 ];
 
 const SECTIONS = {

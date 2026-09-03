@@ -12,6 +12,17 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Added (widgets, themes):** the filter column is a card. `xps-sidebar` is a documented
+  composition class the host puts on the element holding its refinement mounts — the shell stacks
+  them, the theme draws the design's card around them (surface, 1px border, `6px` radius,
+  `1.25rem` padding, soft shadow), so put `xps` on that element too. And when nothing matches the
+  typed text the autocomplete panel now shows the design's empty state — a muted
+  magnifier-with-minus glyph, "No suggestions for “{query}”" and "Press Enter to search anyway, or
+  try a different spelling." — over a footer reduced to the two actions that still apply
+  (`&crarr;` search, `esc` close), for both the standalone widget and the search box's integrated
+  popup. `xps-suggestions__empty` is now a `<div role="status">` holding `__empty-icon`,
+  `__empty-title` and `__empty-hint`.
+
 - **Fixed (themes):** the mobile Filter & sort sheet is sized against the *visible* viewport
   (`100dvh` for the sheet, `92dvh` for the panel, each with the `vh` line kept as a fallback), so on
   a phone its footer no longer sits under the browser's URL bar with the page locked behind it — the

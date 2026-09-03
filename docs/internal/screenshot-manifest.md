@@ -50,14 +50,15 @@ required (one or greater), so any Page Builder dialog shot added later must be t
 changes.
 No row covers the front-end widgets, so TH-6 (autocomplete panel + empty states + the Load more
 empty state) and TH-7 (theme hardening: themed checkboxes, sheet heading, empty-state button, the
-did-you-mean link) have nothing to mark stale here: the theme is verified against
+did-you-mean link) and TH-9 (the sidebar card, the autocomplete "no suggestions" state) have
+nothing to mark stale here: the theme is verified against
 `docs/internal/design/*.dc.html`, `themes/test/section-*.html` and, since TH-7, by
 `themes/scripts/check-isolation.mjs`. Add `widgets--autocomplete-panel` and `widgets--empty-states`
 rows when the guides start showing them.
 
 | Image | URL / route | Data prerequisites | Source files (staleness triggers) | Captured |
 |---|---|---|---|---|
-| `themes--kentico-orange.png` | `themes/test/section-kentico-orange.html` (opens from disk, no server) | — | `themes/src/scss/tokens/_kentico-orange.scss`, `themes/src/kentico-orange.css`, `themes/fixtures/*.html` | **STALE** — new in TH-8, never captured. Shoot it beside `section-default.html` so the guide's *Two shipped palettes* section can show the pair. |
+| `themes--kentico-orange.png` | `themes/test/section-kentico-orange.html` (opens from disk, no server) | — | `themes/src/scss/tokens/_kentico-orange.scss`, `themes/src/kentico-orange.css`, `themes/fixtures/*.html` | **STALE** — new in TH-8, never captured, and TH-9 added `fixtures/sidebar.html` and changed the suggestions/search-box empty state, so both section pages moved. Shoot it beside `section-default.html` so the guide's *Two shipped palettes* section can show the pair. |
 
 Pending captures worth adding once data exists: `tuning--popularity-suggestions` and
 `tuning--synonym-suggestions` with ≥1 mined row (current captures show empty tables; recapture

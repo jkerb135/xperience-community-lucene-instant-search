@@ -29,7 +29,10 @@
        data-xps-config='{"placeholder":"Search the coffee library…","label":"Search","suggestions":{"limit":5}}'></div>
 
   <div class="layout">
-    <aside class="xps-stack">
+    <!-- SIDEBAR — `.xps-sidebar` is a composition class too: it stacks the refinement widgets
+         and the theme paints the design's card around them. It carries `xps` itself, so put
+         both classes on the one element that holds the mounts. -->
+    <aside class="xps xps-sidebar">
 
       <!-- SIDEBAR HEADER — `.xps-sidebar__header` is a composition class, not a widget: a heading
            of your own plus a clearFilters mount. Customize: the heading text is yours;

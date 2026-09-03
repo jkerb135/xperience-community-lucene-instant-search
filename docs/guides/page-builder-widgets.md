@@ -153,7 +153,8 @@ them where the design wants them:
 - above the results — an Active filters widget plus a second Clear filters widget.
 
 Wrap each pair in a section styled with the `xps-toolbar` (or `xps-sidebar__header`) class from the
-stylesheet to get the design's one-row layout; see
+stylesheet to get the design's one-row layout, and put `class="xps xps-sidebar"` on the element that
+holds the filter column's widgets to get the design's card around them; see
 [Composing the results page](widget-reference.md#composing-the-results-page).
 
 #### The attribute drop-down is filled from the index

@@ -122,6 +122,14 @@
   gap: v.$half var(--xps-space);
 }
 
+/* The filter column itself: one box holding the heading row and every refinement widget under it.
+   It is the host's own element, so it carries `xps` as well and the theme paints it as a card. */
+.xps-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
 .xps-sidebar__title {
   margin: 0;
 }
