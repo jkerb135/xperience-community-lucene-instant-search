@@ -459,6 +459,40 @@ returned. The result `id` is always returned and is never an attribute.
 highlight tags are inserted, so a snippet is safe to render as HTML and markup in the source content comes
 back escaped.
 
+### Global settings in the administration
+
+Every global number on `XpSearchOptions` is edited in the administration under **Search ingestion →
+Settings**, not in code:
+
+| Setting | Default | Accepted |
+|---|---|---|
+| Response cache lifetime (seconds) | 60 | 0 or more (0 = no response caching) |
+| Maximum query length | 256 | 1–1000 |
+| Default page size | 20 | 1–1000 |
+| Maximum page size | 100 | 1–1000 |
+| Maximum values per facet | 100 | 1 or more |
+| Maximum result window | 10000 | 1 or more |
+| Default suggestion count | 5 | 1–100 |
+| Maximum suggestion count | 20 | 1–100 |
+| Remove search analytics older than X days | 365 | 1 or more |
+| Retention batch size | 1000 | 1 or more |
+| Query suggestion window (days) | 30 | 1 or more |
+| Popularity lookback (days) | 30 | 1 or more |
+| Popularity documents per index | 100 | 1 or more |
+| Popularity suggestion queries | 10 | 1 or more |
+| Synonym reformulation window (seconds) | 60 | 1 or more |
+| Synonym minimum occurrences | 3 | 1 or more |
+
+**The `AddXpSearch(options => …)` lambda seeds these once.** The first application start writes one
+`XpSearch.Settings` row from whatever the lambda configured (or the shipped defaults); from then on the
+Settings page owns them and editing the lambda changes nothing. Saving the page takes effect on the
+next search, without an application restart. To go back to what the code says, delete the row from the
+`XpSearch_Settings` table and restart — the next start seeds it again.
+
+What stays in code, because it names content types and fields rather than a policy: everything
+per index (`options.Indexes["…"]` — sort keys, suggest field and mode, did-you-mean, popular searches)
+and the indexing options (`AddXpSearch(…, indexing => …)`: flattened links and contributed fields).
+
 ### One schema, two type sets
 
 Both the C# DTOs (`XpSearch.Core.Contract`) and the TypeScript types (`@xperience-community/xperience-search`) are

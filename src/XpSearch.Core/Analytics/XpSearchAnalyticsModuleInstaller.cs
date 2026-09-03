@@ -1,6 +1,9 @@
 using CMS.DataEngine;
 using CMS.FormEngine;
+using CMS.Helpers;
 using CMS.Modules;
+
+using Microsoft.Extensions.Options;
 
 namespace XpSearch.Core.Analytics;
 
@@ -18,15 +21,47 @@ public sealed class XpSearchAnalyticsModuleInstaller
     /// <summary>Code name of the module the class belongs to.</summary>
     public const string ResourceName = "CMS.Integration.XpSearchAnalytics";
 
+    /// <summary>The columns of <see cref="Options.XpSearchSettingsInfo"/> that carry a global setting (AR-1).</summary>
+    private static readonly string[] SettingsColumns =
+    [
+        nameof(Options.XpSearchSettingsInfo.SettingsCacheTtlSeconds),
+        nameof(Options.XpSearchSettingsInfo.SettingsMaxQueryLength),
+        nameof(Options.XpSearchSettingsInfo.SettingsDefaultPageSize),
+        nameof(Options.XpSearchSettingsInfo.SettingsMaxPageSize),
+        nameof(Options.XpSearchSettingsInfo.SettingsMaxFacetValues),
+        nameof(Options.XpSearchSettingsInfo.SettingsMaxResultWindow),
+        nameof(Options.XpSearchSettingsInfo.SettingsDefaultSuggestLimit),
+        nameof(Options.XpSearchSettingsInfo.SettingsMaxSuggestLimit),
+        nameof(Options.XpSearchSettingsInfo.SettingsRetentionDays),
+        nameof(Options.XpSearchSettingsInfo.SettingsRetentionBatchSize),
+        nameof(Options.XpSearchSettingsInfo.SettingsQuerySuggestionDays),
+        nameof(Options.XpSearchSettingsInfo.SettingsPopularityLookbackDays),
+        nameof(Options.XpSearchSettingsInfo.SettingsPopularityDocumentLimit),
+        nameof(Options.XpSearchSettingsInfo.SettingsPopularitySuggestionQueries),
+        nameof(Options.XpSearchSettingsInfo.SettingsSynonymWindowSeconds),
+        nameof(Options.XpSearchSettingsInfo.SettingsSynonymMinimumOccurrences)
+    ];
+
     private readonly IInfoProvider<ResourceInfo> resources;
+    private readonly IInfoProvider<Options.XpSearchSettingsInfo> settings;
+    private readonly IOptions<Options.XpSearchOptions> options;
 
     /// <summary>Initializes a new instance of the <see cref="XpSearchAnalyticsModuleInstaller"/> class.</summary>
     /// <param name="resources">Provider of <see cref="ResourceInfo"/>, used to create the module.</param>
-    public XpSearchAnalyticsModuleInstaller(IInfoProvider<ResourceInfo> resources)
+    /// <param name="settings">Provider of the global settings row (AR-1).</param>
+    /// <param name="options">The code-configured options the settings row is seeded from.</param>
+    public XpSearchAnalyticsModuleInstaller(
+        IInfoProvider<ResourceInfo> resources,
+        IInfoProvider<Options.XpSearchSettingsInfo> settings,
+        IOptions<Options.XpSearchOptions> options)
     {
         ArgumentNullException.ThrowIfNull(resources);
+        ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(options);
 
         this.resources = resources;
+        this.settings = settings;
+        this.options = options;
     }
 
     /// <summary>The form definition of <see cref="XpSearchQueryLogInfo"/>.</summary>
@@ -134,6 +169,22 @@ public sealed class XpSearchAnalyticsModuleInstaller
         return form;
     }
 
+    /// <summary>The form definition of <see cref="Options.XpSearchSettingsInfo"/> (AR-1).</summary>
+    /// <returns>The fields, on top of the primary key the basic definition creates.</returns>
+    public static FormInfo SettingsForm()
+    {
+        var form = FormHelper.GetBasicFormDefinition(nameof(Options.XpSearchSettingsInfo.SettingsID));
+
+        Add(form, nameof(Options.XpSearchSettingsInfo.SettingsGuid), FieldDataType.Guid);
+
+        foreach (string column in SettingsColumns)
+        {
+            Add(form, column, FieldDataType.Integer);
+        }
+
+        return form;
+    }
+
     /// <summary>Creates the module and its class if they are not there yet, and adds missing fields if they are.</summary>
     public void Install()
     {
@@ -157,6 +208,46 @@ public sealed class XpSearchAnalyticsModuleInstaller
         InstallClass(resource, Popularity.XpSearchPopularitySuggestionInfo.TYPEINFO, "XpSearch popularity suggestion", PopularitySuggestionForm());
         InstallClass(resource, Popularity.XpSearchSynonymSuggestionInfo.TYPEINFO, "XpSearch synonym suggestion", SynonymSuggestionForm());
         InstallClass(resource, Fuzzy.XpSearchFuzzyIndexInfo.TYPEINFO, "XpSearch typo tolerance", FuzzyIndexForm());
+        InstallClass(resource, Options.XpSearchSettingsInfo.TYPEINFO, "XpSearch settings", SettingsForm());
+
+        SeedSettings();
+    }
+
+    /// <summary>
+    /// Writes the single settings row the first time, from the effective code-configured options. An
+    /// existing row is left alone - the administration owns it from then on - except for columns an
+    /// upgrade added, which read as 0 and are given the configured value.
+    /// </summary>
+    private void SeedSettings()
+    {
+        var stored = settings.Get().TopN(1).FirstOrDefault();
+        var seed = Options.StoredSearchSettings.NewRow(Options.SearchSettingsValues.From(options.Value));
+
+        if (stored is null)
+        {
+            settings.Set(seed);
+
+            return;
+        }
+
+        bool repaired = false;
+
+        // A column added by a later upgrade exists but has no value. Zero is a legal value only for the
+        // cache lifetime, so every other column reading 0 is a column nobody ever wrote.
+        foreach (string column in SettingsColumns.Where(column =>
+            !string.Equals(column, nameof(Options.XpSearchSettingsInfo.SettingsCacheTtlSeconds), StringComparison.Ordinal)))
+        {
+            if (ValidationHelper.GetInteger(stored.GetValue(column), 0) <= 0)
+            {
+                stored.SetValue(column, seed.GetValue(column));
+                repaired = true;
+            }
+        }
+
+        if (repaired)
+        {
+            settings.Set(stored);
+        }
     }
 
     private static void Add(FormInfo form, string name, string dataType, int size = 0, bool allowEmpty = false)

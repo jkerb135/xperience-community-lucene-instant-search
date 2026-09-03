@@ -98,6 +98,22 @@ internal sealed class NoJournal : ISearchRequestJournal
     }
 }
 
+/// <summary>
+/// One options instance behind <see cref="Microsoft.Extensions.Options.IOptionsMonitor{TOptions}"/>,
+/// which is what the pipeline takes since AR-1.
+/// </summary>
+/// <typeparam name="T">The options type.</typeparam>
+internal sealed class StaticOptionsMonitor<T> : Microsoft.Extensions.Options.IOptionsMonitor<T>
+{
+    internal StaticOptionsMonitor(T value) => CurrentValue = value;
+
+    public T CurrentValue { get; }
+
+    public T Get(string? name) => CurrentValue;
+
+    public IDisposable? OnChange(Action<T, string?> listener) => null;
+}
+
 /// <summary>No click evidence, which is what an index that has not opted into popularity reports.</summary>
 internal sealed class NoPopularity : IPopularitySignalStore
 {
@@ -106,6 +122,9 @@ internal sealed class NoPopularity : IPopularitySignalStore
 
     public Task ReplaceAsync(string indexName, PopularityAggregate aggregate, DateTime computedUtc, CancellationToken cancellationToken) =>
         Task.CompletedTask;
+
+    public Task<int> DeleteAnsweredOlderThanAsync(DateTime cutoffUtc, int batchSize, CancellationToken cancellationToken) =>
+        Task.FromResult(0);
 }
 
 /// <summary>No query log, so <c>/suggest</c> measures the document path only.</summary>

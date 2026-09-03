@@ -8,6 +8,22 @@ namespace XpSearch.Ingestion.Tests.Fixtures;
 /// delegate types, one of them obsolete). Taking the delegate as a typed parameter picks the
 /// non-obsolete overload once, here.
 /// </summary>
+/// <summary>
+/// One options instance behind <see cref="Microsoft.Extensions.Options.IOptionsMonitor{TOptions}"/>,
+/// which is what the search pipeline stages take since AR-1.
+/// </summary>
+/// <typeparam name="T">The options type.</typeparam>
+internal sealed class StaticOptionsMonitor<T> : Microsoft.Extensions.Options.IOptionsMonitor<T>
+{
+    internal StaticOptionsMonitor(T value) => CurrentValue = value;
+
+    public T CurrentValue { get; }
+
+    public T Get(string? name) => CurrentValue;
+
+    public IDisposable? OnChange(Action<T, string?> listener) => null;
+}
+
 internal static class Expect
 {
     internal static void Multiple(Action assertions) => Assert.Multiple(assertions);

@@ -95,7 +95,7 @@ internal static class Program
         Console.WriteLine(string.Create(Inv, $"  built in {build.BuildMs / 1000:F1} s ({size / (build.BuildMs / 1000):N0} docs/s), {(build.MainBytes + build.TaxonomyBytes) / (1024.0 * 1024):N0} MB on disk, reader open {build.ReaderOpenMs:F1} ms"));
 
         var options = new XpSearchOptions();
-        var wrapped = Microsoft.Extensions.Options.Options.Create(options);
+        var wrapped = new StaticOptionsMonitor<XpSearchOptions>(options);
         var tuning = new BenchTuningSource();
         var schema = new StaticSchemaProvider();
 
@@ -157,7 +157,7 @@ internal static class Program
     private static SearchPipeline BuildPipeline(
         BenchIndex index,
         StaticSchemaProvider schema,
-        Microsoft.Extensions.Options.IOptions<XpSearchOptions> options,
+        Microsoft.Extensions.Options.IOptionsMonitor<XpSearchOptions> options,
         BenchTuningSource tuning,
         bool fuzzy) =>
         new(

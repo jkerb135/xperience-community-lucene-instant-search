@@ -76,5 +76,27 @@ public interface IPopularitySignalStore
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A task that completes when the rows are written.</returns>
     Task ReplaceAsync(string indexName, PopularityAggregate aggregate, DateTime computedUtc, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Deletes one batch of suggestions a human already answered and that are older than the retention
+    /// window (AR-1). Pending suggestions are never touched.
+    /// </summary>
+    /// <param name="cutoffUtc">Rows computed before this instant are deleted.</param>
+    /// <param name="batchSize">How many rows to delete at most.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>How many rows were deleted; fewer than <paramref name="batchSize"/> means there are no more.</returns>
+    Task<int> DeleteAnsweredOlderThanAsync(DateTime cutoffUtc, int batchSize, CancellationToken cancellationToken);
+}
+
+/// <summary>Whether retention may delete a suggestion row (AR-1).</summary>
+public static class SuggestionRetention
+{
+    /// <summary>Decides whether a suggestion row is prunable.</summary>
+    /// <param name="state">The row's state, as stored.</param>
+    /// <param name="lastSeenUtc">When the row was last computed or seen.</param>
+    /// <param name="cutoffUtc">The retention cutoff.</param>
+    /// <returns><see langword="true"/> when the row was answered and is older than the cutoff.</returns>
+    public static bool IsPrunable(int state, DateTime lastSeenUtc, DateTime cutoffUtc) =>
+        state != (int)PopularitySuggestionState.Pending && lastSeenUtc < cutoffUtc;
 }
 

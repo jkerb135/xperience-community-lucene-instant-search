@@ -10,6 +10,22 @@ using NUnit.Framework;
 
 namespace XpSearch.Widgets.Tests;
 
+/// <summary>
+/// One options instance behind <see cref="Microsoft.Extensions.Options.IOptionsMonitor{TOptions}"/>,
+/// which is what the widgets take since AR-1.
+/// </summary>
+/// <typeparam name="T">The options type.</typeparam>
+internal sealed class StaticOptionsMonitor<T> : Microsoft.Extensions.Options.IOptionsMonitor<T>
+{
+    internal StaticOptionsMonitor(T value) => CurrentValue = value;
+
+    public T CurrentValue { get; }
+
+    public T Get(string? name) => CurrentValue;
+
+    public IDisposable? OnChange(Action<T, string?> listener) => null;
+}
+
 /// <summary>Fixed set of index names, standing in for the project's Lucene indexes.</summary>
 internal sealed class FakeIndexCatalog : IXpSearchIndexCatalog
 {

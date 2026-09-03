@@ -15,14 +15,14 @@ public sealed class NormalizeRequestStage : ISearchStage
 {
     private const long ContractMaxPageSize = 1000;
 
-    private readonly XpSearchOptions options;
+    private readonly IOptionsMonitor<XpSearchOptions> options;
 
     /// <summary>Initializes a new instance of the <see cref="NormalizeRequestStage"/> class.</summary>
-    /// <param name="options">The configured search options.</param>
-    public NormalizeRequestStage(IOptions<XpSearchOptions> options)
+    /// <param name="options">The current search options.</param>
+    public NormalizeRequestStage(IOptionsMonitor<XpSearchOptions> options)
     {
         ArgumentNullException.ThrowIfNull(options);
-        this.options = options.Value;
+        this.options = options;
     }
 
     /// <inheritdoc />
@@ -35,7 +35,7 @@ public sealed class NormalizeRequestStage : ISearchStage
 
         var request = context.Request;
 
-        context.QueryText = Normalize(request.Query, options.MaxQueryLength);
+        context.QueryText = Normalize(request.Query, options.CurrentValue.MaxQueryLength);
         context.Page = ValidatePage(request.Page);
         context.PageSize = ValidatePageSize(request.PageSize);
         ValidateResultWindow(context.Page, context.PageSize);
@@ -46,7 +46,7 @@ public sealed class NormalizeRequestStage : ISearchStage
         context.SortField = SortKeyParser.Parse(
             request.Sort,
             context.Schema,
-            (IReadOnlyDictionary<string, SortKey>)options.Indexes[request.Index].SortKeys,
+            (IReadOnlyDictionary<string, SortKey>)options.CurrentValue.Indexes[request.Index].SortKeys,
             out bool descending);
         context.SortDescending = descending;
         context.Fields = ValidateFields(request.Fields, context.Schema);
@@ -90,7 +90,7 @@ public sealed class NormalizeRequestStage : ISearchStage
     {
         if (pageSize is null)
         {
-            return options.DefaultPageSize;
+            return options.CurrentValue.DefaultPageSize;
         }
 
         if (pageSize < 1 || pageSize > ContractMaxPageSize)
@@ -102,18 +102,18 @@ public sealed class NormalizeRequestStage : ISearchStage
 
         // The contract ceiling is rejected above; the configured ceiling is clamped, and the clamped
         // value is what the response reports back.
-        return (int)Math.Min(pageSize.Value, options.MaxPageSize);
+        return (int)Math.Min(pageSize.Value, options.CurrentValue.MaxPageSize);
     }
 
     private void ValidateResultWindow(int page, int pageSize)
     {
         long window = (long)page * pageSize;
 
-        if (window > options.MaxResultWindow)
+        if (window > options.CurrentValue.MaxResultWindow)
         {
             throw new SearchValidationException(
                 "page",
-                $"page multiplied by pageSize must not exceed {options.MaxResultWindow} results.");
+                $"page multiplied by pageSize must not exceed {options.CurrentValue.MaxResultWindow} results.");
         }
     }
 

@@ -103,7 +103,7 @@ internal sealed class UnconfiguredStateTests
             renderer,
             new FakeEditorContext(XpSearchEditorMode.Edit),
             twoIndexes,
-            Microsoft.Extensions.Options.Options.Create(new Core.Options.XpSearchOptions()));
+            new StaticOptionsMonitor<Core.Options.XpSearchOptions>(new Core.Options.XpSearchOptions()));
 
         var model = component.BuildModel(new SortSelectWidgetProperties
         {

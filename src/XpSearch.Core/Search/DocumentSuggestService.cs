@@ -33,7 +33,7 @@ public sealed class DocumentSuggestService : ISuggestService
     private readonly ILuceneIndexAccessor accessor;
     private readonly IIndexSchemaProvider schemaProvider;
     private readonly IQuerySuggestionSource querySuggestions;
-    private readonly XpSearchOptions options;
+    private readonly IOptionsMonitor<XpSearchOptions> options;
     private readonly ILogger<DocumentSuggestService> logger;
 
     // One warning per index, however many suggest requests it serves.
@@ -43,13 +43,13 @@ public sealed class DocumentSuggestService : ISuggestService
     /// <param name="accessor">The Lucene seam.</param>
     /// <param name="schemaProvider">Supplies the schema of the index being suggested from.</param>
     /// <param name="querySuggestions">Answers for an index configured for query suggestions.</param>
-    /// <param name="options">The configured search options.</param>
+    /// <param name="options">The current search options.</param>
     /// <param name="logger">Logger.</param>
     public DocumentSuggestService(
         ILuceneIndexAccessor accessor,
         IIndexSchemaProvider schemaProvider,
         IQuerySuggestionSource querySuggestions,
-        IOptions<XpSearchOptions> options,
+        IOptionsMonitor<XpSearchOptions> options,
         ILogger<DocumentSuggestService> logger)
     {
         ArgumentNullException.ThrowIfNull(accessor);
@@ -61,7 +61,7 @@ public sealed class DocumentSuggestService : ISuggestService
         this.accessor = accessor;
         this.schemaProvider = schemaProvider;
         this.querySuggestions = querySuggestions;
-        this.options = options.Value;
+        this.options = options;
         this.logger = logger;
     }
 
@@ -80,7 +80,7 @@ public sealed class DocumentSuggestService : ISuggestService
             throw new IndexNotFoundException(request.Index);
         }
 
-        var indexOptions = options.Indexes[request.Index];
+        var indexOptions = options.CurrentValue.Indexes[request.Index];
 
         string prefix = NormalizePrefix(request.Query);
 
@@ -234,7 +234,7 @@ public sealed class DocumentSuggestService : ISuggestService
     {
         if (limit is null)
         {
-            return options.DefaultSuggestLimit;
+            return options.CurrentValue.DefaultSuggestLimit;
         }
 
         if (limit < 1)
@@ -242,7 +242,7 @@ public sealed class DocumentSuggestService : ISuggestService
             throw new SearchValidationException("limit", "limit must be one or greater.");
         }
 
-        return (int)Math.Min(limit.Value, options.MaxSuggestLimit);
+        return (int)Math.Min(limit.Value, options.CurrentValue.MaxSuggestLimit);
     }
 
     private static Query BuildQuery(string prefix, SchemaField suggestField, string? language)

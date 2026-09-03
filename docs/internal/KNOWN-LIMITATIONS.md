@@ -1253,3 +1253,26 @@ and how to lift it.
 - **Upgrade path:** build the request body incrementally from the measured byte arrays instead of
   reserializing, and read the caps from `GET /indexes` once per client instead of hardcoding them.
 
+
+## Retention deletes answered suggestions instead of tombstoning them (`InfoPopularitySignalStore.DeleteAnsweredOlderThanAsync` / `InfoSynonymSuggestionStore.DeleteAnsweredOlderThanAsync`, AR-1)
+
+- **Simplified:** an approved or dismissed suggestion older than the retention window is deleted, not
+  kept as a decision. The "do not suggest this again" knowledge lives in the row itself, so deleting
+  it also deletes the answer.
+- **Ceiling:** the same query/document pair can be suggested again if the mining task rediscovers it
+  after the window. In practice the query log rows that produced it are gone by then too, so a
+  re-mined pair is genuinely new evidence rather than a resurfaced one.
+- **Upgrade path:** add a tombstone column (answered pairs kept as state-only rows with no query text)
+  and delete only the payload columns, or keep a hash of the pair in a separate small table.
+
+## New settings columns are recognised by their zero value (`XpSearchAnalyticsModuleInstaller.SeedSettings`, AR-1)
+
+- **Simplified:** an upgrade that adds a column to `XpSearch.Settings` leaves existing rows with 0 in
+  it. The installer fills any column that reads 0 from the effective code-configured options instead
+  of asking `CombineWithForm` which fields it actually added.
+- **Ceiling:** the cache lifetime column is excluded from the repair, because 0 is a legal value there
+  (no response caching) - so a *future* upgrade that adds a column where 0 is meaningful would need
+  the same exclusion, and an administrator cannot store 0 in any of the other columns anyway (the form
+  validates 1 or more).
+- **Upgrade path:** compare the field list before and after `CombineWithForm` in `InstallClass` and
+  hand the added column names to the seeding step.

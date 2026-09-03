@@ -19,13 +19,14 @@ inside logging is swallowed and written to the log at `Debug`.
 // Program.cs
 builder.Services.AddXpSearch(options =>
 {
-    options.Analytics.RetentionDays = 180;         // default; older query log rows are deleted
-    options.Analytics.RetentionBatchSize = 1000;   // rows deleted per batch by the retention task
-    options.Analytics.QuerySuggestionDays = 30;    // how far back query suggestions count volume
-
     options.Indexes["ProductIndex"].SuggestMode = SuggestMode.QuerySuggestions;
 });
 ```
+
+The analytics numbers — retention window, batch size, the query suggestion window — are **not set in
+code**. They are edited in the administration under **Search ingestion → Settings**; the values a
+lambda sets are only used to seed that page the first time the application starts. See
+[Global settings in the administration](search-api.md#global-settings-in-the-administration).
 
 Then create the retention task configuration once (see *Retention*, below). That is the whole setup.
 
@@ -187,9 +188,29 @@ made, and the numbers here only ever mean the second thing.
 
 ### Retention
 
-`XpSearchQueryLogRetentionTask` deletes rows older than `Analytics.RetentionDays` in batches. It is
-registered under the identifier `XpSearch.QueryLogRetention`; Xperience needs a *task configuration* to
-actually run it, and that can only be created in the administration:
+An administrator sets the window in the administration:
+
+1. Open the **Search ingestion** application → **Settings**.
+2. Set **Remove search analytics older than X days**. The default is **365**; the minimum is 1.
+3. **Save**. The new window is in effect at once — no application restart.
+
+`XpSearchQueryLogRetentionTask` then deletes, in batches, everything older than that cutoff:
+
+| Table | What is deleted |
+|---|---|
+| `XpSearch.QueryLog` | every logged query older than the cutoff |
+| `XpSearch.PopularitySuggestion` | suggestions that were **approved or dismissed** and are older than the cutoff |
+| `XpSearch.SynonymSuggestion` | mined pairs that were **approved or dismissed** and last seen before the cutoff |
+
+Suggestions still **waiting for an answer are never deleted** — the mining task owns those, and it
+replaces them on every run. Popularity *scores* are not deleted either: each run replaces them and
+`PopularityDocumentLimit` bounds them.
+
+Deleting an answered suggestion means the same pair can be suggested again if it is mined again after
+the window — by then the queries that produced it are gone from the log too, so it is a fresh signal.
+
+The task is registered under the identifier `XpSearch.QueryLogRetention`; Xperience needs a *task
+configuration* to actually run it, and that can only be created in the administration:
 
 1. Open the **Scheduled tasks** application.
 2. Select **New scheduled task configuration**.
@@ -198,8 +219,15 @@ actually run it, and that can only be created in the administration:
 5. **Enabled**: yes. **Task schedule**: daily is plenty.
 6. **Save**.
 
-The *Last result* column shows how many rows the run deleted. Until the configuration exists the query
-log grows without bound — this is the one manual step of the feature.
+The *Last result* column is the only feedback a run gives, and it reports all three tables:
+
+```text
+Deleted 1200 query log rows, 3 popularity suggestions, 1 synonym suggestion older than 2025-09-02 00:00:00Z.
+```
+
+Until the configuration exists the query log grows without bound — this is the one manual step of the
+feature. Xperience's own contact activities are not this task's business: they are pruned by Kentico's
+*Settings → Digital marketing → Contact management → Delete inactive contacts* setting.
 
 A second, optional task turns the same log into ranking: see
 [Popularity boosts](popularity-boosts.md).

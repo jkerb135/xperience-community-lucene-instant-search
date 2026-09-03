@@ -174,7 +174,7 @@ internal sealed class RecoveryTests
         var pipeline = new CachedSearchPipeline(
             Recovery(),
             new MemorySearchCache(),
-            Microsoft.Extensions.Options.Options.Create(new XpSearchOptions()),
+            new StaticOptionsMonitor<XpSearchOptions>(new XpSearchOptions()),
             new StubContactGroupResolver(),
             new StubExperimentResolver(),
             new SearchRequestJournal(activities, new QueryContextMap(), queue, channel, NullLogger<SearchRequestJournal>.Instance),
@@ -204,7 +204,7 @@ internal sealed class RecoveryTests
     private RecoverySearchPipeline Recovery(XpSearchOptions? options = null, ISearchPipeline? inner = null) =>
         new(
             inner ?? harness.Pipeline,
-            Microsoft.Extensions.Options.Options.Create(options ?? new XpSearchOptions()),
+            new StaticOptionsMonitor<XpSearchOptions>(options ?? new XpSearchOptions()),
             queries,
             harness.Index,
             new StaticSchemaProvider(TestCorpus.Schema));

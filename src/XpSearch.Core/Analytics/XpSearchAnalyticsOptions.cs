@@ -6,10 +6,12 @@ namespace XpSearch.Core.Analytics;
 public sealed class XpSearchAnalyticsOptions
 {
     /// <summary>
-    /// Gets or sets how many days of <c>XpSearch.QueryLog</c> rows are kept. Rows older than this are
-    /// deleted by <c>XpSearchQueryLogRetentionTask</c>. Defaults to 180 days (spec §9.2).
+    /// Gets or sets how many days of <c>XpSearch.QueryLog</c> rows and answered popularity/synonym
+    /// suggestions are kept. Older rows are deleted by <c>XpSearchQueryLogRetentionTask</c>. Defaults
+    /// to 365 days; an administrator edits it on the Settings page of the Search ingestion application
+    /// (AR-1), which is what the running application uses.
     /// </summary>
-    public int RetentionDays { get; set; } = 180;
+    public int RetentionDays { get; set; } = 365;
 
     /// <summary>Gets or sets how many rows the retention task deletes per batch. Defaults to 1000.</summary>
     public int RetentionBatchSize { get; set; } = 1000;

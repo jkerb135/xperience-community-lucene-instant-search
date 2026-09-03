@@ -17,6 +17,22 @@ internal sealed class FakeSynonymSuggestionStore : ISynonymSuggestionStore
 
         return Task.CompletedTask;
     }
+
+    /// <summary>Every retention call, and how many rows each was told it could delete (AR-1).</summary>
+    internal List<(DateTime CutoffUtc, int BatchSize)> Pruned { get; } = [];
+
+    /// <summary>How many answered rows the store pretends to hold.</summary>
+    internal int Answered { get; set; }
+
+    public Task<int> DeleteAnsweredOlderThanAsync(DateTime cutoffUtc, int batchSize, CancellationToken cancellationToken)
+    {
+        Pruned.Add((cutoffUtc, batchSize));
+
+        int deleted = Math.Min(Answered, batchSize);
+        Answered -= deleted;
+
+        return Task.FromResult(deleted);
+    }
 }
 
 /// <summary>The popularity signal in memory, so the boost and the cache key can be tested without a database.</summary>
@@ -45,5 +61,21 @@ internal sealed class FakePopularitySignalStore : IPopularitySignalStore
         Signals[indexName] = new PopularitySignal(indexName, computedUtc.Ticks, aggregate.Scores);
 
         return Task.CompletedTask;
+    }
+
+    /// <summary>Every retention call, and how many rows each was told it could delete (AR-1).</summary>
+    internal List<(DateTime CutoffUtc, int BatchSize)> Pruned { get; } = [];
+
+    /// <summary>How many answered rows the store pretends to hold.</summary>
+    internal int Answered { get; set; }
+
+    public Task<int> DeleteAnsweredOlderThanAsync(DateTime cutoffUtc, int batchSize, CancellationToken cancellationToken)
+    {
+        Pruned.Add((cutoffUtc, batchSize));
+
+        int deleted = Math.Min(Answered, batchSize);
+        Answered -= deleted;
+
+        return Task.FromResult(deleted);
     }
 }

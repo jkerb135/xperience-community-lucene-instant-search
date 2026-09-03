@@ -62,7 +62,18 @@ logged time and the response's `tookMs` measure the same thing. (Superseded the 
 **Retention is a scheduled task with a manual configuration.** `[assembly: RegisterScheduledTask]`
 makes `XpSearch.QueryLogRetention` selectable; the platform has no documented API for creating the task
 *configuration*, so the guide tells the developer to create it once in the *Scheduled tasks*
-application. Defaults: 180 days, 1000 rows per batch.
+application.
+
+**Amended (AR-1, 2026-09-02): the threshold is an administration setting, not a code option.**
+Retention is a post-go-live knob — the person who decides how long query text may be kept is the one
+in the administration, the way Kentico's own *Delete inactive contacts* setting works — so the window
+lives in a stored row that an editor changes without a deployment. Default **365** days, minimum 1,
+1000 rows per batch. `Analytics.RetentionDays` stays on `XpSearchOptions`, but only to seed that row on
+first start; the running task reads the options, which the stored row has overwritten
+(`IConfigureOptions<XpSearchOptions>` + an `IOptionsChangeTokenSource`, so a save is live). The same
+run now also prunes *answered* popularity and synonym suggestions, the only rows nothing else deleted.
+Kentico's `SettingsKeyInfo` is deliberately not used: Kentico's own guidance for settings of your own
+is a custom object type with your own UI, and its cache-dependency support covers built-in keys only.
 
 ## Consequences
 

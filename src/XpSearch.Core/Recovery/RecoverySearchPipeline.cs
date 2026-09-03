@@ -32,7 +32,7 @@ namespace XpSearch.Core.Recovery;
 public sealed class RecoverySearchPipeline : ISearchPipeline
 {
     private readonly ISearchPipeline inner;
-    private readonly XpSearchOptions options;
+    private readonly IOptionsMonitor<XpSearchOptions> options;
     private readonly IQuerySuggestionSource querySuggestions;
     private readonly ILuceneIndexAccessor accessor;
     private readonly IIndexSchemaProvider schemaProvider;
@@ -48,7 +48,7 @@ public sealed class RecoverySearchPipeline : ISearchPipeline
     /// <param name="schemaProvider">Supplies the fields the query searched, which are the ones spelled against.</param>
     public RecoverySearchPipeline(
         ISearchPipeline inner,
-        IOptions<XpSearchOptions> options,
+        IOptionsMonitor<XpSearchOptions> options,
         IQuerySuggestionSource querySuggestions,
         ILuceneIndexAccessor accessor,
         IIndexSchemaProvider schemaProvider)
@@ -60,7 +60,7 @@ public sealed class RecoverySearchPipeline : ISearchPipeline
         ArgumentNullException.ThrowIfNull(schemaProvider);
 
         this.inner = inner;
-        this.options = options.Value;
+        this.options = options;
         this.querySuggestions = querySuggestions;
         this.accessor = accessor;
         this.schemaProvider = schemaProvider;
@@ -78,7 +78,7 @@ public sealed class RecoverySearchPipeline : ISearchPipeline
             return response;
         }
 
-        var indexOptions = options.Indexes[request.Index];
+        var indexOptions = options.CurrentValue.Indexes[request.Index];
 
         if (indexOptions.PopularSearchesOnNoResults > 0)
         {

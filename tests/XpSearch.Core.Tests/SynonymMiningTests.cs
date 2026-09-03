@@ -152,7 +152,7 @@ internal sealed class SynonymMiningTests
             log,
             signals,
             mined,
-            Microsoft.Extensions.Options.Options.Create(new XpSearchOptions()),
+            new StaticOptionsMonitor<XpSearchOptions>(new XpSearchOptions()),
             NullLogger<XpSearchPopularityTask>.Instance);
 
         await task.Execute(null!, CancellationToken.None);
