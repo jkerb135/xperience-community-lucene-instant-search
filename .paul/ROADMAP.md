@@ -14,7 +14,7 @@ The engineering spec's Phases 0–7 (pipeline, tuning, widgets, analytics, inges
 
 **v1.0 Public Release** (v1.0.0)
 Status: In progress
-Phases: 1 of 5 complete
+Phases: 3 of 6 complete (plus inserted 1.1)
 
 ## Phases
 
@@ -30,6 +30,7 @@ Phases: 1 of 5 complete
 | 3 | Verification closure & defect burn-down | TBD | In progress (owner items) | - |
 | 4 | Remaining spec scope | 5 | Complete (2026-09-02) | 2026-09-02 |
 | 5 | Packaging & release (spec Phase 8) | TBD | Not started | - |
+| 6 | Analytics retention setting & cleanup task | 1 | Planning | - |
 
 ## Phase Details
 
@@ -156,6 +157,22 @@ verified live — "There are 2 results without them / Clear filters and show 2 r
 - [ ] 05-01: Release readiness (docs D1/D2/D3 + changelog cut)
 - [ ] 05-02: Publish + tag
 
+### Phase 6: Analytics retention setting & cleanup task
+
+**Goal:** Search-analytics cleanup is admin-configurable: a Kentico settings key "Remove search analytics older than X days" (default 365) drives a scheduled task that prunes stale analytics rows — the same shape as Xperience's own "delete inactive contacts" setting.
+**Depends on:** Phase 4 (analytics tables final). Should land before Phase 5 tags v1.0.0 so the default and the setting ship in the release.
+**Research:** Likely — XbK settings-key registration from a library (no `ISettingsService`/`SettingsKeyInfo` usage exists in the repo yet); confirm the platform API for module-contributed settings categories/keys.
+
+**Scope:**
+- Settings key in the admin **Settings** application (category "Search" or similar): integer days, default 365, validated ≥ 1
+- Retention task reads the settings key; `XpSearchAnalyticsOptions.RetentionDays` (code default 180) becomes the fallback/override story — decide precedence in the unit spec (setting wins when present is the expected answer)
+- Extend cleanup beyond `XpSearchQueryLogInfo`: evaluate the other analytics-derived tables (popularity scores/suggestions, synonym suggestions, ingestion log) and prune what is honest to prune on the same cutoff
+- Existing `XpSearchQueryLogRetentionTask` / `XpSearch.QueryLogRetention` identifier kept (already documented + registered); rename only if the broader scope makes the name a lie
+- Guide (`docs/guides/analytics.md` §Retention) updated to point at the setting; ADR-0015 retention paragraph amended; CHANGELOG entry; host-pass checklist items
+
+**Plans:**
+- [ ] 06-01: AR-1 unit — settings key + task wiring + broader cleanup + docs — PLAN written 2026-09-02 (`phases/06-analytics-retention-setting/06-01-PLAN.md`)
+
 ---
 *Roadmap created: 2026-09-01*
-*Last updated: 2026-09-01*
+*Last updated: 2026-09-02*

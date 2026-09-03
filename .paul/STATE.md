@@ -11,26 +11,26 @@ about: "xperience-search"
 See: .paul/PROJECT.md (updated 2026-09-01)
 
 **Core value:** XbK developers get a complete, tunable, measurable site-search product on the Lucene index they already have.
-**Current focus:** v1.0 Public Release — Phase 1 (Default experience completion)
+**Current focus:** v1.0 Public Release — Phase 6 (Analytics retention setting & cleanup task)
 
 ## Current Position
 
 Milestone: v1.0 Public Release (v1.0.0)
-Phase: 1, 1.1, 2 and 4 COMPLETE; Phase 3 = only 03-02 HW-11 findings batches (owner walk); then Phase 5 packaging — next: Phase 3 (owner checklist walk + command-discovery unit) or more Phase 4
-Plan: none in flight
-Status: HL-1 merged cdbc7bb (fuzzy-highlight 135→8.2ms p50 via once-per-request reader rewrite on SearchContext.HighlightQuery; Core 347). PHASE 4 COMPLETE — PF-1 merged ad7da9f (bench 10k/100k/1M + performance-and-sizing guide; found fuzzy+highlight ~135ms defect → chip task_06905b09/HL-1, measured not fixed). CD-1 merged 6c92033 (command-not-found = stale host builds, not discovery; ADR-0027 + PageCommandDiscoveryTests guard, Admin 260; owner clicks §W 111–115). EX-2 merged 232a906 (computed relevance field worked example; host code + docs walkthrough; live-verified). Flaky filterSort test FIXED on main 7458bac by the chip session (SearchClient dispose now stops the retry loop; JS 286 stable). CL-1 merged fa5843d (Kentico-free XperienceCommunity.Search.Client + npm /ingestion subpath; host round trip passed both clients; known flaky filterSort vitest case chip-filed). IX-1 merged 7cddb43 (AddField contributed-field schema registration + undeclared-write warning + suggest-field default warning; host decorator swapped for AddField, verified live). SG-1 merged b2d5234 (mixed suggestions via SuggestMode.Mixed; contract +Suggestion.group/didYouMean/popularSearches; client-side localStorage recents as third panel group; did-you-mean via DirectSpellChecker verified by never-journaled probe searches; popular searches opt-in via empty-prefix suggestion source; checklist §S 95–100, items 85–86 off KNOWN FAIL). FZ-1 merged b5893ac (default OFF; checklist §R 87–94 = owner browser items incl. flipping the toggle); MB-1 merged dc4e86e (mobile swap live: sidebar hides <1024px via .dg-side-panel:has(>.xps-mount), mount-time matchMedia results→loadMore + inert pagination); ES-1 merged 879ebb6 (contract `probe` flag journal-skipped at the single Journal call site; SearchInstance.probe(); counted empty state + sheet live "Show N results"; skeleton/icon parity; also fixed FZ-1's migrating-from-algolia template drift). Counted empty state verified LIVE on the demo. Checklist §Q items 80–84 now walkable; 85–86 (did-you-mean, popular searches) remain KNOWN FAIL until SG-1.
-Last activity: 2026-09-01 — Phase 1.1 both plans merged; host bundles rebuilt; live verification done
+Phase: 6 of 6 (Analytics retention setting & cleanup task) — Planning. Phases 1, 1.1, 2, 4 COMPLETE; Phase 3 = only 03-02 HW-11 findings batches (owner walk); Phase 5 packaging waits on 6.
+Plan: 06-01 created, awaiting approval
+Status: PLAN created, ready for APPLY. Prior context: HL-1 merged cdbc7bb; PF-1 ad7da9f; CD-1 6c92033; EX-2 232a906; CL-1 fa5843d; IX-1 7cddb43; SG-1 b2d5234; FZ-1 b5893ac; MB-1 dc4e86e; ES-1 879ebb6 (details in auto-memory xperience-search-session-state).
+Last activity: 2026-09-02 — Created .paul/phases/06-analytics-retention-setting/06-01-PLAN.md
 
 Progress:
-- Milestone: [██░░░░░░░░] ~20% (of the closing stretch; spec Phases 0–7 already shipped pre-PAUL)
-- Phase: [██████████] Phase 1 complete
+- Milestone: [██████░░░░] ~60% (of the closing stretch; spec Phases 0–7 already shipped pre-PAUL)
+- Phase 6: [░░░░░░░░░░] 0%
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ◉        ○     [Applying — TH-4 in flight]
+  ✓        ○        ○     [Plan 06-01 created, awaiting approval]
 ```
 
 ## Accumulated Context
@@ -39,8 +39,10 @@ PLAN ──▶ APPLY ──▶ UNIFY
 
 | Decision | Phase | Impact |
 |----------|-------|--------|
+| AR-1: retention setting is the single source (default 365); `RetentionDays` option removed (Breaking, pre-1.0); Settings app first, library edit page as evidence-driven fallback; answered suggestions pruned, pending never | 6 | Owner may veto the option removal or the fallback placement at the human-verify checkpoint |
 | Fuzzy search = per-index admin toggle, default OFF, no contract change (FZ-1 spec) | 2 | Owner may veto: default off, single toggle vs level dropdown, Synonyms-listing placement |
 | Defaults must match approved mockup exactly | 1 | TH-4 spec amended; host mirrors docs 1:1 |
+| Added Phase 6: Analytics retention setting & cleanup task (admin settings key, default 365 days) | Phase 3 | Extends milestone scope; should ship before Phase 5 tags v1.0.0 |
 | Existing workflow stays authoritative | All | Unit specs in `docs/internal/units/`, gates in `docs/internal/phase-log.md`; PAUL layers on top, does not replace |
 
 ### Deferred Issues
@@ -76,9 +78,10 @@ PLAN ──▶ APPLY ──▶ UNIFY
 
 ## Session Continuity
 
-Last session: 2026-09-01
-Stopped at: PAUL initialized; FZ-1 spec written; TH-4 in flight
-Next action: Run /paul:plan to detail Phase 1's remaining plan (host adoption) and confirm phase structure
+Last session: 2026-09-02
+Stopped at: Plan 06-01 created
+Next action: Review and approve plan, then run /paul:apply .paul/phases/06-analytics-retention-setting/06-01-PLAN.md
+Resume file: .paul/phases/06-analytics-retention-setting/06-01-PLAN.md
 Resume context: Read auto-memory `xperience-search-session-state` first — it is the richer, authoritative session state; STATE.md is the PAUL-level digest
 
 ---

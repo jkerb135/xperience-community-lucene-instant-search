@@ -12,16 +12,18 @@ source = "https://chrisai.cv/skool"
 name = "v1.0 Public Release"
 version = "1.0.0"
 status = "in_progress"
-phases = 5
+phases = 6
 
 [phase]
-number = 1
-name = "Default experience completion"
-status = "complete"
-plans_completed = 2
+number = 6
+name = "Analytics retention setting & cleanup task"
+status = "planning"
+plans_completed = 0
 
 [loop]
-position = "APPLY"
+position = "PLAN"
+plan = "06-01"
+plan_path = "phases/06-analytics-retention-setting/06-01-PLAN.md"
 
 [satellite]
 groom = true
@@ -29,4 +31,4 @@ groom = true
 [stats]
 total_plans = 0
 total_phases = 0
-last_activity = "2026-09-01T00:00:00Z"
+last_activity = "2026-09-02T00:00:00Z"
