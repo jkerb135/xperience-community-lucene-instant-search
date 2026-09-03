@@ -19,7 +19,16 @@ Read `docs/internal/agent-primer.md`, `docs/internal/units/TH-1.md`, `TH-2.md`, 
 `themes/MARKUP.md`, and `themes/README`/scripts. Work only in your worktree (branch `unit/th-7`).
 The boards in `docs/internal/design/*.dc.html` remain the visual spec.
 
-## 1. Theme hardening (themes/src/scss/{shell,default}, both stylesheets)
+## 1. Theme hardening (themes/src/scss/{shell,default})
+
+**Owner clarification (2026-09-03, governs this section):** the guarantee applies to the **shipped
+default theme**: a host including shell + default gets each component pixel-equal to the boards and
+no site style can change it. The **shell is structure only** — layout, box model, positioning,
+sizing, visibility/state and focus/a11y mechanics; nothing theme-related (colours, backgrounds,
+border colours/styles beyond layout needs, fonts, shadows, radii, decorative spacing) may live in
+it. Audit the shell and move every visual declaration into default; the isolation mechanism (root
+selector, element resets) lives in default. The shell must keep working unstyled under a custom
+theme. Report the declarations moved.
 
 **Requirement (owner, verbatim intent):** "the style when including the theme exactly matches
 each component design in the scss; no site styles should bleed into the components; they should
