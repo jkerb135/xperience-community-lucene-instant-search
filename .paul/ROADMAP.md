@@ -185,7 +185,8 @@ verified live — "There are 2 results without them / Clear filters and show 2 r
 - [x] 07-01: TH-6 — merged 0f52194 (2026-09-03); owner: 126/127/121 pass, 128/129 → TH-7
 - [ ] 07-02: TH-7 — theme hardening against site styles (closed styling boundary, hostile-CSS computed-style check; shell = structure only) + selected refinements at zero hits; spec `docs/internal/units/TH-7.md`, dispatched 2026-09-03
 - [x] 07-02: TH-7 — merged b4d1425 (2026-09-03); owner re-walk §Z 130–131 pending
-- [x] 07-03: TH-8 — merged fa37700 (2026-09-03): kentico-violet (= default, byte-identical) + kentico-orange from one source; demo host on orange; owner visual sign-off pending (§Z 132)
+- [x] 07-03: TH-8 — merged fa37700 (2026-09-03): kentico-violet (= default, byte-identical) + kentico-orange from one source; demo host on orange; owner visual sign-off pending (§Z 132). Follow-ups: sheet-scroll 863ffd6 (dvh + check); TH-8b in flight (brand #f05a22 fills + white labels, #c64300 ink)
+- [ ] 07-04: TH-9 — sidebar card composition class + autocomplete no-suggestions state (boards updated dac203a); spec `docs/internal/units/TH-9.md`
 
 ---
 *Roadmap created: 2026-09-01*
