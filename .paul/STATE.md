@@ -17,7 +17,7 @@ See: .paul/PROJECT.md (updated 2026-09-01)
 
 Milestone: v1.0 Public Release (v1.0.0)
 Phase: 6 of 6 (Analytics retention setting & cleanup task) — In progress: 06-01 closed, 06-02 (per-index named options) next. Phases 1, 1.1, 2, 4 COMPLETE; Phase 3 = only 03-02 HW-11 findings batches (owner walk); Phase 5 packaging waits on 6.
-Plan: 06-02 created, awaiting approval (`phases/06-analytics-retention-setting/06-02-PLAN.md`)
+Plan: 06-02 in APPLY — AR-2 merged 9a11388 (approved first pass), full sln 0 errors, host rebuilt; at the human-verify checkpoint (owner walks checklist §Y 121–125)
 Status: Ready for next PLAN. Owner decision at the 06-01 checkpoint: settings per index via named options (`IOptionsMonitor<XpSearchIndexSettings>.Get(indexCodeName)`), page in each index's tuning section, per-name invalidation via IOptionsMonitorCache, retention per index; global page/row replaced. AR-1 MERGED 07928a7 + fix 76bef0e (approved first pass; rev 2 scope: all global options on Search ingestion → Settings, IConfigureOptions overlay + live change token; retention default 365; answered-suggestion prune). Core 357/Admin 261 lead-verified; full sln 0 errors; pushed 4714efa; host rebuilt+running on 27340; `XpSearch_Settings` row seeded (365/100/20/60/1000) — DB-verified. Prior context: HL-1 merged cdbc7bb; PF-1 ad7da9f; CD-1 6c92033; EX-2 232a906; CL-1 fa5843d; IX-1 7cddb43; SG-1 b2d5234; FZ-1 b5893ac; MB-1 dc4e86e; ES-1 879ebb6 (details in auto-memory xperience-search-session-state).
 Last activity: 2026-09-03 — 06-01 UNIFY closed (SUMMARY); owner redirected to per-index named options → plan 06-02
 
