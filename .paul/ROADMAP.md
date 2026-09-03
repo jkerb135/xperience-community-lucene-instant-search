@@ -30,7 +30,7 @@ Phases: 3 of 6 complete (plus inserted 1.1)
 | 3 | Verification closure & defect burn-down | TBD | In progress (owner items) | - |
 | 4 | Remaining spec scope | 5 | Complete (2026-09-02) | 2026-09-02 |
 | 5 | Packaging & release (spec Phase 8) | TBD | Not started | - |
-| 6 | Analytics retention setting & cleanup task | 1 | Planning | - |
+| 6 | Analytics retention setting & cleanup task | 2 | In progress (06-01 done; 06-02 per-index) | - |
 
 ## Phase Details
 
@@ -171,7 +171,8 @@ verified live — "There are 2 results without them / Clear filters and show 2 r
 - Guide (`docs/guides/analytics.md` §Retention) updated to point at the setting; ADR-0015 retention paragraph amended; CHANGELOG entry; host-pass checklist items
 
 **Plans:**
-- [ ] 06-01: AR-1 unit — settings key + task wiring + broader cleanup + docs — PLAN written 2026-09-02 (`phases/06-analytics-retention-setting/06-01-PLAN.md`)
+- [x] 06-01: AR-1 — global settings row + Search ingestion → Settings page + IConfigureOptions overlay (live), retention 365 + answered-suggestion prune — merged 07928a7 + fix 76bef0e (2026-09-02); owner redirected at checkpoint → per index
+- [ ] 06-02: AR-2 — settings per index via named options (`IOptionsMonitor<XpSearchIndexSettings>.Get(indexCodeName)`), Settings page in each index's tuning section, per-name invalidation, retention per index; replaces the global page/row
 
 ---
 *Roadmap created: 2026-09-01*

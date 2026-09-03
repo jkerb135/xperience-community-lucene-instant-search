@@ -17,18 +17,16 @@ phases = 6
 [phase]
 number = 6
 name = "Analytics retention setting & cleanup task"
-status = "planning"
-plans_completed = 0
+status = "in_progress"
+plans_completed = 1
 
 [loop]
-position = "APPLY"
-plan = "06-01"
-plan_path = "phases/06-analytics-retention-setting/06-01-PLAN.md"
+position = "IDLE"
 
 [satellite]
 groom = true
 
 [stats]
-total_plans = 0
+total_plans = 1
 total_phases = 0
 last_activity = "2026-09-02T00:00:00Z"
