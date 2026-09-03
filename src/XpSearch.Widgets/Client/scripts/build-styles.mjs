@@ -1,6 +1,6 @@
 // The stylesheet half of the npm tarball (PK-1):
 //   scss/                     the sass sources, copied verbatim from themes/src/scss
-//   themes/{shell,default}.css the two full stylesheets, unchanged paths
+//   themes/*.css              the full stylesheets: shell, default and the two shipped palettes
 //   styles/base.css           reset + tokens + shared primitives, both layers
 //   styles/widgets/<name>.css one widget each, for a pipeline without sass
 // All of it is a gitignored build product, like dist/.
@@ -33,10 +33,10 @@ const build = (source) =>
 rmSync(scssOut, { recursive: true, force: true });
 cpSync(join(themesSrc, 'scss'), scssOut, { recursive: true });
 
-// 1. themes/*.css — the same two files the .NET package serves as static web assets.
+// 1. themes/*.css — the same files the .NET package serves as static web assets.
 const themesOut = join(clientDir, 'themes');
 mkdirSync(themesOut, { recursive: true });
-for (const name of ['shell', 'default']) {
+for (const name of ['shell', 'default', 'kentico-violet', 'kentico-orange']) {
   const css = build(`@use '${name}';`);
   const shipped = readFileSync(join(themesSrc, `${name}.css`), 'utf8').replace(/\r\n/g, '\n');
   const [ours, theirs] = [rules(css), rules(shipped)];
@@ -60,6 +60,6 @@ for (const name of Object.keys(WIDGET_ENTRIES)) {
 }
 
 console.log(
-  `packaged scss/, themes/shell.css + themes/default.css (rule-identical to themes/src/), ` +
+  `packaged scss/, themes/{shell,default,kentico-violet,kentico-orange}.css (rule-identical to themes/src/), ` +
     `styles/base.css and ${Object.keys(WIDGET_ENTRIES).length} styles/widgets/*.css`
 );

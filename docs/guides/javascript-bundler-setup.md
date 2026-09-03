@@ -23,8 +23,8 @@ them. It has no runtime dependencies.
 | `.../widgets` | every widget factory in one import, plus `DEFAULT_WIDGETS` — tree-shakes to only the widgets you name |
 | `.../widgets/search-box`, `.../widgets/results`, `.../widgets/facet-list`, `.../widgets/category-tree`, `.../widgets/sort-select`, `.../widgets/result-stats`, `.../widgets/toggle-filter`, `.../widgets/range-filter`, `.../widgets/load-more`, `.../widgets/pagination`, `.../widgets/suggestions`, `.../widgets/active-filters` | one widget each (`clearFilters` ships with `active-filters`) |
 | `.../behaviors` | the headless behaviours, for widgets you render yourself |
-| `.../scss/*` | SCSS sources: `scss/shell`, `scss/default`, `scss/base`, `scss/widgets/<name>` |
-| `.../themes/shell.css`, `.../themes/default.css` | the two compiled stylesheets, identical to the ones the tag helper serves |
+| `.../scss/*` | SCSS sources: `scss/shell`, `scss/default`, `scss/base`, `scss/widgets/<name>`, and the palettes — `scss/kentico-violet`, `scss/kentico-orange`, `scss/palettes/<name>`, `scss/tokens/<name>` |
+| `.../themes/shell.css`, `.../themes/default.css`, `.../themes/kentico-violet.css`, `.../themes/kentico-orange.css` | the compiled stylesheets, identical to the ones the tag helper serves. `default.css` and `kentico-violet.css` are the same bytes — see [Two shipped palettes](theming.md#two-shipped-palettes) |
 | `.../styles/base.css`, `.../styles/widgets/<name>.css` | compiled per-widget CSS, for pipelines that cannot compile SCSS |
 | `.../ingestion` | `createIngestionClient`, the typed client for the ingestion API — **Node only** |
 
@@ -92,6 +92,18 @@ import '@xperience-community/xperience-search/themes/shell.css';   // structure
 import '@xperience-community/xperience-search/themes/default.css'; // the opt-in theme
 ```
 
+Swap that second import for `.../themes/kentico-orange.css` to ship the other palette — or, on the
+SCSS path, put the palette on the first line, before `base` and the widget partials:
+
+```scss
+@use '@xperience-community/xperience-search/scss/palettes/kentico-orange';
+@use '@xperience-community/xperience-search/scss/base';
+@use '@xperience-community/xperience-search/scss/widgets/search-box';
+```
+
+Sass fixes a module's configuration on its first load, so the palette has to come before anything
+that reads the tokens. See [Two shipped palettes](theming.md#two-shipped-palettes).
+
 ### Build-time theming with SCSS
 
 Every `--xps-*` custom property is still emitted, so [runtime theming](theming.md) works exactly as
@@ -110,7 +122,8 @@ emitted with, which is what you want when the values are known at build time:
 `scss/shell` takes `$space`, `$control-min-height`, `$focus-width`, `$focus-offset`.
 `scss/default` takes `$color-accent`, `$color-text`, `$color-muted`, `$color-surface`,
 `$color-border`, `$radius`, `$space`, `$font`, and the five `$dark-color-*` values used by
-`data-xps-theme="auto"`.
+`data-xps-theme="auto"`. `scss/kentico-violet`, `scss/kentico-orange` and the
+`scss/palettes/<name>` partials take the same set, on top of the palette they select.
 
 ### Page Builder mounts
 

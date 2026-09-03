@@ -25,13 +25,68 @@ goes through one of the variables below, so overriding one changes every widget 
 Already have a design system? Load `shell.css` alone and write your own rules against the
 documented class names — see [using shell on its own](#using-shell-on-its-own).
 
+### Two shipped palettes
+
+The design ships in two colourways, built from the same source and differing only in the accent:
+
+| Palette | Stylesheet | Light accent | Dark accent |
+|---|---|---|---|
+| **kentico-violet** — the default | `kentico-violet.css`, and `default.css`, which is the same file under its original name | `#af00fa` | `#c983f7` |
+| **kentico-orange** | `kentico-orange.css` | `#c64300` | `#ff8852` |
+
+Both are Kentico's own brand colours, taken from the Xperience admin's tag tokens
+(`--color-background-tag-xperience-violet`, `--color-background-tag-kentico-orange`), and both
+measure `5.00:1` on white — AA for link text and for white-on-accent buttons. Everything else the
+palette drives — button hovers, chip and band tints, the focus ring — is a `color-mix` of the
+accent, so the two files differ in exactly two declarations.
+
+Pick one instead of `default.css`; never load both.
+
+```html
+<!-- no-build: swap the second <link> -->
+<link rel="stylesheet" href="/css/xpsearch/shell.css">
+<link rel="stylesheet" href="/css/xpsearch/kentico-orange.css">
+```
+
+```cshtml
+@* Xperience site: the tag helper takes the palette by name.
+   theme="default" (the default) and theme="kentico-violet" load the same stylesheet. *@
+<xps-search-assets theme="kentico-orange" />
+```
+
+```js
+// bundler, plain CSS
+import '@xperience-community/xperience-search/themes/shell.css';
+import '@xperience-community/xperience-search/themes/kentico-orange.css';
+```
+
+```scss
+// bundler, SCSS — one entry point carries structure-free design plus the palette
+@use "@xperience-community/xperience-search/scss/kentico-orange";
+```
+
+Compiling the widget partials à la carte? Select the palette on the **first** line — sass fixes a
+module's configuration on its first load, so anything that reads the tokens has to come after it:
+
+```scss
+@use "@xperience-community/xperience-search/scss/palettes/kentico-orange";
+@use "@xperience-community/xperience-search/scss/base";
+@use "@xperience-community/xperience-search/scss/widgets/results";
+```
+
+**Your own palette.** A palette file is nothing but the ten colour values — copy
+`themes/src/scss/tokens/_kentico-violet.scss` (shipped as `scss/tokens/_kentico-violet.scss`),
+change what you like, and point a copy of `palettes/_kentico-orange.scss` at it. Without a build
+step, the same thing is a variable block: load `default.css` and override
+[the variables below](#variable-reference), which is what the rest of this page is about.
+
 ### Where the files are
 
 | Consumer | Path |
 |---|---|
-| Xperience site | `<xps-search-assets />` emits both `<link>` tags; the `XperienceCommunity.Search.Widgets` package serves them as static web assets from `/_content/XperienceCommunity.Search.Widgets/xpsearch/`. |
-| npm | `@xperience-community/xperience-search/themes/shell.css` and `.../themes/default.css` are package exports: `import '@xperience-community/xperience-search/themes/shell.css'` from a bundler, or copy the two files into the folder your site serves CSS from. The package also ships the SCSS sources (`.../scss/shell`, `.../scss/default`, `.../scss/widgets/<name>`) and per-widget compiled CSS (`.../styles/base.css`, `.../styles/widgets/<name>.css`) — see [JavaScript bundler setup](javascript-bundler-setup.md#build-time-theming-with-scss). |
-| In this repository | `themes/src/shell.css` and `themes/src/default.css` — the shipped files. Both packages ship those exact two files; they are compiled from `themes/src/scss/` and committed, see [Working on the stylesheets](#working-on-the-stylesheets). |
+| Xperience site | `<xps-search-assets />` emits both `<link>` tags (`theme="kentico-orange"` for the other palette); the `XperienceCommunity.Search.Widgets` package serves them as static web assets from `/_content/XperienceCommunity.Search.Widgets/xpsearch/`. |
+| npm | `@xperience-community/xperience-search/themes/shell.css`, `.../themes/default.css`, `.../themes/kentico-violet.css` and `.../themes/kentico-orange.css` are package exports: `import '@xperience-community/xperience-search/themes/shell.css'` from a bundler, or copy the files into the folder your site serves CSS from. The package also ships the SCSS sources (`.../scss/shell`, `.../scss/default`, `.../scss/kentico-orange`, `.../scss/palettes/<name>`, `.../scss/tokens/<name>`, `.../scss/widgets/<name>`) and per-widget compiled CSS (`.../styles/base.css`, `.../styles/widgets/<name>.css`) — see [JavaScript bundler setup](javascript-bundler-setup.md#build-time-theming-with-scss). |
+| In this repository | `themes/src/shell.css`, `themes/src/default.css`, `themes/src/kentico-violet.css` and `themes/src/kentico-orange.css` — the shipped files. Both packages ship those exact files; they are compiled from `themes/src/scss/` and committed, see [Working on the stylesheets](#working-on-the-stylesheets). |
 
 `node_modules` is not usually web-served, so the `<link>` snippet above points at wherever your build
 put them rather than at the package folder.
@@ -63,20 +118,21 @@ file can leak into the rest of your page.
 
 ### Variable reference
 
-Every one of these is declared on `.xps` in `default.css` with the default shown.
+Every one of these is declared on `.xps` in the theme stylesheet with the value shown. The two
+palettes differ in the accent only; everything else is shared.
 
-| Variable | Default | Drives |
-|---|---|---|
-| `--xps-color-accent` | `#af00fa` | Links and result titles, the current pagination page and its underline, the result type label, the primary button, chip tint, the active suggestions option, checkbox and range `accent-color`, the `<mark>` highlighter band, the focus ring colour. |
-| `--xps-color-text` | `#1f2430` | Body text inside widgets, category-tree links, the facet group-title rule, the input inset shadow, the suggestions panel's shadow tint. |
-| `--xps-color-muted` | `#5c6370` | Facet counts, result metadata, the result path line, result stats, pagination links, placeholders, group titles, empty states, keycaps, the skeleton tint. |
-| `--xps-color-surface` | `#fff` | Input, button, keycap and suggestions-panel backgrounds; the text colour on accent-filled elements. |
-| `--xps-color-border` | `#e3e5ea` | Every border, the keycaps, and the suggestions footer rule. |
-| `--xps-radius` | `6px` | Corner radius on inputs, buttons, chips, the panel and hit images. A derived value (`calc(--xps-radius / 2)`) rounds the skeletons. |
-| `--xps-space` | `0.75rem` | The whole spacing rhythm — gaps and padding are `var(--xps-space)`, `calc(var(--xps-space) / 2)` or `calc(var(--xps-space) * 2)`. **Also declared by `shell.css`**, so structure keeps its rhythm when the theme is not loaded. |
-| `--xps-font` | `inherit` | `font-family` on `.xps`. Inherited by default, so the widgets read as part of your page — but stated from the token, so a host `button { font-family: … }` cannot reach inside one. |
-| `--xps-font-size` | `1rem` | `font-size` on `.xps`, which every size inside a widget is `em`-relative to. Stated rather than inherited so a host `body { font-size: 20px }` cannot rescale the design; set it to `inherit` to go back to following your page. |
-| `--xps-line-height` | `1.5` | `line-height` on `.xps`, same reasoning. |
+| Variable | kentico-violet (`default.css`) | kentico-orange | Drives |
+|---|---|---|---|
+| `--xps-color-accent` | `#af00fa` | `#c64300` | Links and result titles, the current pagination page and its underline, the result type label, the primary button, chip tint, the active suggestions option, checkbox and range `accent-color`, the `<mark>` highlighter band, the focus ring colour. |
+| `--xps-color-text` | `#1f2430` | same | Body text inside widgets, category-tree links, the facet group-title rule, the input inset shadow, the suggestions panel's shadow tint. |
+| `--xps-color-muted` | `#5c6370` | same | Facet counts, result metadata, the result path line, result stats, pagination links, placeholders, group titles, empty states, keycaps, the skeleton tint. |
+| `--xps-color-surface` | `#fff` | same | Input, button, keycap and suggestions-panel backgrounds; the text colour on accent-filled elements. |
+| `--xps-color-border` | `#e3e5ea` | same | Every border, the keycaps, and the suggestions footer rule. |
+| `--xps-radius` | `6px` | same | Corner radius on inputs, buttons, chips, the panel and hit images. A derived value (`calc(--xps-radius / 2)`) rounds the skeletons. |
+| `--xps-space` | `0.75rem` | same | The whole spacing rhythm — gaps and padding are `var(--xps-space)`, `calc(var(--xps-space) / 2)` or `calc(var(--xps-space) * 2)`. **Also declared by `shell.css`**, so structure keeps its rhythm when the theme is not loaded. |
+| `--xps-font` | `inherit` | same | `font-family` on `.xps`. Inherited by default, so the widgets read as part of your page — but stated from the token, so a host `button { font-family: … }` cannot reach inside one. |
+| `--xps-font-size` | `1rem` | same | `font-size` on `.xps`, which every size inside a widget is `em`-relative to. Stated rather than inherited so a host `body { font-size: 20px }` cannot rescale the design; set it to `inherit` to go back to following your page. |
+| `--xps-line-height` | `1.5` | same | `line-height` on `.xps`, same reasoning. |
 
 Override them anywhere the cascade reaches — a stylesheet rule on `.xps`, an inline `style`, or a
 scoped rule for one widget:
@@ -173,8 +229,10 @@ own selector instead — that is the same thing with your trigger:
 }
 ```
 
-Those are the shipped dark values. The accent is a lighter violet than the light-mode one on
-purpose: `#af00fa` is only `3.60:1` on `#17161d`, short of AA for link text.
+Those are the shipped dark values of kentico-violet. The accent is a lighter violet than the
+light-mode one on purpose: `#af00fa` is only `3.60:1` on `#17161d`, short of AA for link text.
+kentico-orange lightens its accent for the same reason — its dark value is `#ff8852` (`7.61:1`),
+and the four neutrals are the same.
 
 ### What shell gives you
 
@@ -270,14 +328,20 @@ The two stylesheets are authored in Sass and compiled into the CSS the packages 
 |---|---|
 | `themes/src/scss/shell/*.scss`, `themes/src/scss/default/*.scss` | Authoring source, one partial per widget per layer (`shell/_results.scss` is the structure of the results widget, `default/_results.scss` its theme). Edit these. |
 | `themes/src/scss/shell.scss`, `themes/src/scss/default.scss` | The two bundles: a `@forward` of the layer's `!default` variables and the partials in cascade order. Adding a widget means adding a partial and a `@use` line here. |
+| `themes/src/scss/tokens/_<palette>.scss` | A palette: the ten colour values, and the only place in the whole tree that holds a colour literal. |
+| `themes/src/scss/_theme-variables.scss` | The one indirection every design partial reads — the palette's colours plus the shape/typography knobs. Defaults to `tokens/kentico-violet`. |
+| `themes/src/scss/palettes/_<palette>.scss`, `themes/src/scss/<palette>.scss` | Selecting a palette: the `palettes/` partial configures `_theme-variables.scss`, the top-level entry adds the whole design on top and compiles to `src/<palette>.css`. |
 | `themes/src/scss/widgets/_<name>.scss`, `themes/src/scss/base.scss` | The à la carte entries the npm package exposes as `scss/widgets/<name>` and `scss/base`. |
-| `themes/src/shell.css`, `themes/src/default.css` | Generated **and committed** — the files the RCL and the npm tarball copy. Do not edit by hand. |
+| `themes/src/shell.css`, `themes/src/default.css`, `themes/src/kentico-violet.css`, `themes/src/kentico-orange.css` | Generated **and committed** — the files the RCL and the npm tarball copy. Do not edit by hand. |
 
 ```
 cd themes
 npm install        # the theme scripts now need dart-sass
-npm run build      # src/scss/*.scss -> src/{shell,default}.css
+npm run build      # src/scss/*.scss -> src/{shell,default,kentico-violet,kentico-orange}.css
 ```
+
+`default.css` and `kentico-violet.css` are built from separate entry points and the build fails if
+they are not byte-identical: `default` is violet, and the older name has to keep meaning that.
 
 `npm run check` recompiles to a temporary folder and fails if the committed CSS has drifted from the
 Sass, so a forgotten `npm run build` cannot ship. The Sass is a convenience for us — nesting for
@@ -292,8 +356,8 @@ the committed CSS rule for rule, so the two packages can never ship different ru
 ### The verification page
 
 `themes/test/index.html` opens straight from disk — no server, no build step. It renders every
-widget fixture three times: with shell only, with shell + default, and with shell plus a
-deliberately hostile host stylesheet (`!important` colours, global `button`/`input`/`ul`/`a`/`mark`
+widget fixture four times: with shell only, with shell + default, with shell + kentico-orange (the
+two palettes side by side), and with shell plus a deliberately hostile host stylesheet (`!important` colours, global `button`/`input`/`ul`/`a`/`mark`
 rules, `* { box-sizing: content-box }`). Each section repeats a host-page sample block outside
 every `.xps` element: if a widget stylesheet ever leaks, that block changes first. The page also
 carries the keyboard walk-through to run against each section.
@@ -307,10 +371,13 @@ npm run build:test # regenerate test/section-*.html after editing a fixture
 npm run size       # raw and gzipped bytes
 ```
 
-`npm run check` fails if the committed CSS no longer matches `src/scss/`, if `shell.css` grows a colour or a font, if `default.css` hard-codes a colour
-outside its variable block, if either file grows a selector that is not scoped to `xps-`, if an
-outline is removed without a replacement, or if the fixtures, the CSS and the markup contract stop
-agreeing about a class name.
+`npm run check` fails if the committed CSS no longer matches `src/scss/`, if `default.css` and
+`kentico-violet.css` are not the same bytes, if `shell.css` grows a colour or a font, if a theme
+stylesheet hard-codes a colour outside its variable block, if either palette drops below AA in
+light or dark mode, if overriding `$color-accent` leaves that palette's accent behind anywhere, if
+either file grows a selector that is not scoped to `xps-`, if an outline is removed without a
+replacement, if the fixtures, the CSS and the markup contract stop agreeing about a class name, or
+if a host stylesheet reaches inside a widget in either palette.
 
 ### Browser support
 

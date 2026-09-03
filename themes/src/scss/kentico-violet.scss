@@ -1,0 +1,10 @@
+// kentico-violet.css — the shipped default palette, the whole visual layer.
+// Compiled to themes/src/kentico-violet.css, which is byte-identical to themes/src/default.css
+// (scripts/build-css.mjs asserts it): `default` IS violet, the name is kept so nothing breaks.
+//
+//   @use "@xperience-community/xperience-search/scss/kentico-violet";
+//
+// À la carte, load palettes/kentico-violet first and then base + the widget partials you mounted.
+@forward 'palettes/kentico-violet';
+
+@use 'default';

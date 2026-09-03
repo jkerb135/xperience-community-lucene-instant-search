@@ -1,0 +1,26 @@
+// Selects the kentico-orange palette for the à la carte path — load it once, FIRST:
+//
+//   @use "@xperience-community/xperience-search/scss/palettes/kentico-orange";
+//   @use "@xperience-community/xperience-search/scss/base";
+//   @use "@xperience-community/xperience-search/scss/widgets/results";
+//
+// Order matters: sass configures a module on its first load, so anything that reads the tokens
+// (`base`, any widget partial, `default`) has to come after this line. Point it at your own copy
+// of a tokens/ file to ship a third palette.
+//
+// `!default` on each value keeps the knobs open, so a host can still take the palette and bend one
+// value: `@use ".../scss/palettes/kentico-orange" with ($color-accent: #b8005c);`.
+@use '../tokens/kentico-orange' as palette;
+
+@forward '../theme-variables' with (
+  $color-accent: palette.$color-accent !default,
+  $color-text: palette.$color-text !default,
+  $color-muted: palette.$color-muted !default,
+  $color-surface: palette.$color-surface !default,
+  $color-border: palette.$color-border !default,
+  $dark-color-accent: palette.$dark-color-accent !default,
+  $dark-color-text: palette.$dark-color-text !default,
+  $dark-color-muted: palette.$dark-color-muted !default,
+  $dark-color-surface: palette.$dark-color-surface !default,
+  $dark-color-border: palette.$dark-color-border !default
+);

@@ -16,8 +16,8 @@ npm install @xperience-community/xperience-search
 | `@xperience-community/xperience-search/widgets` | All thirteen widget factories and their types, without the rest of the entry point. |
 | `@xperience-community/xperience-search/widgets/<name>` | One widget each: `search-box`, `results`, `facet-list`, `category-tree`, `sort-select`, `result-stats`, `toggle-filter`, `range-filter`, `load-more`, `pagination`, `suggestions`, `active-filters` (which carries `clearFilters`). |
 | `@xperience-community/xperience-search/behaviors` | `withSearchBox`, `withResults`, `withFacetList`, `withPagination`, `withResultStats`, `withSortSelect`, `withActiveFilters`, `withRange` — the mechanics behind a custom widget. |
-| `@xperience-community/xperience-search/themes/shell.css`, `.../themes/default.css` | The two stylesheets. `shell.css` is structure (layout, focus rings, screen-reader utilities); `default.css` is the opt-in visual theme. Load shell first. |
-| `@xperience-community/xperience-search/scss/*` | The SCSS sources: `scss/shell`, `scss/default`, `scss/base` and `scss/widgets/<name>`. `@use … with (…)` configures the default values of the `--xps-*` custom properties. |
+| `@xperience-community/xperience-search/themes/shell.css`, `.../themes/default.css`, `.../themes/kentico-violet.css`, `.../themes/kentico-orange.css` | The stylesheets. `shell.css` is structure (layout, focus rings, screen-reader utilities); the others are the opt-in visual theme in its two palettes (`default.css` = `kentico-violet.css`, same bytes). Load shell first, then exactly one palette. |
+| `@xperience-community/xperience-search/scss/*` | The SCSS sources: `scss/shell`, `scss/default`, `scss/base`, `scss/widgets/<name>`, and the palettes `scss/kentico-violet`, `scss/kentico-orange`, `scss/palettes/<name>`, `scss/tokens/<name>`. `@use … with (…)` configures the default values of the `--xps-*` custom properties. |
 | `@xperience-community/xperience-search/styles/*` | The same à la carte layer compiled: `styles/base.css` plus `styles/widgets/<name>.css`. |
 
 ```html

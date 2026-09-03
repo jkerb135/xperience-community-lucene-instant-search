@@ -428,16 +428,20 @@ The same first paint is available without the widgets: `ServerRenderedResults` l
 
 ### Static assets
 
-The client bundle and the two stylesheets ship as Razor Class Library static web assets of the
+The client bundle and the stylesheets ship as Razor Class Library static web assets of the
 `XperienceCommunity.Search.Widgets` package:
 
 ```text
-/_content/XperienceCommunity.Search.Widgets/xpsearch/shell.css        structure only
-/_content/XperienceCommunity.Search.Widgets/xpsearch/default.css      the opt-in visual theme
-/_content/XperienceCommunity.Search.Widgets/xpsearch/xpsearch.umd.js  the UMD bundle, global `xpsearch`
+/_content/XperienceCommunity.Search.Widgets/xpsearch/shell.css           structure only
+/_content/XperienceCommunity.Search.Widgets/xpsearch/default.css         the opt-in visual theme
+/_content/XperienceCommunity.Search.Widgets/xpsearch/kentico-violet.css  the same file, named palette
+/_content/XperienceCommunity.Search.Widgets/xpsearch/kentico-orange.css  the second shipped palette
+/_content/XperienceCommunity.Search.Widgets/xpsearch/xpsearch.umd.js     the UMD bundle, global `xpsearch`
 ```
 
-`<xps-search-assets />` emits all three. **This is the quick start: no npm, no build pipeline.** If the
+`<xps-search-assets />` emits shell, one palette and the bundle;
+`<xps-search-assets theme="kentico-orange" />` picks the other one
+([Two shipped palettes](theming.md#two-shipped-palettes)). **This is the quick start: no npm, no build pipeline.** If the
 site already has a JavaScript build, the recommended setup is the npm package instead —
 [JavaScript bundler setup](javascript-bundler-setup.md).
 

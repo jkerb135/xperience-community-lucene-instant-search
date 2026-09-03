@@ -1,0 +1,27 @@
+// kentico-violet — the shipped default palette (TH-1, TH-8).
+//
+// A palette is data only: the twelve values the theme's custom properties start from. It states
+// every one, so copying this file is all it takes to make your own (docs/guides/theming.md,
+// "Two shipped palettes"). Nothing else in themes/src/scss/ holds a colour literal.
+//
+// Source of the accent: `--color-background-tag-xperience-violet: #af00fa` and
+// `--gradient-dark-xperience-violet: linear-gradient(135deg, #af00fa, #7f09b7)` in
+// @kentico/xperience-admin-components (dist/entry.js) — the Xperience admin's own brand tokens,
+// which match brand.kentico.com's Violet 60/70. The 70 stop is the hover target the theme reaches
+// with `color-mix`, so it is not a token of its own.
+//
+// Contrast against the surface of the same mode (WCAG 2.1 relative luminance, measured by
+// themes/scripts/check.mjs): accent 5.00:1, text 15.52:1, muted 6.05:1 light;
+// accent 6.91:1, text 15.88:1, muted 7.55:1 dark.
+$color-accent: #af00fa;
+$color-text: #1f2430;
+$color-muted: #5c6370;
+$color-surface: #fff;
+$color-border: #e3e5ea;
+
+// Opt-in dark mode (data-xps-theme="auto"): the same family re-derived against the dark surface.
+$dark-color-accent: #c983f7;
+$dark-color-text: #f2f0f5;
+$dark-color-muted: #aaa6b4;
+$dark-color-surface: #17161d;
+$dark-color-border: #35323d;
