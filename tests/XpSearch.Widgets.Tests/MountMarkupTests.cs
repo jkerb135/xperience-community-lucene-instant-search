@@ -658,6 +658,17 @@ internal sealed class MountMarkupTests
     }
 
     [Test]
+    public void Suggestions_saved_before_the_count_was_required_falls_back_to_five()
+    {
+        var component = new SuggestionsWidgetViewComponent(renderer, editor, catalog);
+
+        // Like the Results widget: 0 is a validation error on the wire, so it must not be sent.
+        string markup = Render(component, new SuggestionsWidgetProperties { Index = Index, MaxItems = 0 });
+
+        Assert.That(Rendered.Json(markup, "data-xps-config").GetProperty("limit").GetInt32(), Is.EqualTo(5));
+    }
+
+    [Test]
     public void All_widgets_of_one_instance_name_the_same_index_so_the_bootstrap_finds_it_on_any_mount()
     {
         var properties = new object[]

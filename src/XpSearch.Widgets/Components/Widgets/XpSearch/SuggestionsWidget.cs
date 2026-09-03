@@ -66,6 +66,9 @@ public sealed class SuggestionsWidgetProperties : XpSearchMountWidgetProperties
 /// <summary>Renders the <c>suggestions</c> mount.</summary>
 public sealed class SuggestionsWidgetViewComponent : XpSearchMountWidgetViewComponent<SuggestionsWidgetProperties>
 {
+    /// <summary>What a widget saved before the count was required - and could hold 0 - is read as.</summary>
+    private const int FallbackMaxItems = 5;
+
     /// <summary>Initializes a new instance of the <see cref="SuggestionsWidgetViewComponent"/> class.</summary>
     /// <param name="renderer">Renders the mount element.</param>
     /// <param name="editorContext">The current editing mode.</param>
@@ -91,7 +94,7 @@ public sealed class SuggestionsWidgetViewComponent : XpSearchMountWidgetViewComp
         // the editor's intent for the index; it does not change the request the widget sends.
         config["mode"] = string.IsNullOrWhiteSpace(properties.Mode) ? SuggestionsWidgetProperties.ModeDocuments : properties.Mode;
         // "limit" is what POST /api/xpsearch/suggest calls it.
-        config["limit"] = properties.MaxItems;
+        config["limit"] = MaxItems(properties);
         config["recentSearches"] = properties.RecentSearches;
     }
 
@@ -113,6 +116,11 @@ public sealed class SuggestionsWidgetViewComponent : XpSearchMountWidgetViewComp
                 CultureInfo.CurrentUICulture,
                 WidgetResources.Preview_Note_Suggestions,
                 string.IsNullOrWhiteSpace(properties.Mode) ? SuggestionsWidgetProperties.ModeDocuments : properties.Mode,
-                properties.MaxItems.ToString(CultureInfo.CurrentUICulture))));
+                MaxItems(properties).ToString(CultureInfo.CurrentUICulture))));
     }
+
+    // The property is required and one or greater from AR-3 on, but a widget saved before that may
+    // still hold 0, and 0 is a validation error on the wire.
+    private static int MaxItems(SuggestionsWidgetProperties properties) =>
+        properties.MaxItems > 0 ? properties.MaxItems : FallbackMaxItems;
 }

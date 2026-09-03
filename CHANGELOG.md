@@ -28,7 +28,9 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
   `XpSearchIndexSettings` no longer has them. The Results widget's *Results per page* and the two
   suggestion counts (*Maximum suggestions*, *Maximum items*) are now **required, one or greater**
   (Results defaults to 20); `ServerResultsOptions.ResultsPerPage` no longer treats 0 as "use the
-  index's default". Widgets own their sizes; the index owns the caps.
+  index's default". Widgets own their sizes; the index owns the caps. On an upgraded installation the
+  two retired columns are dropped from `XpSearch_Settings` on the next start: the installer now
+  removes the fields its form no longer declares, as well as adding the ones it gained.
 - **Added (core, admin):** a **Search settings** page per index (*Lucene Search → index → Search
   settings*) edits all fourteen values, headed by *"Remove search analytics older than X days"*
   (default 365). Each index's row is loaded over the code defaults through
