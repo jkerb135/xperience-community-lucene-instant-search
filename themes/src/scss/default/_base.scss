@@ -25,6 +25,8 @@
    root's (0,3,0)+, where a site cannot reach it by accident. */
 .xps {
   --xps-color-accent: #{t.$color-accent};
+  --xps-color-accent-ink: #{t.$color-accent-ink};
+  --xps-color-on-accent: #{t.$color-on-accent};
   --xps-color-text: #{t.$color-text};
   --xps-color-muted: #{t.$color-muted};
   --xps-color-surface: #{t.$color-surface};
@@ -59,6 +61,8 @@
 @media (prefers-color-scheme: dark) {
   .xps[data-xps-theme="auto"] {
     --xps-color-accent: #{t.$dark-color-accent};
+    --xps-color-accent-ink: #{t.$dark-color-accent-ink};
+    --xps-color-on-accent: #{t.$dark-color-on-accent};
     --xps-color-text: #{t.$dark-color-text};
     --xps-color-muted: #{t.$dark-color-muted};
     --xps-color-surface: #{t.$dark-color-surface};
@@ -133,7 +137,7 @@
 }
 
 #{r.$root} a {
-  color: var(--xps-color-accent);
+  color: var(--xps-color-accent-ink);
   text-decoration: none;
 }
 
@@ -210,7 +214,7 @@
 #{r.$root} .xps-button--primary {
   background-color: var(--xps-color-accent);
   border-color: var(--xps-color-accent);
-  color: var(--xps-color-surface);
+  color: var(--xps-color-on-accent);
 
   &:hover:not(:disabled) {
     background-color: color-mix(in srgb, var(--xps-color-text) 15%, var(--xps-color-accent));
@@ -230,7 +234,7 @@
   &:hover:not(:disabled) {
     background-color: transparent;
     border-color: transparent;
-    color: var(--xps-color-accent);
+    color: var(--xps-color-accent-ink);
     text-decoration: underline;
   }
 }

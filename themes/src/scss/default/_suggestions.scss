@@ -48,7 +48,7 @@
 
 /* A page is a destination, not a query: its title reads as the link it is. */
 #{r.$root} .xps-suggestions__option--document .xps-suggestions__option-title {
-  color: var(--xps-color-accent);
+  color: var(--xps-color-accent-ink);
   font-weight: 600;
 }
 
@@ -73,7 +73,7 @@
 }
 
 #{r.$root} .xps-suggestions__see-all {
-  color: var(--xps-color-accent);
+  color: var(--xps-color-accent-ink);
   font-size: 0.75em;
 }
 

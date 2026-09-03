@@ -26,6 +26,8 @@
    root's (0,3,0)+, where a site cannot reach it by accident. */
 .xps {
   --xps-color-accent: #af00fa;
+  --xps-color-accent-ink: var(--xps-color-accent);
+  --xps-color-on-accent: var(--xps-color-surface);
   --xps-color-text: #1f2430;
   --xps-color-muted: #5c6370;
   --xps-color-surface: #fff;
@@ -60,6 +62,8 @@
 @media (prefers-color-scheme: dark) {
   .xps[data-xps-theme=auto] {
     --xps-color-accent: #c983f7;
+    --xps-color-accent-ink: var(--xps-color-accent);
+    --xps-color-on-accent: var(--xps-color-surface);
     --xps-color-text: #f2f0f5;
     --xps-color-muted: #aaa6b4;
     --xps-color-surface: #17161d;
@@ -132,7 +136,7 @@
 }
 
 .xps.xps.xps a {
-  color: var(--xps-color-accent);
+  color: var(--xps-color-accent-ink);
   text-decoration: none;
 }
 
@@ -202,7 +206,7 @@
 .xps.xps.xps .xps-button--primary {
   background-color: var(--xps-color-accent);
   border-color: var(--xps-color-accent);
-  color: var(--xps-color-surface);
+  color: var(--xps-color-on-accent);
 }
 .xps.xps.xps .xps-button--primary:hover:not(:disabled) {
   background-color: color-mix(in srgb, var(--xps-color-text) 15%, var(--xps-color-accent));
@@ -221,7 +225,7 @@
 .xps.xps.xps .xps-button--link:hover:not(:disabled) {
   background-color: transparent;
   border-color: transparent;
-  color: var(--xps-color-accent);
+  color: var(--xps-color-accent-ink);
   text-decoration: underline;
 }
 
@@ -367,7 +371,7 @@
 }
 
 .xps.xps.xps .xps-result__link {
-  color: var(--xps-color-accent);
+  color: var(--xps-color-accent-ink);
   text-decoration: none;
 }
 .xps.xps.xps .xps-result__link:hover {
@@ -398,7 +402,7 @@
 
 /* 0.85em of the 0.875em `xps-result__meta` it sits in — ~0.74em of the card, not 0.72 * 0.875. */
 .xps.xps.xps .xps-result__type {
-  color: var(--xps-color-accent);
+  color: var(--xps-color-accent-ink);
   font-size: 0.85em;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -446,11 +450,11 @@
 .xps.xps.xps .xps-results__correction {
   min-height: 0;
   padding-block: 0;
-  color: var(--xps-color-accent);
+  color: var(--xps-color-accent-ink);
   font-weight: 600;
 }
 .xps.xps.xps .xps-results__correction:hover:not(:disabled) {
-  color: var(--xps-color-accent);
+  color: var(--xps-color-accent-ink);
 }
 
 .xps.xps.xps .xps-results__popular {
@@ -560,7 +564,7 @@
 .xps.xps.xps .xps-facet-list__show-more {
   background-color: transparent;
   border-color: transparent;
-  color: var(--xps-color-accent);
+  color: var(--xps-color-accent-ink);
 }
 
 /* --------------------------------------------------------------------------
@@ -572,11 +576,11 @@
   text-decoration: none;
 }
 .xps.xps.xps .xps-category-tree__link:hover {
-  color: var(--xps-color-accent);
+  color: var(--xps-color-accent-ink);
 }
 
 .xps.xps.xps .xps-category-tree__item--selected > .xps-category-tree__link {
-  color: var(--xps-color-accent);
+  color: var(--xps-color-accent-ink);
   font-weight: 600;
 }
 
@@ -665,7 +669,7 @@
  * ------------------------------------------------------------------------ */
 .xps.xps.xps .xps-filter-sort__badge {
   background-color: var(--xps-color-accent);
-  color: var(--xps-color-surface);
+  color: var(--xps-color-on-accent);
   border-radius: 999px;
   font-size: 0.75em;
   font-weight: 600;
@@ -737,7 +741,7 @@
 .xps.xps.xps .xps-sheet__pill--selected {
   background-color: var(--xps-color-accent);
   border-color: var(--xps-color-accent);
-  color: var(--xps-color-surface);
+  color: var(--xps-color-on-accent);
   font-weight: 600;
 }
 
@@ -755,7 +759,7 @@
 .xps.xps.xps .xps-sheet__clear {
   background-color: transparent;
   border-color: transparent;
-  color: var(--xps-color-accent);
+  color: var(--xps-color-accent-ink);
 }
 
 /* --------------------------------------------------------------------------
@@ -774,9 +778,11 @@
 }
 
 .xps.xps.xps .xps-pagination__item--current .xps-pagination__link {
-  color: var(--xps-color-accent);
+  color: var(--xps-color-accent-ink);
   font-weight: 700;
-  border-bottom: 2px solid var(--xps-color-accent);
+  /* The rule is this text's own underline, not a separate piece of chrome: it takes the ink so the
+     marker and the number it marks are one colour in a palette whose fill and ink differ. */
+  border-bottom: 2px solid var(--xps-color-accent-ink);
 }
 
 .xps.xps.xps .xps-pagination__ellipsis,
@@ -844,7 +850,7 @@
 
 /* A page is a destination, not a query: its title reads as the link it is. */
 .xps.xps.xps .xps-suggestions__option--document .xps-suggestions__option-title {
-  color: var(--xps-color-accent);
+  color: var(--xps-color-accent-ink);
   font-weight: 600;
 }
 
@@ -868,7 +874,7 @@
 }
 
 .xps.xps.xps .xps-suggestions__see-all {
-  color: var(--xps-color-accent);
+  color: var(--xps-color-accent-ink);
   font-size: 0.75em;
 }
 

@@ -81,9 +81,15 @@ Page-level utilities the host puts on its *own* elements (`xps-toolbar`, `xps-st
   not control the host page's background. Renderers should pass the attribute through from
   configuration, never set it themselves.
 - The theme ships in two palettes, `kentico-violet` (which `default.css` is) and `kentico-orange`.
-  They are the same rules with two token values swapped, so the markup contract is identical and a
+  They are the same rules with three token values swapped, so the markup contract is identical and a
   page loads exactly one of them. Selection is a stylesheet choice, never a class or an attribute
   on the markup.
+- The accent is three tokens by role, because a brand colour is rarely legible in all three:
+  `--xps-color-accent` paints fills and decoration, `--xps-color-accent-ink` is the accent used as
+  TEXT on the surface, and `--xps-color-on-accent` is the text placed ON an accent fill. The last
+  two default to `var(--xps-color-accent)` and `var(--xps-color-surface)`, so a theme that only
+  sets the accent stays coherent. A custom stylesheet writing these rules itself owes the same
+  split — see `docs/guides/theming.md`, "The accent has three roles".
 - Shell gives `xps-suggestions__panel` position but no surface, leaves `xps-highlight` unpainted and
   the skeletons untinted — all of them need a colour, which shell does not have. A site running
   shell alone supplies them.

@@ -14,11 +14,15 @@
 
 @forward '../theme-variables' with (
   $color-accent: palette.$color-accent !default,
+  $color-accent-ink: palette.$color-accent-ink !default,
+  $color-on-accent: palette.$color-on-accent !default,
   $color-text: palette.$color-text !default,
   $color-muted: palette.$color-muted !default,
   $color-surface: palette.$color-surface !default,
   $color-border: palette.$color-border !default,
   $dark-color-accent: palette.$dark-color-accent !default,
+  $dark-color-accent-ink: palette.$dark-color-accent-ink !default,
+  $dark-color-on-accent: palette.$dark-color-on-accent !default,
   $dark-color-text: palette.$dark-color-text !default,
   $dark-color-muted: palette.$dark-color-muted !default,
   $dark-color-surface: palette.$dark-color-surface !default,

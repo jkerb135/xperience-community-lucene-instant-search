@@ -17,9 +17,11 @@
 }
 
 #{r.$root} .xps-pagination__item--current .xps-pagination__link {
-  color: var(--xps-color-accent);
+  color: var(--xps-color-accent-ink);
   font-weight: 700;
-  border-bottom: 2px solid var(--xps-color-accent);
+  /* The rule is this text's own underline, not a separate piece of chrome: it takes the ink so the
+     marker and the number it marks are one colour in a palette whose fill and ink differ. */
+  border-bottom: 2px solid var(--xps-color-accent-ink);
 }
 
 #{r.$root} .xps-pagination__ellipsis,

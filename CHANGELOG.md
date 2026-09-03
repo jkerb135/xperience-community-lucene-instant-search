@@ -42,15 +42,25 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
   removes the fields its form no longer declares, as well as adding the ones it gained.
 - **Added (themes, widgets):** the design now ships in **two palettes** built from one source:
   `kentico-violet` (unchanged — `default.css` is that build, byte for byte, so nothing existing
-  moves) and `kentico-orange`. Both accents are Kentico's own brand tokens from
-  `@kentico/xperience-admin-components` (`#af00fa` and `#c64300`, both `5.00:1` on white), the
-  neutrals and every derived tint are shared, and the two stylesheets differ in exactly two
-  declarations. Pick one with the tag helper's new `theme` attribute
+  moves) and `kentico-orange`, whose accent is Kentico's brand Heritage Orange `#f05a22`. The
+  neutrals and every derived tint are shared; the two stylesheets differ in three declarations.
+  Pick one with the tag helper's new `theme` attribute
   (`<xps-search-assets theme="kentico-orange" />`), with the new
   `.../themes/kentico-orange.css` npm export, or in SCSS with `@use ".../scss/kentico-orange"` —
   or `".../scss/palettes/kentico-orange"` on the first line of an à la carte stylesheet. Copy a
-  file in `scss/tokens/` to make a third. `themes/npm run check` now proves AA contrast, the
-  single-token re-skin and the hostile-CSS isolation for **both** palettes.
+  file in `scss/tokens/` to make a third.
+
+  The accent is now **three tokens by role**, because a brand colour is rarely legible in all three
+  places: `--xps-color-accent` paints fills and decoration (3:1, WCAG 1.4.11),
+  **`--xps-color-accent-ink`** is the accent used as text on the surface (4.5:1, AA), and
+  **`--xps-color-on-accent`** is the text placed on an accent fill. Both new tokens default to an
+  indirection (`var(--xps-color-accent)`, `var(--xps-color-surface)`), so the documented one-token
+  re-skin is unchanged and kentico-violet renders exactly as before. kentico-orange pins
+  `--xps-color-accent-ink: #c64300` (`5.00:1`, Kentico's darker orange) so links and result titles
+  stay AA while the fills carry the brand. Its white primary-button label on `#f05a22` is `3.39:1`
+  — an accepted trade recorded in `docs/internal/KNOWN-LIMITATIONS.md`; set
+  `--xps-color-on-accent: #1f2430` for AA. `themes/npm run check` now proves every contrast pair of
+  **both** palettes in light and dark, the single-token re-skin, and the hostile-CSS isolation.
 - **Added (core, admin):** a **Search settings** page per index (*Lucene Search → index → Search
   settings*) edits all fourteen values, headed by *"Retention: remove search analytics older than X
   days"* (default 365). Each index's row is loaded over the code defaults through

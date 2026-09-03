@@ -32,13 +32,41 @@ The design ships in two colourways, built from the same source and differing onl
 | Palette | Stylesheet | Light accent | Dark accent |
 |---|---|---|---|
 | **kentico-violet** — the default | `kentico-violet.css`, and `default.css`, which is the same file under its original name | `#af00fa` | `#c983f7` |
-| **kentico-orange** | `kentico-orange.css` | `#c64300` | `#ff8852` |
+| **kentico-orange** | `kentico-orange.css` | `#f05a22` | `#ff8852` |
 
-Both are Kentico's own brand colours, taken from the Xperience admin's tag tokens
-(`--color-background-tag-xperience-violet`, `--color-background-tag-kentico-orange`), and both
-measure `5.00:1` on white — AA for link text and for white-on-accent buttons. Everything else the
-palette drives — button hovers, chip and band tints, the focus ring — is a `color-mix` of the
-accent, so the two files differ in exactly two declarations.
+Both are Kentico's own brand colours — the Xperience violet from the admin's own tag token
+(`--color-background-tag-xperience-violet`), and Heritage Orange from
+[the brand palette](https://brand.kentico.com/What-do-we-look-like/Colors). Everything the palette
+drives beyond the accent — button hovers, chip and band tints, the focus ring — is a `color-mix` of
+it, so the two stylesheets differ in three declarations.
+
+#### The accent has three roles
+
+A brand colour rarely does every job at once, so the accent is three tokens:
+
+| Token | Where it lands | What it owes |
+|---|---|---|
+| `--xps-color-accent` | fills and decoration: the primary button's background, the selected sort pill, the slider, the current-page underline, the focus ring, every `color-mix` tint | 3:1 on the surface (WCAG 1.4.11, non-text UI) |
+| `--xps-color-accent-ink` | the accent used **as text**: result titles and links, the did-you-mean correction, *Show more*, *See all*, the current page number, the type label | 4.5:1 on the surface (AA body text) |
+| `--xps-color-on-accent` | the text placed **on** an accent fill: the primary button's label, the selected pill, the filter-count badge | 4.5:1 on the accent |
+
+kentico-violet is dark enough to do all three: it declares `--xps-color-accent-ink:
+var(--xps-color-accent)` and `--xps-color-on-accent: var(--xps-color-surface)`, so overriding the
+accent alone still re-skins everything coherently. **kentico-orange is the worked example of the
+split**: the brand `#f05a22` is `3.39:1` on white — right for a fill, short for text — so the
+palette pins `--xps-color-accent-ink: #c64300` (`5.00:1`, Kentico's own darker orange from
+`--color-background-tag-kentico-orange`) for everything that is read as text, and leaves the brand
+on the fills. In dark mode the fill lightens to `#ff8852` (`7.61:1` on `#17161d`), which is legible
+as text too, so the ink goes back to following the accent.
+
+One number in kentico-orange is deliberately below AA: the **white label on the `#f05a22` primary
+button is `3.39:1`**, an accepted trade for the brand button (recorded in
+`docs/internal/KNOWN-LIMITATIONS.md`, and printed by `npm run check` on every build). If your site
+needs AA there, one declaration fixes it without a fork:
+
+```css
+.xps { --xps-color-on-accent: #1f2430; } /* 4.57:1 on #f05a22 */
+```
 
 Pick one instead of `default.css`; never load both.
 
@@ -123,7 +151,9 @@ palettes differ in the accent only; everything else is shared.
 
 | Variable | kentico-violet (`default.css`) | kentico-orange | Drives |
 |---|---|---|---|
-| `--xps-color-accent` | `#af00fa` | `#c64300` | Links and result titles, the current pagination page and its underline, the result type label, the primary button, chip tint, the active suggestions option, checkbox and range `accent-color`, the `<mark>` highlighter band, the focus ring colour. |
+| `--xps-color-accent` | `#af00fa` | `#f05a22` | **Fills and decoration only**: the primary button and selected pill backgrounds, the filter badge, chip tint, the active suggestions option, the current page's underline, checkbox and range `accent-color`, the range track and thumbs, the `<mark>` highlighter band, the focus ring. Accent-coloured *text* is `--xps-color-accent-ink`. |
+| `--xps-color-accent-ink` | `var(--xps-color-accent)` | `#c64300` | The accent used **as text on the surface**: result titles and links, the did-you-mean correction, *Show more*, *See all*, the suggestions page title, the current page number, the result type label, the selected category. Defaults to the accent, so a dark-enough accent needs nothing else. |
+| `--xps-color-on-accent` | `var(--xps-color-surface)` | same (`#fff` light, `#17161d` dark) | The text placed **on an accent fill**: the primary button's label, the selected sort pill, the filter-count badge. |
 | `--xps-color-text` | `#1f2430` | same | Body text inside widgets, category-tree links, the facet group-title rule, the input inset shadow, the suggestions panel's shadow tint. |
 | `--xps-color-muted` | `#5c6370` | same | Facet counts, result metadata, the result path line, result stats, pagination links, placeholders, group titles, empty states, keycaps, the skeleton tint. |
 | `--xps-color-surface` | `#fff` | same | Input, button, keycap and suggestions-panel backgrounds; the text colour on accent-filled elements. |
@@ -198,12 +228,25 @@ setting the accent alone is a complete re-skin:
 .xps { --xps-color-accent: #f05a22; }
 ```
 
-One caveat with that particular swap, and with any light accent: `#f05a22` is `3.39:1` on
-white, which is fine for a button fill or a border but **fails WCAG AA for link text**. If you use
-a light accent, either keep links on the text colour, or pick a darker shade of your brand colour
-for the accent and use the light one elsewhere. The shipped `#af00fa` is `5.00:1` on white, and
-the dark-mode `#c983f7` is `6.91:1` on `#17161d`; `themes/scripts/check.mjs` recomputes both on
-every build.
+That works because `--xps-color-accent-ink` and `--xps-color-on-accent` follow the accent by
+default — one token really does move everything.
+
+One caveat with that particular swap, and with any light accent: `#f05a22` is `3.39:1` on white,
+which is fine for a button fill or a border but **fails WCAG AA for link text**, and the ink
+followed the accent down with it. A light accent therefore takes two more tokens — which is exactly
+what the shipped kentico-orange does:
+
+```css
+.xps {
+  --xps-color-accent: #f05a22;      /* fills, 3.39:1 — over the 3:1 non-text bar */
+  --xps-color-accent-ink: #c64300;  /* accent text, 5.00:1 — AA */
+  --xps-color-on-accent: #1f2430;   /* label on the fill, 4.57:1 — AA */
+}
+```
+
+The shipped `#af00fa` is `5.00:1` on white and the dark-mode `#c983f7` is `6.91:1` on `#17161d`;
+`themes/scripts/check.mjs` recomputes every pair of both palettes on every build, and prints what a
+one-token re-skin to `#f05a22` would yield so this caveat cannot go stale.
 
 ### Dark mode
 
@@ -232,7 +275,10 @@ own selector instead — that is the same thing with your trigger:
 Those are the shipped dark values of kentico-violet. The accent is a lighter violet than the
 light-mode one on purpose: `#af00fa` is only `3.60:1` on `#17161d`, short of AA for link text.
 kentico-orange lightens its accent for the same reason — its dark value is `#ff8852` (`7.61:1`),
-and the four neutrals are the same.
+light enough to be the accent ink as well, so the ink token goes back to following the accent in
+dark mode. `--xps-color-on-accent` is `var(--xps-color-surface)` in both palettes, which means a
+dark-mode fill carries the dark surface colour as its label (`6.91:1` violet, `7.61:1` orange) —
+white on either dark accent would be under `3:1`. The four neutrals are the same in both palettes.
 
 ### What shell gives you
 

@@ -12,7 +12,7 @@
 }
 
 #{r.$root} .xps-result__link {
-  color: var(--xps-color-accent);
+  color: var(--xps-color-accent-ink);
   text-decoration: none;
 
   &:hover {
@@ -44,7 +44,7 @@
 
 /* 0.85em of the 0.875em `xps-result__meta` it sits in — ~0.74em of the card, not 0.72 * 0.875. */
 #{r.$root} .xps-result__type {
-  color: var(--xps-color-accent);
+  color: var(--xps-color-accent-ink);
   font-size: 0.85em;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -89,11 +89,11 @@
 /* The correction is the offer, so it reads as the link the board draws — accent, semibold. */
 #{r.$root} .xps-results__correction {
   @include b.button-inline;
-  color: var(--xps-color-accent);
+  color: var(--xps-color-accent-ink);
   font-weight: 600;
 
   &:hover:not(:disabled) {
-    color: var(--xps-color-accent);
+    color: var(--xps-color-accent-ink);
   }
 }
 

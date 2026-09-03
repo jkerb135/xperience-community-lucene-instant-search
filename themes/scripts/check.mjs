@@ -112,17 +112,43 @@ const tokensOf = (css, selector) => {
   return Object.fromEntries(decls(block?.body ?? '').filter(([p]) => p.startsWith('--')));
 };
 
-// Both shipped palettes owe AA in both modes — the design source is shared, the colours are not.
+// A token may be declared as an indirection (`--xps-color-accent-ink: var(--xps-color-accent)`),
+// which is what keeps the one-token re-skin working. Follow the chain, falling back to the light
+// block for anything the dark block does not restate.
+const resolve = (t, light, name) => {
+  let value = t[name] ?? light[name];
+  for (let hop = 0; hop < 4; hop += 1) {
+    const reference = /^var\(\s*(--[\w-]+)/.exec(value ?? '');
+    if (!reference) return value;
+    value = t[reference[1]] ?? light[reference[1]];
+  }
+  return value;
+};
+
+// The accent has three roles and three thresholds. `accent-ink` is the accent used AS TEXT on the
+// surface, so it owes AA's 4.5:1 like any body text. `accent` is the fill and the decoration, so
+// it owes WCAG 1.4.11's 3:1 for non-text UI. `on-accent` is the label ON that fill: the owner
+// accepted 3:1 there for the brand button (TH-8, docs/internal/KNOWN-LIMITATIONS.md), so the check
+// asserts 3 and prints the number rather than letting it pass unseen.
+const PAIRS = [
+  ['--xps-color-accent-ink', '--xps-color-surface', 4.5, 'AA text'],
+  ['--xps-color-text', '--xps-color-surface', 4.5, 'AA text'],
+  ['--xps-color-muted', '--xps-color-surface', 4.5, 'AA text'],
+  ['--xps-color-accent', '--xps-color-surface', 3, 'WCAG 1.4.11 non-text'],
+  ['--xps-color-on-accent', '--xps-color-accent', 3, 'owner-accepted (brand button)'],
+];
+
+// Both shipped palettes owe those ratios in both modes — the design source is shared, the colours
+// are not.
 for (const [name, css] of palettes) {
+  const light = tokensOf(css, ROOT);
   for (const [mode, selector] of RATIOS) {
     const t = tokensOf(css, selector);
-    const surface = t['--xps-color-surface'] ?? tokensOf(css, ROOT)['--xps-color-surface'];
-    for (const token of ['--xps-color-accent', '--xps-color-text', '--xps-color-muted']) {
-      // Accent is link text and white-on-accent button fill; muted is the counts and the path line.
-      // All three are body text, so all three owe AA's 4.5:1 against the surface they sit on.
-      const ratio = contrast(t[token], surface);
-      console.log(`        ${name} ${mode} ${token} ${t[token]} on ${surface}: ${ratio.toFixed(2)}:1`);
-      if (ratio < 4.5) fail(`src/${name}.css`, `${mode} ${token} is ${ratio.toFixed(2)}:1 on ${surface} — AA needs 4.5:1`);
+    for (const [token, against, floor, why] of PAIRS) {
+      const [fg, bg] = [resolve(t, light, token), resolve(t, light, against)];
+      const ratio = contrast(fg, bg);
+      console.log(`        ${name} ${mode} ${token} ${fg} on ${bg}: ${ratio.toFixed(2)}:1 (needs ${floor}, ${why})`);
+      if (ratio < floor) fail(`src/${name}.css`, `${mode} ${token} is ${ratio.toFixed(2)}:1 on ${bg} — ${why} needs ${floor}:1`);
     }
   }
 }
@@ -141,6 +167,26 @@ for (const name of PALETTES) {
   // The dark accent is its own knob, so it survives — but only as its one variable declaration.
   const darkLeft = reskinned.split(shippedDark).length - 1;
   if (darkLeft !== 1) fail('src/scss', `${shippedDark} appears ${darkLeft} times after a re-skin of ${name}; only the dark --xps-color-accent may hold it`);
+}
+
+// What the documented one-token re-skin actually yields. The default palette leaves `accent-ink`
+// following `accent`, so a re-skin to a light brand colour drags the link text down with it. That
+// is a real ceiling of the one-token story, not a build failure: report it, and let the guide tell
+// a host to set `--xps-color-on-accent` and `--xps-color-accent-ink` when its accent is light.
+{
+  const reskinned = compileString(`@use 'default' with ($color-accent: #f05a22);`, {
+    loadPaths: [join(themes, 'src/scss')],
+    charset: false,
+  }).css;
+  const t = tokensOf(reskinned, ROOT);
+  const ink = resolve(t, t, '--xps-color-accent-ink');
+  const on = resolve(t, t, '--xps-color-on-accent');
+  const [inkRatio, onRatio] = [contrast(ink, t['--xps-color-surface']), contrast(on, t['--xps-color-accent'])];
+  console.log(
+    `        one-token re-skin to #f05a22: accent-ink ${ink} on ${t['--xps-color-surface']} ` +
+      `${inkRatio.toFixed(2)}:1 (${inkRatio < 4.5 ? 'BELOW AA — set --xps-color-accent-ink too' : 'AA'}), ` +
+      `on-accent ${on} on ${t['--xps-color-accent']} ${onRatio.toFixed(2)}:1`
+  );
 }
 
 // (iv) three-way agreement between fixtures, CSS and MARKUP.md.
