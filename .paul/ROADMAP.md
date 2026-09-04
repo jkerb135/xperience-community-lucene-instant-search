@@ -31,7 +31,7 @@ Phases: 3 of 6 complete (plus inserted 1.1)
 | 4 | Remaining spec scope | 5 | Complete (2026-09-02) | 2026-09-02 |
 | 5 | Packaging & release (spec Phase 8) | TBD | Not started | - |
 | 6 | Analytics retention setting & cleanup task | 2 | Complete (2026-09-03) | 2026-09-03 |
-| 7 | Artboard parity: autocomplete panel + edge states | 1 | Planning (07-01 written 2026-09-03) | - |
+| 7 | Artboard parity: autocomplete panel + edge states (+ theme hardening, palettes, readable filters) | 7 | Complete (2026-09-03) | 2026-09-03 |
 
 ## Phase Details
 

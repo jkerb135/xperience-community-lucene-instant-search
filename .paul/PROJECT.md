@@ -42,6 +42,7 @@ Xperience by Kentico developers and editors get a complete, tunable, measurable 
 - [x] Spec Phases 0–7 gated (core pipeline, admin tuning, widgets, analytics, ingestion, experiments, personalization, popularity/synonym mining) — merged through main, suites green 2026-09-01 (Core 286, Admin 187, Widgets 76, Ingestion 47, JS 224)
 - [x] Packaging/theming wave: PK-1 npm-first distribution, PK-2 rendering extraction, TH-1 default theme, TH-2 mobile filter sheet, TH-3 searchBox suggestions
 - [x] Docs pipeline: GitHub Pages guides (19 pages), screenshot tooling, /docs-ship skill
+- [x] Phase 7 (2026-09-03): artboards checked in as the spec; autocomplete panel + edge states per board; theme = closed styling boundary (isolation + layout-parity + sheet checks), readable `.xps.xps-<block>` selectors; kentico-violet + kentico-orange palettes from one source (demo on orange); sidebar card; no-suggestions state; human-readable filters end to end (labels always on the wire)
 - [x] Phase 6 (2026-09-03): per-index search settings in the administration via named options (live, per-index invalidation + response-cache eviction), retention per index incl. answered suggestions (default 365), tooltips/explanations on every setting and widget property; widgets own their sizes, the index owns the caps
 
 ### Active (In Progress)
