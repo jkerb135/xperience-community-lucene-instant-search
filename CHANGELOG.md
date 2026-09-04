@@ -12,6 +12,7 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Changed (admin):** the custom pages follow one layout guideline. The analytics dashboard, the index status page, the rule builder and the experiment detail page now use the rhythm the query tester established — 24px between cards, 16px inside one, no page-level padding of their own (the administration shell pads the page) and no spacing off the 8px grid. Colours are named only through the component package's `--color-*` tokens: every hex fallback is gone, and the rule builder's drag insertion line and lifted outline use `--color-product-selected` (the `--color-border-selected` they named does not exist). Cards that used to touch — the experiment status card and its variant cards — are apart again. The volume chart's inline styles moved into `analytics/AnalyticsDashboard.module.scss`. The guidelines are written down in *Layout guidelines for custom pages* in `docs/guides/admin-client-development.md`.
 - **Fixed (core):** an injected (pinned-in) result now reports its score under the query (0 when it
   does not match) instead of the id lookup's score, and its score steps are explained from the same
   checkpoints as every other result on the page.

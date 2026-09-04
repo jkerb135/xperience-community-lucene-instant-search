@@ -1,6 +1,5 @@
 import {Fragment, useState} from 'react';
 import {
-    Box,
     Button,
     ButtonColor,
     ButtonSize,
@@ -33,6 +32,8 @@ import {usePageCommand} from '@kentico/xperience-admin-base';
 import {column, ReportTable, text} from './ReportTable';
 import {VolumeChart, VolumePoint} from './VolumeChart';
 import {figure, muted} from '../theme';
+
+import styles from './AnalyticsDashboard.module.scss';
 
 /*
  * Client template of the analytics dashboard (spec 9.3), built to the owner's design spec:
@@ -410,14 +411,15 @@ export const AnalyticsDashboardTemplate = ({selectedIndexName, today}: Analytics
     );
 
     return (
-        <Box spacing={Spacing.M}>
-        <Stack spacing={Spacing.M}>
-            <div>
-                <Headline size={HeadlineSize.L}>Analytics</Headline>
-                <p style={muted}>
-                    Index <strong>{selectedIndexName}</strong> · Lucene
-                    {loaded ? ` · ${rangeText} · ${report.totalSearches === 0 ? 'no searches' : `${count(report.totalSearches)} searches`}` : ''}
-                </p>
+        <Stack spacing={Spacing.XL}>
+            <div className={styles.header}>
+                <div>
+                    <Headline size={HeadlineSize.L}>Analytics</Headline>
+                    <p style={muted}>
+                        Index <strong>{selectedIndexName}</strong> · Lucene
+                        {loaded ? ` · ${rangeText} · ${report.totalSearches === 0 ? 'no searches' : `${count(report.totalSearches)} searches`}` : ''}
+                    </p>
+                </div>
             </div>
 
             {failed ? (
@@ -438,15 +440,22 @@ export const AnalyticsDashboardTemplate = ({selectedIndexName, today}: Analytics
             {loading ? <Spinner/> : null}
 
             <div aria-live="polite">
-                <Stack spacing={Spacing.M}>
+                <Stack spacing={Spacing.XL}>
+                    {/*
+                      * Row carries a negative margin-top of its own spacing (it compensates the
+                      * gutter padding its Columns add), which would cancel the Stack's gap. A plain
+                      * div keeps the two apart: the div takes the 24px, the Row its own gutters.
+                      */}
                     {loaded ? (
-                        <Row spacing={Spacing.L}>
-                            {kpis.map((kpi) => (
-                                <Column key={kpi.label} cols={narrow ? Cols.Col6 : Cols.Col3}>
-                                    <Kpi {...kpi} />
-                                </Column>
-                            ))}
-                        </Row>
+                        <div>
+                            <Row spacing={Spacing.L}>
+                                {kpis.map((kpi) => (
+                                    <Column key={kpi.label} cols={narrow ? Cols.Col6 : Cols.Col3}>
+                                        <Kpi {...kpi} />
+                                    </Column>
+                                ))}
+                            </Row>
+                        </div>
                     ) : null}
 
                     {empty ? (
@@ -478,8 +487,6 @@ export const AnalyticsDashboardTemplate = ({selectedIndexName, today}: Analytics
                     ) : null}
                 </Stack>
             </div>
-           
         </Stack>
-</Box>
     );
 };

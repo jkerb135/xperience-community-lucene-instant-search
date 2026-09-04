@@ -18,10 +18,11 @@ import {
     Table,
     TableColumn,
     TableRow,
-    Tag, Spacing, Box, Row, Column,
+    Tag, Spacing, Stack,
 } from '@kentico/xperience-admin-components';
 import {usePageCommand} from '@kentico/xperience-admin-base';
 
+import {muted, stateFigure} from '../theme';
 import styles from './IndexStatusTemplate.module.css';
 
 /*
@@ -201,8 +202,8 @@ export const IndexStatusTemplate = ({indexName}: IndexStatusProps) => {
 
     const figure = (label: string, value: string) => (
         <div key={label}>
-            <div className={styles.figureLabel}>{label}</div>
-            <div className={styles.figureValue}>{value}</div>
+            <p style={muted}>{label}</p>
+            <p style={stateFigure}>{value}</p>
         </div>
     );
 
@@ -246,132 +247,121 @@ export const IndexStatusTemplate = ({indexName}: IndexStatusProps) => {
         }));
 
     return (
-        <div className={styles.page}>
-            <div className={styles.header}>
-                <div>
-                    <Headline size={HeadlineSize.L}>Status</Headline>
-                    <p className={styles.subtitle}>
-                        Index <strong>{indexName}</strong> · Lucene
-                    </p>
+        <>
+            <Stack spacing={Spacing.XL}>
+                <div className={styles.header}>
+                    <div>
+                        <Headline size={HeadlineSize.L}>Status</Headline>
+                        <p className={styles.subtitle}>
+                            Index <strong>{indexName}</strong> · Lucene
+                        </p>
+                    </div>
+                    {rebuilding ? (
+                        <span className={styles.inProgress}>
+                            <Spinner/>
+                            <Tag label="Rebuilding" readOnly/>
+                        </span>
+                    ) : (
+                        rebuildButton
+                    )}
                 </div>
-                {rebuilding ? (
-                    <span className={styles.inProgress}>
-            <Spinner/>
-            <Tag label="Rebuilding" readOnly/>
-          </span>
-                ) : (
-                    rebuildButton
-                )}
-            </div>
 
-            <Box aria-live="polite">
-                {loading ? <Spinner/> : null}
+                <div aria-live="polite">
+                    <Stack spacing={Spacing.XL}>
+                        {loading ? <Spinner/> : null}
 
-                {!loading && status && status.error !== '' ? (
-                    <Callout
-                        type={CalloutType.FriendlyWarning}
-                        placement={CalloutPlacementType.OnDesk}
-                        subheadline="Friendly warning"
-                        headline="The status of this index could not be read"
-                        actionButton={<Button label="Load again" onClick={reload}/>}
-                    >
-                        {status.error}
-                    </Callout>
-                ) : null}
-
-                {!loading && status && status.error === '' ? (
-                    <>
-                        <Box spacingY={Spacing.M}>
-                            <Card>
-                                <div className={styles.figures}>
-                                    {rebuilding ? (
-                                        <span className={styles.inProgress}>
-                    <Spinner/>
-                    <Tag label="Rebuild in progress" readOnly/>
-                  </span>
-                                    ) : (
-                                        <Tag
-                                            label={degraded ? 'Degraded' : 'Healthy'}
-                                            readOnly
-                                            background={{color: degraded ? Colors.AlertBackgroundHighEmphasis : Colors.SuccessBackgroundHighEmphasis}}
-                                        />
-                                    )}
-                                    {figure('Documents', status.documents.toLocaleString())}
-                                    {degraded ? figure('Failed writes', status.failedWrites.toLocaleString()) : figure('Sources', status.sources.toLocaleString())}
-                                    {rebuilding
-                                        ? figure('Started', rebuildStartedAt)
-                                        : figure('Last external write', status.lastWrite === '' ? 'never' : status.lastWrite)}
-                                </div>
-                            </Card>
-                        </Box>
-
-                        {degraded && !rebuilding ? (
-                            <Box spacingY={Spacing.M}>
-                                <Callout
-                                    type={CalloutType.FriendlyWarning}
-                                    placement={CalloutPlacementType.OnDesk}
-                                    subheadline="Friendly warning"
-                                    headline={`${status.failedWrites} queued write(s) never reached Lucene`}
-                                    maxWidth="100%"
-                                    actionButton={
-                                        <span className={styles.actions}>
-                    <Button label={copied ? 'Copied' : 'Copy failure details'} onClick={copyFailures}/>
-                                            {rebuildButton}
-                  </span>
-                                    }
-                                >
-                                    The index is still searchable, but documents from the sources listed below are
-                                    missing.
-                                    Read the failed entries below for
-                                    the reason, ask the source system to push the batch again, and rebuild the index if
-                                    you
-                                    cannot tell which documents were
-                                    lost.
-                                </Callout>
-                            </Box>
+                        {!loading && status && status.error !== '' ? (
+                            <Callout
+                                type={CalloutType.FriendlyWarning}
+                                placement={CalloutPlacementType.OnDesk}
+                                subheadline="Friendly warning"
+                                headline="The status of this index could not be read"
+                                actionButton={<Button label="Load again" onClick={reload}/>}
+                            >
+                                {status.error}
+                            </Callout>
                         ) : null}
 
-                        <Row>
-                            <Column>
-                                <Box spacingY={Spacing.M}>
-                                    <Card headline="Documents by source" >
-                                        <div className={styles.bar}>
-                                            {status.bySource.map((row, index) => (
-                                                <div
-                                                    key={row.source}
-                                                    className={styles.segment}
-                                                    style={{
-                                                        width: `${row.share * 100}%`,
-                                                        background: sourceColors[index % sourceColors.length]
-                                                    }}
-                                                />
-                                            ))}
-                                        </div>
-                                        <Table columns={sourceColumns} rows={sourceRows(status)} />
-                                        {missingSources(status).map((source) => (
-                                            <p key={source} className={styles.alertNote}>
-                                                {source} has never written successfully — its documents are absent from
-                                                the
-                                                index.
-                                            </p>
+                        {!loading && status && status.error === '' ? (
+                            <>
+                                <Card>
+                                    <div className={styles.figures}>
+                                        {rebuilding ? (
+                                            <span className={styles.inProgress}>
+                                                <Spinner/>
+                                                <Tag label="Rebuild in progress" readOnly/>
+                                            </span>
+                                        ) : (
+                                            <Tag
+                                                label={degraded ? 'Degraded' : 'Healthy'}
+                                                readOnly
+                                                background={{color: degraded ? Colors.AlertBackgroundHighEmphasis : Colors.SuccessBackgroundHighEmphasis}}
+                                            />
+                                        )}
+                                        {figure('Documents', status.documents.toLocaleString())}
+                                        {degraded ? figure('Failed writes', status.failedWrites.toLocaleString()) : figure('Sources', status.sources.toLocaleString())}
+                                        {rebuilding
+                                            ? figure('Started', rebuildStartedAt)
+                                            : figure('Last external write', status.lastWrite === '' ? 'never' : status.lastWrite)}
+                                    </div>
+                                </Card>
+
+                                {degraded && !rebuilding ? (
+                                    <Callout
+                                        type={CalloutType.FriendlyWarning}
+                                        placement={CalloutPlacementType.OnDesk}
+                                        subheadline="Friendly warning"
+                                        headline={`${status.failedWrites} queued write(s) never reached Lucene`}
+                                        maxWidth="100%"
+                                        actionButton={
+                                            <span className={styles.actions}>
+                                                <Button label={copied ? 'Copied' : 'Copy failure details'} onClick={copyFailures}/>
+                                                {rebuildButton}
+                                            </span>
+                                        }
+                                    >
+                                        The index is still searchable, but documents from the sources listed below are
+                                        missing. Read the failed entries below for the reason, ask the source system to
+                                        push the batch again, and rebuild the index if you cannot tell which documents
+                                        were lost.
+                                    </Callout>
+                                ) : null}
+
+                                <Card headline="Documents by source">
+                                    <div className={styles.bar}>
+                                        {status.bySource.map((row, index) => (
+                                            <div
+                                                key={row.source}
+                                                className={styles.segment}
+                                                style={{
+                                                    width: `${row.share * 100}%`,
+                                                    background: sourceColors[index % sourceColors.length],
+                                                }}
+                                            />
                                         ))}
-                                    </Card>
-                                </Box>
-                            </Column>
+                                    </div>
+                                    <Table columns={sourceColumns} rows={sourceRows(status)}/>
+                                    {missingSources(status).map((source) => (
+                                        <p key={source} className={styles.alertNote}>
+                                            {source} has never written successfully — its documents are absent from
+                                            the index.
+                                        </p>
+                                    ))}
+                                </Card>
 
-                        </Row>
-
-                        <Card
-                            headline="Recent ingestion"
-                            description={degraded ? `${status.failedWrites} failed entries first` : 'Last 10 entries'}
-                        >
-                            <div className={styles.ingestion}>
-                                <Table columns={ingestionColumns} rows={ingestionRows(status)}/>
-                            </div>
-                        </Card>
-                    </>
-                ) : null}
-            </Box>
+                                <Card
+                                    headline="Recent ingestion"
+                                    description={degraded ? `${status.failedWrites} failed entries first` : 'Last 10 entries'}
+                                >
+                                    <div className={styles.ingestion}>
+                                        <Table columns={ingestionColumns} rows={ingestionRows(status)}/>
+                                    </div>
+                                </Card>
+                            </>
+                        ) : null}
+                    </Stack>
+                </div>
+            </Stack>
 
             <Dialog
                 isOpen={confirming}
@@ -394,6 +384,6 @@ export const IndexStatusTemplate = ({indexName}: IndexStatusProps) => {
             >
                 The index is emptied and written again. Search results are incomplete until it finishes.
             </Dialog>
-        </div>
+        </>
     );
 };

@@ -82,3 +82,14 @@ the dashboard's `CreateRule`. The client never builds an admin URL.
   remains `npm run build` with `strict` TypeScript, plus the C# command tests. Whether the painted
   page matches the artboard can only be judged signed in to a host.
 - The design spec covers a Status page too (artboards 3a–3c). It is built separately.
+- The pages that grew out of this decision — analytics, index status, the rule builder and the
+  experiment detail — share one set of layout guidelines with the query tester: stock components
+  everywhere, layout in per-page flex/grid wrappers, a 24px rhythm between cards and 16px inside
+  one, no page-level padding, and colours named only through the package's `--color-*` tokens. They
+  are written down in *Layout guidelines for custom pages* in
+  `docs/guides/admin-client-development.md` and checked statically by
+  `src/XpSearch.Admin/Client/src/layout.test.ts`. The regions that are our own markup because the
+  package has no component for them are: the analytics volume chart (inline SVG, its legend and its
+  axis labels), the index status page's stacked “documents by source” bar and its source
+  swatches, and the rule builder's drag grip, drop-insertion line, dashed add area and item-picker
+  list. Everything else on those pages is a stock component.

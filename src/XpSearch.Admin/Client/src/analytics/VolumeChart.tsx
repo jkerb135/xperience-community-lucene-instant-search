@@ -16,6 +16,7 @@ import { muted } from '../theme';
 import { TablePager } from './ReportTable';
 
 import './ReportTable.scss';
+import styles from './AnalyticsDashboard.module.scss';
 
 /*
  * Searches and zero-result searches over time. The design system exposes no line chart - only
@@ -86,8 +87,8 @@ const numberRow =
   });
 
 const Legend = ({ color, label }: { readonly color: string; readonly label: string }) => (
-  <span style={{ ...muted, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-    <span aria-hidden="true" style={{ width: '16px', height: '2px', background: color, display: 'inline-block' }} />
+  <span className={styles.legend} style={muted}>
+    <span aria-hidden="true" className={styles.swatch} style={{ background: color }} />
     {label}
   </span>
 );
@@ -116,7 +117,7 @@ export const VolumeChart = ({ points, formatDay, pageSize }: VolumeChartProps) =
         preserveAspectRatio="none"
         role="img"
         aria-label={`Searches per day, peaking at ${peak}. The same numbers are in the table below the chart.`}
-        style={{ display: 'block', width: '100%', height: '220px' }}
+        className={styles.plot}
       >
         {[0, 60, 120].map((y) => (
           <line key={y} x1="0" y1={y} x2={width} y2={y} stroke={Colors.DividerDefault} strokeWidth="1" strokeDasharray="3 4" />
@@ -125,7 +126,7 @@ export const VolumeChart = ({ points, formatDay, pageSize }: VolumeChartProps) =
         <path d={path(points.map((point) => point.volume), peak)} fill="none" stroke={searchesColor} strokeWidth="2" />
         <path d={path(points.map((point) => point.zeroResultVolume), peak)} fill="none" stroke={zeroColor} strokeWidth="2" />
       </svg>
-      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+      <div className={styles.axis}>
         {labels.map((point) => (
           <span key={point.day} style={muted}>
             {formatDay(point.day)}

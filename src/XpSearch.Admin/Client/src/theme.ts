@@ -10,7 +10,11 @@ import { Colors } from '@kentico/xperience-admin-components';
 /** Secondary prose: hints under a figure, notes next to a headline. */
 export const muted: CSSProperties = { color: Colors.TextLowEmphasis, fontSize: '12px', lineHeight: '16px', margin: 0 };
 
-export const flexRow: CSSProperties = { display:"flex", flexDirection: 'row', alignItems: 'center', justifyContent: 'start', columnGap: '10px' };
+/** An inline group: a headline and the chip beside it, 8px apart. */
+export const flexRow: CSSProperties = { display:"flex", flexDirection: 'row', alignItems: 'center', justifyContent: 'start', columnGap: '8px' };
 
 /** The one figure a KPI tile or a stats strip is about. */
 export const figure: CSSProperties = { fontSize: '32px', lineHeight: '38px', fontWeight: 700, margin: 0 };
+
+/** A figure that reports state rather than a KPI: the status page's document / source counts. */
+export const stateFigure: CSSProperties = { fontSize: '24px', lineHeight: '32px', fontWeight: 700, margin: 0 };
