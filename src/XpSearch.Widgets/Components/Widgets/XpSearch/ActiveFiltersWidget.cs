@@ -83,6 +83,6 @@ public sealed class ActiveFiltersWidgetViewComponent : XpSearchMountWidgetViewCo
                     EditorPreview.El("span", "xps-chip__label")
                         .Add(
                             EditorPreview.El("span", "xps-chip__attribute").Add(EditorPreview.Skeleton("text")),
-                            EditorPreview.Skeleton("text")),
+                            EditorPreview.El("span", "xps-chip__value").Add(EditorPreview.Skeleton("text"))),
                     EditorPreview.Button("xps-chip__remove", "×", glyph: true)));
 }

@@ -328,7 +328,7 @@ facetList({
 |---|---|---|
 | `container` | — | Selector or element. Required. |
 | `attribute` | — | The facet attribute. Required; the widget asks the server to count it. |
-| `label` | the attribute name | Heading text, and the facet-search label. |
+| `label` | `'Filters'` | Heading text, and the facet-search label. It is also what the active-filter chips call this attribute, so set it: unset, the group is headed "Filters" and the console warns — the attribute's code is never shown. |
 | `operator` | `'or'` | How selected values combine on the wire. |
 | `limit` | `10` | Values shown before "show more". |
 | `showMore` | `false` | Renders the show-more button. |
@@ -384,7 +384,7 @@ categoryTree({
 |---|---|---|
 | `container` | — | Selector or element. Required. |
 | `attribute` | — | The facet attribute. Required; the widget asks the server to count it. |
-| `label` | the attribute name | Heading text and the `aria-label` of the `<nav>`. |
+| `label` | `'Filters'` | Heading text and the `aria-label` of the `<nav>`. Also the name of this attribute on the active-filter chips; unset, the console warns and no code is shown. |
 | `limit` | `10` | Nodes kept per level, most documents first. |
 | `collapsible` | `true` | The title is a disclosure button that folds the tree away, exactly as on `facetList`. |
 
@@ -665,19 +665,38 @@ activeFilters({
 | Option | Default | What it does |
 |---|---|---|
 | `container` | — | Selector or element. Required. |
-| `attributeLabels` | — | Display name per attribute. Falls back to the raw attribute name. |
+| `attributeLabels` | the owning widget's `label` | Display name per attribute. Only needed for an attribute whose own filter widget is not on the page. |
 | `title` | `'Active filters'` | Screen-reader-only heading that labels the list. |
 | `includedAttributes` / `excludedAttributes` | — | Which filters to show. |
 | `transformItems` | — | `(items) => items`. |
 | `scroll` | `false` | Keeps the chips on one row that scrolls sideways (adds `xps-active-filters--scroll`) instead of wrapping. |
 
 Markup: `<div class="xps xps-active-filters">` (plus `--empty`, plus `--scroll`) with an `xps-sr-only` `__title`,
-`__list` and one `__item` per filter, each holding an `xps-chip` with `xps-chip__attribute`,
-`xps-chip__label` and `xps-chip__remove`.
+`__list` and one `__item` per filter, each holding an `xps-chip` whose `xps-chip__label` contains
+`xps-chip__attribute` (the name, with its colon) and `xps-chip__value` (what was picked), followed
+by `xps-chip__remove`.
+
+**How a chip is worded.** A chip reads `Price: 50 – 200 USD` — a name, then a value, never a stored
+code:
+
+- the **name** is the `label` of the widget that owns the attribute (`facetList`, `categoryTree`,
+  `rangeFilter`, or a `filterSort` facet line). `attributeLabels` overrides it, and is what to set
+  when no such widget is on the page. If neither exists, the chip shows the value alone and the
+  console carries a one-time warning naming the property to set — the attribute's field code is
+  never shown to a visitor;
+- the **value** is the `label` the server sends with the facet value (a taxonomy tag's title, not
+  its code name). Every response is remembered, so a refinement that returns nothing — and
+  therefore carries no facet values at all — still shows its title, on the chip and on the
+  selected-but-empty rows of `facetList` and `categoryTree`. A value nested in a taxonomy shows its
+  whole path, `Sweet › Acidy`. Only a value no response ever named falls back to the stored value,
+  verbatim;
+- a **numeric** refinement reads as a sentence built from the range filter's own `label` and
+  `unit`: `Price: up to 200`, `Price: from 50`, `Price: 50 – 200 USD`. Both ends are one chip, and
+  removing it removes the whole range. `lte`/`gte` never appear.
 
 Accessibility: the remove button's name is the whole sentence —
 `aria-label="Remove filter Content type: Article"` — never a bare "×". The empty list is rendered
-rather than removed, so the layout does not jump. Numeric filters read as `price lte 50`.
+rather than removed, so the layout does not jump.
 
 ## `toggleFilter`
 
@@ -690,7 +709,7 @@ toggleFilter({ container: '#toggle-english', attribute: 'language', value: 'en',
 | `container` | — | Selector or element. Required. |
 | `attribute` | — | The facet attribute. Required. |
 | `value` | `'true'` | The single value the checkbox filters on. |
-| `label` | the attribute name | Visible text. |
+| `label` | the value's own label | Visible text. Unset, the checkbox reads the label the server gives the value — never the attribute's code. |
 | `showCount` | `true` | `false` hides the count element. |
 
 Markup: `<div class="xps xps-toggle-filter">` (plus `--disabled`) with `__label` wrapping
@@ -709,7 +728,7 @@ rangeFilter({ container: '#filter-price', attribute: 'price', label: 'Price', mi
 | `attribute` | — | The numeric attribute to filter. Required. |
 | `min` / `max` | — | The bounds of the control. Without both, it renders disabled. |
 | `step` | `1` | Step of the sliders and the number inputs. |
-| `label` | the attribute name | Heading text. |
+| `label` | `'Range'` | Heading text, and the name of this attribute on the active-filter chips; unset, the console warns and no code is shown. |
 | `labels` | `{ from: 'From', to: 'To' }` | Visible labels of the two number inputs. |
 | `unit` | — | Unit shown at the end of the input row: `'USD'`, `'kg'`. |
 

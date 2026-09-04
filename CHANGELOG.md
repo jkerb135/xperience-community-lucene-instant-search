@@ -12,6 +12,20 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Fixed (widgets):** the filter UI shows names, never stored codes. Active-filter chips read
+  `Category: Grinders` — the owning widget's `label` for the attribute (`attributeLabels` still
+  overrides it) and the server's label for the value, with a nested taxonomy value shown as its
+  whole path, `Sweet › Acidy`. Every response's facet labels are remembered per search instance,
+  so a refinement that returns nothing keeps its title on the chip and on the selected-but-empty
+  rows of `facetList` and `categoryTree`. Numeric refinements read as sentences built from the
+  range filter's `label` and `unit` — `Price: up to 200`, `Price: from 50`, `Price: 50 – 200 USD`
+  — as one chip for both ends, whose × removes the whole range; `lte`/`gte` are never printed.
+  Where no widget names an attribute, its chip, group heading and toggle text leave the name off
+  and the console warns once instead of showing the field code. The chip's value now sits in its
+  own `xps-chip__value` span (the theme draws it at weight 600) and `xps-chip__attribute` carries
+  the colon. `ActiveFilterItem.label` is now the value text alone (`"Hot tips"`, `"up to 50"`), not
+  `"price lte 50"`, and a two-ended numeric range is one item with no `operator`.
+
 - **Added (widgets, themes):** the filter column is a card. `xps-sidebar` is a documented
   composition class the host puts on the element holding its refinement mounts — the shell stacks
   them, the theme draws the design's card around them (surface, 1px border, `6px` radius,

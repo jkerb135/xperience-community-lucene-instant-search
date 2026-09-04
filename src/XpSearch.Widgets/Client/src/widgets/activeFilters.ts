@@ -10,7 +10,8 @@ import {
   withActiveFilters,
   type ActiveFilterItem,
 } from '../behaviors/activeFilters';
-import { html } from '../templates/html';
+import { attributeLabelOrWarn } from '../labels';
+import { html, type Renderable } from '../templates/html';
 import type { Widget } from '../types';
 import { createRoot, renderKeepingFocus, resolveContainer, widgetId } from './dom';
 
@@ -24,7 +25,11 @@ type Scope = {
 
 export type ActiveFiltersWidgetParams = Scope & {
   container: string | HTMLElement;
-  /** Display names per attribute: `{ contentType: 'Content type' }`. */
+  /**
+   * Display names per attribute: `{ contentType: 'Content type' }`. Only needed for an attribute
+   * whose own filtering widget is not on the page — the chips otherwise read the `label` that
+   * widget declares.
+   */
   attributeLabels?: Record<string, string>;
   /** Heading text. Screen-reader only. */
   title?: string;
@@ -38,9 +43,9 @@ export type ClearFiltersWidgetParams = Scope & {
   label?: string;
 };
 
-/** "coffee" for a facet, "lte 50" for a numeric filter. */
-const valueOf = (item: ActiveFilterItem): string =>
-  item.type === 'numeric' ? `${item.operator} ${item.value}` : String(item.value);
+/** The chip's key: `Price:`, or nothing at all when no widget named the attribute (TH-12). */
+const keyHtml = (name: string | undefined): Renderable =>
+  name === undefined ? '' : html`<span class="xps-chip__attribute">${name}:</span> `;
 
 export function activeFilters(params: ActiveFiltersWidgetParams): Widget {
   const container = resolveContainer(params.container, 'activeFilters');
@@ -72,9 +77,16 @@ export function activeFilters(params: ActiveFiltersWidgetParams): Widget {
         html`<h3 class="xps-active-filters__title xps-sr-only" id="${widgetId(container, 'active-filters', 'title')}">${title}</h3>
   <ul class="xps-active-filters__list" aria-labelledby="${widgetId(container, 'active-filters', 'title')}">${options.items.map(
     (item, at) => {
-      const name = attributeLabels?.[item.attribute] ?? item.attribute;
-      const value = valueOf(item);
-      return html`<li class="xps-active-filters__item"><span class="xps-chip"><span class="xps-chip__label"><span class="xps-chip__attribute">${name}</span> ${value}</span><button class="xps-chip__remove" type="button" aria-label="Remove filter ${name}: ${value}" data-xps-item="${at}"><span aria-hidden="true">&times;</span></button></span></li>`;
+      // The declaring widget's Label, or this widget's own map; never the attribute code.
+      const name = attributeLabelOrWarn(
+        options.search,
+        item.attribute,
+        'activeFilters',
+        attributeLabels?.[item.attribute]
+      );
+      const value = item.label;
+      const removes = name === undefined ? value : `${name}: ${value}`;
+      return html`<li class="xps-active-filters__item"><span class="xps-chip"><span class="xps-chip__label">${keyHtml(name)}<span class="xps-chip__value">${value}</span></span><button class="xps-chip__remove" type="button" aria-label="Remove filter ${removes}" data-xps-item="${at}"><span aria-hidden="true">&times;</span></button></span></li>`;
     }
   )}</ul>`,
         root

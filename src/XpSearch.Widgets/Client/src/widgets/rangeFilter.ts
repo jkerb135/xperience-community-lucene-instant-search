@@ -11,6 +11,7 @@
  * Without them the control renders disabled instead of pretending to filter.
  */
 import { withRange } from '../behaviors/range';
+import { attributeLabelOrWarn, declareAttribute } from '../labels';
 import { formatNumber, html, render } from '../templates/html';
 import type { Widget } from '../types';
 import { createRoot, resolveContainer, widgetId } from './dom';
@@ -32,6 +33,9 @@ export type RangeFilterWidgetParams = {
   unit?: string;
 };
 
+/** The heading of a range whose widget declares no `label` — never the attribute's field code. */
+const UNNAMED_RANGE = 'Range';
+
 export function rangeFilter(params: RangeFilterWidgetParams): Widget {
   const container = resolveContainer(params.container, 'rangeFilter');
   let root: HTMLElement | undefined;
@@ -45,9 +49,18 @@ export function rangeFilter(params: RangeFilterWidgetParams): Widget {
 
   const widget = withRange<RangeFilterWidgetParams>(
     (options, isFirstRender) => {
-      const { attribute, label = options.params.attribute, step = 1, labels, unit } = options.params;
+      const { attribute, step = 1, labels, unit } = options.params;
       const { min, max } = options.range;
       const enabled = options.canApply;
+      // This widget owns the attribute: its heading and its unit are what the chips read (TH-12).
+      declareAttribute(options.search, attribute, { label: options.params.label, unit });
+      const named = attributeLabelOrWarn(
+        options.search,
+        attribute,
+        'rangeFilter',
+        options.params.label
+      );
+      const label = named ?? UNNAMED_RANGE;
 
       if (isFirstRender) {
         const id = (part: string): string => widgetId(container, attribute, part);
@@ -140,7 +153,7 @@ export function rangeFilter(params: RangeFilterWidgetParams): Widget {
         // show that, and this line is what the sliders are `aria-describedby`.
         const text = enabled
           ? `${formatNumber(Number(min))} to ${formatNumber(Number(max))}`
-          : `No ${label.toLowerCase()} range in these results.`;
+          : `No ${named === undefined ? '' : `${named.toLowerCase()} `}range in these results.`;
         if (values.textContent !== text) values.textContent = text;
       };
       paint();

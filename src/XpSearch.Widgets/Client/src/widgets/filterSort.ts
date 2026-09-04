@@ -9,6 +9,7 @@
  */
 import { withFacetList, type FacetListItem } from '../behaviors/facetList';
 import { withSortSelect, type SortSelectItem } from '../behaviors/sortSelect';
+import { attributeLabelOrWarn, declareAttribute, UNNAMED_GROUP } from '../labels';
 import * as st from '../state';
 import { html, render, type Renderable } from '../templates/html';
 import type {
@@ -185,7 +186,12 @@ export function filterSort(params: FilterSortWidgetParams): Widget {
 
   const sectionHtml = (facet: FilterSortFacet): Renderable =>
     html`<section class="xps-sheet__section">
-    <h3 class="xps-sheet__section-title">${facet.label ?? facet.attribute}</h3>
+    <h3 class="xps-sheet__section-title">${
+      (search === undefined
+        ? facet.label
+        : attributeLabelOrWarn(search, facet.attribute, 'filterSort', facet.label)) ??
+      UNNAMED_GROUP
+    }</h3>
     <ul class="xps-sheet__values">${(items.get(facet.attribute) ?? []).map(
       (item) => html`<li class="xps-sheet__value">
         <label class="xps-sheet__value-label">
@@ -359,6 +365,11 @@ export function filterSort(params: FilterSortWidgetParams): Widget {
       state = options.state;
       actions = options.actions;
       search = options.search;
+      // The sheet may be the only widget that owns these attributes (a mobile-only page): what it
+      // calls them is then what the chips call them (TH-12).
+      for (const facet of facets) {
+        declareAttribute(options.search, facet.attribute, { label: facet.label });
+      }
       trigger = doc.createElement('button');
       trigger.className = 'xps-button xps-filter-sort__trigger';
       trigger.type = 'button';

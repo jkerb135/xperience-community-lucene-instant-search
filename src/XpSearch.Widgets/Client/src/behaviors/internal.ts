@@ -3,6 +3,7 @@
  * it once on `init` with `isFirstRender: true` and again after every response.
  * Internal — not exported from the package entry points.
  */
+import { rememberFacetLabels } from '../labels';
 import type {
   InitOptions,
   RenderArgs,
@@ -53,6 +54,9 @@ export function createBehavior<TParams, TExtra, TLocal = Record<string, never>>(
 
       const call = (base: RenderOptions<TParams>, isFirstRender: boolean): void => {
         lastBase = base;
+        // Every response teaches the instance what its facet values are called (TH-12); doing it
+        // here means any widget rendering keeps the memory current, whatever the mount order is.
+        rememberFacetLabels(base.search, base.results);
         const context: BehaviorContext<TLocal> = {
           local,
           rerender: () => {

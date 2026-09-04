@@ -424,7 +424,9 @@ describe('withActiveFilters', () => {
 
     const rendered = renders[1]!;
     expect(rendered.canApply).toBe(true);
-    expect(rendered.items.map((item) => item.label)).toEqual(['coffee', 'price lte 50']);
+    // TH-12: the item's label is the VALUE as a visitor reads it — the response's label for the
+    // facet value, a sentence for the numeric bound. No code, no operator.
+    expect(rendered.items.map((item) => item.label)).toEqual(['Coffee', 'up to 50']);
     expect(rendered.items[0]?.urlFor()).not.toContain('tags=coffee');
 
     rendered.items[0]!.apply();

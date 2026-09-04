@@ -58,7 +58,7 @@ rows when the guides start showing them.
 
 | Image | URL / route | Data prerequisites | Source files (staleness triggers) | Captured |
 |---|---|---|---|---|
-| `themes--kentico-orange.png` | `themes/test/section-kentico-orange.html` (opens from disk, no server) | — | `themes/src/scss/tokens/_kentico-orange.scss`, `themes/src/kentico-orange.css`, `themes/fixtures/*.html` | **STALE** — new in TH-8, never captured, and TH-9 added `fixtures/sidebar.html` and changed the suggestions/search-box empty state, so both section pages moved. Shoot it beside `section-default.html` so the guide's *Two shipped palettes* section can show the pair. |
+| `themes--kentico-orange.png` | `themes/test/section-kentico-orange.html` (opens from disk, no server) | — | `themes/src/scss/tokens/_kentico-orange.scss`, `themes/src/kentico-orange.css`, `themes/fixtures/*.html` | **STALE** — new in TH-8, never captured, and TH-9 added `fixtures/sidebar.html` and changed the suggestions/search-box empty state, so both section pages moved. Shoot it beside `section-default.html` so the guide's *Two shipped palettes* section can show the pair. TH-12 also changed `fixtures/active-filters.html` (the chip now splits key/value). |
 
 Pending captures worth adding once data exists: `tuning--popularity-suggestions` and
 `tuning--synonym-suggestions` with ≥1 mined row (current captures show empty tables; recapture

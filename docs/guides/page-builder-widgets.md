@@ -212,7 +212,7 @@ entirely.
 | Property | Required | What it does |
 |---|---|---|
 | Attribute | yes | The numeric or date field to filter, picked from the index schema |
-| Label | no | Heading above the control. Empty falls back to the attribute name |
+| Label | no | Heading above the control, and what the active-filter chips call this attribute. Empty leaves both unnamed — a visitor never reads the field code |
 | Minimum / Maximum | yes | The two ends of the control. The maximum must be greater than the minimum |
 | Step | no | Step of the sliders and the number inputs. Defaults to `1` |
 | "From" / "To" label | no | Visible labels of the two number inputs. Empty leaves `From` and `To` |

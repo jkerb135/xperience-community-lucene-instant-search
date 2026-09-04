@@ -143,40 +143,40 @@
           </button>      
         </div>      
       </form>      
-      
-      <!-- integrated suggestions with nothing to suggest: the same empty state the standalone widget
-           renders, and a footer reduced to the two actions that still apply. -->
-      <form class="xps xps-search-box xps-suggestions--open" role="search" action="/search" method="get" novalidate>
-        <label class="xps-search-box__label xps-sr-only" for="xps-search-6-search-box-input">Search this site</label>
-        <div class="xps-search-box__field">
-          <svg class="xps-search-box__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.6-3.6"></path></svg>
-          <input class="xps-search-box__input"
-                 id="xps-search-6-search-box-input"
-                 type="search"
-                 name="q"
-                 value="zzq"
-                 placeholder="Search…"
-                 role="combobox"
-                 aria-expanded="true"
-                 aria-controls="xps-search-6-search-box-listbox"
-                 aria-autocomplete="list"
-                 autocomplete="off">
-          <span class="xps-search-box__loading xps-skeleton" aria-hidden="true"></span>
-          <button class="xps-button xps-search-box__reset" type="reset" aria-label="Clear the search query">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="xps-suggestions__panel">
-          <ul class="xps-suggestions__list" id="xps-search-6-search-box-listbox" role="listbox" aria-label="Search suggestions"></ul>
-          <div class="xps-suggestions__empty" role="status">
-            <svg class="xps-suggestions__empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4.2-4.2"></path><path d="M8 11h6"></path></svg>
-            <div class="xps-suggestions__empty-title">No suggestions for &ldquo;zzq&rdquo;</div>
-            <div class="xps-suggestions__empty-hint">Press Enter to search anyway, or try a different spelling.</div>
-          </div>
-          <div class="xps-suggestions__footer">
-            <span class="xps-suggestions__hints" aria-hidden="true"><kbd class="xps-suggestions__key">&crarr;</kbd> search <kbd class="xps-suggestions__key">esc</kbd> close</span>
-          </div>
-        </div>
+            
+      <!-- integrated suggestions with nothing to suggest: the same empty state the standalone widget      
+           renders, and a footer reduced to the two actions that still apply. -->      
+      <form class="xps xps-search-box xps-suggestions--open" role="search" action="/search" method="get" novalidate>      
+        <label class="xps-search-box__label xps-sr-only" for="xps-search-6-search-box-input">Search this site</label>      
+        <div class="xps-search-box__field">      
+          <svg class="xps-search-box__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.6-3.6"></path></svg>      
+          <input class="xps-search-box__input"      
+                 id="xps-search-6-search-box-input"      
+                 type="search"      
+                 name="q"      
+                 value="zzq"      
+                 placeholder="Search…"      
+                 role="combobox"      
+                 aria-expanded="true"      
+                 aria-controls="xps-search-6-search-box-listbox"      
+                 aria-autocomplete="list"      
+                 autocomplete="off">      
+          <span class="xps-search-box__loading xps-skeleton" aria-hidden="true"></span>      
+          <button class="xps-button xps-search-box__reset" type="reset" aria-label="Clear the search query">      
+            <span aria-hidden="true">&times;</span>      
+          </button>      
+        </div>      
+        <div class="xps-suggestions__panel">      
+          <ul class="xps-suggestions__list" id="xps-search-6-search-box-listbox" role="listbox" aria-label="Search suggestions"></ul>      
+          <div class="xps-suggestions__empty" role="status">      
+            <svg class="xps-suggestions__empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4.2-4.2"></path><path d="M8 11h6"></path></svg>      
+            <div class="xps-suggestions__empty-title">No suggestions for &ldquo;zzq&rdquo;</div>      
+            <div class="xps-suggestions__empty-hint">Press Enter to search anyway, or try a different spelling.</div>      
+          </div>      
+          <div class="xps-suggestions__footer">      
+            <span class="xps-suggestions__hints" aria-hidden="true"><kbd class="xps-suggestions__key">&crarr;</kbd> search <kbd class="xps-suggestions__key">esc</kbd> close</span>      
+          </div>      
+        </div>      
       </form>
     </section>
 
@@ -693,63 +693,63 @@
 
     <section class="fx fx--active-filters">
       <h2>active-filters</h2>
-      <!-- activeFilters — removable chips, one per active filter value -->      
-            
-      <div class="xps xps-active-filters">      
-        <h3 class="xps-active-filters__title xps-sr-only" id="xps-search-1-active-filters-title">Active filters</h3>      
-        <ul class="xps-active-filters__list" aria-labelledby="xps-search-1-active-filters-title">      
-          <li class="xps-active-filters__item">      
-            <span class="xps-chip">      
-              <span class="xps-chip__label"><span class="xps-chip__attribute">Content type</span> Article</span>      
-              <button class="xps-chip__remove" type="button" aria-label="Remove filter Content type: Article">      
-                <span aria-hidden="true">&times;</span>      
-              </button>      
-            </span>      
-          </li>      
-          <li class="xps-active-filters__item">      
-            <span class="xps-chip">      
-              <span class="xps-chip__label"><span class="xps-chip__attribute">Tags</span> espresso</span>      
-              <button class="xps-chip__remove" type="button" aria-label="Remove filter Tags: espresso">      
-                <span aria-hidden="true">&times;</span>      
-              </button>      
-            </span>      
-          </li>      
-          <li class="xps-active-filters__item">      
-            <span class="xps-chip">      
-              <span class="xps-chip__label"><span class="xps-chip__attribute">Price</span> 50 to 300</span>      
-              <button class="xps-chip__remove" type="button" aria-label="Remove filter Price: 50 to 300">      
-                <span aria-hidden="true">&times;</span>      
-              </button>      
-            </span>      
-          </li>      
-        </ul>      
-      </div>      
-            
-      <!-- scroll: true — the chips stay on one row that scrolls sideways instead of wrapping,      
-           with the clear-all link beside it (the "Category: Grinders ×  Clear all" row) -->      
-      <div class="xps-toolbar">      
-        <div class="xps xps-active-filters xps-active-filters--scroll">      
-          <h3 class="xps-active-filters__title xps-sr-only" id="xps-search-3-active-filters-title">Active filters</h3>      
-          <ul class="xps-active-filters__list" aria-labelledby="xps-search-3-active-filters-title">      
-            <li class="xps-active-filters__item">      
-              <span class="xps-chip">      
-                <span class="xps-chip__label"><span class="xps-chip__attribute">Category</span> Grinders</span>      
-                <button class="xps-chip__remove" type="button" aria-label="Remove filter Category: Grinders">      
-                  <span aria-hidden="true">&times;</span>      
-                </button>      
-              </span>      
-            </li>      
-          </ul>      
-        </div>      
-        <div class="xps xps-clear-filters">      
-          <button class="xps-button xps-button--link xps-clear-filters__button" type="button">Clear all</button>      
-        </div>      
-      </div>      
-            
-      <!-- nothing filtered: the widget renders an empty list rather than disappearing, so layout is stable -->      
-      <div class="xps xps-active-filters xps-active-filters--empty">      
-        <h3 class="xps-active-filters__title xps-sr-only" id="xps-search-2-active-filters-title">Active filters</h3>      
-        <ul class="xps-active-filters__list" aria-labelledby="xps-search-2-active-filters-title"></ul>      
+      <!-- activeFilters — removable chips, one per active filter value -->
+      
+      <div class="xps xps-active-filters">
+        <h3 class="xps-active-filters__title xps-sr-only" id="xps-search-1-active-filters-title">Active filters</h3>
+        <ul class="xps-active-filters__list" aria-labelledby="xps-search-1-active-filters-title">
+          <li class="xps-active-filters__item">
+            <span class="xps-chip">
+              <span class="xps-chip__label"><span class="xps-chip__attribute">Content type:</span> <span class="xps-chip__value">Article</span></span>
+              <button class="xps-chip__remove" type="button" aria-label="Remove filter Content type: Article">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </span>
+          </li>
+          <li class="xps-active-filters__item">
+            <span class="xps-chip">
+              <span class="xps-chip__label"><span class="xps-chip__attribute">Taste:</span> <span class="xps-chip__value">Sweet › Acidy</span></span>
+              <button class="xps-chip__remove" type="button" aria-label="Remove filter Taste: Sweet › Acidy">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </span>
+          </li>
+          <li class="xps-active-filters__item">
+            <span class="xps-chip">
+              <span class="xps-chip__label"><span class="xps-chip__attribute">Price:</span> <span class="xps-chip__value">50 – 300 USD</span></span>
+              <button class="xps-chip__remove" type="button" aria-label="Remove filter Price: 50 – 300 USD">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </span>
+          </li>
+        </ul>
+      </div>
+      
+      <!-- scroll: true — the chips stay on one row that scrolls sideways instead of wrapping,
+           with the clear-all link beside it (the "Category: Grinders ×  Clear all" row) -->
+      <div class="xps-toolbar">
+        <div class="xps xps-active-filters xps-active-filters--scroll">
+          <h3 class="xps-active-filters__title xps-sr-only" id="xps-search-3-active-filters-title">Active filters</h3>
+          <ul class="xps-active-filters__list" aria-labelledby="xps-search-3-active-filters-title">
+            <li class="xps-active-filters__item">
+              <span class="xps-chip">
+                <span class="xps-chip__label"><span class="xps-chip__attribute">Category:</span> <span class="xps-chip__value">Grinders</span></span>
+                <button class="xps-chip__remove" type="button" aria-label="Remove filter Category: Grinders">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </span>
+            </li>
+          </ul>
+        </div>
+        <div class="xps xps-clear-filters">
+          <button class="xps-button xps-button--link xps-clear-filters__button" type="button">Clear all</button>
+        </div>
+      </div>
+      
+      <!-- nothing filtered: the widget renders an empty list rather than disappearing, so layout is stable -->
+      <div class="xps xps-active-filters xps-active-filters--empty">
+        <h3 class="xps-active-filters__title xps-sr-only" id="xps-search-2-active-filters-title">Active filters</h3>
+        <ul class="xps-active-filters__list" aria-labelledby="xps-search-2-active-filters-title"></ul>
       </div>
     </section>
 
@@ -1123,72 +1123,72 @@
 
     <section class="fx fx--sidebar">
       <h2>sidebar</h2>
-      <!-- xps-sidebar — the filter column as a composition class, not a widget: the host puts it on the
-           element that holds its refinement mounts (docs/guides/page-builder-widgets.md, "Composing the
-           results page"). It carries `xps` itself, so the theme paints it as the design board's card:
-           surface, border, radius, padding and a soft shadow around whatever the host stacked inside. -->
-      
-      <div class="xps xps-sidebar">
-        <div class="xps-sidebar__header">
-          <h2 class="xps-sidebar__title">Filters</h2>
-          <div class="xps xps-clear-filters">
-            <button class="xps-button xps-button--link xps-clear-filters__button" type="button">Clear all</button>
-          </div>
-        </div>
-      
-        <div class="xps xps-facet-list">
-          <h3 class="xps-facet-list__title" id="xps-search-9-content-type-title">
-            <button class="xps-facet-list__toggle" type="button" aria-expanded="true" aria-controls="xps-search-9-content-type-body">
-              <span class="xps-facet-list__toggle-label">Content type</span>
-              <svg class="xps-facet-list__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"></path></svg>
-            </button>
-          </h3>
-          <div class="xps-facet-list__body" id="xps-search-9-content-type-body">
-            <ul class="xps-facet-list__list" aria-labelledby="xps-search-9-content-type-title">
-              <li class="xps-facet-list__item">
-                <label class="xps-facet-list__label">
-                  <input class="xps-facet-list__checkbox" type="checkbox" name="contentType" value="Product">
-                  <span class="xps-facet-list__value">Product</span>
-                  <span class="xps-facet-list__count">8</span>
-                </label>
-              </li>
-              <li class="xps-facet-list__item">
-                <label class="xps-facet-list__label">
-                  <input class="xps-facet-list__checkbox" type="checkbox" name="contentType" value="Article">
-                  <span class="xps-facet-list__value">Article</span>
-                  <span class="xps-facet-list__count">3</span>
-                </label>
-              </li>
-            </ul>
-          </div>
-        </div>
-      
-        <div class="xps xps-facet-list">
-          <h3 class="xps-facet-list__title" id="xps-search-9-tags-title">
-            <button class="xps-facet-list__toggle" type="button" aria-expanded="true" aria-controls="xps-search-9-tags-body">
-              <span class="xps-facet-list__toggle-label">Tags</span>
-              <svg class="xps-facet-list__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"></path></svg>
-            </button>
-          </h3>
-          <div class="xps-facet-list__body" id="xps-search-9-tags-body">
-            <ul class="xps-facet-list__list" aria-labelledby="xps-search-9-tags-title">
-              <li class="xps-facet-list__item xps-facet-list__item--selected">
-                <label class="xps-facet-list__label">
-                  <input class="xps-facet-list__checkbox" type="checkbox" name="tags" value="Espresso" checked>
-                  <span class="xps-facet-list__value">Espresso</span>
-                  <span class="xps-facet-list__count">5</span>
-                </label>
-              </li>
-              <li class="xps-facet-list__item">
-                <label class="xps-facet-list__label">
-                  <input class="xps-facet-list__checkbox" type="checkbox" name="tags" value="Filter">
-                  <span class="xps-facet-list__value">Filter</span>
-                  <span class="xps-facet-list__count">2</span>
-                </label>
-              </li>
-            </ul>
-          </div>
-        </div>
+      <!-- xps-sidebar — the filter column as a composition class, not a widget: the host puts it on the      
+           element that holds its refinement mounts (docs/guides/page-builder-widgets.md, "Composing the      
+           results page"). It carries `xps` itself, so the theme paints it as the design board's card:      
+           surface, border, radius, padding and a soft shadow around whatever the host stacked inside. -->      
+            
+      <div class="xps xps-sidebar">      
+        <div class="xps-sidebar__header">      
+          <h2 class="xps-sidebar__title">Filters</h2>      
+          <div class="xps xps-clear-filters">      
+            <button class="xps-button xps-button--link xps-clear-filters__button" type="button">Clear all</button>      
+          </div>      
+        </div>      
+            
+        <div class="xps xps-facet-list">      
+          <h3 class="xps-facet-list__title" id="xps-search-9-content-type-title">      
+            <button class="xps-facet-list__toggle" type="button" aria-expanded="true" aria-controls="xps-search-9-content-type-body">      
+              <span class="xps-facet-list__toggle-label">Content type</span>      
+              <svg class="xps-facet-list__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"></path></svg>      
+            </button>      
+          </h3>      
+          <div class="xps-facet-list__body" id="xps-search-9-content-type-body">      
+            <ul class="xps-facet-list__list" aria-labelledby="xps-search-9-content-type-title">      
+              <li class="xps-facet-list__item">      
+                <label class="xps-facet-list__label">      
+                  <input class="xps-facet-list__checkbox" type="checkbox" name="contentType" value="Product">      
+                  <span class="xps-facet-list__value">Product</span>      
+                  <span class="xps-facet-list__count">8</span>      
+                </label>      
+              </li>      
+              <li class="xps-facet-list__item">      
+                <label class="xps-facet-list__label">      
+                  <input class="xps-facet-list__checkbox" type="checkbox" name="contentType" value="Article">      
+                  <span class="xps-facet-list__value">Article</span>      
+                  <span class="xps-facet-list__count">3</span>      
+                </label>      
+              </li>      
+            </ul>      
+          </div>      
+        </div>      
+            
+        <div class="xps xps-facet-list">      
+          <h3 class="xps-facet-list__title" id="xps-search-9-tags-title">      
+            <button class="xps-facet-list__toggle" type="button" aria-expanded="true" aria-controls="xps-search-9-tags-body">      
+              <span class="xps-facet-list__toggle-label">Tags</span>      
+              <svg class="xps-facet-list__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"></path></svg>      
+            </button>      
+          </h3>      
+          <div class="xps-facet-list__body" id="xps-search-9-tags-body">      
+            <ul class="xps-facet-list__list" aria-labelledby="xps-search-9-tags-title">      
+              <li class="xps-facet-list__item xps-facet-list__item--selected">      
+                <label class="xps-facet-list__label">      
+                  <input class="xps-facet-list__checkbox" type="checkbox" name="tags" value="Espresso" checked>      
+                  <span class="xps-facet-list__value">Espresso</span>      
+                  <span class="xps-facet-list__count">5</span>      
+                </label>      
+              </li>      
+              <li class="xps-facet-list__item">      
+                <label class="xps-facet-list__label">      
+                  <input class="xps-facet-list__checkbox" type="checkbox" name="tags" value="Filter">      
+                  <span class="xps-facet-list__value">Filter</span>      
+                  <span class="xps-facet-list__count">2</span>      
+                </label>      
+              </li>      
+            </ul>      
+          </div>      
+        </div>      
       </div>
     </section>
 

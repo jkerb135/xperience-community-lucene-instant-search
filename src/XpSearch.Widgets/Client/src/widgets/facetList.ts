@@ -10,6 +10,7 @@ import {
   type FacetListItem,
   type FacetListSortBy,
 } from '../behaviors/facetList';
+import { attributeLabelOrWarn, declareAttribute, UNNAMED_GROUP } from '../labels';
 import { escapeHtml, html, render, type Renderable } from '../templates/html';
 import type { Widget } from '../types';
 import { chevron, createRoot, resolveContainer, widgetId } from './dom';
@@ -92,7 +93,6 @@ export function facetList(params: FacetListWidgetParams): Widget {
     (options, isFirstRender) => {
       const {
         attribute,
-        label = attribute,
         searchable = false,
         searchablePlaceholder,
         showMore: withShowMore = false,
@@ -101,6 +101,11 @@ export function facetList(params: FacetListWidgetParams): Widget {
       } = options.params;
       apply = options.apply;
       toggleShowMore = options.toggleShowMore;
+      // This widget owns the attribute, so its heading is what every other widget calls it (TH-12).
+      declareAttribute(options.search, attribute, { label: options.params.label });
+      const label =
+        attributeLabelOrWarn(options.search, attribute, 'facetList', options.params.label) ??
+        UNNAMED_GROUP;
 
       if (isFirstRender) {
         const id = (part: string): string => widgetId(container, attribute, part);
