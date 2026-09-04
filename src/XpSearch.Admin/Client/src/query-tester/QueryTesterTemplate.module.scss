@@ -203,18 +203,55 @@ $product: "GT Walsheim", sans-serif;
     padding-bottom: 8px;
   }
 
-  /* Table only offers selection through checkboxes, so the open row is marked by its own cells. */
-  :global([class*="table-row-cell___"]):has([data-row-selected]) {
+  /*
+   * Table only offers selection through checkboxes, so the open row is marked from its cells - but
+   * the fill goes on the ROW, or the stock cell padding leaves white gaps between six lilac patches.
+   */
+  :global([class*="table-row___"]):has([data-row-selected]) {
     background: var(--color-background-selected);
+  }
+
+  /* Keep the stock hover on the selected row too; this has to outrank `.table-row.clickable:hover`. */
+  :global([class*="table-row___"]):has([data-row-selected]):hover {
+    background: var(--color-background-selected-hover);
+  }
+
+  /* The admin shell centres a table cell's text; every column of this table reads left but Score. */
+  :global([class*="table-header-col___"]) {
+    justify-content: flex-start;
+    text-align: left;
   }
 }
 
-/** Every component cell's root: a flex item that may shrink and ellipsize. */
+/* Score is the 5th caption of the diff table and the 4th of a side-by-side one. */
+.diffTable :global([class*="table-header-col___"]):nth-child(5),
+.sideTable :global([class*="table-header-col___"]):nth-child(4) {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+/**
+ * Every component cell's root: a flex item that may shrink and ellipsize. `align-items` is the
+ * vertical axis here (the root is a flex ROW), so the horizontal side is `justify-content` and the
+ * inherited `text-align` the shell puts on the stock cell.
+ */
 .cell {
   display: flex;
   align-items: center;
   flex: 1;
   min-width: 0;
+}
+
+/** Tuned, Raw, Change, Result, Why. */
+.cellStart {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+/** Score only. */
+.cellEnd {
+  justify-content: flex-end;
+  text-align: right;
 }
 
 .rank {

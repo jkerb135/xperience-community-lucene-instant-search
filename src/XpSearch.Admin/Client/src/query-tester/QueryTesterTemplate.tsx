@@ -234,13 +234,17 @@ const ChangeChip = ({ change, label, className }: { readonly change: ResultChang
 /**
  * ComponentCell renders <cell.component />, so a cell holds a component, not an element. Every cell
  * carries the row's selected flag: Table only offers selection through checkboxes, so the open row
- * is marked from its cells (the module's `:has([data-row-selected])` rule).
+ * is marked from its cells (the module's `:has([data-row-selected])` rule on the row). The stock
+ * cell inherits the shell's centred text, so each cell states its own alignment.
  */
 const node = (columnName: string, selected: boolean, render: () => ReactElement): ComponentCell => ({
   type: CellType.Component,
   columnName,
   component: () => (
-    <div className={styles.cell} data-row-selected={selected ? 'true' : undefined}>
+    <div
+      className={`${styles.cell} ${columnName === 'score' ? styles.cellEnd : styles.cellStart}`}
+      data-row-selected={selected ? 'true' : undefined}
+    >
       {render()}
     </div>
   ),
@@ -705,7 +709,7 @@ export const QueryTesterTemplate = ({ selectedIndexName, languages, contactGroup
                 shown.length === 0 ? (
                   <p className={styles.muted}>{rows.length === 0 ? 'No results.' : 'Nothing changed for this query.'}</p>
                 ) : (
-                  <div className={styles.results}>
+                  <div className={`${styles.results} ${styles.diffTable}`}>
                     <Table columns={diffColumns} rows={diffRows} isHeaderVisible onRowClick={pick} />
                   </div>
                 )
@@ -714,7 +718,7 @@ export const QueryTesterTemplate = ({ selectedIndexName, languages, contactGroup
                   <div className={styles.side}>
                     <div className={styles.sideTitle}>With tuning</div>
                     <p className={styles.sideSubtitle}>Rules, synonyms, stopwords, field weights</p>
-                    <div className={styles.results}>
+                    <div className={`${styles.results} ${styles.sideTable}`}>
                       <Table
                         columns={sideColumns('Tuned #')}
                         rows={sideRows(result.withRules.hits, true)}
@@ -726,7 +730,7 @@ export const QueryTesterTemplate = ({ selectedIndexName, languages, contactGroup
                   <div className={styles.side}>
                     <div className={styles.sideTitle}>Without tuning</div>
                     <p className={styles.sideSubtitle}>Raw index, no rules applied</p>
-                    <div className={styles.results}>
+                    <div className={`${styles.results} ${styles.sideTable}`}>
                       <Table
                         columns={sideColumns('Raw #')}
                         rows={sideRows(result.withoutRules.hits, false)}

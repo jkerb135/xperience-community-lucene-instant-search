@@ -21,7 +21,8 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
   pipeline arrows travel with the chip they point at, and every card, row and panel section has the
   spacing the design asks for. Every region keeps its stock component: the layout lives in
   `QueryTesterTemplate.module.scss` as flex containers and targeted overrides on our own wrappers, so
-  table rows may grow to two lines and the open row is filled again. See ADR-0028.
+  table rows may grow to two lines and the open row is filled edge to edge again. Cells read left
+  (Score right) instead of inheriting the shell's centred cell. See ADR-0028.
 
 - **Fixed (core, widgets):** a facet always carries the values the request filters that attribute by.
   After the counted values, every selected value the filtered result set has no hit for comes back at
