@@ -217,15 +217,21 @@ and how to lift it.
   the implementation per index in `AddXpSearch`; the `SuggestMode` option and the `ISuggestService`
   interface are already the seam.
 
-## `RankingInfo.Boosts` in `XpSearch.Core/Pipeline/Stages/ProjectResponseStage.cs`
+## `ScoreBreakdownStage` in `XpSearch.Core/Pipeline/Stages/ScoreBreakdownStage.cs`
 
-- **Simplified:** `explain=true` returns `ranking` with the raw Lucene score as `baseScore`, the
-  one-based position, and an always-empty `boosts`.
-- **Ceiling:** the admin query tester (spec §8.4) can show why a result scored what it scored, but not why it
-  moved — because nothing moves it yet. `score` and `baseScore` are therefore always identical.
-- **Upgrade path:** the Phase 5 boost and pin/bury stages occupy `SearchStageOrder.BoostRules` (700) and
-  `SearchStageOrder.PinnedAndBuried` (900); each appends its own description to the result's `ranking.boosts`
-  as it changes a score or a position.
+- **Simplified:** the per-stage scores (`ranking.steps`, QT-2) are explained against a **second**
+  searcher lease, taken after `ExecuteSearchStage` released its own, using the Lucene document ids
+  the search returned. A rule's `AppliedRule("boost")` is attributed by a heuristic: the step
+  raised the document's score.
+- **Ceiling:** a commit that lands between the two leases renumbers document ids, so a breakdown
+  taken across it describes the wrong documents (the search results themselves are unaffected). And
+  because a boost is a `SHOULD` clause, Lucene's coordination factor *lowers* the score of every
+  document the rule does not name; those documents get a truthful step with a lower score, but the
+  rule is - correctly - not listed among the rules that touched them. A stage that lowered a score
+  on purpose would therefore go unattributed.
+- **Upgrade path:** move the explains inside `ExecuteSearchStage`'s lease (pass the searcher to a
+  breakdown collaborator) to close the reader window, and give `ScoreCheckpoint` the target query of
+  the rule so membership is tested rather than inferred from the direction of the score.
 
 ## Language as a document field, in `XpSearch.Core/Pipeline/Stages/BuildQueryStage.cs`
 

@@ -65,6 +65,7 @@ public sealed class PopularityBoostStage : ISearchStage
         }
 
         context.BaseQuery = boosted;
+        context.ScoreCheckpoints.Add(new ScoreCheckpoint("Popularity boost", boosted));
 
         if (context.Request.Explain ?? false)
         {

@@ -570,6 +570,34 @@ namespace XpSearch.Core.Contract
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("position")]
         public long? Position { get; set; }
+
+        /// <summary>
+        /// Score after each scoring stage, in application order, present only with explain. The
+        /// first entry is the raw Lucene score; the last equals score. Stages that did not change
+        /// this result's score are omitted.
+        /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonPropertyName("steps")]
+        public RankingStep[]? Steps { get; set; }
+    }
+
+    /// <summary>
+    /// The score one result had after one scoring stage of the pipeline.
+    /// </summary>
+    public partial class RankingStep
+    {
+        /// <summary>
+        /// The score this result has after that stage.
+        /// </summary>
+        [JsonPropertyName("score")]
+        public double Score { get; set; }
+
+        /// <summary>
+        /// What the stage is called: "Lucene score", "Field weights", the rule's own "rule:&lt;name&gt;"
+        /// line, "Popularity boost".
+        /// </summary>
+        [JsonPropertyName("stage")]
+        public string Stage { get; set; }
     }
 
     /// <summary>

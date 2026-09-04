@@ -144,7 +144,7 @@ public sealed class ExecuteSearchStage : ISearchStage
         for (int i = skip; i < topDocs.ScoreDocs.Length && page.Count < context.PageSize; i++)
         {
             var scoreDoc = topDocs.ScoreDocs[i];
-            page.Add(new ScoredDocument(searcher.Doc(scoreDoc.Doc), scoreDoc.Score));
+            page.Add(new ScoredDocument(searcher.Doc(scoreDoc.Doc), scoreDoc.Score, scoreDoc.Doc));
         }
 
         context.Documents = page;

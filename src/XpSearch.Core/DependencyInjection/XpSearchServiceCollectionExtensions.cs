@@ -147,6 +147,7 @@ public static class XpSearchServiceCollectionExtensions
         services.AddXpSearchStage<BoostRulesStage>();
         services.AddXpSearchStage<PopularityBoostStage>();
         services.AddXpSearchStage<ExecuteSearchStage>();
+        services.AddXpSearchStage<ScoreBreakdownStage>();
         services.AddXpSearchStage<PinnedAndBuriedStage>();
         services.AddXpSearchStage<CollectFacetsStage>();
         services.AddXpSearchStage<HighlightStage>();

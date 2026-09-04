@@ -46,6 +46,8 @@ public sealed class ProjectResponseStage : ISearchStage
             var scored = context.Documents[i];
             string id = ResolveResultId(scored.Document);
 
+            var steps = explain && context.ScoreSteps.TryGetValue(id, out var recorded) ? recorded : null;
+
             results[i] = new Result
             {
                 Id = id,
@@ -55,8 +57,12 @@ public sealed class ProjectResponseStage : ISearchStage
                 Ranking = explain
                     ? new RankingInfo
                     {
-                        BaseScore = scored.Score,
+                        // The first step is the score before anything boosted it - which is what
+                        // baseScore has promised since spec §4.2. Without a breakdown (no
+                        // ScoreBreakdownStage registered) there is nothing better than the final score.
+                        BaseScore = steps is { Count: > 0 } ? steps[0].Score : scored.Score,
                         Boosts = Explain(context, id),
+                        Steps = steps is null ? null : [.. steps.Select(step => new RankingStep { Stage = step.Stage, Score = step.Score })],
                         Position = ((long)(context.Page - 1) * context.PageSize) + i + 1
                     }
                     : null

@@ -65,7 +65,7 @@ public sealed class PinnedAndBuriedStage : ISearchStage
         {
             if (placement.Action is RuleAction.Bury bury)
             {
-                Bury(context, documents, bury.TargetId);
+                Bury(context, documents, placement.Rule, bury.TargetId);
                 continue;
             }
 
@@ -76,7 +76,7 @@ public sealed class PinnedAndBuriedStage : ISearchStage
         return Task.CompletedTask;
     }
 
-    private static void Bury(SearchContext context, List<ScoredDocument> documents, string targetId)
+    private static void Bury(SearchContext context, List<ScoredDocument> documents, TuningRule rule, string targetId)
     {
         int index = IndexOf(documents, targetId);
 
@@ -87,6 +87,7 @@ public sealed class PinnedAndBuriedStage : ISearchStage
 
         documents.RemoveAt(index);
         context.Total = Math.Max(0, context.Total - 1);
+        context.RecordAppliedRule(targetId, rule, "bury");
     }
 
     /// <summary>The document a pin or a bury names.</summary>
@@ -108,12 +109,13 @@ public sealed class PinnedAndBuriedStage : ISearchStage
         }
 
         int index = IndexOf(documents, pin.TargetId);
+        ScoredDocument pinned;
 
         if (index >= 0)
         {
-            var moved = documents[index];
+            pinned = documents[index];
             documents.RemoveAt(index);
-            documents.Insert(Math.Min(slot, documents.Count), moved);
+            documents.Insert(Math.Min(slot, documents.Count), pinned);
         }
         else
         {
@@ -122,6 +124,7 @@ public sealed class PinnedAndBuriedStage : ISearchStage
                 return;
             }
 
+            pinned = injected;
             documents.Insert(Math.Min(slot, documents.Count), injected);
             context.Total++;
 
@@ -133,6 +136,9 @@ public sealed class PinnedAndBuriedStage : ISearchStage
 
         if (context.Request.Explain ?? false)
         {
+            context.RecordAppliedRule(pin.TargetId, rule, "pin");
+            PinStep(context, pin, rule, pinned);
+
             if (!context.DocumentExplanations.TryGetValue(pin.TargetId, out var explanations))
             {
                 explanations = [];
@@ -141,6 +147,25 @@ public sealed class PinnedAndBuriedStage : ISearchStage
 
             explanations.Add(RuleSelection.Explain(rule));
         }
+    }
+
+    /// <summary>
+    /// Appends the pin to the document's score steps (QT-2), so the tester's breakdown ends with the
+    /// move that decided the position. A pin does not change a score, so the step carries the score
+    /// the document already had; an injected document has no steps yet, and its own score is its
+    /// first one.
+    /// </summary>
+    private static void PinStep(SearchContext context, RuleAction.Pin pin, TuningRule rule, ScoredDocument pinned)
+    {
+        if (!context.ScoreSteps.TryGetValue(pin.TargetId, out var steps))
+        {
+            steps = [new ScoreStep("Lucene score", pinned.Score)];
+            context.ScoreSteps[pin.TargetId] = steps;
+        }
+
+        double score = steps[^1].Score;
+
+        steps.Add(new ScoreStep($"{RuleSelection.Explain(rule)} → #{pin.Position}", score, rule.Id));
     }
 
     /// <summary>Loads a document by result id, but only if it also matches every active filter.</summary>
@@ -162,7 +187,7 @@ public sealed class PinnedAndBuriedStage : ISearchStage
 
             return hits.ScoreDocs.Length == 0
                 ? null
-                : new ScoredDocument(searcher.Doc(hits.ScoreDocs[0].Doc), hits.ScoreDocs[0].Score);
+                : new ScoredDocument(searcher.Doc(hits.ScoreDocs[0].Doc), hits.ScoreDocs[0].Score, hits.ScoreDocs[0].Doc);
         });
     }
 

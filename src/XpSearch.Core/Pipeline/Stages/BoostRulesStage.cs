@@ -43,9 +43,9 @@ public sealed class BoostRulesStage : ISearchStage
             {
                 applied |= action switch
                 {
-                    RuleAction.Boost boost => Boost(context, boost),
+                    RuleAction.Boost boost => Boost(context, rule, boost),
                     RuleAction.FilterResults filter => Filter(context, filter.FilterExpression),
-                    RuleAction.Hide hide => Hide(context, hide),
+                    RuleAction.Hide hide => Hide(context, rule, hide),
                     RuleAction.Redirect redirect => Redirect(context, rule, redirect),
                     _ => false
                 };
@@ -97,21 +97,23 @@ public sealed class BoostRulesStage : ISearchStage
     private static Term TermFor(SearchContext context, string field, string value) =>
         new(context.Schema.Find(field)?.LuceneName ?? field, value);
 
-    private static bool Boost(SearchContext context, RuleAction.Boost rule)
+    private static bool Boost(SearchContext context, TuningRule rule, RuleAction.Boost boost)
     {
-        if (Target(context, rule) is not { } target || rule.Multiplier <= 0)
+        if (Target(context, boost) is not { } target || boost.Multiplier <= 0)
         {
             return false;
         }
 
         // Lucene.NET 4.8 has no BoostQuery wrapper; the multiplier is a property of the query itself.
-        target.Boost = (float)rule.Multiplier;
+        target.Boost = (float)boost.Multiplier;
 
         context.BaseQuery = new BooleanQuery
         {
             { context.BaseQuery, Occur.MUST },
             { target, Occur.SHOULD }
         };
+
+        context.ScoreCheckpoints.Add(new ScoreCheckpoint(RuleSelection.Explain(rule), context.BaseQuery, rule.Id));
 
         return true;
     }
@@ -142,14 +144,15 @@ public sealed class BoostRulesStage : ISearchStage
     /// This is the difference between hide and bury. Bury removes a document from the page that came
     /// back; hide keeps it out of the result set, which is only expressible before the search runs.
     /// </remarks>
-    private static bool Hide(SearchContext context, RuleAction.Hide rule)
+    private static bool Hide(SearchContext context, TuningRule rule, RuleAction.Hide hide)
     {
-        if (string.IsNullOrWhiteSpace(rule.TargetId))
+        if (string.IsNullOrWhiteSpace(hide.TargetId))
         {
             return false;
         }
 
-        var target = new TermQuery(new Term(BaseDocumentProperties.ID, rule.TargetId.Trim()));
+        string targetId = hide.TargetId.Trim();
+        var target = new TermQuery(new Term(BaseDocumentProperties.ID, targetId));
 
         context.BaseQuery = new BooleanQuery
         {
@@ -158,6 +161,7 @@ public sealed class BoostRulesStage : ISearchStage
         };
 
         context.ActiveFilters.Add(target, Occur.MUST_NOT);
+        context.RecordAppliedRule(targetId, rule, "hide");
 
         return true;
     }

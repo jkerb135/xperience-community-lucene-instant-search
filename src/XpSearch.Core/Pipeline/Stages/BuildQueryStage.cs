@@ -19,6 +19,9 @@ namespace XpSearch.Core.Pipeline.Stages;
 /// </summary>
 public sealed class BuildQueryStage : ISearchStage
 {
+    private static readonly IReadOnlyDictionary<string, double> NoWeights =
+        new Dictionary<string, double>(StringComparer.Ordinal);
+
     private readonly ITypoToleranceSource typoTolerance;
 
     /// <summary>Initializes a new instance of the <see cref="BuildQueryStage"/> class.</summary>
@@ -47,31 +50,60 @@ public sealed class BuildQueryStage : ISearchStage
             context.QueryExplanations.Add("fuzzy:on");
         }
 
-        var textQuery = BuildTextQuery(context, fuzzy);
+        var weights = context.Tuning.FieldWeights;
+        context.BaseQuery = Filtered(context, BuildTextQuery(context, fuzzy, Boosts(context, weights, explain: context.Request.Explain ?? false)));
+
         string? language = context.Request.Language;
 
-        if (string.IsNullOrWhiteSpace(language))
+        if (!string.IsNullOrWhiteSpace(language))
         {
-            context.BaseQuery = textQuery;
-            return;
+            context.ActiveFilters.Add(LanguageFilter(language), Occur.MUST);
         }
 
-        // One index holds every language and the integration writes the language into every document
-        // (BaseDocumentProperties.LANGUAGE_NAME), so a language request is a term filter. Whether a
-        // per-language index is the better model is still open - spec §13.2.
-        var languageFilter = new TermQuery(new Term(BaseDocumentProperties.LANGUAGE_NAME, language));
+        // The score checkpoints of QT-2: what a document would score without the admin's field
+        // weights, and what it scores with them. When no weight moves a boost the two queries are
+        // the same query, so only the first is pushed.
+        bool weighted = context.Schema.Fields
+            .Where(field => field.Searchable)
+            .Any(field => weights.TryGetValue(field.Name, out double weight) && Math.Abs(weight - 1) > 1e-9);
 
-        var filtered = new BooleanQuery
+        context.ScoreCheckpoints.Add(new ScoreCheckpoint(
+            "Lucene score",
+            weighted
+                ? Filtered(context, BuildTextQuery(context, fuzzy, Boosts(context, NoWeights, explain: false)))
+                : context.BaseQuery));
+
+        if (weighted)
         {
-            { textQuery, Occur.MUST },
-            { languageFilter, Occur.MUST }
-        };
-
-        context.ActiveFilters.Add(languageFilter, Occur.MUST);
-        context.BaseQuery = filtered;
+            context.ScoreCheckpoints.Add(new ScoreCheckpoint("Field weights", context.BaseQuery));
+        }
     }
 
-    private static Query BuildTextQuery(SearchContext context, bool fuzzy)
+    /// <summary>
+    /// Wraps the text query in the request's language filter, when it asked for one.
+    /// </summary>
+    /// <remarks>
+    /// One index holds every language and the integration writes the language into every document
+    /// (<c>BaseDocumentProperties.LANGUAGE_NAME</c>), so a language request is a term filter. Whether
+    /// a per-language index is the better model is still open - spec §13.2.
+    /// </remarks>
+    private static Query Filtered(SearchContext context, Query textQuery)
+    {
+        string? language = context.Request.Language;
+
+        return string.IsNullOrWhiteSpace(language)
+            ? textQuery
+            : new BooleanQuery
+            {
+                { textQuery, Occur.MUST },
+                { LanguageFilter(language), Occur.MUST }
+            };
+    }
+
+    private static TermQuery LanguageFilter(string language) =>
+        new(new Term(BaseDocumentProperties.LANGUAGE_NAME, language));
+
+    private static Query BuildTextQuery(SearchContext context, bool fuzzy, IDictionary<string, float> boosts)
     {
         string[] fields = [.. context.Schema.Fields
             .Where(field => field.Searchable)
@@ -82,7 +114,7 @@ public sealed class BuildQueryStage : ISearchStage
             return new MatchAllDocsQuery();
         }
 
-        var parser = new MultiFieldQueryParser(LuceneVersion.LUCENE_48, fields, context.Analyzer, Boosts(context))
+        var parser = new MultiFieldQueryParser(LuceneVersion.LUCENE_48, fields, context.Analyzer, boosts)
         {
             DefaultOperator = Operator.AND,
             FuzzyPrefixLength = FuzzyPolicy.PrefixLength
@@ -141,18 +173,21 @@ public sealed class BuildQueryStage : ISearchStage
 
     /// <summary>
     /// Per-field boosts: the schema's own value, multiplied by the field weight an admin configured
-    /// in the Search tuning application (spec §8.2, §8.3).
+    /// in the Search tuning application (spec §8.2, §8.3). Called a second time with no weights at
+    /// all to build the "Lucene score" checkpoint (QT-2), which is why the map is a parameter.
     /// </summary>
-    private static IDictionary<string, float> Boosts(SearchContext context)
+    private static IDictionary<string, float> Boosts(
+        SearchContext context,
+        IReadOnlyDictionary<string, double> weights,
+        bool explain)
     {
         var boosts = new Dictionary<string, float>(StringComparer.Ordinal);
-        bool explain = context.Request.Explain ?? false;
 
         foreach (var field in context.Schema.Fields.Where(field => field.Searchable))
         {
             float boost = field.Boost;
 
-            if (context.Tuning.FieldWeights.TryGetValue(field.Name, out double weight))
+            if (weights.TryGetValue(field.Name, out double weight))
             {
                 boost *= (float)weight;
 

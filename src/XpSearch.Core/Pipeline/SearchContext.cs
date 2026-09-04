@@ -15,8 +15,27 @@ namespace XpSearch.Core.Pipeline;
 
 /// <summary>One document that matched, as it came back from Lucene.</summary>
 /// <param name="Document">The stored fields of the document.</param>
-/// <param name="Score">The raw Lucene score, before any Phase 5 boost.</param>
-public sealed record ScoredDocument(Document Document, float Score);
+/// <param name="Score">The score the executed query gave it, boosts included.</param>
+/// <param name="DocId">The Lucene document id inside the reader the search ran against, so a query can be explained against it (QT-2).</param>
+public sealed record ScoredDocument(Document Document, float Score, int DocId);
+
+/// <summary>The query as it stood after one scoring stage, so the score it alone would give a document can be explained afterwards (QT-2).</summary>
+/// <param name="Stage">What the user sees: "Lucene score", "Field weights", "rule:Espresso grinders", "Popularity boost", "Clicks boost".</param>
+/// <param name="Query">The query at that point. Never mutated afterwards - stages replace <see cref="SearchContext.BaseQuery"/>, they do not edit it.</param>
+/// <param name="RuleId">The tuning rule this checkpoint belongs to, when it is one rule's boost.</param>
+public sealed record ScoreCheckpoint(string Stage, Query Query, int? RuleId = null);
+
+/// <summary>The score one document had after one scoring stage (QT-2).</summary>
+/// <param name="Stage">The checkpoint's label.</param>
+/// <param name="Score">The score the query at that checkpoint gives this document.</param>
+/// <param name="RuleId">The tuning rule that produced the step, when there is one.</param>
+public sealed record ScoreStep(string Stage, double Score, int? RuleId = null);
+
+/// <summary>A tuning rule that changed one document's score or position (QT-2).</summary>
+/// <param name="RuleId">Id of the rule.</param>
+/// <param name="Name">Name of the rule, as the administration shows it.</param>
+/// <param name="Effect">What it did: <c>boost</c>, <c>pin</c>, <c>bury</c> or <c>hide</c>.</param>
+public sealed record AppliedRule(int RuleId, string Name, string Effect);
 
 /// <summary>
 /// The mutable state a search request carries through <see cref="ISearchPipeline"/>. Every stage
@@ -170,6 +189,29 @@ public sealed class SearchContext
     public IDictionary<string, List<string>> DocumentExplanations { get; } =
         new Dictionary<string, List<string>>(StringComparer.Ordinal);
 
+    /// <summary>
+    /// Gets the query as it stood after each scoring stage, in application order (QT-2). Every
+    /// boost is folded into <see cref="BaseQuery"/> before the search runs, so the score a single
+    /// stage contributed is not in the search result - it is explained against these afterwards by
+    /// <c>ScoreBreakdownStage</c>. A stage that wraps the query pushes one entry; only
+    /// <c>explain=true</c> requests ever read them.
+    /// </summary>
+    public IList<ScoreCheckpoint> ScoreCheckpoints { get; } = new List<ScoreCheckpoint>();
+
+    /// <summary>
+    /// Gets the score of each document on the page after each scoring stage, keyed by result id and
+    /// in application order (QT-2). Filled by <c>ScoreBreakdownStage</c> for <c>explain=true</c> only.
+    /// </summary>
+    public IDictionary<string, List<ScoreStep>> ScoreSteps { get; } =
+        new Dictionary<string, List<ScoreStep>>(StringComparer.Ordinal);
+
+    /// <summary>
+    /// Gets the tuning rules that changed one document's score or position, keyed by result id (QT-2).
+    /// A hidden or buried document is not on the page any more, so its entry is informational.
+    /// </summary>
+    public IDictionary<string, List<AppliedRule>> AppliedRules { get; } =
+        new Dictionary<string, List<AppliedRule>>(StringComparer.Ordinal);
+
     /// <summary>Gets or sets the total number of matching documents across all pages.</summary>
     public int Total { get; set; }
 
@@ -201,4 +243,27 @@ public sealed class SearchContext
 
     /// <summary>Gets or sets the response under construction. The projection stage creates it.</summary>
     public SearchResponse? Response { get; set; }
+
+    /// <summary>Records that a tuning rule changed one document's score or position (QT-2).</summary>
+    /// <param name="resultId">Result id of the document the rule named.</param>
+    /// <param name="rule">The rule.</param>
+    /// <param name="effect">What it did: <c>boost</c>, <c>pin</c>, <c>bury</c> or <c>hide</c>.</param>
+    /// <remarks>Nothing is recorded unless the request asked for an explanation; only the tester reads this.</remarks>
+    public void RecordAppliedRule(string resultId, TuningRule rule, string effect)
+    {
+        ArgumentNullException.ThrowIfNull(rule);
+
+        if (!(Request.Explain ?? false))
+        {
+            return;
+        }
+
+        if (!AppliedRules.TryGetValue(resultId, out var rules))
+        {
+            rules = [];
+            AppliedRules[resultId] = rules;
+        }
+
+        rules.Add(new AppliedRule(rule.Id, rule.Name, effect));
+    }
 }

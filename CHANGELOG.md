@@ -12,6 +12,19 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Added (core):** `ranking.steps` — with `explain=true`, every result carries the score it had
+  after each scoring stage, in application order: `Lucene score`, `Field weights`, one entry per
+  boost rule that changed it, `Popularity boost`, and the pin that moved it. The first entry is the
+  raw Lucene score and the last is `score`; a stage that left this result's score alone is left out.
+  A scoring stage of your own joins the list with one line —
+  `context.ScoreCheckpoints.Add(new ScoreCheckpoint("My boost", context.BaseQuery))` — and the new
+  `ScoreBreakdownStage` (order 850) explains each checkpoint against the page.
+
+- **Fixed (core):** `ranking.baseScore` reported the *final* score, boosts included, because every
+  boost is folded into the query before the search runs. It is now the raw Lucene score the
+  documentation has always promised — the first score step — so `score - baseScore` is what tuning
+  actually did to a result.
+
 - **Added (widgets, themes):** the filter column is a card. `xps-sidebar` is a documented
   composition class the host puts on the element holding its refinement mounts — the shell stacks
   them, the theme draws the design's card around them (surface, 1px border, `6px` radius,

@@ -158,7 +158,8 @@ public class ContractRoundTripTests
         Assert.That(exported, Is.EqualTo(new[]
         {
             "ContractConstants", "EventRequest", "EventType", "FacetFilter", "FacetOperator", "FacetValue",
-            "Filters", "Group", "HighlightOptions", "NumericFilter", "NumericOperator", "RankingInfo", "Result",
+            "Filters", "Group", "HighlightOptions", "NumericFilter", "NumericOperator", "RankingInfo",
+            "RankingStep", "Result",
             "SearchRedirect", "SearchRequest", "SearchResponse", "SuggestRequest", "SuggestResponse",
             "Suggestion",
         }));

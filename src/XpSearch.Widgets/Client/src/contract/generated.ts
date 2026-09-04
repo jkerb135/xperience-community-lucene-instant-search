@@ -426,6 +426,27 @@ export interface RankingInfo {
      * One-based position of this result in the final ranking, across all pages.
      */
     position?: number;
+    /**
+     * Score after each scoring stage, in application order, present only with explain. The
+     * first entry is the raw Lucene score; the last equals score. Stages that did not change
+     * this result's score are omitted.
+     */
+    steps?: RankingStep[];
+}
+
+/**
+ * The score one result had after one scoring stage of the pipeline.
+ */
+export interface RankingStep {
+    /**
+     * The score this result has after that stage.
+     */
+    score: number;
+    /**
+     * What the stage is called: "Lucene score", "Field weights", the rule's own "rule:<name>"
+     * line, "Popularity boost".
+     */
+    stage: string;
 }
 
 /**
