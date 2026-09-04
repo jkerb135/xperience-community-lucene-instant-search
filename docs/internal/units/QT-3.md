@@ -13,8 +13,8 @@ authored as our own markup styled by a CSS module — the precedent is
 `src/status/IndexStatusTemplate.module.css` and `src/analytics/ReportTable.scss`, both already in
 the webpack pipeline. Record each such region in ADR-0028 (amend, do not rewrite).
 
-**Layout rule from the owner: flex everywhere.** No CSS grid, no `<table>`. Rows are
-`display:flex`; columns are flex-basis widths; stacks are flex columns.
+**Layout rule from the owner: flex or CSS grid (both support align-items / justify), never `<table>`.** Rows are
+`display:flex` (or a grid with `align-items: center`); column widths are flex-bases or grid tracks; stacks are flex columns.
 
 Two slices, two worktrees, two implementers. **A** (styles) never touches Core; **B** (score)
 never touches the client.
@@ -141,7 +141,7 @@ auto (chip, only when changed) · 80**.
   `query-tester-1440.png` and `query-tester-1440-panel.png` and compare them yourself against the
   design before reporting. If the tooling cannot log in, say so and attach what you could capture.
 - ADR-0028 amended: which regions are own markup and why (fixed row height, no icon in Tag, no
-  side-by-side action in Callout), flex-only rule.
+  side-by-side action in Callout), flex/grid rule (no table markup).
 - `docs/internal/screenshot-manifest.md`: the two query tester rows stay STALE / PENDING.
 - One commit: `fix(admin): query tester styled to the approved design - flex rows, iconed change chips, stacked score, panel spacing (QT-3a)`.
 
