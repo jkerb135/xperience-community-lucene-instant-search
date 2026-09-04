@@ -7,12 +7,12 @@
  * resultStats
  * ------------------------------------------------------------------------ */
 
-#{r.$root} .xps-result-stats__time {
+#{r.block('result-stats')} .xps-result-stats__time {
   color: var(--xps-color-muted);
 }
 
 /* The count is the sentence's subject: it reads at full contrast while the line stays muted. */
-#{r.$root} .xps-result-stats__total {
+#{r.block('result-stats')} .xps-result-stats__total {
   color: var(--xps-color-text);
   font-weight: 700;
 }

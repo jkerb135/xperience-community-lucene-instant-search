@@ -1970,6 +1970,13 @@ describe('suggestions', () => {
     },
   ];
 
+  /** One source only — what "pr" returns on the demo when just pages match. */
+  const DOCUMENT_ONLY: Suggestion = {
+    text: 'Precision brewing scales',
+    url: '/products/scales',
+    result: { id: 'doc-2', attributes: { contentType: 'Product' } },
+  };
+
   const mount = (
     params: Record<string, unknown> = {},
     answers: Suggestion[] = SUGGESTIONS
@@ -2025,6 +2032,35 @@ describe('suggestions', () => {
     expect(root.querySelector<HTMLElement>('.xps-suggestions__panel')?.hidden).toBe(true);
     expect(root.querySelector<HTMLElement>('.xps-suggestions__reset')?.hidden).toBe(true);
     expect(root.querySelector('label[for="' + input.id + '"]')).not.toBeNull();
+  });
+
+  // TH-11: one source in the panel means no group wrapper, so the options are the listbox's own
+  // <li> children — the shape whose padding the theme's element reset used to flatten.
+  it('renders a header-less list of <li> options when one source answers', async () => {
+    const host = mount({ recentSearches: false }, [DOCUMENT_ONLY]);
+    await settled(search!);
+    await type(host, 'pr');
+
+    expect(host.querySelector('.xps-suggestions__group')).toBeNull();
+    expect(host.querySelector('.xps-suggestions__group-title')).toBeNull();
+    const options = [...host.querySelectorAll('[role="option"]')];
+    expect(options.map((option) => option.tagName)).toEqual(['LI']);
+    expect(options[0]?.parentElement?.className).toBe('xps-suggestions__list');
+  });
+
+  // ...unless the RESPONSE said which source each entry came from, which is what a current server
+  // sends in every mode: then a lone group still says which one it is (Autocomplete.dc.html).
+  it('labels a lone group when the response carries group', async () => {
+    const host = mount({ recentSearches: false }, [{ ...DOCUMENT_ONLY, group: 'document' }]);
+    await settled(search!);
+    await type(host, 'pr');
+
+    const groups = [...host.querySelectorAll('.xps-suggestions__group')];
+    expect(groups).toHaveLength(1);
+    expect(text(groups[0]?.querySelector('.xps-suggestions__group-title'))).toBe('Pages');
+    expect([...host.querySelectorAll('[role="option"]')].map((option) => option.tagName)).toEqual([
+      'DIV',
+    ]);
   });
 
   it('groups query suggestions and documents, numbering the option ids in visual order', async () => {
@@ -2495,6 +2531,36 @@ describe('searchBox with integrated suggestions', () => {
     await vi.waitFor(() => expect(search!.state.query).toBe('espresso machine'));
     expect(input.value).toBe('espresso machine');
     expect(host.querySelector<HTMLElement>('.xps-suggestions__panel')?.hidden).toBe(true);
+  });
+
+  // TH-11: the demo's case — "pr" in the SEARCH BOX matches pages only, and the response labels
+  // them, so the popup shows the Pages header. Same shared module, same rule as the standalone.
+  it('labels a lone group in the integrated popup when the response carries group', async () => {
+    const host = startSuggesting(
+      (element) =>
+        searchBox({
+          container: element,
+          suggestions: { debounceMs: 0, recentSearches: false },
+        }),
+      'search-grouped',
+      [
+        {
+          text: 'Precision brewing scales',
+          url: '/products/scales',
+          group: 'document',
+          result: { id: 'doc-2', attributes: { contentType: 'Product' } },
+        },
+      ]
+    );
+    await settled(search!);
+    await type(host, 'pr');
+
+    const groups = [...host.querySelectorAll('.xps-suggestions__group')];
+    expect(groups).toHaveLength(1);
+    expect(text(groups[0]?.querySelector('.xps-suggestions__group-title'))).toBe('Pages');
+    expect([...host.querySelectorAll('[role="option"]')].map((option) => option.tagName)).toEqual([
+      'DIV',
+    ]);
   });
 
   /** SG-1: the same shared module drives both consumers, so the box gets the same third group. */

@@ -6,7 +6,7 @@
  * ------------------------------------------------------------------------ */
 
 /* Plain text, not boxes: the hit target is the shared 2.25rem minimum, the box was never it. */
-#{r.$root} .xps-pagination__link {
+#{r.block('pagination')} .xps-pagination__link {
   @include b.pagination-link;
   color: var(--xps-color-muted);
   text-decoration: none;
@@ -16,7 +16,7 @@
   }
 }
 
-#{r.$root} .xps-pagination__item--current .xps-pagination__link {
+#{r.block('pagination')} .xps-pagination__item--current .xps-pagination__link {
   color: var(--xps-color-accent-ink);
   font-weight: 700;
   /* The rule is this text's own underline, not a separate piece of chrome: it takes the ink so the
@@ -24,7 +24,7 @@
   border-bottom: 2px solid var(--xps-color-accent-ink);
 }
 
-#{r.$root} .xps-pagination__ellipsis,
-#{r.$root} .xps-result-stats {
+#{r.block('pagination')} .xps-pagination__ellipsis,
+#{r.block('result-stats')} .xps-result-stats__text {
   color: var(--xps-color-muted);
 }

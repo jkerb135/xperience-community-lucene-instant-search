@@ -131,6 +131,60 @@
   padding: 0 v.$quarter;
 }
 
+/* The filter column's card. Padding is the box, not the paint, so it is structure the shell states
+   as well — a shell-only site gets the same column, just without the surface around it (TH-11). */
+@mixin sidebar {
+  padding: 1.25rem;
+}
+
+/* The autocomplete panel's boxes are the design board's own pixels (`Autocomplete.dc.html`), not
+ * the generic rhythm: the popup is drawn to the pixel and the owner's rule is that the shipped
+ * default IS the design. They are still written against `--xps-space` so the one spacing knob keeps
+ * working — at its default of 12px each of these computes to exactly the board's value:
+ *
+ *   $panel-inline  = --xps-space + 2px         14px   row, header and footer flanks
+ *   $row-block     = --xps-space * 0.75         9px   row height above and below the text
+ *   $footer-block  = --xps-space - 2px         10px   footer height
+ *   $header-bottom = --xps-space / 3            4px   header's own gap to its first row
+ *   $panel-offset  = --xps-space * 2 / 3        8px   panel's gap to the field
+ *
+ * `themes/scripts/check-layout.mjs` asserts the computed pixels at the default, so a change to one
+ * of these expressions that stops matching the board fails the build.
+ */
+$panel-inline: calc(var(--xps-space) + 2px);
+$row-block: calc(var(--xps-space) * 0.75);
+$footer-block: calc(var(--xps-space) - 2px);
+$header-bottom: calc(var(--xps-space) / 3);
+
+/* The popup's offset from the field it belongs to (board: 8px). The panel is absolutely positioned
+   at `top: 100%`, so without this it touches the input. */
+@mixin suggestions-panel {
+  margin-top: calc(var(--xps-space) * 2 / 3);
+}
+
+/* An autocomplete row (board: 9px 14px). The panel renders an option as an `<li>` when it shows a
+   single source and as a `<div>` inside a group otherwise, and the theme's reset flattens the
+   `<li>` — so the row's box has to come from here, stated by both stylesheets (TH-11). */
+@mixin suggestion-option {
+  padding: $row-block $panel-inline;
+}
+
+/* A source's heading (board: 12px 14px 4px). */
+@mixin suggestions-group-title {
+  padding: var(--xps-space) $panel-inline $header-bottom;
+}
+
+/* The gap the board leaves above every group after the first, under the hairline the theme draws.
+   The group is an `<li>`: without this the reset flattens it. */
+@mixin suggestions-group-gap {
+  margin-top: v.$half;
+}
+
+/* The keyboard-hints bar (board: 10px 14px). */
+@mixin suggestions-footer {
+  padding: $footer-block $panel-inline;
+}
+
 /* Screen-reader-only text is a box too: the theme's element reset would otherwise flatten it. */
 @mixin sr-only {
   margin: -1px;

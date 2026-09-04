@@ -25,6 +25,36 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
   own `xps-chip__value` span (the theme draws it at weight 600) and `xps-chip__attribute` carries
   the colon. `ActiveFilterItem.label` is now the value text alone (`"Hot tips"`, `"up to 50"`), not
   `"price lte 50"`, and a two-ended numeric range is one item with no `operator`.
+- **Fixed (themes, widgets):** the autocomplete rows have their spacing back. With one source in the
+  panel the options are the listbox's own `<li>` children, and the theme's element reset flattens an
+  `li` — so the row's `9px 14px` box, the panel's `8px` offset from the field, the filter card's
+  padding, the link-button's open box and the screen-reader-only clip were all being wiped when
+  `default.css` loaded. Every one of them now comes from `themes/src/scss/_boxes.scss` and is stated
+  by **both** stylesheets. New `themes/scripts/check-layout.mjs` (wired into `npm run check`) is what
+  keeps it that way: it renders every fixture with the shell alone and with shell + palette, both
+  palettes, and fails if any layout property the shell declares computes differently once the theme
+  is loaded — the theme may only add visuals. The panel's boxes are the design board's own pixels again — rows `9px 14px` with a
+  `10px` gap, group headings `12px 14px 4px` with `6px` above every group after the first, footer
+  `10px 14px`, panel `8px` under the field — each written against `--xps-space` so the one spacing
+  knob still works, and asserted at its default. And a lone group is now labelled whenever the
+  response says which source its entries came from (`Suggestion.group`, which the server sends in
+  every suggest mode): typing "pr" and matching only pages shows the **Pages** heading, in the
+  standalone widget and in the search box's integrated popup alike.
+
+- **Changed (themes):** the default theme's selectors say what they paint. Every design rule is now
+  scoped to its widget block — `.xps.xps-pagination .xps-pagination__link`,
+  `.xps.xps-results .xps-results__empty` — or, for the elements several widgets render, to the
+  element's own class doubled (`.xps .xps-button.xps-button`, `.xps .xps-chip.xps-chip`). The
+  `.xps.xps.xps` triple survives only on the element reset, which has no class of its own to carry
+  the weight. Nothing about the boundary changed: every rule still lands at (0,3,0), still beats a
+  host selector at (0,2,1), still uses no `!important`, and `themes/scripts/check-isolation.mjs`
+  still reports zero leaks across every fixture and both palettes. **If your site wrote overrides
+  against `.xps.xps.xps.xps …`, update them** — they still win by specificity, but the theme's own
+  rules are the ones documented in `docs/guides/theming.md`, "Specificity and host styles", and this
+  is the release to follow them (pre-1.0, no deprecation window). Three rules that were written as
+  descendants of the root but target the widget root itself never matched and now do, as the design
+  always said: the Page Builder editor preview gets its dashed frame and its skeletons stop pulsing,
+  the results list dims while a refinement is in flight, and a disabled toggle filter dims.
 
 - **Added (widgets, themes):** the filter column is a card. `xps-sidebar` is a documented
   composition class the host puts on the element holding its refinement mounts — the shell stacks

@@ -1305,12 +1305,20 @@ and how to lift it.
 
 ## The theme wins over host stylesheets up to (0,2,1), not beyond (`default.css`, TH-7)
 
-- **Simplified:** `default.css` states its root class three times (`.xps.xps.xps`), so its element
-  reset sits at (0,3,0) and its component rules at (0,4,0)+. That beats every selector a site can
-  write without knowing our class names, which is where a real one stops (`button`, `.section h3`,
-  `.landing-page ul li`, `.product-filter input[type="checkbox"]`). It is specificity, not
-  `!important`, and the repetition is ugly in a way no CSS feature fixes today — `@layer` cannot
-  help, because an unlayered host rule beats a layered one whatever its specificity.
+- **Simplified:** every rule in `default.css` sits at (0,3,0), reached by naming the widget block it
+  paints (`.xps.xps-pagination .xps-pagination__link`), or the element's own class doubled when
+  several widgets render it (`.xps .xps-button.xps-button`), or — for the element reset alone, which
+  has no class to name — by repeating the root class (`.xps.xps.xps *`, TH-10). That beats every
+  selector a site can write without knowing our class names, which is where a real one stops
+  (`button`, `.section h3`, `.landing-page ul li`, `.product-filter input[type="checkbox"]`). It is
+  specificity, not `!important`; no CSS feature removes the need for it today — `@layer` cannot help,
+  because an unlayered host rule beats a layered one whatever its specificity.
+- **Ceiling (TH-10):** the whole file is one specificity tier, so *source order* decides between the
+  reset, the element defaults and the component rules. Moving a `@use` in `default.scss`, or adding a
+  rule above the one it should override, silently changes the design. The block scope is also spelled
+  twice per rule (`:is(.xps.xps-x, .xps .xps-x)`) because the editor preview mirrors a widget's
+  markup one level below its own `.xps` — that costs ~15% of the compiled file (31.3 kB → 36.1 kB
+  raw, 7.3 kB → 7.9 kB gzipped).
 - **Ceiling:** a host rule at (0,3,0) or more, or any `!important`, still wins — deliberately: that
   is how a site overrides one control on purpose (documented in `docs/guides/theming.md`). Page-level
   utilities the host puts on its own elements (`xps-toolbar`, `xps-mount`, `xps-stack`) are outside
@@ -1319,6 +1327,23 @@ and how to lift it.
   not covered.
 - **Upgrade path:** if the repetition ever has to go, the boundary is a shadow root, not a stronger
   selector; short of that, extend `site-hostile.css` when a real site finds a hole.
+
+## The layout-parity check compares what the shell declares, not everything (`check-layout.mjs`, TH-11)
+
+- **Simplified:** `themes/scripts/check-layout.mjs` renders each fixture with the shell alone and with
+  shell + palette and compares only (a) the layout properties `shell.css` itself declares for that
+  element, read off its CSSOM, and (b) with the type scale and border widths pinned in both renders.
+  Anything else would compare the theme against the *user agent* — the shell states no `font-size` and
+  no borders on purpose, so under it alone every `em` length and every control's 2px UA border differ
+  for reasons that are design. A declared value of `auto` is skipped too: its used value is whatever
+  the row's text left over, which the theme's `font-variant-numeric` alone changes.
+- **Ceiling:** a box the theme adds where the shell declares *nothing* is invisible to it (only the
+  fixtures' own composition would show it), and the logical properties are mapped to their LTR sides,
+  so an RTL-only structural rule is compared against the wrong edge. Only the checked-in fixtures are
+  covered, as with the isolation check.
+- **Upgrade path:** compare declared values instead of computed ones by walking the cascade in the
+  browser (specificity + order per sheet), which removes both the pinning and the `auto` exception;
+  add an RTL pass by rendering each fixture a second time under `dir="rtl"`.
 
 ## The control box model is emitted by both stylesheets (`_boxes.scss`, TH-7)
 

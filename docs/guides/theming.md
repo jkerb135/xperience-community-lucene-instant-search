@@ -184,38 +184,61 @@ and decoration, alignment, margins, padding, shadow, `appearance`, `box-sizing`,
 outline and cursor. A site's own `button { … }`, `.section h3 { … }`, `.landing-page ul li { … }` or
 `.product-filter input[type="checkbox"] { … }` does not reach inside one.
 
-It works by specificity alone — there is no `!important` in either stylesheet. `default.css` states
-the root class three times on every rule it owns:
+It works by specificity alone — there is no `!important` in either stylesheet. Every rule
+`default.css` owns lands on three classes, and it gets there by naming the widget it paints:
 
 ```css
-.xps            { --xps-color-accent: … }   /* (0,1,0) tokens: your override wins */
-.xps.xps.xps *  { … }                       /* (0,3,0) the element reset          */
-.xps.xps.xps h3 { … }                        /* (0,3,1) element defaults           */
-.xps.xps.xps .xps-button { … }               /* (0,4,0) the components             */
+.xps { --xps-color-accent: … }                       /* (0,1,0) tokens: your override wins */
+.xps.xps.xps *  { … }                                /* (0,3,0) the element reset          */
+.xps.xps-pagination .xps-pagination__link { … }      /* (0,3,0) a widget's design rules    */
+.xps .xps-button.xps-button { … }                    /* (0,3,0) elements shared by widgets */
 ```
 
-A stylesheet that does not know our class names tops out at two classes plus an element, which the
-reset outranks. `themes/scripts/check-isolation.mjs` proves it on every build: each fixture is
-rendered twice in a real browser — plain, and under Dancing Goat's own CSS re-pointed at our
-markup — and every computed property of every element is compared.
+A stylesheet that does not know our class names tops out at two classes plus an element, which all
+three of those outrank. The reset is the one rule that repeats a class for weight alone — it selects
+elements, so it has no class of its own to carry it; everything else names a block or the element
+itself, and beats the reset by coming later in the file.
+`themes/scripts/check-isolation.mjs` proves the boundary on every build: each fixture is rendered
+twice in a real browser — plain, and under Dancing Goat's own CSS re-pointed at our markup — and
+every computed property of every element is compared.
 
-**Deliberately overriding the theme** is still one rule away: match the theme's specificity or
-beat it. The theme's component rules are three classes plus the component's own, so this wins:
+**The theme never changes layout.** Every box — padding, margins, gaps, sizes, positioning — is
+`shell.css`'s; `default.css` only paints, and restates a box only where its own element reset would
+otherwise flatten what the shell declared (an autocomplete row is an `<li>`, and the reset zeroes
+`padding` on one). So a site that keeps `shell.css` and writes its own theme gets the same
+composition, and swapping palettes never moves anything.
+`themes/scripts/check-layout.mjs` proves it on every build.
+
+**Deliberately overriding the theme** is one rule away: write the theme's own selector, after it.
+To restyle the pagination link:
 
 ```css
-/* your button style, inside the search widgets */
-.xps.xps.xps.xps .xps-button {
+/* loaded after default.css */
+.xps.xps-pagination .xps-pagination__link {
+  color: #272219;
+  font-weight: 400;
+}
+```
+
+For an element several widgets share — the buttons, the chips, `xps-select`, the highlighter band —
+double its class instead of naming a widget:
+
+```css
+.xps .xps-button.xps-button {
   background-color: #272219;
   color: #fff;
   border-radius: 0;
 }
 ```
 
-`.xps` repeated four times is not elegant, and it is not the usual answer — overriding
-`--xps-color-*`, `--xps-radius` and `--xps-font*` re-skins the whole set without any of this, and a
-site with its own design system loads `shell.css` alone
-(see [using shell on its own](#using-shell-on-its-own)). It is here for the one control your brand
-insists on.
+Two rules paint a block itself rather than a part of it, and those double the block class:
+`.xps.xps-sidebar.xps-sidebar` (the filter card) and
+`.xps.xps-editor-preview.xps-editor-preview` (the builder's dashed frame).
+
+None of this is the usual answer — overriding `--xps-color-*`, `--xps-radius` and `--xps-font*`
+re-skins the whole set without any of it, and a site with its own design system loads `shell.css`
+alone (see [using shell on its own](#using-shell-on-its-own)). It is here for the one control your
+brand insists on.
 
 #### One token re-skins the theme
 
@@ -340,7 +363,7 @@ surface:
 | `xps-chip` | Removable token: `xps-chip__label` holding `xps-chip__attribute` and `xps-chip__value`, plus `xps-chip__remove`. |
 | `xps-select` | Labelled select: `xps-select__label` (a real `<label for>`) and `xps-select__control` (the native `<select>`), plus `xps-select--disabled`. Wrap the control in `xps-select__field` with an `xps-select__chevron` `<svg>` for the design's own arrow; without that wrapper the platform arrow stays. The only themed `<select>` in the product — `sortSelect` renders this same block, and so should your drop-down. |
 | `xps-toolbar` | One row, first child left, last child right, wrapping when narrow — the stats/sort row above the results. |
-| `xps-sidebar` | The filter column. The one composition class the theme paints: a card (surface, border, radius, `1.25rem` padding, soft shadow) around the refinement widgets. Put `xps` on the same element — the theme's rule for it is `.xps.xps.xps.xps-sidebar`. |
+| `xps-sidebar` | The filter column. The one composition class the theme paints: a card (surface, border, radius, `1.25rem` padding, soft shadow) around the refinement widgets. Put `xps` on the same element — the theme's rule for it is `.xps.xps-sidebar.xps-sidebar`. |
 | `xps-sidebar__header` | The filter column's heading row: `xps-sidebar__title` plus a trailing clear-all, under the same rule a facet-group title carries. |
 | `xps-skeleton` | Loading placeholder, with `--title`, `--text` and `--block` sizes. |
 | `xps-highlight` | The class on `<mark>` elements emitted by the `highlight` template helper. |

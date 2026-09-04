@@ -157,15 +157,23 @@ export function renderPanel(
   input.setAttribute('aria-expanded', String(isOpen));
   panel.hidden = !isOpen;
 
-  // Grouped only when the panel actually shows more than one source: with one source the wrapper
-  // would be a group of one, which is noise to a screen reader (MARKUP.md, "suggestions"). The
-  // recents are the exception — their group carries the Clear control, so it is always labelled.
+  // Grouped when the panel shows more than one source, when the recents are in it (their group
+  // carries the Clear control), or when the RESPONSE labelled its entries — `Suggestion.group` is
+  // what the server sends to say which source an entry came from (contract §4.4, SG-1). A labelled
+  // response is a response that could have come from either source, so a lone group still says
+  // which one it is: "pr" matching only pages still gets its **Pages** header, in both consumers
+  // (design board `Autocomplete.dc.html`, TH-11). Without those labels a single source is a group
+  // of one, which is noise to a screen reader (MARKUP.md, "suggestions").
   const all: Option[] = api.suggestions.map((suggestion, at) => ({ suggestion, at }));
   const present = GROUPS.map((group) => ({
     ...group,
     options: all.filter((option) => groupOf(option.suggestion) === group.key),
   })).filter((group) => group.options.length > 0);
-  const grouped = present.length > 1 || present[0]?.key === 'recent';
+  // `group: 'recent'` is the client's own label on a locally stored entry, never the server's.
+  const labelled = api.suggestions.some(
+    (suggestion) => suggestion.group !== undefined && suggestion.group !== 'recent'
+  );
+  const grouped = present.length > 1 || present[0]?.key === 'recent' || (labelled && present.length > 0);
   const ordered = grouped ? present.flatMap((group) => group.options) : all;
 
   /** Ids are the *visual* position; `data-xps-suggestion` is the behaviour's own index. */

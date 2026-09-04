@@ -1,16 +1,42 @@
-// The theme's one root selector (TH-7).
+// How the default theme reaches the weight it needs, and why it reads the way it does (TH-10).
 //
-// `.xps` is the class every widget root carries — the mount emits it, `themes/MARKUP.md` requires
-// it, and it is what shell.css keys on too. The theme states it THREE times so that every rule in
-// default.css starts at (0,3,0):
+// A host stylesheet that does not know our class names reaches (0,2,1) — `button`, `.section h3`,
+// `.landing-page ul li`, `.product-filter input[type="checkbox"]`. Every rule in default.css has to
+// sit above that tier, and none of them uses `!important`. There are exactly three ways to get
+// there, and every rule in this folder uses one of them:
 //
-//   .xps.xps.xps *              (0,3,0)  the element reset — beats a host's `.section h3` (0,2,1)
-//   .xps.xps.xps p              (0,3,1)  element defaults  — beats the reset
-//   .xps.xps.xps .xps-button    (0,4,0)  component rules   — beat both
+//   block('pagination')       :is(.xps.xps-pagination, .xps .xps-pagination)
+//     The widget's own scope, (0,2,0). With the block's own child class the rule that paints
+//     something is (0,3,0) and says what it is: `… .xps-pagination__link`. Two arms because a
+//     widget root carries `xps` and `xps-pagination` on ONE element, while the Page Builder editor
+//     preview mirrors the same markup one level down inside its own `.xps` root — same block,
+//     both spellings. A rule on the block ITSELF is only (0,2,0); if a host rule can reach the
+//     property, double the block class (`#{block('sidebar')}.xps-sidebar`) — see MARKUP.md for the
+//     two places that was needed.
 //
-// (0,2,1) is the tier a site's own stylesheet reaches without knowing our class names
-// (`button`, `.section h3`, `.landing-page ul li`, `.product-filter input[type="checkbox"]`), and
-// it is the tier `scripts/check-isolation.mjs` proves the theme wins against. Nothing here uses
-// `!important`: a host that deliberately wants its own style writes a selector at least as
-// specific as ours (see docs/guides/theming.md, "Specificity and host styles").
+//   own('xps-button')         .xps .xps-button.xps-button
+//     For the elements several widgets render — buttons, chips, the select, the highlight band,
+//     `xps-sidebar__header` — where naming one widget would be a lie. The element's own class
+//     carries the weight, so the rule is (0,3,0) like every other, and it is emitted ONCE instead
+//     of once per widget (the smaller compiled file: emitting them inside each block's scope
+//     costs ~4 kB more).
+//
+//   $root                     .xps.xps.xps
+//     THE ONE TRIPLE, and the only repeated class in the stylesheet that names nothing. The
+//     element reset in `_base.scss` (`.xps.xps.xps *`, `.xps.xps.xps :where(a)`) has no class of
+//     its own to hang weight on — that is the whole point of a reset — so the repetition lives
+//     there and nowhere else. `scripts/check.mjs` fails the build if any other partial writes a
+//     repeated class literally or uses `$root`, and if any selector in default.css that carries
+//     the triple also names an `xps-` component.
+//
+// Everything above the reset is ordered by SOURCE, not by weight: the reset, the element defaults
+// and the component rules are all (0,3,0), and `default.scss` loads them in that order.
 $root: '.xps.xps.xps';
+
+@function block($name) {
+  @return ':is(.xps.xps-#{$name}, .xps .xps-#{$name})';
+}
+
+@function own($class) {
+  @return '.xps .#{$class}.#{$class}';
+}

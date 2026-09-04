@@ -31,6 +31,7 @@ export type SuggestionsWidgetParams = {
   /**
    * Accepted so the Page Builder mount can pass it through, and otherwise unused: which of the
    * two an index answers with is server-side configuration, not a request field (contract §4.4).
+   * The panel's group headers follow the RESPONSE (`Suggestion.group`), not this.
    */
   mode?: 'documents' | 'querySuggestions' | 'mixed';
   placeholder?: string;

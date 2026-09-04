@@ -27,6 +27,7 @@
   position: absolute;
   inset-inline: 0;
   top: 100%;
+  @include b.suggestions-panel;
   z-index: 20;
   max-height: 60vh;
   overflow-y: auto;
@@ -34,7 +35,7 @@
 }
 
 .xps-suggestions__group-title {
-  padding: var(--xps-space) var(--xps-space) v.$quarter;
+  @include b.suggestions-group-title;
 }
 
 /* The recents group heading: its Clear control sits at the far end of the same row. */
@@ -61,11 +62,16 @@
   min-width: 0;
 }
 
+/* The board's 10px row gap; the document row overrides it with its own stacked spacing below. */
+.xps-suggestions__group + .xps-suggestions__group {
+  @include b.suggestions-group-gap;
+}
+
 .xps-suggestions__option {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
-  padding: v.$half var(--xps-space);
+  gap: calc(var(--xps-space) - 2px);
+  @include b.suggestion-option;
   cursor: pointer;
 }
 
@@ -92,7 +98,7 @@
 }
 
 .xps-suggestions__footer {
-  padding: v.$half var(--xps-space);
+  @include b.suggestions-footer;
 }
 
 /* Nothing matched: a centred block where the rows would have been (Autocomplete.dc.html). */

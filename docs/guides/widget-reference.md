@@ -805,9 +805,9 @@ suggestions({ container: '#search-suggest', resultsUrl: '/search', debounceMs: 1
 | `resultsUrl` | — | The full results page. See below. |
 | `placeholder` | `'Search…'` | |
 | `label` / `showLabel` | `'Search this site'` / `false` | The always-rendered `<label>`; hidden with `xps-sr-only` by default. |
-| `groupLabels` | `{ recent: 'Recent searches', suggestions: 'Suggestions', documents: 'Pages' }` | Group headings, used whenever the panel shows more than one source. |
+| `groupLabels` | `{ recent: 'Recent searches', suggestions: 'Suggestions', documents: 'Pages' }` | Group headings. Used whenever the panel shows more than one source, and whenever the response labelled its entries (`Suggestion.group`, which the server sends in every mode) — so a single group of pages still shows its **Pages** heading. The same applies to the search box's integrated popup. |
 | `recentSearches` | `true` | Offer this visitor's own recent searches as the panel's first group. See below. |
-| `mode` | `'documents'` | Accepted so the Page Builder mount can pass it through, and otherwise unused: whether an index answers with query suggestions, with matching documents or with both is server-side configuration, not a request field. |
+| `mode` | `'documents'` | Accepted so the Page Builder mount can pass it through, and otherwise unused: whether an index answers with query suggestions, with matching documents or with both is server-side configuration, not a request field. The panel's group headings follow the **response** — see `groupLabels`. |
 | `windowRef` | `window` | Injectable, for tests and SSR. |
 
 This widget renders **its own search field**. On a results page, where a `searchBox` already carries
