@@ -15,7 +15,23 @@ namespace XpSearch.Admin.UIPages.QueryTester;
 /// The explanation lines that apply to every hit - synonym expansions, stopword removals, field
 /// weights and query-time rules - in application order.
 /// </param>
-public sealed record QueryTesterSideResult(SearchResponse Response, IReadOnlyList<string> QueryExplanations);
+/// <param name="AppliedRules">
+/// The tuning rules that changed a document's score or position, keyed by result id (QT-2). The
+/// response carries the score steps itself; this is the part of the trail it does not.
+/// </param>
+public sealed record QueryTesterSideResult(
+    SearchResponse Response,
+    IReadOnlyList<string> QueryExplanations,
+    IReadOnlyDictionary<string, IReadOnlyList<AppliedRule>> AppliedRules)
+{
+    /// <summary>Initializes a new instance of the <see cref="QueryTesterSideResult"/> class with no recorded rules.</summary>
+    /// <param name="response">The search response.</param>
+    /// <param name="queryExplanations">The query-level explanation lines.</param>
+    public QueryTesterSideResult(SearchResponse response, IReadOnlyList<string> queryExplanations)
+        : this(response, queryExplanations, new Dictionary<string, IReadOnlyList<AppliedRule>>(StringComparer.Ordinal))
+    {
+    }
+}
 
 /// <summary>
 /// Runs one query tester search, with the index's relevance tuning applied or with none of it
@@ -144,7 +160,7 @@ public sealed class QueryTesterSearch : IQueryTesterSearch
             .ExecuteAsync(request, cancellationToken)
             .ConfigureAwait(false);
 
-        return new QueryTesterSideResult(response, capture.QueryExplanations);
+        return new QueryTesterSideResult(response, capture.QueryExplanations, capture.AppliedRules);
     }
 
     /// <summary>
@@ -201,6 +217,10 @@ public sealed class QueryTesterSearch : IQueryTesterSearch
     {
         public IReadOnlyList<string> QueryExplanations { get; private set; } = [];
 
+        /// <summary>The rules that touched a document, which the response does not carry at all (QT-2).</summary>
+        public IReadOnlyDictionary<string, IReadOnlyList<AppliedRule>> AppliedRules { get; private set; } =
+            new Dictionary<string, IReadOnlyList<AppliedRule>>(StringComparer.Ordinal);
+
         public int Order => int.MaxValue;
 
         public Task ExecuteAsync(SearchContext context, CancellationToken cancellationToken)
@@ -208,6 +228,10 @@ public sealed class QueryTesterSearch : IQueryTesterSearch
             ArgumentNullException.ThrowIfNull(context);
 
             QueryExplanations = [.. context.QueryExplanations];
+            AppliedRules = context.AppliedRules.ToDictionary(
+                entry => entry.Key,
+                entry => (IReadOnlyList<AppliedRule>)[.. entry.Value],
+                StringComparer.Ordinal);
 
             return Task.CompletedTask;
         }

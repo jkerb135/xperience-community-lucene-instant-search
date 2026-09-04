@@ -95,10 +95,17 @@ public class ZeroResultRuleCreatePage : RuleBuilderPage
 
     /// <summary>Builds the rule the seeded page starts from.</summary>
     /// <param name="query">The query that found nothing.</param>
-    /// <returns>A rule that fires on that query and does nothing yet.</returns>
-    public static RuleDto SeedFor(string? query)
+    /// <param name="action">
+    /// The action to pre-fill, one of <see cref="RuleActionDto.Types"/>, or an empty string for a
+    /// rule with no action yet. The query tester seeds <c>pin</c> and <c>bury</c> (QT-2).
+    /// </param>
+    /// <param name="targetId">Result id the pre-filled action names.</param>
+    /// <param name="position">One-based position a pinned document is moved to.</param>
+    /// <returns>A rule that fires on that query, carrying the pre-filled action when there is one.</returns>
+    public static RuleDto SeedFor(string? query, string? action = null, string? targetId = null, int position = 1)
     {
         string text = (query ?? string.Empty).Trim();
+        string type = (action ?? string.Empty).Trim();
 
         return new RuleDto
         {
@@ -109,6 +116,17 @@ public class ZeroResultRuleCreatePage : RuleBuilderPage
                 QueryOperator = "contains",
                 QueryPattern = text,
             },
+            Actions = type.Length == 0 || !RuleActionDto.Types.Contains(type)
+                ? []
+                :
+                [
+                    new RuleActionDto
+                    {
+                        Type = type,
+                        TargetId = targetId ?? string.Empty,
+                        Position = Math.Max(1, position),
+                    }
+                ],
         };
     }
 
@@ -117,7 +135,8 @@ public class ZeroResultRuleCreatePage : RuleBuilderPage
     {
         // The index comes from the URL's index segment; only the query part of the seed is used.
         (_, string query) = RuleSeed.Decode(Seed);
+        (string action, string targetId, int position) = RuleSeed.DecodeAction(Seed);
 
-        return SeedFor(query);
+        return SeedFor(query, action, targetId, position);
     }
 }

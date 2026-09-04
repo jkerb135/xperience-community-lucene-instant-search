@@ -12,6 +12,23 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Changed (admin):** the query tester is a diff. One list holds both rankings — every document with
+  its tuned position, its raw position, a change marker, the score with the delta against the score it
+  had before any boost, and the rules that applied to it — under a verdict callout that says what the
+  tuning did in one line (*Tuning changed 3 of 6 results — 1 moved up, 1 added, 1 moved down*). The
+  pipeline trail is clickable, **Only changes** hides the untouched rows, **Side by side** keeps the
+  old two-column view, and clicking a row opens a panel with **How the score was built**: the score
+  after every scoring stage, raw Lucene score first and the final one in bold. Your last five queries
+  per index are one-click chips, and the simulation controls (contact group, tuning variant, results
+  per side) moved into a **Simulate as** drawer whose applied choices stay visible as tags. See
+  `docs/adr/0028-query-tester-as-diff.md`.
+
+- **Added (admin):** pin, bury and open-rule from a result. The row panel offers **Pin for '<query>'**
+  and **Bury for '<query>'**, which open the rule builder with that action already pointing at the
+  document (pin at the position it holds), and **Open rule** next to every rule that touched the
+  result. The rule-creation seed the analytics dashboard already used carries the action, and its
+  older two-segment form still decodes.
+
 - **Added (core):** `ranking.steps` — with `explain=true`, every result carries the score it had
   after each scoring stage, in application order: `Lucene score`, `Field weights`, one entry per
   boost rule that changed it, `Popularity boost`, and the pin that moved it. The first entry is the

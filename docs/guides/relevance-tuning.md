@@ -514,77 +514,88 @@ item behind that id is gone; pick a new one.
 
 ### Checking your work: the Query tester
 
-**Query tester** in the index's Edit index sidebar answers the only question that matters after you save
-a rule: did it do what you meant?
+**Query tester** in the index's Edit index sidebar answers the only question that matters after you
+save a rule: did it do what you meant? It shows **one list holding two rankings** — your tuned one,
+marked against the same query run with no tuning at all — so a rule that changed nothing is as
+obvious as a rule that changed everything.
 
-Before you run anything the page shows a quick tip explaining what the comparison is, and two empty
-panels where the columns will appear. There is nothing else to read, because there is nothing to
-compare yet.
+Four moves, top to bottom.
 
-1. The **Index** is the one you are in — it is named under the headline and cannot be changed.
-2. Type the **Query** a visitor would type. It is required: until you type something, **Run** is
-   disabled and the field reads *Enter a query to compare results. Required.*
-3. **Language** offers the content languages this index is configured for, plus **Any language**
-   (the default).
-4. **Page size** — how many results each side shows: 10, 25 or 50.
-5. **Contact group** — **Real visitor (your contact)** by default, or any contact group to see what a
-   member of it would get. See
-   [Personalise rules by contact group](#personalise-rules-by-contact-group).
-6. Press **Run**.
+**1. Ask.** The **Index** is the one you are in; it is named next to the headline with the tuning the
+run uses and how many pipeline stages it went through. Type the **Query** a visitor would type
+(required — **Run** stays disabled until you do) and press Enter or **Run**. **Language** offers the
+content languages this index is configured for, plus **Any language**.
 
-![The Query tester after running the query coffee: the controls above, then With tuning and Without tuning columns, each reading 24 results and 0 changed, with per-result scores and Unchanged tags](images/tuning--query-tester.png)
+Two things sit under the query row. **Simulate as** opens a drawer with **Contact group** (*Real
+visitor (your contact)* by default, or any group, so you can borrow a
+[group-scoped rule](#personalise-rules-by-contact-group)), **Tuning** (*Live tuning (A)*, or an
+experiment's *Variant B* while the index has one) and **Results per side** (10, 25 or 50). Whatever
+those say is shown as tags beside the button at all times, so you always know what you are looking
+at. **Recent** keeps your last five queries on this index as chips; clicking one runs it again.
 
-You get two cards holding the same search:
+**2. Read the verdict.** A callout answers in one line: *Tuning changed 3 of 6 results* with the
+tally (*1 moved up, 1 added, 1 moved down*), or *Tuning made no difference to this query*. If the
+verdict says nothing changed, your rule did not match — open it, check what its condition rows
+actually say, and check the schedule. **Create a rule for this query** opens the rule builder with
+this query already filled in.
 
-- **With tuning** — exactly what a visitor gets right now: your rules, synonyms, stopwords and field
-  weights all applied.
-- **Without tuning** — the same query with none of them. This is the "before" picture.
+**3. Why, then what.** **Pipeline** is the trail of what applied to the whole search, one clickable
+tag per stage: `synonym:couch` (the search was widened with this word), `weight:Title×3` (a field
+weight applied), `rule:Winter campaign` (a rule applied at query time). Click a tag to read its full
+line underneath.
 
-Each card opens with a strip reading *N results · N ms · N changed*, so you can see at a glance
-whether the tuning moved anything at all.
+Under it, **Results for '<query>'** carries the counts (*tuned · raw · changed*, and how long each
+side took) and the table. Each row is one document as both rankings hold it: its **Tuned #**, its
+**Raw #**, a change marker, the title and URL, the **Score** with what tuning did to it
+(`base 0.462`, `+0.407 vs base`, `not in raw`), and **Why** — the rules and weights that applied to
+that row. Unchanged rows are low-emphasis; **Only changes** hides them altogether. **Side by side**
+switches to the older two-column view — *With tuning* and *Without tuning* — when you would rather
+read the two rankings as lists.
 
-*N changed* counts results whose **position** differs, which is why the run captured above reports
-*0 changed* even though a rule fired. That rule boosts every `contentType:DancingGoat.ProductPage`
-document by ×2 and every hit for *coffee* is a product page, so all the scores rise together (`0.107`
-with tuning against `0.022` without, on the second row) and nothing overtakes anything. A boost that
-lifts every result equally changes no ranking — that is the tester telling you the rule is too broad
-to be earning its priority slot.
-
-Every result on both sides shows:
-
-- its **position** and title, and its URL,
-- **score** — the final relevance number, after everything,
-- **base score** — the raw text-match score, before any rule or weight touched it. If the two are the
-  same, nothing changed that result's score,
-- a tag saying how it differs from the other side,
-- one line per rule, weight or synonym that applied to *that* result, for example
-  `rule:Flagship machine first`.
-
-Under the columns, **Rewritten query per pipeline stage** lists what applied to the whole search, one
-line per stage: `synonym:couch` (the search was widened with this word), `weight:Title×3` (this field
-weight applied), `rule:Winter campaign` (a boost or filter rule applied at query time).
-
-Every result carries a tag, so a row is never marked by colour alone:
+Every row carries a tag, so a change is never marked by colour alone:
 
 | Tag | Means |
 |---|---|
-| ▲ Moved up by a rule | Your pin or boost lifted it. |
-| ▼ Moved down by a rule | Your bury, or someone else's boost, pushed it down. |
-| + Added by a rule | It was not in the plain results at all — a pin put it there. |
-| ⃠ Removed by a rule | It was in the plain results and your bury or filter took it out. |
-| – Unchanged | Same position on both sides. |
+| ▲ Moved up | Your pin or boost lifted it. |
+| ▼ Moved down | Your bury, or someone else's boost, pushed it down. |
+| + Added | It was not in the raw results at all — a pin or a boost put it there. |
+| ⃠ Removed | It was in the raw results and your bury or filter took it out. |
+| – Unchanged | Same position in both rankings. |
+
+**4. Drill in and act.** Click a row and a panel opens on it.
+
+**How the score was built** is the row's score after every scoring stage, in the order they ran, with
+the final one in bold:
+
+| Step | Score |
+|---|---|
+| Lucene score | 0.005 |
+| Field weights | 0.007 |
+| rule:Espresso grinders | 0.412 |
+
+The first step is the raw text-match score — what the document scores on the words alone. Each step
+after it is one stage of the pipeline: your field weights, one entry per boost rule that changed this
+document, the popularity boost, and finally the pin that moved it. A stage that left this document's
+score alone is not listed. The last step is the score in the table.
+
+> A boost adds its target next to the query rather than multiplying the whole search, so a rule that
+> boosts *another* document lowers this one's score a little. That is a real step of the score and it
+> is shown as one — but the rule is listed under *Rules that touched this result* only for the
+> documents it actually raised.
+
+**Rules that touched this result** lists them by name, each with **Open rule** to go straight to it,
+or reads *None. Only the query-level stages apply.* At the bottom, **Pin for '<query>'** and **Bury
+for '<query>'** open the rule builder with that action already pointing at this document — pin
+pre-filled at the position it currently holds. Those, with **Create a rule for this query** and
+**Open rule**, are the four ways out of the page: every one of them lands in the rule builder.
 
 **When the query cannot be run** — the index is not registered, or Lucene has nothing searchable for
-the language you picked — a friendly-warning callout replaces both columns, with **Open status** to
-go straight to the index's Status page and, when the index holds another language, a button to try
-that one instead.
+the language you picked — a friendly-warning callout replaces the results, with **Open status** to go
+straight to the index's Status page and, when the index holds another language, a button to try that
+one instead.
 
-Below 1366 px the two columns become a **With tuning / Without tuning** toggle over one list, and the
-pipeline stages collapse.
-
-Reading it: if the two columns are identical, your rule did not match — open the rule, check what
-its condition rows actually say, and check the schedule. If a result moved
-but not far enough, raise the boost or use a pin instead.
+Below 1366 px the table drops its **Why** column and the row panel opens full width; everything else
+stacks.
 
 Two things worth knowing. The tester always runs a fresh search, so a rule you saved a second ago is
 already visible even though live searches may still be served from cache for a moment. And testing

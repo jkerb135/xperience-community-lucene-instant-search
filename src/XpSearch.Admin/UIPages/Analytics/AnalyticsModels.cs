@@ -136,39 +136,91 @@ public static class RuleSeed
     /// <param name="indexName">Code name of the index.</param>
     /// <param name="query">The query text.</param>
     /// <returns>The encoded value.</returns>
-    public static string Encode(string indexName, string query) =>
-        Convert.ToBase64String(Encoding.UTF8.GetBytes($"{indexName}{Separator}{query}"))
+    public static string Encode(string indexName, string query) => Pack($"{indexName}{Separator}{query}");
+
+    /// <summary>
+    /// Encodes the index and query together with the action the created rule starts from: the query
+    /// tester's Pin and Bury (QT-2).
+    /// </summary>
+    /// <param name="indexName">Code name of the index.</param>
+    /// <param name="query">The query text.</param>
+    /// <param name="action">The action type, one of <see cref="RuleBuilder.RuleActionDto.Types"/>.</param>
+    /// <param name="targetId">Result id of the document the action names.</param>
+    /// <param name="position">One-based position a pin moves the document to; ignored by the others.</param>
+    /// <returns>The encoded value.</returns>
+    public static string Encode(string indexName, string query, string action, string targetId, int position) =>
+        Pack(string.Join(
+            Separator,
+            indexName,
+            query,
+            action,
+            targetId,
+            position.ToString(CultureInfo.InvariantCulture)));
+
+    /// <summary>Decodes the action part of a seed produced by the five-argument <see cref="Encode(string, string, string, string, int)"/>.</summary>
+    /// <param name="value">The encoded value.</param>
+    /// <returns>
+    /// The action type, the target and the position. The action is empty for a two-segment seed,
+    /// which is a rule with no action pre-filled.
+    /// </returns>
+    public static (string Action, string TargetId, int Position) DecodeAction(string? value)
+    {
+        string[] parts = Unpack(value).Split(Separator);
+
+        if (parts.Length < 5)
+        {
+            return (string.Empty, string.Empty, 0);
+        }
+
+        return (
+            parts[2],
+            parts[3],
+            int.TryParse(parts[4], NumberStyles.Integer, CultureInfo.InvariantCulture, out int position) ? position : 0);
+    }
+
+    private static string Pack(string value) =>
+        Convert.ToBase64String(Encoding.UTF8.GetBytes(value))
             .TrimEnd('=')
             .Replace('+', '-')
             .Replace('/', '_');
 
-    /// <summary>Decodes a slug segment produced by <see cref="Encode"/>.</summary>
+    /// <summary>Decodes a slug segment produced by <see cref="Encode(string, string)"/>.</summary>
     /// <param name="value">The encoded value.</param>
     /// <returns>The index code name and the query. Both are empty when the value is not decodable.</returns>
     public static (string IndexName, string Query) Decode(string? value)
     {
-        if (string.IsNullOrEmpty(value))
+        string decoded = Unpack(value);
+        int separator = decoded.IndexOf(Separator);
+
+        if (separator < 0)
         {
-            return (string.Empty, string.Empty);
+            return (string.Empty, decoded);
         }
 
-        string decoded;
+        // A seed carrying an action has three more segments; the query is still the second one.
+        int next = decoded.IndexOf(Separator, separator + 1);
+
+        return (
+            decoded[..separator],
+            next < 0 ? decoded[(separator + 1)..] : decoded[(separator + 1)..next]);
+    }
+
+    private static string Unpack(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return string.Empty;
+        }
 
         string padded = value.Replace('-', '+').Replace('_', '/').PadRight((value.Length + 3) / 4 * 4, '=');
 
         try
         {
-            decoded = Encoding.UTF8.GetString(Convert.FromBase64String(padded));
+            return Encoding.UTF8.GetString(Convert.FromBase64String(padded));
         }
         catch (FormatException)
         {
-            return (string.Empty, string.Empty);
+            return string.Empty;
         }
-
-        int separator = decoded.IndexOf(Separator);
-
-        return separator < 0
-            ? (string.Empty, decoded)
-            : (decoded[..separator], decoded[(separator + 1)..]);
     }
 }

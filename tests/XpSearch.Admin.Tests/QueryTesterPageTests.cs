@@ -12,6 +12,8 @@ using XpSearch.Admin.Persistence;
 using XpSearch.Admin.Tuning;
 using XpSearch.Admin.UIPages;
 using XpSearch.Admin.UIPages.QueryTester;
+using XpSearch.Admin.UIPages.RuleBuilder;
+using XpSearch.Admin.UIPages.Analytics;
 using XpSearch.Core.Contract;
 using XpSearch.Core.Tuning;
 
@@ -27,6 +29,7 @@ internal sealed class QueryTesterPageTests
     private IContactGroupCatalog contactGroups = null!;
     private IExperimentCatalog experiments = null!;
     private IPageLinkGenerator links = null!;
+    private IRelevanceTuningSource tuning = null!;
     private QueryTesterPage page = null!;
 
     [SetUp]
@@ -49,8 +52,16 @@ internal sealed class QueryTesterPageTests
 
         links = Substitute.For<IPageLinkGenerator>();
         links.GetPath<IndexStatusPage>(Arg.Any<PageParameterValues>()).Returns("/admin/lucene/indexes/edit/7/status");
+        links.GetPath<ZeroResultRuleCreatePage>(Arg.Any<PageParameterValues>()).Returns("/admin/rules/from-query");
+        links.GetPath<RuleEdit>(Arg.Any<PageParameterValues>()).Returns("/admin/rules/3/edit");
 
-        page = new QueryTesterPage(Storage.Holding(IndexIdentifier, "articles", "en", "es"), search, links, contactGroups, experiments)
+        // The rules are read per index, which is what makes a rule of another index unreachable.
+        tuning = Substitute.For<IRelevanceTuningSource>();
+        tuning
+            .GetRulesAsync("articles", Arg.Any<CancellationToken>(), Arg.Any<TuningVariant>())
+            .Returns(Task.FromResult<IReadOnlyList<TuningRule>>([Rule(3)]));
+
+        page = new QueryTesterPage(Storage.Holding(IndexIdentifier, "articles", "en", "es"), search, links, contactGroups, experiments, tuning)
         {
             IndexIdentifier = IndexIdentifier
         };
@@ -143,7 +154,7 @@ internal sealed class QueryTesterPageTests
     [Test]
     public async Task Run_ReportsAMissingIndexWithoutSearching()
     {
-        var unregistered = new QueryTesterPage(Storage.Holding(IndexIdentifier, "articles"), search, links, contactGroups, experiments) { IndexIdentifier = 999 };
+        var unregistered = new QueryTesterPage(Storage.Holding(IndexIdentifier, "articles"), search, links, contactGroups, experiments, tuning) { IndexIdentifier = 999 };
 
         var response = await unregistered.Run(new QueryTesterRequest(), CancellationToken.None);
 
@@ -217,6 +228,99 @@ internal sealed class QueryTesterPageTests
             Assert.That(pagePermission?.Permission, Is.EqualTo(SystemPermissions.VIEW));
             Assert.That(command.Permission, Is.EqualTo(SystemPermissions.VIEW));
         });
+    }
+
+    /// <summary>The seed the last navigation to the create page carried.</summary>
+    private string Seed()
+    {
+        var parameters = (PageParameterValues)links
+            .ReceivedCalls()
+            .Last()
+            .GetArguments()[0]!;
+
+        parameters.TryGetValue(typeof(ZeroResultRuleCreatePage), out object? seed);
+
+        return (string)seed!;
+    }
+
+    [Test]
+    public async Task CreateRule_OpensTheSeededCreatePageForTheQuery()
+    {
+        var response = await page.CreateRule(new CreateRuleRequest { Query = "espresso" });
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(response, Is.Not.Null);
+            Assert.That(RuleSeed.Decode(Seed()), Is.EqualTo(("articles", "espresso")));
+            Assert.That(RuleSeed.DecodeAction(Seed()).Action, Is.Empty, "a plain create seeds no action");
+        });
+    }
+
+    [Test]
+    public async Task PinResult_SeedsAPinOfThatResultAtThatPosition()
+    {
+        await page.PinResult(new PinResultRequest { Query = "espresso", TargetId = "doc-3:en", Position = 2 });
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(RuleSeed.Decode(Seed()), Is.EqualTo(("articles", "espresso")));
+            Assert.That(RuleSeed.DecodeAction(Seed()), Is.EqualTo(("pin", "doc-3:en", 2)));
+        });
+    }
+
+    [Test]
+    public async Task BuryResult_SeedsABuryOfThatResult()
+    {
+        await page.BuryResult(new BuryResultRequest { Query = "espresso", TargetId = "doc-5:en" });
+
+        Assert.That(RuleSeed.DecodeAction(Seed()), Is.EqualTo(("bury", "doc-5:en", 1)));
+    }
+
+    /// <summary>A rule with nothing but an identifier: the page only ever checks whether it is there.</summary>
+    private static TuningRule Rule(int id) =>
+        new(id, $"Rule {id}", true, 100, null, null, new RuleConditions(null, [], string.Empty, string.Empty), []);
+
+    [Test]
+    public async Task OpenRule_OpensTheRuleOfThisIndexInItsOwnBuilder()
+    {
+        var response = await page.OpenRule(new OpenRuleRequest { RuleId = 3 }, CancellationToken.None);
+
+        var parameters = (PageParameterValues)links.ReceivedCalls().Last().GetArguments()[0]!;
+        parameters.TryGetValue(typeof(RuleEditSection), out object? rule);
+        parameters.TryGetValue(typeof(IndexTuningSection), out object? index);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(response, Is.Not.Null);
+            Assert.That(rule, Is.EqualTo(3));
+            Assert.That(index, Is.EqualTo(IndexIdentifier));
+        });
+    }
+
+    [Test]
+    public async Task OpenRule_RefusesARuleThisIndexDoesNotHave()
+    {
+        var response = await page.OpenRule(new OpenRuleRequest { RuleId = 4 }, CancellationToken.None);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(response, Is.Not.Null);
+            Assert.That(
+                links.ReceivedCalls().Any(call => call.GetMethodInfo().Name == nameof(IPageLinkGenerator.GetPath)),
+                Is.False,
+                "a rule of another index is refused rather than opened here");
+        });
+    }
+
+    /// <summary>A variant-B rule is edited from the experiment section, not from this index's builder (XP-1).</summary>
+    [Test]
+    public async Task OpenRule_RefusesAVariantRule()
+    {
+        await page.OpenRule(new OpenRuleRequest { RuleId = 3, VariantB = true }, CancellationToken.None);
+
+        Assert.That(
+            links.ReceivedCalls().Any(call => call.GetMethodInfo().Name == nameof(IPageLinkGenerator.GetPath)),
+            Is.False);
     }
 
     private static SearchResponse Empty() =>

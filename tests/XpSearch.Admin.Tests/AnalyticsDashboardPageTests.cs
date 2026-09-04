@@ -136,6 +136,44 @@ internal sealed class AnalyticsDashboardPageTests
         });
     }
 
+    /// <summary>
+    /// The seed grew an action for the query tester's Pin and Bury (QT-2); the two-segment form it
+    /// grew out of still decodes, and a two-segment seed carries no action.
+    /// </summary>
+    [Test]
+    public void RuleSeed_RoundTripsTheActionAndStaysCompatibleWithTheTwoSegmentForm()
+    {
+        string seeded = RuleSeed.Encode("articles", "café ☕", "pin", "doc-3:en", 2);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(RuleSeed.Decode(seeded), Is.EqualTo(("articles", "café ☕")));
+            Assert.That(RuleSeed.DecodeAction(seeded), Is.EqualTo(("pin", "doc-3:en", 2)));
+            Assert.That(RuleSeed.DecodeAction(RuleSeed.Encode("articles", "café ☕")), Is.EqualTo((string.Empty, string.Empty, 0)));
+            Assert.That(RuleSeed.DecodeAction(ZeroResultRuleCreatePage.EmptySeed), Is.EqualTo((string.Empty, string.Empty, 0)));
+            Assert.That(RuleSeed.DecodeAction("not base64 at all!"), Is.EqualTo((string.Empty, string.Empty, 0)));
+        });
+    }
+
+    /// <summary>The seeded create page pre-fills the action the tester asked for, and nothing else.</summary>
+    [Test]
+    public void SeedFor_PreFillsThePinTheQueryTesterAskedFor()
+    {
+        var pinned = ZeroResultRuleCreatePage.SeedFor("espresso", "pin", "doc-3:en", 2);
+        var plain = ZeroResultRuleCreatePage.SeedFor("espresso");
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(pinned.Actions, Has.Count.EqualTo(1));
+            Assert.That(pinned.Actions[0].Type, Is.EqualTo("pin"));
+            Assert.That(pinned.Actions[0].TargetId, Is.EqualTo("doc-3:en"));
+            Assert.That(pinned.Actions[0].Position, Is.EqualTo(2));
+            Assert.That(pinned.Conditions.QueryPattern, Is.EqualTo("espresso"));
+            Assert.That(plain.Actions, Is.Empty, "a rule created from a query alone still starts with no action");
+            Assert.That(ZeroResultRuleCreatePage.SeedFor("espresso", "nonsense", "doc-3:en", 1).Actions, Is.Empty);
+        });
+    }
+
     /// <summary>The dashboard reports on the index in the URL, and says so to the client template.</summary>
     [Test]
     public async Task ConfigureTemplateProperties_LocksTheIndexToTheOneInTheUrl()

@@ -4,6 +4,7 @@ using NUnit.Framework;
 
 using XpSearch.Admin.UIPages.QueryTester;
 using XpSearch.Core.Contract;
+using XpSearch.Core.Pipeline;
 
 namespace XpSearch.Admin.Tests;
 
@@ -88,6 +89,42 @@ internal sealed class QueryTesterDiffTests
         });
     }
 
+    /// <summary>The per-stage score breakdown of QT-2 travels to the client on every hit.</summary>
+    [Test]
+    public void Compare_CarriesTheScoreStepsAndTheRulesThatTouchedTheHit()
+    {
+        var side = Side(
+            ["a"],
+            [],
+            steps: [new RankingStep { Stage = "Lucene score", Score = 1.5 }, new RankingStep { Stage = "rule:Espresso", Score = 2.5 }],
+            appliedRules: new Dictionary<string, IReadOnlyList<AppliedRule>>(StringComparer.Ordinal)
+            {
+                ["a"] = [new AppliedRule(7, "Espresso", "boost")]
+            });
+
+        var hit = QueryTesterDiff.Compare(side, Side(["a"], [])).WithRules.Hits[0];
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(hit.Steps.Select(step => step.Stage), Is.EqualTo(new[] { "Lucene score", "rule:Espresso" }).AsCollection);
+            Assert.That(hit.Steps[^1].Score, Is.EqualTo(2.5).Within(0.001));
+            Assert.That(hit.Rules, Is.EqualTo(new[] { new HitRule(7, "Espresso", "boost") }).AsCollection);
+            Assert.That(hit.BaseScore, Is.EqualTo(1.5).Within(0.001), "the base score is the ranking's own, which is the first step since QT-2");
+        });
+    }
+
+    [Test]
+    public void Compare_LeavesAHitNoRuleTouchedWithoutStepsOrRules()
+    {
+        var hit = QueryTesterDiff.Compare(Side(["a"], []), Side(["a"], [])).WithRules.Hits[0];
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(hit.Steps, Is.Empty);
+            Assert.That(hit.Rules, Is.Empty);
+        });
+    }
+
     [Test]
     public void Attribute_ReturnsAnEmptyStringWhenTheIndexDoesNotProjectIt()
     {
@@ -96,7 +133,12 @@ internal sealed class QueryTesterDiffTests
         Assert.That(QueryTesterDiff.Attribute(result, QueryTesterDiff.TitleAttribute), Is.Empty);
     }
 
-    private static QueryTesterSideResult Side(string[] ids, string[] queryExplanations, string[]? hitExplanations = null)
+    private static QueryTesterSideResult Side(
+        string[] ids,
+        string[] queryExplanations,
+        string[]? hitExplanations = null,
+        RankingStep[]? steps = null,
+        IReadOnlyDictionary<string, IReadOnlyList<AppliedRule>>? appliedRules = null)
     {
         var response = new SearchResponse
         {
@@ -120,12 +162,15 @@ internal sealed class QueryTesterDiffTests
                     {
                         BaseScore = 1.5,
                         Position = index + 1,
-                        Boosts = [.. queryExplanations, .. hitExplanations ?? []]
+                        Boosts = [.. queryExplanations, .. hitExplanations ?? []],
+                        Steps = steps
                     }
                 })
             ]
         };
 
-        return new QueryTesterSideResult(response, queryExplanations);
+        return appliedRules is null
+            ? new QueryTesterSideResult(response, queryExplanations)
+            : new QueryTesterSideResult(response, queryExplanations, appliedRules);
     }
 }
