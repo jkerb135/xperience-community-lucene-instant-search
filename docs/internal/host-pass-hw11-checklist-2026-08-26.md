@@ -594,3 +594,46 @@ and the `XpSearch.QueryLogRetention` task now also prunes answered suggestions.
      older than the cutoff (set the value to 1 again to make yesterday's answered suggestion old),
      run the task → that answered row is gone from the listing's history; every **pending**
      suggestion is still listed.
+
+## §AA — QT-2 query tester as a diff (2026-09-03)
+
+The query tester is now one list of two rankings: what tuning did, per result, with the score after
+every scoring stage. Walk it against the host's **Demo: …** rules, which `DemoTuningRuleSeeder`
+seeds on `DancingGoatSample` for the query **espresso** under Development only (a pin, a x3 boost on
+a filter expression, a bury, a contact-group-scoped pin and a `RemoveWord`; the startup log names
+the document each rule targets). Numbering continues from §Z's 132.
+
+Open **Lucene Search → DancingGoatSample → Edit index → Query tester** and run `espresso`.
+
+133. **Verdict and counts.** The `Callout` reads *Tuning changed N of M results* with the tally
+     underneath (`1 moved up, 1 added, 1 moved down, 1 removed` for the seeded rules), and the
+     results card's stats line agrees with it (tuned / raw / changed, `tookMs` for both sides). A
+     query no rule matches (e.g. `latte`) reads *Tuning made no difference to this query*.
+134. **Pipeline trail.** The **Pipeline** card lists the query as a dark tag and one clickable tag
+     per query-level stage, including *Demo: Espresso wording* (the `RemoveWord` rule) and the
+     boost rule. Clicking a tag selects it (sky blue) and shows its full explanation text in the
+     mono block below.
+135. **Only changes.** Tick **Only changes** → unchanged rows disappear and the remaining rows are
+     exactly the tally from item 133; untick → the full page is back. The checkbox is absent in
+     side-by-side view.
+136. **Side by side.** **Side by side** shows the two tables (With tuning / Without tuning); the
+     diff table is gone (never both at once), unchanged rows carry no change tag. Switching back to
+     **Diff** keeps the query and the results.
+137. **Score steps.** Click the boosted row → the `SidePanel` opens with the title, the mono url and
+     a change tag reading e.g. *Added · not in raw ranking → tuned #7*. **How the score was built**
+     lists the steps in order: **Lucene score** first and *different from* the final score, then the
+     stages that changed it (field weights if any, the boost rule, popularity, clicks), the last row
+     bold and equal to the row's Score column. A row no rule touched shows *None. Only the
+     query-level stages apply.*
+138. **Open rule.** In that panel's **Rules that touched this result**, **Open rule** navigates to
+     that rule's edit page inside this index (the rule name matches the seeded `Demo:` rule).
+     Coming back to the tester and re-running keeps the same verdict.
+139. **Pin and bury from a result.** In the panel, **Pin for 'espresso'** opens the seeded rule
+     create page with the query pre-filled *and* a **Pin** action carrying this result and its tuned
+     position; back out, then **Bury for 'espresso'** does the same with a **Bury** action. Saving
+     the pin rule and re-running the tester shows the new move.
+140. **Simulate as.** Open **Simulate as**, pick the contact group the seeder logged (`CoffeeLovers`
+     if it exists, otherwise the first group), run again → *Demo: Espresso for coffee lovers* fires
+     (its target is pinned to #1 and the rule appears in that row's panel), and the applied choice
+     renders as a sky-blue tag next to the button reading the group. Clearing the group and
+     re-running drops that rule.
