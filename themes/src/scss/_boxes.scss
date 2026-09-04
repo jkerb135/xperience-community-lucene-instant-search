@@ -131,6 +131,25 @@
   padding: 0 v.$quarter;
 }
 
+/* The filter column's card. Padding is the box, not the paint, so it is structure the shell states
+   as well — a shell-only site gets the same column, just without the surface around it (TH-11). */
+@mixin sidebar {
+  padding: 1.25rem;
+}
+
+/* The popup's offset from the field it belongs to (design board `Autocomplete.dc.html`: 8px).
+   The panel is absolutely positioned at `top: 100%`, so without this it touches the input. */
+@mixin suggestions-panel {
+  margin-top: 0.5rem;
+}
+
+/* An autocomplete row. The panel renders an option as an `<li>` when it shows a single source and
+   as a `<div>` inside a group otherwise, and the theme's reset flattens the `<li>` — so the row's
+   box has to come from here, stated by both stylesheets (TH-11). */
+@mixin suggestion-option {
+  padding: v.$half var(--xps-space);
+}
+
 /* Screen-reader-only text is a box too: the theme's element reset would otherwise flatten it. */
 @mixin sr-only {
   margin: -1px;

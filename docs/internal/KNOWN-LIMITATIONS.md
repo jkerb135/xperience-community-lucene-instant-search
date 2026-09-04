@@ -1328,6 +1328,23 @@ and how to lift it.
 - **Upgrade path:** if the repetition ever has to go, the boundary is a shadow root, not a stronger
   selector; short of that, extend `site-hostile.css` when a real site finds a hole.
 
+## The layout-parity check compares what the shell declares, not everything (`check-layout.mjs`, TH-11)
+
+- **Simplified:** `themes/scripts/check-layout.mjs` renders each fixture with the shell alone and with
+  shell + palette and compares only (a) the layout properties `shell.css` itself declares for that
+  element, read off its CSSOM, and (b) with the type scale and border widths pinned in both renders.
+  Anything else would compare the theme against the *user agent* — the shell states no `font-size` and
+  no borders on purpose, so under it alone every `em` length and every control's 2px UA border differ
+  for reasons that are design. A declared value of `auto` is skipped too: its used value is whatever
+  the row's text left over, which the theme's `font-variant-numeric` alone changes.
+- **Ceiling:** a box the theme adds where the shell declares *nothing* is invisible to it (only the
+  fixtures' own composition would show it), and the logical properties are mapped to their LTR sides,
+  so an RTL-only structural rule is compared against the wrong edge. Only the checked-in fixtures are
+  covered, as with the isolation check.
+- **Upgrade path:** compare declared values instead of computed ones by walking the cascade in the
+  browser (specificity + order per sheet), which removes both the pinning and the `auto` exception;
+  add an RTL pass by rendering each fixture a second time under `dir="rtl"`.
+
 ## The control box model is emitted by both stylesheets (`_boxes.scss`, TH-7)
 
 - **Simplified:** the shell must state the box of every control (a shell-only site needs usable

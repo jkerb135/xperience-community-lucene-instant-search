@@ -3,6 +3,13 @@
 /* The primary way out of the empty state: 38px tall with 18px flanks, per the design board. */
 /* A pill, not the boxed chip the active filters use. */
 /* The footer's keycaps: 20px tall, per the autocomplete board. */
+/* The filter column's card. Padding is the box, not the paint, so it is structure the shell states
+   as well — a shell-only site gets the same column, just without the surface around it (TH-11). */
+/* The popup's offset from the field it belongs to (design board `Autocomplete.dc.html`: 8px).
+   The panel is absolutely positioned at `top: 100%`, so without this it touches the input. */
+/* An autocomplete row. The panel renders an option as an `<li>` when it shows a single source and
+   as a `<div>` inside a group otherwise, and the theme's reset flattens the `<li>` — so the row's
+   box has to come from here, stated by both stylesheets (TH-11). */
 /* Screen-reader-only text is a box too: the theme's element reset would otherwise flatten it. */
 /* xperience-search — shell.css
  * Generated from themes/src/scss/shell.scss — run `npm run build` in themes/, do not edit by hand.
@@ -83,7 +90,10 @@
 /* --------------------------------------------------------------------------
  * Utilities (documented for custom widgets, spec 5.7)
  * ------------------------------------------------------------------------ */
-.xps-sr-only {
+/* Scoped to `.xps` so it outranks the element rules above: an `h3.xps-sr-only` or a
+   `p.xps-sr-only` (the live regions) would otherwise take their `margin: 0` at (0,1,1) and lose the
+   -1px the clip needs. The theme states the same box at its own weight (TH-11). */
+.xps .xps-sr-only {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -128,6 +138,7 @@
   display: flex;
   flex-direction: column;
   gap: 1.75rem;
+  padding: 1.25rem;
 }
 
 .xps-sidebar__title {
@@ -149,6 +160,12 @@
   gap: calc(var(--xps-space) / 2);
   min-height: 2.25rem;
   padding: calc(var(--xps-space) / 2) var(--xps-space);
+}
+
+/* The link-button is a box the design opens up: text in a row, not a button. Structure, so the
+   shell states it too — the theme restates it from the same mixin (TH-11). */
+.xps-button--link {
+  padding-inline: 0;
 }
 
 .xps-chip {
@@ -755,6 +772,7 @@
   position: absolute;
   inset-inline: 0;
   top: 100%;
+  margin-top: 0.5rem;
   z-index: 20;
   max-height: 60vh;
   overflow-y: auto;

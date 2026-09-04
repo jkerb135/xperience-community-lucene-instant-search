@@ -202,6 +202,13 @@ itself, and beats the reset by coming later in the file.
 twice in a real browser — plain, and under Dancing Goat's own CSS re-pointed at our markup — and
 every computed property of every element is compared.
 
+**The theme never changes layout.** Every box — padding, margins, gaps, sizes, positioning — is
+`shell.css`'s; `default.css` only paints, and restates a box only where its own element reset would
+otherwise flatten what the shell declared (an autocomplete row is an `<li>`, and the reset zeroes
+`padding` on one). So a site that keeps `shell.css` and writes its own theme gets the same
+composition, and swapping palettes never moves anything.
+`themes/scripts/check-layout.mjs` proves it on every build.
+
 **Deliberately overriding the theme** is one rule away: write the theme's own selector, after it.
 To restyle the pagination link:
 

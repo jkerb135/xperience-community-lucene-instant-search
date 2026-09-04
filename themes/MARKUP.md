@@ -73,6 +73,12 @@ widget's markup one level down inside its own `.xps` root. Both spellings are th
 `themes/scripts/check.mjs` fails the build if any partial other than `default/_root.scss` repeats a
 class, so the `.xps.xps.xps` idiom cannot spread back out of the reset.
 
+**And the theme never changes layout.** Structure lives in `shell.css`; `default.css` only paints,
+and restates a box (from `src/scss/_boxes.scss`, one source and two emissions) wherever its element
+reset would otherwise flatten what the shell declared. `themes/scripts/check-layout.mjs` proves it:
+every fixture is rendered with the shell alone and with shell + palette, and every layout property
+the shell declares must compute the same in both.
+
 A site's own stylesheet reaches (0,2,1) without knowing our class names (`button`, `.section h3`,
 `.landing-page ul li`, `.product-filter input[type="checkbox"]`), so with the theme loaded a widget
 is a **closed styling boundary**: nothing outside it decides how anything inside it looks.
@@ -473,12 +479,12 @@ Implements the WAI-ARIA APG combobox-with-listbox pattern:
 | `xps-suggestions__reset` | `<button type="reset" class="xps-button">` | `aria-label`; `hidden` while empty. |
 | `xps-suggestions__panel` | `<div>` | Absolutely positioned; `hidden` when closed. |
 | `xps-suggestions__list` | `<ul role="listbox" id aria-label>` | Always present, even when empty, so `aria-controls` never dangles. |
-| `xps-suggestions__group` | `<li role="group" aria-labelledby>` | One per source, in order: recent searches (client-side), query suggestions, matching documents. Omit the group wrapper when there is only one ungrouped source and put `role="option"` on `<li>` directly — except for the recents, whose group is always labelled because the label row carries the Clear control. |
+| `xps-suggestions__group` | `<li role="group" aria-labelledby>` | One per source, in order: recent searches (client-side), query suggestions, matching documents. Omit the group wrapper when there is only one ungrouped source and put `role="option"` on `<li>` directly — except for the recents, whose group is always labelled because the label row carries the Clear control, and for `mode: "mixed"`, where every non-empty group is labelled because the answer could have come from either source (a lone Pages group still says Pages). |
 | `xps-suggestions__group-title` | `<div id>` | Labels the group. Not an option. |
 | `xps-suggestions__group-header` | `<div>` | Only the recents: their title row, with the Clear control at its far end. It sits **before the listbox**, not inside it — a `<button>` is not something a listbox may own — and the recents' group points at its title with `aria-labelledby`. Every other group renders the bare title inside itself. |
 | `xps-suggestions__group-clear` | `<button type="button" class="xps-button xps-button--link" data-xps-recent-clear>` | Empties this visitor's recent searches and closes the group. Outside the title element, so the group name stays "Recent searches", and outside the listbox. |
 | `xps-suggestions__row` | `<div>` | Only a recent row: wraps the option and its remove control. The control is a **sibling** of the option, never a child — a focusable descendant of `role="option"` is swallowed by the option's accessible name. |
-| `xps-suggestions__option` | `<div role="option" id aria-selected>` | Ids follow `…-option-{index}` in visual order. |
+| `xps-suggestions__option` | `<div role="option" id aria-selected>` — or `<li>` when there is no group wrapper | Ids follow `…-option-{index}` in visual order. Both spellings get the same box: the row's padding comes from `_boxes.scss` and is stated by BOTH stylesheets, because the theme's reset flattens an `<li>`. |
 | `xps-suggestions__option--recent` / `xps-suggestions__option--query` / `xps-suggestions__option--document` | modifier | Which source the row came from, so the theme can give each its own glyph and weight. |
 | `xps-suggestions__option--active` | modifier | The `aria-activedescendant` target; also `aria-selected="true"`. Exactly one at a time, or none. |
 | `xps-suggestions__option-icon` | `<svg aria-hidden="true" focusable="false">` | The row's leading glyph — a clock on a recent row, a magnifier on a suggestion, none on a document row — and the X inside the remove control. 24px grid, `currentColor`, no external asset. |

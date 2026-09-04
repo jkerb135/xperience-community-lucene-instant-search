@@ -29,8 +29,10 @@ export type SuggestionsWidgetParams = {
   /** `window` by default; injectable for tests and SSR. */
   windowRef?: Window;
   /**
-   * Accepted so the Page Builder mount can pass it through, and otherwise unused: which of the
-   * two an index answers with is server-side configuration, not a request field (contract §4.4).
+   * Which of the two an index answers with is server-side configuration, not a request field
+   * (contract §4.4), so this only shapes the panel: in `mixed` every non-empty group is labelled,
+   * because the answer could have come from either source. The single-source modes render a
+   * header-less list.
    */
   mode?: 'documents' | 'querySuggestions' | 'mixed';
   placeholder?: string;
@@ -137,7 +139,10 @@ export function suggestions(params: SuggestionsWidgetParams): Widget {
     reset.hidden = query === '';
 
     // No `hints`: this widget shows the footer only when it has a "see all" link to put in it.
-    renderPanel({ input, panel, id }, view, { ...(groupLabels === undefined ? {} : { groupLabels }) });
+    renderPanel({ input, panel, id }, view, {
+      ...(groupLabels === undefined ? {} : { groupLabels }),
+      ...(params.mode === undefined ? {} : { mode: params.mode }),
+    });
   };
 
   const widget = withSuggestions<SuggestionsWidgetParams>(

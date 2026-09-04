@@ -375,6 +375,58 @@
             <span class="xps-suggestions__hints" aria-hidden="true"><kbd class="xps-suggestions__key">↑</kbd><kbd class="xps-suggestions__key">↓</kbd> navigate <kbd class="xps-suggestions__key">↵</kbd> select <kbd class="xps-suggestions__key">esc</kbd> close</span>      
           </div>      
         </div>      
+      </div>      
+      
+      <!-- single source (mode="documents"), the live "pr" case: no group wrapper, so the panel's options
+           are the listbox's own <li> children. The theme's element reset zeroes padding and margin on an
+           `li`, so the row's box has to be restated by the theme as well as the shell — that is what
+           `themes/scripts/check-layout.mjs` guards (TH-11). -->
+      <div class="xps xps-suggestions xps-suggestions--open">
+        <form class="xps-suggestions__form" role="search" action="/search" method="get" novalidate>
+          <label class="xps-suggestions__label xps-sr-only" for="xps-search-5-suggestions-input">Search this site</label>
+          <div class="xps-suggestions__field">
+            <input class="xps-suggestions__input"
+                   id="xps-search-5-suggestions-input"
+                   type="text"
+                   name="q"
+                   value="pr"
+                   role="combobox"
+                   aria-expanded="true"
+                   aria-controls="xps-search-5-suggestions-listbox"
+                   aria-activedescendant="xps-search-5-suggestions-option-0"
+                   aria-autocomplete="list"
+                   autocomplete="off"
+                   placeholder="Search…">
+            <button class="xps-button xps-suggestions__reset" type="reset" aria-label="Clear the search query">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+        </form>
+        <div class="xps-suggestions__panel">
+          <ul class="xps-suggestions__list"
+              id="xps-search-5-suggestions-listbox"
+              role="listbox"
+              aria-label="Search suggestions">
+            <li class="xps-suggestions__option xps-suggestions__option--document xps-suggestions__option--active"
+                role="option"
+                id="xps-search-5-suggestions-option-0"
+                aria-selected="true">
+              <span class="xps-suggestions__option-title"><mark class="xps-highlight">Pr</mark>ecision brewing scales</span>
+              <span class="xps-suggestions__option-meta">Product</span>
+            </li>
+            <li class="xps-suggestions__option xps-suggestions__option--document"
+                role="option"
+                id="xps-search-5-suggestions-option-1"
+                aria-selected="false">
+              <span class="xps-suggestions__option-title">French <mark class="xps-highlight">pr</mark>ess brewing guide</span>
+              <span class="xps-suggestions__option-meta">Article</span>
+            </li>
+          </ul>
+          <div class="xps-suggestions__footer">
+            <span class="xps-suggestions__hints" aria-hidden="true"><kbd class="xps-suggestions__key">↑</kbd><kbd class="xps-suggestions__key">↓</kbd> navigate <kbd class="xps-suggestions__key">↵</kbd> select <kbd class="xps-suggestions__key">esc</kbd> close</span>
+            <a class="xps-suggestions__see-all" href="/search?q=pr">See all results for “pr”</a>
+          </div>
+        </div>
       </div>
     </section>
 

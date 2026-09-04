@@ -12,6 +12,18 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Fixed (themes, widgets):** the autocomplete rows have their spacing back. With one source in the
+  panel the options are the listbox's own `<li>` children, and the theme's element reset flattens an
+  `li` — so the row's `9px 14px` box, the panel's `8px` offset from the field, the filter card's
+  padding, the link-button's open box and the screen-reader-only clip were all being wiped when
+  `default.css` loaded. Every one of them now comes from `themes/src/scss/_boxes.scss` and is stated
+  by **both** stylesheets. New `themes/scripts/check-layout.mjs` (wired into `npm run check`) is what
+  keeps it that way: it renders every fixture with the shell alone and with shell + palette, both
+  palettes, and fails if any layout property the shell declares computes differently once the theme
+  is loaded — the theme may only add visuals. A `suggestions` widget in `mode: "mixed"` now also
+  labels a lone group (a single Pages group says **Pages**), since the answer could have come from
+  either source; the single-source modes keep their header-less list.
+
 - **Changed (themes):** the default theme's selectors say what they paint. Every design rule is now
   scoped to its widget block — `.xps.xps-pagination .xps-pagination__link`,
   `.xps.xps-results .xps-results__empty` — or, for the elements several widgets render, to the

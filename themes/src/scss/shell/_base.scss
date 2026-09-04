@@ -84,7 +84,10 @@
  * Utilities (documented for custom widgets, spec 5.7)
  * ------------------------------------------------------------------------ */
 
-.xps-sr-only {
+/* Scoped to `.xps` so it outranks the element rules above: an `h3.xps-sr-only` or a
+   `p.xps-sr-only` (the live regions) would otherwise take their `margin: 0` at (0,1,1) and lose the
+   -1px the clip needs. The theme states the same box at its own weight (TH-11). */
+.xps .xps-sr-only {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -128,6 +131,7 @@
   display: flex;
   flex-direction: column;
   gap: 1.75rem;
+  @include b.sidebar;
 }
 
 .xps-sidebar__title {
@@ -148,6 +152,12 @@
   justify-content: center;
   gap: v.$half;
   @include b.button;
+}
+
+/* The link-button is a box the design opens up: text in a row, not a button. Structure, so the
+   shell states it too — the theme restates it from the same mixin (TH-11). */
+.xps-button--link {
+  @include b.button-link;
 }
 
 .xps-chip {

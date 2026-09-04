@@ -3,6 +3,13 @@
 /* The primary way out of the empty state: 38px tall with 18px flanks, per the design board. */
 /* A pill, not the boxed chip the active filters use. */
 /* The footer's keycaps: 20px tall, per the autocomplete board. */
+/* The filter column's card. Padding is the box, not the paint, so it is structure the shell states
+   as well — a shell-only site gets the same column, just without the surface around it (TH-11). */
+/* The popup's offset from the field it belongs to (design board `Autocomplete.dc.html`: 8px).
+   The panel is absolutely positioned at `top: 100%`, so without this it touches the input. */
+/* An autocomplete row. The panel renders an option as an `<li>` when it shows a single source and
+   as a `<div>` inside a group otherwise, and the theme's reset flattens the `<li>` — so the row's
+   box has to come from here, stated by both stylesheets (TH-11). */
 /* Screen-reader-only text is a box too: the theme's element reset would otherwise flatten it. */
 /* xperience-search — default.css
  * Generated from themes/src/scss/default.scss — run `npm run build` in themes/, do not edit by hand.
@@ -830,6 +837,7 @@
  * suggestions
  * ------------------------------------------------------------------------ */
 .xps .xps-suggestions__panel.xps-suggestions__panel {
+  margin-top: 0.5rem;
   background-color: var(--xps-color-surface);
   border: 1px solid var(--xps-color-border);
   border-radius: var(--xps-radius);
@@ -858,6 +866,9 @@
 }
 
 .xps .xps-suggestions__panel .xps-suggestions__option {
+  /* The row's box, restated from the shell's own source: with a single source in the panel the
+     option is an `<li>`, and the element reset above flattens it (TH-11). */
+  padding: calc(var(--xps-space) / 2) var(--xps-space);
   /* Rows read from the start edge, whatever the host page centres. */
   text-align: start;
 }

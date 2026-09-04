@@ -136,6 +136,12 @@ export interface PanelOptions {
   /** Group headings, used whenever the panel shows more than one source (or any recent search). */
   groupLabels?: { suggestions?: string; documents?: string; recent?: string };
   /**
+   * The index's suggestion mode. In `mixed` the panel can answer from either source, so every
+   * non-empty group is labelled — a lone "Pages" group still says Pages, per the design board. The
+   * single-source modes have nothing to distinguish, so their list stays header-less (TH-11).
+   */
+  mode?: 'documents' | 'querySuggestions' | 'mixed';
+  /**
    * Render the footer even without a "see all" link, for its keyboard hints. A consumer that
    * searches in place — the search box — has no results page to link to but still shows them.
    */
@@ -149,7 +155,7 @@ export interface PanelOptions {
 export function renderPanel(
   parts: ComboboxParts,
   api: SuggestionsRenderState,
-  { groupLabels, hints = false }: PanelOptions = {}
+  { groupLabels, mode, hints = false }: PanelOptions = {}
 ): void {
   const { input, panel, id } = parts;
   const { query, activeIndex, isOpen } = api;
@@ -158,14 +164,16 @@ export function renderPanel(
   panel.hidden = !isOpen;
 
   // Grouped only when the panel actually shows more than one source: with one source the wrapper
-  // would be a group of one, which is noise to a screen reader (MARKUP.md, "suggestions"). The
-  // recents are the exception — their group carries the Clear control, so it is always labelled.
+  // would be a group of one, which is noise to a screen reader (MARKUP.md, "suggestions"). Two
+  // exceptions: the recents, whose group carries the Clear control, and `mode: 'mixed'`, where the
+  // panel could have answered from either source — there a lone group still says which one it is
+  // (design board `Autocomplete.dc.html`, TH-11).
   const all: Option[] = api.suggestions.map((suggestion, at) => ({ suggestion, at }));
   const present = GROUPS.map((group) => ({
     ...group,
     options: all.filter((option) => groupOf(option.suggestion) === group.key),
   })).filter((group) => group.options.length > 0);
-  const grouped = present.length > 1 || present[0]?.key === 'recent';
+  const grouped = present.length > 1 || present[0]?.key === 'recent' || (mode === 'mixed' && present.length > 0);
   const ordered = grouped ? present.flatMap((group) => group.options) : all;
 
   /** Ids are the *visual* position; `data-xps-suggestion` is the behaviour's own index. */

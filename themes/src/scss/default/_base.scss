@@ -268,7 +268,7 @@
    is one of the two rules that double the block class (TH-10; `.xps.xps-sidebar` alone is (0,2,0),
    which a host's `.section div` would outrank). */
 #{r.block('sidebar')}.xps-sidebar {
-  padding: 1.25rem;
+  @include b.sidebar;
   background-color: var(--xps-color-surface);
   border: 1px solid var(--xps-color-border);
   border-radius: var(--xps-radius);

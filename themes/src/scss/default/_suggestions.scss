@@ -6,6 +6,7 @@
  * ------------------------------------------------------------------------ */
 
 #{r.own('xps-suggestions__panel')} {
+  @include b.suggestions-panel;
   background-color: var(--xps-color-surface);
   border: 1px solid var(--xps-color-border);
   border-radius: var(--xps-radius);
@@ -33,6 +34,9 @@
 }
 
 .xps .xps-suggestions__panel .xps-suggestions__option {
+  /* The row's box, restated from the shell's own source: with a single source in the panel the
+     option is an `<li>`, and the element reset above flattens it (TH-11). */
+  @include b.suggestion-option;
   /* Rows read from the start edge, whatever the host page centres. */
   text-align: start;
 }

@@ -27,6 +27,7 @@
   position: absolute;
   inset-inline: 0;
   top: 100%;
+  @include b.suggestions-panel;
   z-index: 20;
   max-height: 60vh;
   overflow-y: auto;
@@ -65,7 +66,7 @@
   display: flex;
   align-items: center;
   gap: 0.625rem;
-  padding: v.$half var(--xps-space);
+  @include b.suggestion-option;
   cursor: pointer;
 }
 
