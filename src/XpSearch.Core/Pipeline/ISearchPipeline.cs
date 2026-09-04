@@ -48,6 +48,9 @@ public static class SearchStageOrder
     /// <summary>Execute the search and collect documents and facet counts.</summary>
     public const int Execute = 800;
 
+    /// <summary>Explain every score checkpoint against the page, so each result carries its per-stage scores (QT-2).</summary>
+    public const int ScoreBreakdown = 850;
+
     /// <summary>Reorder the executed results according to the pin and bury rules.</summary>
     public const int PinnedAndBuried = 900;
 

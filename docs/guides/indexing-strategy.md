@@ -409,6 +409,8 @@ facetable** (a facet per distinct number is noise). After a rebuild a raw hit ca
 { "id": "bc9493ac-…:en", "attributes": { "ProductFieldName": "Clever Dripper", "clicks": 5 } }
 ```
 
+<a id="boost-on-it-at-query-time-leave-a-score-checkpoint"></a>
+
 **4. Boost on it at query time**, with a stage of your own — `ISearchStage`, registered with
 `AddXpSearchStage`, exactly like the library's own stages:
 
@@ -456,12 +458,25 @@ Four things in there are the parts worth copying:
 - **It is bounded.** The tiers cap what any amount of clicking can buy. Tune the factors against your
   own scores: these are constant-score clauses, so on an index whose text scores are small a factor of
   2.5 is a big move, and on one with large scores it is a nudge. Turn on `"explain": true` and read
-  `ranking.baseScore` before you pick numbers.
+  `ranking.baseScore` (the raw score, before any boost) before you pick numbers.
 - **It gets out of the way.** A request sorted by a field ignores scores altogether, so the stage does
   nothing for one — and it does nothing for other indexes, which have no `clicks` field.
 
 Running this *and* the built-in popularity boost stacks two bounded boosts on the same evidence. Pick
 one.
+
+**Leave a score checkpoint.** Every boost is folded into `context.BaseQuery` before the search runs, so
+nothing downstream can tell what your stage contributed. One line fixes that:
+
+```csharp
+context.BaseQuery = boosted;
+context.ScoreCheckpoints.Add(new ScoreCheckpoint("Clicks boost", boosted));
+```
+
+`ScoreBreakdownStage` explains every checkpoint against the page of an `explain=true` request, so your
+stage becomes a named step in `ranking.steps` and a row in the query tester's *How the score was built*.
+The checkpoint holds the query as it stood after your stage, so push it *after* you assign it and never
+mutate that query afterwards. Nothing else changes: without `explain` the checkpoints are never read.
 
 **The ceiling: the value is as fresh as the document.** A computed field is written when the document
 is indexed, so it only changes when that document is re-indexed or the index is rebuilt — clicks that

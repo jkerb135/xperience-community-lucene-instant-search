@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 
 using XpSearch.Core.Contract;
+using XpSearch.Core.Pipeline;
 
 namespace XpSearch.Admin.UIPages.QueryTester;
 
@@ -26,6 +27,42 @@ public sealed class QueryTesterRequest
     /// <summary>
     /// Gets or sets a value indicating whether to answer from the variant-B tuning of the index's
     /// unfinished experiment rather than from the live tuning (XP-1).
+    /// </summary>
+    public bool VariantB { get; set; }
+}
+
+/// <summary>Which result a "Pin for this query" action was invoked on (QT-2).</summary>
+public sealed class PinResultRequest
+{
+    /// <summary>Gets or sets the query the tester ran, which becomes the rule's condition.</summary>
+    public string Query { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the result id to pin.</summary>
+    public string TargetId { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the one-based position to pin the result to.</summary>
+    public int Position { get; set; } = 1;
+}
+
+/// <summary>Which result a "Bury for this query" action was invoked on (QT-2).</summary>
+public sealed class BuryResultRequest
+{
+    /// <summary>Gets or sets the query the tester ran, which becomes the rule's condition.</summary>
+    public string Query { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets the result id to bury.</summary>
+    public string TargetId { get; set; } = string.Empty;
+}
+
+/// <summary>Which rule an "Open rule" action was invoked on (QT-2).</summary>
+public sealed class OpenRuleRequest
+{
+    /// <summary>Gets or sets the identifier of the rule to open.</summary>
+    public int RuleId { get; set; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the run the rule came from used the experiment's
+    /// variant-B tuning (XP-1). Those rules are edited from the experiment section, not from here.
     /// </summary>
     public bool VariantB { get; set; }
 }
@@ -59,6 +96,8 @@ public enum ResultChange
 /// <param name="Position">The one-based position in this side's ranking.</param>
 /// <param name="BaseScore">The Lucene score before any boost rule.</param>
 /// <param name="Boosts">The boosts and rules that applied to this hit alone, in application order.</param>
+/// <param name="Steps">The score after each scoring stage, in application order (QT-2). Empty when the run carried no breakdown.</param>
+/// <param name="Rules">The tuning rules that changed this hit's score or position (QT-2).</param>
 /// <param name="Change">How the hit differs from the other side.</param>
 public sealed record QueryTesterHit(
     string Id,
@@ -68,7 +107,15 @@ public sealed record QueryTesterHit(
     int Position,
     double BaseScore,
     IReadOnlyList<string> Boosts,
+    IReadOnlyList<ScoreStep> Steps,
+    IReadOnlyList<HitRule> Rules,
     ResultChange Change);
+
+/// <summary>One tuning rule that touched a hit, as the row detail panel lists it (QT-2).</summary>
+/// <param name="Id">Identifier of the rule, which the "Open rule" action navigates by.</param>
+/// <param name="Name">Display name of the rule.</param>
+/// <param name="Effect">What it did: <c>boost</c>, <c>pin</c>, <c>bury</c> or <c>hide</c>.</param>
+public sealed record HitRule(int Id, string Name, string Effect);
 
 /// <summary>One side of the query tester: the results as that side ranks them.</summary>
 /// <param name="Hits">The hits, in ranked order.</param>
@@ -180,6 +227,12 @@ public static class QueryTesterDiff
         return value.ValueKind == JsonValueKind.String ? value.GetString() ?? string.Empty : value.ToString();
     }
 
+    /// <summary>The rules the pipeline recorded against one hit, in the order they applied (QT-2).</summary>
+    private static IReadOnlyList<HitRule> Rules(QueryTesterSideResult side, string id) =>
+        side.AppliedRules.TryGetValue(id, out var applied)
+            ? [.. applied.Select(rule => new HitRule(rule.RuleId, rule.Name, rule.Effect))]
+            : [];
+
     private static List<QueryTesterHit> Hits(QueryTesterSideResult side)
     {
         var results = side.Response.Results ?? [];
@@ -193,10 +246,14 @@ public static class QueryTesterDiff
                 Attribute(result, UrlAttribute),
                 result.Score ?? 0,
                 (int)(result.Ranking?.Position ?? index + 1),
+                // Since QT-2 this is the score before any boost, which is what the diff's "vs base"
+                // column means; a response without a breakdown falls back to the final score.
                 result.Ranking?.BaseScore ?? result.Score ?? 0,
                 // The response prepends the query-level lines to every hit's boosts; the rest is
                 // what applied to this hit alone (XpSearch.Core ProjectResponseStage).
                 [.. (result.Ranking?.Boosts ?? []).Skip(queryLevel)],
+                [.. (result.Ranking?.Steps ?? []).Select(step => new ScoreStep(step.Stage, step.Score))],
+                Rules(side, result.Id ?? string.Empty),
                 ResultChange.Unchanged))
         ];
     }

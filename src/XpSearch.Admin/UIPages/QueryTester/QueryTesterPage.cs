@@ -7,8 +7,10 @@ using Kentico.Xperience.Lucene.Core.Indexing;
 
 using XpSearch.Admin.Tuning;
 using XpSearch.Admin.UIPages;
+using XpSearch.Admin.UIPages.Analytics;
 using XpSearch.Admin.UIPages.Experiments;
 using XpSearch.Admin.UIPages.QueryTester;
+using XpSearch.Admin.UIPages.RuleBuilder;
 using XpSearch.Core.Abstractions;
 using XpSearch.Core.Contract;
 using XpSearch.Core.Tuning;
@@ -57,11 +59,24 @@ public class QueryTesterPage : Page<QueryTesterClientProperties>
     /// <summary>Largest page size the tester will run, so a mistyped number cannot pull a whole index.</summary>
     public const int MaxPageSize = 50;
 
+    /// <summary>The rule action a "Pin for this query" seeds; one of <see cref="RuleActionDto.Types"/>.</summary>
+    public const string PinAction = "pin";
+
+    /// <summary>The rule action a "Bury for this query" seeds; one of <see cref="RuleActionDto.Types"/>.</summary>
+    public const string BuryAction = "bury";
+
+    /// <summary>The message an "Open rule" for a rule this index does not have is refused with.</summary>
+    public const string ForeignRuleRefusal = "This rule belongs to a different search index and was not opened.";
+
+    /// <summary>The message an "Open rule" for a rule of the experiment's variant B is refused with.</summary>
+    public const string VariantRuleRefusal = "This is a variant rule; open it from the experiment's own rule listing.";
+
     private readonly ILuceneConfigurationStorageService storageService;
     private readonly IQueryTesterSearch search;
     private readonly IPageLinkGenerator pageLinkGenerator;
     private readonly IContactGroupCatalog contactGroups;
     private readonly IExperimentCatalog experiments;
+    private readonly IRelevanceTuningSource tuning;
 
     /// <summary>Initializes a new instance of the <see cref="QueryTesterPage"/> class.</summary>
     /// <param name="storageService">Reads the stored index configuration, to resolve the index in the URL.</param>
@@ -69,24 +84,28 @@ public class QueryTesterPage : Page<QueryTesterClientProperties>
     /// <param name="pageLinkGenerator">Generates the URL the error callout's "Open status" action navigates to.</param>
     /// <param name="contactGroups">Supplies the contact groups the simulation drop-down offers.</param>
     /// <param name="experiments">Supplies the index's unfinished experiment, whose variant B can be tried (XP-1).</param>
+    /// <param name="tuning">Reads the index's rules, so an "Open rule" can only reach one this index has.</param>
     public QueryTesterPage(
         ILuceneConfigurationStorageService storageService,
         IQueryTesterSearch search,
         IPageLinkGenerator pageLinkGenerator,
         IContactGroupCatalog contactGroups,
-        IExperimentCatalog experiments)
+        IExperimentCatalog experiments,
+        IRelevanceTuningSource tuning)
     {
         ArgumentNullException.ThrowIfNull(storageService);
         ArgumentNullException.ThrowIfNull(search);
         ArgumentNullException.ThrowIfNull(pageLinkGenerator);
         ArgumentNullException.ThrowIfNull(contactGroups);
         ArgumentNullException.ThrowIfNull(experiments);
+        ArgumentNullException.ThrowIfNull(tuning);
 
         this.storageService = storageService;
         this.search = search;
         this.pageLinkGenerator = pageLinkGenerator;
         this.contactGroups = contactGroups;
         this.experiments = experiments;
+        this.tuning = tuning;
     }
 
     /// <summary>Gets or sets the identifier of the index the page is scoped to, taken from the URL.</summary>
@@ -162,6 +181,98 @@ public class QueryTesterPage : Page<QueryTesterClientProperties>
         {
             return ResponseFrom(QueryTesterResult.Failed(exception.Message));
         }
+    }
+
+    /// <summary>Opens the rule builder with a rule for this query, and nothing else filled in.</summary>
+    /// <param name="request">The query the tester ran.</param>
+    /// <returns>A navigation to the seeded create page.</returns>
+    [PageCommand(Permission = SystemPermissions.VIEW)]
+    public Task<INavigateResponse> CreateRule(CreateRuleRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        return Task.FromResult(NavigateTo(SeededPath(request.Query, string.Empty, string.Empty, 0)));
+    }
+
+    /// <summary>Opens the rule builder with a pin of one result pre-filled (QT-2).</summary>
+    /// <param name="request">The query, the result and the position to pin it to.</param>
+    /// <returns>A navigation to the seeded create page.</returns>
+    [PageCommand(Permission = SystemPermissions.VIEW)]
+    public Task<INavigateResponse> PinResult(PinResultRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        return Task.FromResult(NavigateTo(SeededPath(request.Query, PinAction, request.TargetId, Math.Max(1, request.Position))));
+    }
+
+    /// <summary>Opens the rule builder with a bury of one result pre-filled (QT-2).</summary>
+    /// <param name="request">The query and the result to bury.</param>
+    /// <returns>A navigation to the seeded create page.</returns>
+    [PageCommand(Permission = SystemPermissions.VIEW)]
+    public Task<INavigateResponse> BuryResult(BuryResultRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        return Task.FromResult(NavigateTo(SeededPath(request.Query, BuryAction, request.TargetId, 1)));
+    }
+
+    /// <summary>Opens the rule that touched a result, in this index's own rule builder (QT-2).</summary>
+    /// <param name="request">The rule to open.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A navigation to the rule's edit page, or a refusal when it belongs to another index.</returns>
+    [PageCommand(Permission = SystemPermissions.VIEW)]
+    public async Task<ICommandResponse> OpenRule(OpenRuleRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        // The rule edit page under this index only holds live rules; a variant-B run lists the
+        // experiment's own, which are edited from the experiment section (XP-1).
+        if (request.VariantB)
+        {
+            return Refuse(VariantRuleRefusal);
+        }
+
+        var rules = await tuning
+            .GetRulesAsync(IndexName, cancellationToken, TuningVariant.Live)
+            .ConfigureAwait(false);
+
+        // The rules are read per index, so a rule reached through another index's tester is simply
+        // not in this list; it is refused rather than silently opened here.
+        if (!rules.Any(rule => rule.Id == request.RuleId))
+        {
+            return Refuse(ForeignRuleRefusal);
+        }
+
+        var parameters = IndexScope.Route(IndexIdentifier);
+        parameters.Add(typeof(RuleEditSection), request.RuleId);
+
+        return NavigateTo(pageLinkGenerator.GetPath<RuleEdit>(parameters));
+    }
+
+    /// <summary>Answers a command with an error message and no navigation.</summary>
+    /// <param name="message">What to tell the user.</param>
+    /// <returns>The refusal.</returns>
+    private ICommandResponse Refuse(string message) =>
+        ResponseFrom(new RowActionResult(false)).AddErrorMessage(message);
+
+    /// <summary>The URL of the create page, seeded with this index, the query and an optional action.</summary>
+    /// <param name="query">The query the rule should fire on.</param>
+    /// <param name="action">The action to pre-fill, or an empty string for none.</param>
+    /// <param name="targetId">Result id the action names.</param>
+    /// <param name="position">Position a pin moves the document to.</param>
+    /// <returns>The path.</returns>
+    private string SeededPath(string? query, string action, string? targetId, int position)
+    {
+        string text = query ?? string.Empty;
+        var parameters = IndexScope.Route(IndexIdentifier);
+
+        parameters.Add(
+            typeof(ZeroResultRuleCreatePage),
+            action.Length == 0
+                ? RuleSeed.Encode(IndexName, text)
+                : RuleSeed.Encode(IndexName, text, action, targetId ?? string.Empty, position));
+
+        return pageLinkGenerator.GetPath<ZeroResultRuleCreatePage>(parameters);
     }
 
     /// <summary>Builds the search request one side runs. Each side needs its own instance.</summary>

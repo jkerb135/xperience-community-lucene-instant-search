@@ -78,6 +78,33 @@ internal sealed class QueryTesterSearchTests
     }
 
     /// <summary>
+    /// The rules that touched a document are only on the context, so the tester keeps them next to
+    /// the query explanations (QT-2).
+    /// </summary>
+    [Test]
+    public async Task ExecuteAsync_KeepsTheRulesThatTouchedADocument()
+    {
+        var recorder = new RecordingStage();
+        recorder.OnExecute = context => context.AppliedRules["doc-1"] = [new AppliedRule(1, "Espresso first", "pin")];
+
+        var result = await Build(recorder).ExecuteAsync(Request(), applyTuning: true, string.Empty, TuningVariant.Live, CancellationToken.None);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(result.AppliedRules.Keys, Is.EqualTo(new[] { "doc-1" }).AsCollection);
+            Assert.That(result.AppliedRules["doc-1"][0].Effect, Is.EqualTo("pin"));
+        });
+    }
+
+    [Test]
+    public async Task ExecuteAsync_KeepsAnEmptyRuleTrailWhenNothingTouchedTheResults()
+    {
+        var result = await Build(new RecordingStage()).ExecuteAsync(Request(), applyTuning: true, string.Empty, TuningVariant.Live, CancellationToken.None);
+
+        Assert.That(result.AppliedRules, Is.Empty);
+    }
+
+    /// <summary>
     /// A tester run must not skew the analytics dashboard (spec §9.2). It cannot: the search activity
     /// and the query log row are written by <see cref="ISearchRequestJournal"/> from the caching
     /// decorator, and the tester assembles its own <see cref="SearchPipeline"/> instead of resolving

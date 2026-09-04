@@ -70,6 +70,7 @@ internal sealed class StageOrderingTests
                 SearchStageOrder.NumericFilters,
                 SearchStageOrder.BoostRules,
                 SearchStageOrder.Execute,
+                SearchStageOrder.ScoreBreakdown,
                 SearchStageOrder.PinnedAndBuried,
                 SearchStageOrder.CollectFacets,
                 SearchStageOrder.Highlight,
@@ -77,6 +78,26 @@ internal sealed class StageOrderingTests
                 SearchStageOrder.LogActivity
             },
             Is.Ordered.Ascending);
+
+    /// <summary>
+    /// The breakdown has to run inside the same picture the search produced: after the execute stage
+    /// filled the documents and their Lucene ids, and before pinning moves them (QT-2).
+    /// </summary>
+    [Test]
+    public void ScoreBreakdown_IsRegisteredBetweenExecuteAndPinning()
+    {
+        var registered = new ServiceCollection().AddXpSearch()
+            .Where(descriptor => descriptor.ServiceType == typeof(ISearchStage))
+            .Select(descriptor => descriptor.ImplementationType);
+
+        Fixtures.Expect.Multiple(() =>
+        {
+            Assert.That(registered, Does.Contain(typeof(ScoreBreakdownStage)));
+            Assert.That(SearchStageOrder.ScoreBreakdown, Is.EqualTo(850));
+            Assert.That(SearchStageOrder.ScoreBreakdown, Is.GreaterThan(SearchStageOrder.Execute));
+            Assert.That(SearchStageOrder.ScoreBreakdown, Is.LessThan(SearchStageOrder.PinnedAndBuried));
+        });
+    }
 
     [Test]
     public void AddXpSearchStage_RegistersACustomStageAtItsOwnOrder()

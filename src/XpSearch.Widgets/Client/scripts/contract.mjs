@@ -170,7 +170,7 @@ const typeScriptTarget = (schema, out) => ({
 // (`TypeEnum` in C#, `Type` in TypeScript).
 const queryTypes = [
   'EventRequest', 'EventType', 'FacetFilter', 'FacetOperator', 'FacetValue', 'Filters',
-  'Group', 'HighlightOptions', 'NumericFilter', 'NumericOperator', 'RankingInfo', 'Result',
+  'Group', 'HighlightOptions', 'NumericFilter', 'NumericOperator', 'RankingInfo', 'RankingStep', 'Result',
   'SearchRedirect', 'SearchRequest', 'SearchResponse', 'SuggestRequest', 'SuggestResponse', 'Suggestion',
 ];
 

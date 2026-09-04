@@ -320,16 +320,35 @@ Send `"explain": true` and every result carries `ranking`:
 
 ```json
 "ranking": {
-  "baseScore": 6.1,
-  "boosts": ["freshness:+1.2", "rule:pin-espresso-guide"],
+  "baseScore": 0.005,
+  "boosts": ["weight:Title\u00d72", "rule:Espresso grinders"],
+  "steps": [
+    { "stage": "Lucene score", "score": 0.005 },
+    { "stage": "Field weights", "score": 0.007 },
+    { "stage": "rule:Espresso grinders", "score": 0.412 }
+  ],
   "position": 1
 }
 ```
 
-`baseScore` is the Lucene score before boosts, `boosts` lists the boosts and rules that changed the score
-or the position in application order, and `position` is the one-based rank across all pages. Without
-`explain`, `ranking` is absent — not `null`. The admin query tester uses this flag; it is equally useful
-from `curl` when a result is ranked in a way nobody can explain.
+`baseScore` is the Lucene score before anything boosted it, `boosts` lists the boosts and rules that
+changed the score or the position in application order, and `position` is the one-based rank across all
+pages. Without `explain`, `ranking` is absent — not `null`. The admin query tester uses this flag; it is
+equally useful from `curl` when a result is ranked in a way nobody can explain.
+
+`steps` is the same story as numbers: the score this result had after each scoring stage, in the order
+they ran. The first entry is always the raw Lucene score and the last one equals `score`, so
+`steps[last] - steps[0]` is exactly what your tuning did to this document. A stage that left this
+result's score alone is omitted, which is why two results of the same search can have different steps.
+Entries come from the pipeline itself — `Lucene score`, `Field weights`, one `rule:<name>` per boost
+rule, `Popularity boost`, and the pin that moved it — and a scoring stage of your own joins the list
+with one line (see
+[Boost on it at query time](indexing-strategy.md#boost-on-it-at-query-time-leave-a-score-checkpoint)).
+
+> **Changed in this release.** `baseScore` used to report the *final* score, boosts included, because
+> every boost is folded into the query before the search runs. It is now the raw Lucene score its
+> documentation always promised. If you compared `score` with `baseScore` and always got zero, that is
+> the bug that was fixed.
 
 ### `POST /api/xpsearch/suggest`
 

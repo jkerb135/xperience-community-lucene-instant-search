@@ -196,23 +196,26 @@ Depth: [Relevance tuning → Field weights](relevance-tuning.md#field-weights) a
 
 ### Query tester
 
-![The Query tester after running coffee, showing With tuning and Without tuning side by side with per-result scores](images/tuning--query-tester.png)
+![The Query tester after running coffee, showing the verdict, the pipeline trail and one diff table holding both rankings](images/tuning--query-tester.png)
 
 Runs one query twice — once with this index's rules, synonyms, stopwords and field weights, once with
-none of them — and shows both rankings with their score explanations. The controls are **Query**
-(required), **Language** (*Any language* by default), **Page size** (10, 25 or 50), **Contact group**
-(*Real visitor (your contact)* by default, or any contact group to see what a member would get) and
-**Run**. A **Variant** select joins them only while the index has an unfinished experiment, offering
-that experiment's variant B.
+none of them — and shows **one list holding both rankings**. The controls are **Query** (required),
+**Language** (*Any language* by default), **Run**, and a **Simulate as** drawer holding **Contact
+group**, **Tuning** (live, or an experiment's variant B while the index has one) and **Results per
+side** (10, 25 or 50); the applied choices stay visible as tags. Your last five queries on this index
+are one-click chips.
 
-Read the capture carefully, because it is a useful non-result. Both columns report *24 results* and
-*0 changed*, even though the seeded rule *Boost products for coffee searches* did fire: the rule
-boosts every document of `contentType:DancingGoat.ProductPage` by ×2, and on this query every hit is
-a product page, so every score is multiplied by the same factor and nothing changes place. The
-scores differ between the columns (`0.107` with tuning against `0.022` without on the second row),
-the order does not. *N changed* counts results whose position differs, so a boost that lifts
-everything equally is correctly reported as changing nothing — that is the tester telling you the
-rule is too broad to be worth its priority slot.
+A verdict callout says what the tuning did in one line (*Tuning changed 3 of 6 results — 1 moved up,
+1 added, 1 moved down*) and offers **Create a rule for this query**. **Pipeline** is the clickable
+trail of query-level stages. The results table gives every document its tuned position, its raw
+position, a change tag, the score with the delta against the pre-boost score, and the rules that
+applied to it; **Only changes** hides the untouched rows and **Side by side** switches to the two
+older columns.
+
+Clicking a row opens a panel with **How the score was built** — the score after every scoring stage,
+raw Lucene score first and the final one in bold — and **Rules that touched this result**, each with
+**Open rule**. Its footer offers **Pin for '<query>'** and **Bury for '<query>'**, which open the rule
+builder with that action pointing at the document.
 
 Tester runs are never written to the query log, so nothing you do here shows up in Analytics.
 

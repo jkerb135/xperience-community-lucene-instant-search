@@ -432,10 +432,37 @@
           },
           "description": "Boosts and rules that changed the score or position, in application order."
         },
+        "steps": {
+          "type": "array",
+          "description": "Score after each scoring stage, in application order, present only with explain. The first entry is the raw Lucene score; the last equals score. Stages that did not change this result's score are omitted.",
+          "items": {
+            "$ref": "#/$defs/RankingStep"
+          }
+        },
         "position": {
           "type": "integer",
           "minimum": 1,
           "description": "One-based position of this result in the final ranking, across all pages."
+        }
+      }
+    },
+    "RankingStep": {
+      "type": "object",
+      "title": "RankingStep",
+      "description": "The score one result had after one scoring stage of the pipeline.",
+      "additionalProperties": false,
+      "required": [
+        "stage",
+        "score"
+      ],
+      "properties": {
+        "stage": {
+          "type": "string",
+          "description": "What the stage is called: \"Lucene score\", \"Field weights\", the rule's own \"rule:<name>\" line, \"Popularity boost\"."
+        },
+        "score": {
+          "type": "number",
+          "description": "The score this result has after that stage."
         }
       }
     },

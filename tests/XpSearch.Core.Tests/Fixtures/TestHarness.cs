@@ -131,6 +131,7 @@ internal sealed class TestHarness : IDisposable
                 new NumericFilterStage(),
                 new BoostRulesStage(),
                 new ExecuteSearchStage(Index),
+                new ScoreBreakdownStage(Index),
                 new PinnedAndBuriedStage(Index),
                 new CollectFacetsStage(new TaxonomyFacetProvider(Index), perIndex),
                 new HighlightStage(new LuceneHighlighter()),

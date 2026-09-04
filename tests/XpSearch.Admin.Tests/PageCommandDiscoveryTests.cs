@@ -52,7 +52,7 @@ internal sealed class PageCommandDiscoveryTests
         (typeof(AnalyticsDashboardPage), ["Load", "CreateRule"]),
         (typeof(ExperimentDetailPage), ["Load", "SetSplit", "Start", "Conclude"]),
         (typeof(IndexStatusPage), ["Load", "Rebuild"]),
-        (typeof(QueryTesterPage), ["Run", "OpenStatus"]),
+        (typeof(QueryTesterPage), ["Run", "OpenStatus", "CreateRule", "PinResult", "BuryResult", "OpenRule"]),
 
         // AR-2: the per-index settings form submits through ModelEditPage's own command.
         (typeof(SearchSettingsPage), ["Submit"]),
