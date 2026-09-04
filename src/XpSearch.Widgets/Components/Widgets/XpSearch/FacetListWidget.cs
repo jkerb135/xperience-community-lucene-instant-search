@@ -40,11 +40,11 @@ public sealed class FacetListWidgetProperties : XpSearchMountWidgetProperties
     [FormComponentConfiguration(XpSearchConstants.FacetAttributeConfiguratorIdentifier, nameof(Index))]
     public string Attribute { get; set; } = string.Empty;
 
-    /// <summary>Gets or sets the heading shown above the values. Empty falls back to the attribute name.</summary>
+    /// <summary>Gets or sets the heading shown above the values. Empty leaves the group unnamed rather than showing the attribute code.</summary>
     [TextInputComponent(
         Label = "Label",
         Tooltip = "The heading shown above the values.",
-        ExplanationText = "Empty shows the attribute name, which is rarely what a visitor should read.",
+        ExplanationText = "Set it: a visitor must never read a field code, so leaving it empty shows a generic heading instead and the active-filter chips of this attribute lose their name.",
         Order = OrderFirstWidgetProperty + 10)]
     public string Label { get; set; } = string.Empty;
 

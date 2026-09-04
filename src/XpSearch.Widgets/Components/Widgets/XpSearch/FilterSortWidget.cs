@@ -30,7 +30,7 @@ public sealed class FilterSortWidgetProperties : XpSearchMountWidgetProperties
 {
     /// <summary>
     /// Gets or sets the facet groups the sheet shows, one per line as <c>attribute;Label</c>, in the
-    /// order they appear. A line without a label uses the attribute name as the heading.
+    /// order they appear. A line without a label leaves the section unnamed rather than showing the attribute code.
     /// </summary>
     [TextAreaComponent(
         Label = "Facet groups",

@@ -8,6 +8,7 @@
  * crawlable and open in a new tab; the click handler intercepts the plain-left-click case.
  */
 import { withCategoryTree, type CategoryTreeItem } from '../behaviors/categoryTree';
+import { attributeLabelOrWarn, declareAttribute, UNNAMED_GROUP } from '../labels';
 import { html, type Renderable } from '../templates/html';
 import type { Widget } from '../types';
 import { chevron, createRoot, renderKeepingFocus, resolveContainer, widgetId } from './dom';
@@ -62,9 +63,14 @@ export function categoryTree(params: CategoryTreeWidgetParams): Widget {
 
   const widget = withCategoryTree<CategoryTreeWidgetParams>(
     (options, isFirstRender) => {
-      const { attribute, label = attribute, collapsible = true } = options.params;
+      const { attribute, collapsible = true } = options.params;
       const bodyId = widgetId(container, attribute, 'body');
       apply = options.apply;
+      // This widget owns the attribute, so its heading is what every other widget calls it (TH-12).
+      declareAttribute(options.search, attribute, { label: options.params.label });
+      const label =
+        attributeLabelOrWarn(options.search, attribute, 'categoryTree', options.params.label) ??
+        UNNAMED_GROUP;
 
       if (isFirstRender) {
         root = createRoot(container, 'nav', 'xps xps-category-tree');

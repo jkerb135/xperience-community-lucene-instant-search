@@ -1009,7 +1009,8 @@ describe('categoryTree', () => {
     expect(root.hidden).toBe(false);
     const items = [...root.querySelectorAll('.xps-category-tree__item')];
     expect(items).toHaveLength(1);
-    expect(items[0]?.querySelector('.xps-category-tree__value')?.textContent).toBe('espresso');
+    // TH-12: the row keeps the title an earlier response gave the value, not the stored code.
+    expect(items[0]?.querySelector('.xps-category-tree__value')?.textContent).toBe('Espresso');
     expect(items[0]?.querySelector('.xps-category-tree__count')?.textContent).toBe('0');
     expect(classesOf(items[0])).toEqual([
       'xps-category-tree__item',
@@ -1414,11 +1415,11 @@ describe('activeFilters', () => {
       .search();
     await vi.waitFor(() => expect(search?.results?.total).toBe(0));
 
-    // One chip for the facet value, one per numeric bound.
+    // One chip for the facet value, one for the range as a whole (TH-12: both bounds, one chip).
     const labels = [...chips.querySelectorAll('.xps-chip__label')].map((chip) => text(chip));
-    expect(labels).toHaveLength(3);
+    expect(labels).toHaveLength(2);
     expect(labels[0]).toContain('Recipe');
-    expect(labels.join(' ')).toContain('10');
+    expect(labels[1]).toBe('Price: 10 – 20');
     expect(
       (clear.querySelector('.xps-clear-filters__button') as HTMLButtonElement).disabled
     ).toBe(false);
@@ -1444,8 +1445,9 @@ describe('activeFilters', () => {
     await vi.waitFor(() => expect(root.querySelectorAll('.xps-chip').length).toBe(1));
     expect(classesOf(root)).toEqual(['xps', 'xps-active-filters']);
     const chip = root.querySelector('.xps-chip') as HTMLElement;
-    expect(chip.querySelector('.xps-chip__attribute')?.textContent).toBe('Content type');
-    expect(chip.querySelector('.xps-chip__label')?.textContent).toBe('Content type Article');
+    expect(chip.querySelector('.xps-chip__attribute')?.textContent).toBe('Content type:');
+    expect(chip.querySelector('.xps-chip__value')?.textContent).toBe('Article');
+    expect(chip.querySelector('.xps-chip__label')?.textContent).toBe('Content type: Article');
     const remove = chip.querySelector('.xps-chip__remove') as HTMLButtonElement;
     expect(remove.getAttribute('aria-label')).toBe('Remove filter Content type: Article');
 
@@ -1470,12 +1472,17 @@ describe('activeFilters', () => {
     ]);
   });
 
-  it('labels a numeric refinement with its operator', async () => {
+  /**
+   * TH-12: a numeric refinement reads as a sentence, and with no widget owning `price` on the
+   * page there is no name to put in front of it — the code name is never a fallback.
+   */
+  it('labels a numeric refinement as a sentence, never with its operator', async () => {
     const host = container('chips');
     search = start([activeFilters({ container: host })]);
     search.actions.setNumericFilter('price', 'lte', 50).search();
     await vi.waitFor(() => expect(host.querySelectorAll('.xps-chip').length).toBe(1));
-    expect(host.querySelector('.xps-chip__label')?.textContent).toBe('price lte 50');
+    expect(host.querySelector('.xps-chip__label')?.textContent).toBe('up to 50');
+    expect(host.querySelector('.xps-chip__attribute')).toBeNull();
   });
 });
 

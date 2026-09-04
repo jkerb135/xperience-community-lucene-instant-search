@@ -1,3 +1,4 @@
+import { valueLabel } from '../labels';
 import { clearFilters, facetValues, toggleFacet } from '../state';
 import type { RenderOptions, SearchState, WidgetFactory } from '../types';
 import { createBehavior, withFacetAttribute } from './internal';
@@ -78,7 +79,8 @@ export function withCategoryTree<
       if (selected !== undefined && !nodes.some((node) => node.value === selected)) {
         nodes.unshift({
           value: selected,
-          label: selected,
+          // Named by the label memory, never by the stored code (TH-12).
+          label: valueLabel(base.search, params.attribute, selected) ?? selected,
           count: 0,
           path: [],
           isActive: true,

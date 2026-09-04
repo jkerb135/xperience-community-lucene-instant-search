@@ -302,7 +302,7 @@ describe('the results-page recipe (demo/results-page.html)', () => {
     expect(one('.xps-active-filters--scroll')).not.toBeNull();
     (one('.xps-facet-list__checkbox') as HTMLInputElement).click();
     await settled(search!, () => document.querySelectorAll('.xps-chip').length === 1);
-    expect(one('.xps-chip__attribute').textContent).toBe('Content type');
+    expect(one('.xps-chip__attribute').textContent).toBe('Content type:');
 
     // …and the second clear-all empties it again.
     const clears = [...document.querySelectorAll('.xps-clear-filters__button')];

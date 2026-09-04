@@ -247,8 +247,14 @@
   font-size: 0.8125em;
 }
 
+/* The chip reads "Category: Grinders" (board Main.dc.html): the key muted, the value in the
+   weight that carries it. */
 .xps.xps.xps .xps-chip__attribute {
   color: var(--xps-color-muted);
+}
+
+.xps.xps.xps .xps-chip__value {
+  font-weight: 600;
 }
 
 .xps.xps.xps .xps-chip__remove {

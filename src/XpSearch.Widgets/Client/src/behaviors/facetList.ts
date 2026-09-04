@@ -1,3 +1,4 @@
+import { valueLabel } from '../labels';
 import { facetValues, toggleFacet } from '../state';
 import type { EventType, FacetOperator, RenderOptions, WidgetFactory } from '../types';
 import { createBehavior, withFacetAttribute } from './internal';
@@ -83,7 +84,10 @@ export function withFacetList<
       // keep it visible so the control can be un-checked.
       for (const value of active) {
         if (!all.some((item) => item.value === value)) {
-          all.push({ label: value, value, count: 0, isActive: true });
+          // The response cannot name it, so the label memory does (TH-12): the row keeps the
+          // title the visitor ticked, not the code underneath it.
+          const remembered = valueLabel(base.search, params.attribute, value);
+          all.push({ label: remembered ?? value, value, count: 0, isActive: true });
         }
       }
       sortItems(all, params.sortBy ?? DEFAULT_SORT);
