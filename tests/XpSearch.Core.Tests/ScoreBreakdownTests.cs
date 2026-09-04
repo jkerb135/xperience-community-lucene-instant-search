@@ -160,6 +160,63 @@ internal sealed class ScoreBreakdownTests
         });
     }
 
+    /// <summary>
+    /// A pin injects a document the query never matched; the id lookup that loaded it used to lend it
+    /// its own score (QT-3). Lucene explains a non-match as 0, and that is what the whole breakdown
+    /// reads.
+    /// </summary>
+    [Test]
+    public async Task AnInjectedPin_ThatDoesNotMatchTheQuery_ScoresZeroThroughout()
+    {
+        var rule = RuleSelectionTests.Rule(action: FlatConsequence.Pin, targetId: "doc-4:en", targetPosition: 3, name: "Demo: Espresso accessories");
+        using var harness = new TestHarness(tuning: new FakeTuningSource { Rules = [rule] });
+
+        var response = await harness.Search(Request());
+
+        var pinned = response.Results.Single(result => result.Id == "doc-4:en");
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(pinned.Score, Is.EqualTo(0));
+            Assert.That(pinned.Ranking!.BaseScore, Is.EqualTo(0));
+            Assert.That(
+                pinned.Ranking.Steps!.Select(step => (step.Stage, step.Score)),
+                Is.EqualTo(new[] { ("Lucene score", 0d), ($"{RuleSelection.Explain(rule)} → #3", 0d) }).AsCollection);
+        });
+    }
+
+    /// <summary>
+    /// A pin can also inject a document that matched the query but fell off the page. It keeps the
+    /// score the query gives it, and the checkpoints that moved it - here the boost's coordination
+    /// factor - are steps of its story like any other document's.
+    /// </summary>
+    [Test]
+    public async Task AnInjectedPin_ThatMatchesTheQuery_KeepsItsQueryScoreAndCheckpoints()
+    {
+        var boost = BoostRule();
+        var pin = RuleSelectionTests.Rule(action: FlatConsequence.Pin, targetId: "doc-2:en", targetPosition: 1, name: "Demo: Latte art");
+        using var harness = new TestHarness(tuning: new FakeTuningSource { Rules = [boost, pin] });
+        var request = Request();
+        request.PageSize = 1;
+
+        var response = await harness.Search(request);
+
+        var pinned = response.Results[0];
+        var steps = pinned.Ranking!.Steps!;
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(pinned.Id, Is.EqualTo("doc-2:en"), "it was off the page, so the pin injected it");
+            Assert.That(pinned.Score, Is.GreaterThan(0));
+            Assert.That(
+                steps.Select(step => step.Stage),
+                Is.EqualTo(new[] { "Lucene score", RuleSelection.Explain(boost), $"{RuleSelection.Explain(pin)} → #1" }).AsCollection);
+            Assert.That(steps[^1].Score, Is.EqualTo(pinned.Score!.Value).Within(0.001), "the score is the last step, as for any document");
+            Assert.That(steps[^1].Score, Is.EqualTo(steps[^2].Score), "a pin moves a document, it does not rescore it");
+            Assert.That(pinned.Ranking.BaseScore, Is.EqualTo(steps[0].Score));
+        });
+    }
+
     [Test]
     public async Task APinnedDocumentThatWasOnThePage_KeepsItsStepsAndGainsTheMove()
     {

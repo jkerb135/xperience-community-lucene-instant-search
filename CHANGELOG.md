@@ -12,6 +12,9 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Fixed (core):** an injected (pinned-in) result now reports its score under the query (0 when it
+  does not match) instead of the id lookup's score, and its score steps are explained from the same
+  checkpoints as every other result on the page.
 - **Fixed (core, widgets):** a facet always carries the values the request filters that attribute by.
   After the counted values, every selected value the filtered result set has no hit for comes back at
   `count: 0` with its label — its taxonomy tag title, the value itself for a plain facet field or for

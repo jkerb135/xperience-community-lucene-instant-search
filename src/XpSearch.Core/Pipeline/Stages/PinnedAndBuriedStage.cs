@@ -152,8 +152,8 @@ public sealed class PinnedAndBuriedStage : ISearchStage
     /// <summary>
     /// Appends the pin to the document's score steps (QT-2), so the tester's breakdown ends with the
     /// move that decided the position. A pin does not change a score, so the step carries the score
-    /// the document already had; an injected document has no steps yet, and its own score is its
-    /// first one.
+    /// the document already had; a document with no steps at all (no scoring stage left a
+    /// checkpoint) starts from its own score.
     /// </summary>
     private static void PinStep(SearchContext context, RuleAction.Pin pin, TuningRule rule, ScoredDocument pinned)
     {
@@ -168,7 +168,15 @@ public sealed class PinnedAndBuriedStage : ISearchStage
         steps.Add(new ScoreStep($"{RuleSelection.Explain(rule)} → #{pin.Position}", score, rule.Id));
     }
 
-    /// <summary>Loads a document by result id, but only if it also matches every active filter.</summary>
+    /// <summary>
+    /// Loads a document by result id, but only if it also matches every active filter.
+    /// </summary>
+    /// <remarks>
+    /// The id lookup's own score says nothing about the query the user ran, so the injected document
+    /// is scored - and stepped, exactly like a document the search returned - under
+    /// <see cref="SearchContext.BaseQuery"/> instead (QT-3). Lucene explains a document the query
+    /// does not match as 0, which is what such a result is worth to the query.
+    /// </remarks>
     private ScoredDocument? Load(SearchContext context, string targetId)
     {
         var query = new BooleanQuery
@@ -185,9 +193,20 @@ public sealed class PinnedAndBuriedStage : ISearchStage
         {
             var hits = searcher.Search(query, 1);
 
-            return hits.ScoreDocs.Length == 0
-                ? null
-                : new ScoredDocument(searcher.Doc(hits.ScoreDocs[0].Doc), hits.ScoreDocs[0].Score, hits.ScoreDocs[0].Doc);
+            if (hits.ScoreDocs.Length == 0)
+            {
+                return null;
+            }
+
+            int docId = hits.ScoreDocs[0].Doc;
+
+            if ((context.Request.Explain ?? false)
+                && ScoreBreakdown.StepsFor(searcher, context, targetId, docId) is { Count: > 0 } steps)
+            {
+                context.ScoreSteps[targetId] = steps;
+            }
+
+            return new ScoredDocument(searcher.Doc(docId), searcher.Explain(context.BaseQuery, docId).Value, docId);
         });
     }
 
