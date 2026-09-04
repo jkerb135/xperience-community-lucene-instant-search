@@ -73,23 +73,54 @@ its two-segment form still decodes.
 | Row detail | `SidePanel` `size=Stackable` (`Full` under `sm`), with `footer` |
 | Text treatments | `src/theme.ts` only (`muted`, `mono`, `flexRow`) |
 
+### QT-3a amendment — styled to the design, still on the stock components
+
+The owner's review of the live page (2026-09-03: *"spacing seems off in a lot of places; icons aren't
+in the change buttons; score column not stacked; header row of the results card doesn't look the
+same; arrows not aligned vertically"*) was answered **without replacing a single component**. The
+layout is supplied by flex containers of our own and by a handful of targeted rules on our own
+wrappers, in `Client/src/query-tester/QueryTesterTemplate.module.scss` (the
+`IndexStatusTemplate.module.css` / `ReportTable.scss` precedent). The owner's rule: rows are flex or
+grid, never `<table>` markup, and a stock component is never re-implemented.
+
+What the module overrides, and why each override is on a wrapper of ours rather than a fork:
+
+| Region | Stock component | Wrapper / override |
+|---|---|---|
+| Card headers (query, results) | `Card` `headline` slot (the only 24/32 bold text the package has — `Headline` size L is 16/24) | flex row inside the slot; `card-body` padded 16 instead of 24 so the design's 16px header-to-row gap holds |
+| Pipeline card | `Card` with no headline | `card-body` 16 top, card 16 bottom → the design's `16px 24px` |
+| Verdict | `Callout` `QuickTip` `OnPaper`, children only | the callout's inner `Stack` spacing set to 4px; the body copy and the **Create a rule** button in one `space-between` row (the `actionButton` prop stacks it underneath) |
+| Pipeline trail | `Tag` (dark query chip = `Colors.TextDefaultOnLight`, stage chips grey / sky), stock `Icon` arrows | each arrow **and** its chip in one `inline-flex` span, so an arrow can never wrap away from its chip and is centred on it by construction |
+| Diff / side-by-side lists | `Table` with `ComponentCell`s and `onRowClick` | the fixed 48px row is relaxed to `height: auto; min-height: 48px` with 8px cell padding, which is all the two-line cells (title over url, score over delta) need |
+| Row detail | `SidePanel` `Stackable`, children only | body is a 24px flex column; score rows `space-between` with 4px padding; rule rows bordered `8px 16px`; footer a right-aligned 12px row |
+
+**The one piece of own markup is the change chip.** `Tag` has no icon slot, and the owner's first
+complaint was that the icon was not inside the button; the chip is therefore our own `<span>` with
+the stock `Icon` inside it, styled to the `Tag`'s exact geometry (14/16 product typeface, `8px 16px`,
+radius 8, the `--color-background-tag-*` token per change). It is `pointer-events: none`, so the
+row — not the chip — takes the click.
+
+Two QT-2 constraints are lifted by the row-height override and no longer hold: **two-line cells** are
+back (Result is title over url, Score is the value over its delta), and the **selected row** is
+filled with `--color-background-selected` again. `Table` still only offers selection through
+checkboxes, so the fill is applied from the cells: every component cell carries `data-row-selected`
+when its row is the open one and the module fills the cell that `:has()` it.
+
 Two badges could not be honoured literally, so the ADR-0020 rule applies — nearest stock component,
 recorded here:
 
-- The prototype's **dark query tag** has no token: `Colors` offers no black tag background, so the
-  query chip uses `BackgroundTagDefault`.
+- The prototype's **dark query tag** has no tag token, but `Colors.TextDefaultOnLight` *is* the
+  prototype's `#151515`, so the stock `Tag` carries it as its background (QT-3a; QT-2 used
+  `BackgroundTagDefault`, which is orange on the light theme).
 - The prototype's **selected table row** is a filled row. `Table` only offers selection through
-  checkboxes (`selectable`), which would add a column the page has no use for, so selection is shown
-  by emphasising the row's title and by the panel being open on it.
-- The prototype's **two-line cells** (title over URL, score over delta) cannot be honoured: a stock
-  `TableRow` is a fixed `height: 48px`, so a second line is clipped. Every cell of both tables is one
-  line — the Result cell is the title alone with the URL in its tooltip and in the row panel's header,
-  and the score carries its delta beside it. Anything that could still be too long ellipsizes and
-  carries a `title`. The same constraint fixes the column widths: a cell is
-  `min-width: <units>x8px` plus 16px of padding either side inside a grid of `auto` tracks, so a
-  column whose `maxWidth` is larger than its `minWidth` grows with its content and pushes the row past
-  the card (a 1026px row inside an 887px card, at a 1366px viewport). Every column pins `maxWidth` to
-  `minWidth`: 86 units for the diff table (882px) and 36 for each side-by-side table (418px).
+  checkboxes (`selectable`), which would add a column the page has no use for; QT-3a fills the row
+  from its cells instead (`data-row-selected` + `:has()`, above).
+- The **column widths are still pinned**: a cell is `min-width: <units>x8px` plus 16px of padding
+  either side inside a grid of `auto` tracks, so a column whose `maxWidth` is larger than its
+  `minWidth` grows with its content and pushes the row past the card (a 1026px row inside an 887px
+  card, at a 1366px viewport). Every column pins `maxWidth` to `minWidth`: 86 units for the diff
+  table (882px, laid out as the design's 64 · 64 · 176 · 304 · 120 · 152) and 36 for each
+  side-by-side table (418px). Single-line text inside a cell still ellipsizes and carries a `title`.
 
 ## Consequences
 

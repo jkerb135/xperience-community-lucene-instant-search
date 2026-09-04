@@ -1382,3 +1382,17 @@ and how to lift it.
   change to `$color-on-accent` in `tokens/_kentico-orange.scss`. The other AA-clean option is a
   larger, bolder button label (≥18.66px bold), which is a board change, not a token change.
 
+## The query tester's stock-component overrides key off hashed class names (`QueryTesterTemplate.module.scss`, QT-3a)
+
+- **Simplified:** the design needs three things the components package does not expose as props — a
+  `Card` body padded 16 instead of 24, a `Callout` whose inner `Stack` spaces at 4px, and a `Table`
+  row that grows past 48px for two-line cells. Each is a rule scoped to one of our own wrapper
+  elements that selects the package's element by `[class*="card-body___"]` / `[class*="table-row___"]`
+  and friends — the stable prefix of its CSS-module class name.
+- **Ceiling:** a components release that renames those CSS modules silently drops the override and
+  the page falls back to the stock geometry (cramped cards, one-line rows). Nothing fails loudly; a
+  screenshot pass is what catches it. The same applies to the selected-row fill, which needs
+  `:has()` (evergreen browsers only — the admin ships nothing older).
+- **Upgrade path:** ask Kentico for the props (`Card` padding, `Callout` spacing, `Table` row
+  height); until then the recapture in `docs/internal/screenshot-manifest.md` after a package bump is
+  the check.

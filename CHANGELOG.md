@@ -12,6 +12,14 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Fixed (admin):** the query tester is styled to its approved design. The change marker now carries
+  its icon *inside* the chip, the score column is stacked (final score over the delta), the results
+  card header is one row (title, stats, then the **Only changes** checkbox and the view toggle), the
+  pipeline arrows travel with the chip they point at, and every card, row and panel section has the
+  spacing the design asks for. Every region keeps its stock component: the layout lives in
+  `QueryTesterTemplate.module.scss` as flex containers and targeted overrides on our own wrappers, so
+  table rows may grow to two lines and the open row is filled again. See ADR-0028.
+
 - **Fixed (core, widgets):** a facet always carries the values the request filters that attribute by.
   After the counted values, every selected value the filtered result set has no hit for comes back at
   `count: 0` with its label — its taxonomy tag title, the value itself for a plain facet field or for
