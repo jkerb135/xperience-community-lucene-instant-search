@@ -13,8 +13,7 @@ authored as our own markup styled by a CSS module — the precedent is
 `src/status/IndexStatusTemplate.module.css` and `src/analytics/ReportTable.scss`, both already in
 the webpack pipeline. Record each such region in ADR-0028 (amend, do not rewrite).
 
-**Layout rule from the owner: flex or CSS grid (both support align-items / justify), never `<table>`.** Rows are
-`display:flex` (or a grid with `align-items: center`); column widths are flex-bases or grid tracks; stacks are flex columns.
+**Layout rule from the owner (precise, 2026-09-03):** Kentico components stay — the stock `Table` and any Pagination are never replaced by own markup. Layout-shifting elements are fixed by WRAPPING them in flex / CSS grid utility containers (both support align-items / justify-content) and by targeted styles on our own wrapper (e.g. letting the stock table row grow: `.results :global([class*="table-row"]) { height: auto; min-height: 48px; }`). Example: the Query tester card header is `display:flex; justify-content:space-between` so the title sits left and the index meta right. Never `<table>` markup of our own.
 
 Two slices, two worktrees, two implementers. **A** (styles) never touches Core; **B** (score)
 never touches the client.
@@ -77,8 +76,8 @@ ONE flex row, `align-items: center; gap: 16px; margin-bottom: 16px;`:
 - right cluster `margin-left: auto; display: flex; gap: 24px; align-items: center;` = stock
   `Checkbox` **Only changes** (diff view only) and stock `NameToggleButtons` Diff / Side by side.
 
-### A.6 Diff list — own flex markup, styled to the stock row look
-Replace the stock `Table` in the diff view with:
+### A.6 Diff table — stock `Table`, rows allowed to grow
+Keep the stock `Table` with `ColumnContentType.Component` cells; wrap it in `.results` and override the hashed row class so rows grow to their content. The target look of a row (the stock look, for reference):
 
 ```
 .thead  : display:flex; align-items:center; height:48px; padding:0 16px;
@@ -93,7 +92,7 @@ Replace the stock `Table` in the diff view with:
 Column flex-bases (design): Tuned **64** · Raw **64** · Change **180** · Result **flex: 1** ·
 Score **120** (right-aligned) · Why **300**. Cells are flex items with `min-width: 0`.
 - Tuned: 700 `var(--typeface-product-primary)`; Raw: low-emphasis.
-- **Change chip with the icon inside** (the owner's "icons aren't in the change buttons"):
+- **Change chip with the icon inside** (the owner's "icons aren't in the change buttons") — the ONE place own markup is allowed, because `Tag` has no icon slot; goes in ADR-0028:
   `display:inline-flex; align-items:center; gap:8px; padding:8px 16px; border-radius:8px;
   font: 400 14px/16px var(--typeface-product-primary); color:#fff; white-space:nowrap;` background
   per change: Unchanged `--color-background-tag-grey`, Moved up `--color-background-tag-sky-blue`,
@@ -108,9 +107,7 @@ Score **120** (right-aligned) · Why **300**. Cells are flex items with `min-wid
 - Narrow (`sm`): drop the Why column; everything else identical.
 
 ### A.7 Side by side
-Two flex columns `gap: 24px`, each `flex: 1; min-width: 0`: title 16/24 bold, muted 12/16
-subtitle (margin-bottom 12), then rows with the same `.trow` look and bases **40 · flex:1 ·
-auto (chip, only when changed) · 80**.
+Two stock `Table`s in a two-column flex wrapper `gap: 24px`, each column `flex: 1; min-width: 0`: title 16/24 bold, muted 12/16 subtitle (margin-bottom 12), then the table (position · result · chip only when changed · score).
 
 ### A.8 SidePanel (stock `SidePanel size=Stackable`; style the CONTENT)
 - Header (the panel's own): headline = title; directly under it the url mono 12/18 low-emphasis.
@@ -128,6 +125,10 @@ auto (chip, only when changed) · 80**.
      `None. Only the query-level stages apply.`
 - Footer (the panel's `footer` slot): flex row `justify-content: flex-end; gap: 12px;` secondary
   **Bury for ‘q’**, primary **Pin for ‘q’**.
+
+### A.8a Owner additions (2026-09-03)
+- **Panel padding**: the SidePanel content must carry the A.8 spacing exactly (24px header, body sides 24px / top 3px, sections `gap: 24px`, score rows `padding: 4px 0` with a 16px label/value gap, rule rows `8px 16px`, footer 24px with the buttons 12px apart, right-aligned). Verify with a row selected.
+- **Whole row clickable**: clicking anywhere on a row (Tuned #, Change chip, Score…) opens the panel, not only the Result cell — use the stock `Table` row click for the full `TableRow`; component cells must not swallow the click; `cursor: pointer` across the full row.
 
 ### A.9 Checks and deliverables
 - `npm run typecheck`, `npm run build` (the SCSS module must compile through the existing

@@ -1,0 +1,425 @@
+/*
+ * Query tester styles (QT-3a). Every region keeps its stock @kentico/xperience-admin-components
+ * component; this file only supplies the flex containers the design asks for and a handful of
+ * targeted overrides on our own wrappers. Values come from docs/internal/design/QueryTester.dc.html.
+ *
+ * The package ships colour tokens only (`--color-*`); there is no `--spacing-*`, `--radius-*` or
+ * `--typeface-*` custom property, so gaps/radii are literals and the product typeface is named the
+ * way the package's own rules name it.
+ */
+
+$product: "GT Walsheim", sans-serif;
+
+/* ---------------------------------------------------------------- shared text treatments */
+
+.muted {
+  margin: 0;
+  color: var(--color-text-low-emphasis);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.mono {
+  margin: 0;
+  font-family: monospace;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+/** Section label inside a card: the design's 14/16 bold. */
+.label {
+  font-family: $product;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 16px;
+}
+
+/* ---------------------------------------------------------------- A.1 / A.2 card rhythm */
+
+/*
+ * Card's own body pads 24px above its content; the design puts 16px between the card header and the
+ * first row, and lays the sections out as a 16px flex column.
+ */
+.card :global([class*="card-body___"]) {
+  padding-top: 16px;
+  gap: 16px;
+}
+
+/* The pipeline card is a single row: 16px top and bottom instead of the card's 24. */
+.pipelineCard :global([class*="card___"]) {
+  padding-bottom: 16px;
+}
+
+.pipelineCard :global([class*="card-title___"]) {
+  padding-top: 16px;
+}
+
+/** Card headline slot: title (inherits the slot's 24/32 bold) left, meta right. */
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+}
+
+/** Query / Language / Run, and the three drawer selects: bottoms aligned. */
+.formRow {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+.grow {
+  flex: 1;
+  min-width: 0;
+}
+
+/** Simulate-as, applied tags, then the recent chips pushed right. Never wraps at >= 1366. */
+.chipRow {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.spacer {
+  margin-left: auto;
+}
+
+.drawer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/** The note beside the drawer's selects sits on the selects' text baseline. */
+.drawerNote {
+  padding-bottom: 12px;
+}
+
+/* ---------------------------------------------------------------- A.3 verdict callout */
+
+/*
+ * Callout lays its subheadline / headline / content out with a Stack whose spacing is an inline
+ * custom property, so 4px has to win over the inline value.
+ */
+.verdict :global([class*="callout___"]) > div {
+  --kxp-stack-component-spacing-top: 4px !important;
+}
+
+.verdictRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+/* ---------------------------------------------------------------- A.4 pipeline */
+
+.pipelineRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pipelineLabel {
+  margin-right: 4px;
+}
+
+/*
+ * One stage = arrow + chip in a single inline-flex box, so the arrow can never wrap away from its
+ * chip and is centred on it by construction (the owner's "arrows not aligned vertically").
+ */
+.stage {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.arrow {
+  display: inline-flex;
+  align-items: center;
+  font-size: 16px;
+  color: var(--color-text-low-emphasis);
+}
+
+.stageText {
+  flex-basis: 100%;
+  margin: 4px 0 0;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: var(--color-skeleton-background);
+}
+
+/* ---------------------------------------------------------------- A.5 results header */
+
+.resultsHeader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.stats {
+  margin: 0;
+  color: var(--color-text-low-emphasis);
+  font-size: 14px;
+  line-height: 20px;
+
+  b {
+    color: var(--color-text-default-on-light);
+  }
+}
+
+.viewCluster {
+  margin-left: auto;
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+
+/* ---------------------------------------------------------------- A.6 diff list */
+
+/*
+ * The stock TableRow is a fixed 48px with 48px line-height cells, which is what forced every cell
+ * onto one line in QT-2. Letting the row grow is all the two-line cells (title over url, score over
+ * delta) need; the row keeps its stock look otherwise.
+ */
+.results {
+  :global([class*="table-row___"]) {
+    height: auto;
+    min-height: 48px;
+    cursor: pointer;
+  }
+
+  :global([class*="table-row___"]):not(:last-child) {
+    margin-bottom: 4px;
+  }
+
+  /* The package pins the 48px line-height from `.table-row .table-row-cell`; match its specificity. */
+  :global([class*="table-row___"]) :global([class*="table-row-cell___"]) {
+    line-height: 16px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  /* Table only offers selection through checkboxes, so the open row is marked by its own cells. */
+  :global([class*="table-row-cell___"]):has([data-row-selected]) {
+    background: var(--color-background-selected);
+  }
+}
+
+/** Every component cell's root: a flex item that may shrink and ellipsize. */
+.cell {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.rank {
+  font-family: $product;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.rankRaw {
+  color: var(--color-text-low-emphasis);
+  font-variant-numeric: tabular-nums;
+}
+
+.dim {
+  color: var(--color-text-low-emphasis);
+}
+
+/** Tag has no icon slot, so the change chip is our own span with the stock Icon inside it. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-family: $product;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 16px;
+  color: var(--color-text-default-on-dark);
+  white-space: nowrap;
+  /* The row is what opens the panel; the chip must never swallow the click. */
+  pointer-events: none;
+}
+
+.chipIcon {
+  display: inline-flex;
+  font-size: 16px;
+}
+
+.result {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.resultTitle {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.resultUrl {
+  font-family: monospace;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--color-text-low-emphasis);
+}
+
+.oneLine {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/** The owner's "score column not stacked": final score over the delta, both right-aligned. */
+.score {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex: 1;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.scoreValue {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.scoreDelta {
+  color: var(--color-text-low-emphasis);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+/** Why may wrap to a second line; the row grows for it. */
+.why {
+  margin: 0;
+  color: var(--color-text-low-emphasis);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+/* ---------------------------------------------------------------- A.7 side by side */
+
+.sides {
+  display: flex;
+  gap: 24px;
+}
+
+.side {
+  flex: 1;
+  min-width: 0;
+}
+
+.sideTitle {
+  font-family: $product;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 24px;
+  margin-bottom: 4px;
+}
+
+.sideSubtitle {
+  margin: 0 0 12px;
+  color: var(--color-text-low-emphasis);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+/* ---------------------------------------------------------------- A.8 side panel */
+
+.panelUrl {
+  margin: 0;
+  font-family: monospace;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--color-text-low-emphasis);
+}
+
+.panelBody {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.panelChip {
+  align-self: flex-start;
+}
+
+.sectionLabel {
+  display: block;
+  margin-bottom: 12px;
+  font-family: $product;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 16px;
+}
+
+.kvRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 4px 0;
+  color: var(--color-text-low-emphasis);
+
+  span:last-child {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+}
+
+/** The last step is the final score: bold, default colour. */
+.kvTotal {
+  color: var(--color-text-default-on-light);
+  font-weight: 700;
+}
+
+.ruleRows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ruleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 16px;
+  border: 1px solid var(--color-divider-default);
+  border-radius: 8px;
+}
+
+.ruleName {
+  font-weight: 600;
+}
+
+.panelFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* ---------------------------------------------------------------- narrow board */
+
+@media (max-width: 1024px) {
+  .sides {
+    flex-direction: column;
+  }
+
+  .chipRow .spacer {
+    margin-left: 0;
+  }
+}
