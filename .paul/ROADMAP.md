@@ -189,7 +189,7 @@ verified live — "There are 2 results without them / Clear filters and show 2 r
 - [x] 07-04: TH-9 — merged 944da28 (2026-09-03): `xps-sidebar` card + autocomplete no-suggestions state; TH-8b (brand orange fills, ink, on-accent) merged before it
 - [x] 07-05: TH-10 + TH-11 — merged 0e2d7d8 (2026-09-03): readable `.xps.xps-<block>` selectors, reset keeps the only triple, layout-parity check, autocomplete spacing per board, lone-group header from the response
 - [x] 07-06: TH-12 — merged eed214c (2026-09-03): human-readable filters everywhere, DOM code-scan test
-- [ ] 07-07: FC-1 — facets always carry the request's selected values with labels (count 0 if absent); first paint seeds the label memory; spec `docs/internal/units/FC-1.md`
+- [x] 07-07: FC-1 — merged 5e1003d (2026-09-03): facets always carry the request's selected values with labels; first paint seeds the label memory
 
 ---
 *Roadmap created: 2026-09-01*
