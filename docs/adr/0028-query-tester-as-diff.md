@@ -91,7 +91,7 @@ What the module overrides, and why each override is on a wrapper of ours rather 
 | Pipeline card | `Card` with no headline | `card-body` 16 top, card 16 bottom → the design's `16px 24px` |
 | Verdict | `Callout` `QuickTip` `OnPaper`, children only | the callout's inner `Stack` spacing set to 4px; the body copy and the **Create a rule** button in one `space-between` row (the `actionButton` prop stacks it underneath) |
 | Pipeline trail | `Tag` (dark query chip = `Colors.TextDefaultOnLight`, stage chips grey / sky), stock `Icon` arrows | each arrow **and** its chip in one `inline-flex` span, so an arrow can never wrap away from its chip and is centred on it by construction |
-| Diff / side-by-side lists | `Table` with `ComponentCell`s and `onRowClick` | the fixed 48px row is relaxed to `height: auto; min-height: 48px` with 8px cell padding, which is all the two-line cells (title over url, score over delta) need |
+| Diff / side-by-side lists | `Table` with `ComponentCell`s and `onRowClick` | the fixed 48px row is relaxed to `height: auto; min-height: 48px` with 8px cell padding, which is all the two-line cells (title over url, score over delta) need; each cell root states its alignment (Score right, the rest left) against the shell's centred cell |
 | Row detail | `SidePanel` `Stackable`, children only | body is a 24px flex column; score rows `space-between` with 4px padding; rule rows bordered `8px 16px`; footer a right-aligned 12px row |
 
 **The one piece of own markup is the change chip.** `Tag` has no icon slot, and the owner's first
@@ -103,8 +103,16 @@ row — not the chip — takes the click.
 Two QT-2 constraints are lifted by the row-height override and no longer hold: **two-line cells** are
 back (Result is title over url, Score is the value over its delta), and the **selected row** is
 filled with `--color-background-selected` again. `Table` still only offers selection through
-checkboxes, so the fill is applied from the cells: every component cell carries `data-row-selected`
-when its row is the open one and the module fills the cell that `:has()` it.
+checkboxes, so the marker is applied from the cells but the **fill is on the row**: every component
+cell carries `data-row-selected` when its row is the open one, and the module fills the row that
+`:has()` one (filling the cells instead left the stock cell padding as white gaps between six lilac
+patches). The row keeps its hover, at `--color-background-selected-hover`.
+
+The stock cell also inherits a centred `text-align` from the admin shell, so each component cell's
+root states its own alignment: Tuned, Raw, Change, Result and Why read left, Score reads right, and
+the header captions are aligned to match (`.results` overrides the caption row, with Score picked
+out by its position). Vertical centring stays with `align-items: center` on the cell root, which is
+that flex row's cross axis.
 
 Two badges could not be honoured literally, so the ADR-0020 rule applies — nearest stock component,
 recorded here:
