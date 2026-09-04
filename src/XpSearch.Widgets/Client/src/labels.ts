@@ -70,6 +70,30 @@ export function rememberFacetLabels(search: SearchInstance, results: SearchResul
   }
 }
 
+/**
+ * Seeds the memory from the server-rendered first paint (FC-1): the `data-xps-labels` object the
+ * results mount carries, `attribute -> value -> label`, for the values the visitor arrived
+ * filtering by. A **trust boundary** — the attribute is markup — so anything that is not a string
+ * label is ignored, and a value a response already named is never overwritten.
+ */
+export function seedValueLabels(search: SearchInstance, seed: Record<string, unknown>): void {
+  const memory = memoryOf(search);
+  for (const [attribute, values] of Object.entries(seed)) {
+    if (!values || typeof values !== 'object' || Array.isArray(values)) continue;
+    let known = memory.values.get(attribute);
+    if (!known) {
+      known = new Map();
+      memory.values.set(attribute, known);
+    }
+    for (const [value, label] of Object.entries(values as Record<string, unknown>)) {
+      if (typeof label === 'string' && label !== '' && !known.has(value)) {
+        // No path: the seed names the selected values, and the first response brings the ancestry.
+        known.set(value, { label, path: [] });
+      }
+    }
+  }
+}
+
 /** What a filtering widget declares about its own attribute. */
 export function declareAttribute(
   search: SearchInstance,

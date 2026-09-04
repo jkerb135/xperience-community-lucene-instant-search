@@ -8,8 +8,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { API_VERSION_HEADER } from '../contract/constants';
 import type { SearchResponse } from '../contract/generated';
+import { mountAll } from '../bootstrap';
 import { createSearch } from '../instance';
 import type { SearchInstance, SearchState, Widget } from '../types';
+import type { ActiveFiltersWidgetParams } from './activeFilters';
 import {
   activeFilters,
   categoryTree,
@@ -47,8 +49,27 @@ const RESPONSE: SearchResponse = {
   queryId: 'q-1',
 };
 
-/** What the same search answers once the refinements leave nothing: no facets at all. */
-const EMPTY: SearchResponse = { ...RESPONSE, results: [], total: 0, totalPages: 0, facets: {} };
+/**
+ * What the same search answers once the refinements leave nothing. FC-1: a facet always carries the
+ * values the request refines it by, so a zero-hit response still names them at count 0 - the
+ * counted values are simply gone.
+ */
+const EMPTY: SearchResponse = {
+  ...RESPONSE,
+  results: [],
+  total: 0,
+  totalPages: 0,
+  facets: {
+    ProductFieldTags: [{ value: 'HotTips', label: 'Hot tips', count: 0 }],
+    CoffeeTastes: [
+      { value: 'Sweet', label: 'Sweet', count: 0 },
+      { value: 'Sweet/Acidy', label: 'Acidy', count: 0, path: ['Sweet'] },
+    ],
+  },
+};
+
+/** A response that carries no facets at all: the page asked for none, so nothing is ever named. */
+const NAMELESS: SearchResponse = { ...EMPTY, facets: {} };
 
 /** The state the spec's URL hydrates to. */
 const FILTERED: Partial<SearchState> = {
@@ -97,6 +118,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   for (const instance of started.splice(0)) instance.dispose();
+  vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
@@ -128,7 +150,8 @@ describe('the label memory', () => {
       'Price: up to 200 USD',
     ]);
 
-    // Zero hits: the response carries no facets at all, so only the memory can name the values.
+    // Zero hits: no counted value survives, and the selected ones come back at 0 (FC-1) - the
+    // memory would have named them anyway, which is what makes the two paths agree.
     answer = EMPTY;
     search.actions.setQuery('nothing at all').search();
     await vi.waitFor(() => expect(search.results?.total).toBe(0));
@@ -142,14 +165,16 @@ describe('the label memory', () => {
     expect(
       document.querySelector('#tags .xps-facet-list__value')?.textContent
     ).toBe('Hot tips');
+    // The selected leaf comes back with its ancestor (FC-1 keeps the contract's path promise), so
+    // the tree draws the open path down to the value the visitor has to untick.
     expect(
-      document.querySelector('#tastes .xps-category-tree__value')?.textContent
-    ).toBe('Acidy');
+      [...document.querySelectorAll('#tastes .xps-category-tree__value')].map((node) => node.textContent)
+    ).toEqual(['Sweet', 'Acidy']);
   });
 
   it('falls back to the stored value when no response ever named it', async () => {
     const chips = container('chips');
-    answer = EMPTY;
+    answer = NAMELESS;
     const search = start([activeFilters({ container: chips, attributeLabels: { ProductFieldTags: 'Products' } })], {
       filters: { facets: [{ attribute: 'ProductFieldTags', values: ['HotTips'] }], numeric: [] },
     });
@@ -213,6 +238,27 @@ describe('the label memory', () => {
     search.actions.setQuery('again').search();
     await vi.waitFor(() => expect(warn.mock.calls.length).toBeGreaterThan(0));
     expect(warn.mock.calls.filter((call) => String(call[0]).includes('ProductFieldTags'))).toHaveLength(1);
+  });
+
+  it('is seeded from data-xps-labels on the first paint, before any response (FC-1)', () => {
+    // The response never arrives: this is the frame between hydration and the first search.
+    vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(() => {})));
+    document.body.innerHTML = `<div class="xps-mount" data-xps-widget="activeFilters"
+      data-xps-instance-config='{"index":"site","initialState":{"filters":{"facets":[{"attribute":"ProductFieldTags","values":["HotTips"]}],"numeric":[]}}}'
+      data-xps-labels='{"ProductFieldTags":{"HotTips":"Hot tips"}}'
+      data-xps-config='{"attributeLabels":{"ProductFieldTags":"Products"}}'></div>`;
+
+    started.push(
+      ...mountAll(document, {
+        widgets: {
+          activeFilters: (config) => activeFilters(config as unknown as ActiveFiltersWidgetParams),
+        },
+      })
+    );
+
+    const mount = document.querySelector<HTMLElement>('.xps-mount')!;
+    expect(started[0]?.results).toBeNull();
+    expect(chipTexts(mount)).toEqual(['Products: Hot tips']);
   });
 });
 

@@ -20,6 +20,7 @@
  * thirteen renderers.
  */
 import { createSearch } from './instance';
+import { seedValueLabels } from './labels';
 import type { SearchInstance, Widget, XpSearchOptions } from './types';
 
 /** Config from `data-xps-config`, plus the mount element the widget renders into. */
@@ -203,11 +204,26 @@ export function mountAll(
       }
     }
     const instance = createSearch(options);
+    seedLabels(instance, elements);
     instance.addWidgets(widgets);
     instance.start();
     instances.push(instance);
   }
   return instances;
+}
+
+/**
+ * Hands the label memory what the server already knows about the visitor's own refinements, before
+ * any widget renders (FC-1): the results mount's `data-xps-labels`, `attribute -> value -> label`.
+ * Without it a filtered cold load paints the stored codes until the first response lands.
+ */
+function seedLabels(search: SearchInstance, elements: HTMLElement[]): void {
+  for (const element of elements) {
+    const raw = element.dataset['xpsLabels'];
+    if (!raw) continue;
+    const parsed = parseJson(raw, element, 'data-xps-labels');
+    if (parsed) seedValueLabels(search, parsed);
+  }
 }
 
 function readInstanceOptions(id: string, elements: HTMLElement[]): XpSearchOptions | undefined {

@@ -19,9 +19,10 @@ public interface IFacetProvider
     /// <param name="dimensions">The dimensions the request asked for.</param>
     /// <param name="maxValues">Maximum number of values to return per dimension.</param>
     /// <returns>
-    /// The values keyed by dimension, each list ordered by count descending then value ascending.
-    /// Only requested dimensions appear and only values with a non-zero count, as the contract
-    /// requires; each value carries the label a widget displays for it.
+    /// The values keyed by dimension, each list ordered by count descending then value ascending,
+    /// followed by the values the request refines the dimension by that the result set has no hit
+    /// for, at count 0 and in request order (FC-1). Only requested dimensions appear; each value
+    /// carries the label a widget displays for it.
     /// </returns>
     Dictionary<string, FacetValue[]> GetFacets(
         SearchContext context,

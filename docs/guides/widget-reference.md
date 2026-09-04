@@ -688,7 +688,11 @@ code:
   its code name). Every response is remembered, so a refinement that returns nothing — and
   therefore carries no facet values at all — still shows its title, on the chip and on the
   selected-but-empty rows of `facetList` and `categoryTree`. A value nested in a taxonomy shows its
-  whole path, `Sweet › Acidy`. Only a value no response ever named falls back to the stored value,
+  whole path, `Sweet › Acidy`. The server also always returns the values the request filters by, at
+  count 0 when nothing matches, so a filtered cold load is named by the very first response — and
+  the **Search - Results** widget's server-rendered first paint carries their labels on its mount
+  (`data-xps-labels`), so they are named before that response even arrives. Only a value nothing
+  ever named — an attribute the page requests no facets for — falls back to the stored value,
   verbatim;
 - a **numeric** refinement reads as a sentence built from the range filter's own `label` and
   `unit`: `Price: up to 200`, `Price: from 50`, `Price: 50 – 200 USD`. Both ends are one chip, and

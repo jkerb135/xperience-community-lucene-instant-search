@@ -37,6 +37,14 @@ public sealed class XpSearchMount
     public IDictionary<string, object?> InstanceConfig { get; } = new Dictionary<string, object?>(StringComparer.Ordinal);
 
     /// <summary>
+    /// Gets or sets what the values the visitor arrived filtering by are called,
+    /// <c>attribute -&gt; value -&gt; label</c>, serialized into <c>data-xps-labels</c> (FC-1). The
+    /// bootstrap seeds the client's label memory from it, so the first paint of a filtered URL never
+    /// shows a stored code. The attribute is omitted when this is empty.
+    /// </summary>
+    public IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>? Labels { get; set; }
+
+    /// <summary>
     /// Gets or sets markup rendered inside the mount element - the server-rendered first paint of the
     /// results widget (spec §5.8). The JavaScript widget replaces the mount's contents on its first
     /// render, so whatever is here is progressive enhancement only.
