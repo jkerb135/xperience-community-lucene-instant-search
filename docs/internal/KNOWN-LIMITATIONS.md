@@ -1376,17 +1376,3 @@ and how to lift it.
   change to `$color-on-accent` in `tokens/_kentico-orange.scss`. The other AA-clean option is a
   larger, bolder button label (≥18.66px bold), which is a board change, not a token change.
 
-## Facet value names are learnt from responses only (`labels.ts`, TH-12)
-
-- **Simplified:** the label memory that names filter chips and the selected-but-empty refinement
-  rows is filled by the search responses the instance receives. The spec asked for it to be seeded
-  from the server-rendered first paint too, but that paint hands the client no facets (no markup
-  and no handoff carries them — only `initialQueryId` crosses), so there is nothing to read.
-  Between hydration and the first response, a chip for a value the visitor arrived with (a shared
-  URL) therefore shows the stored value verbatim, and swaps to its title a moment later.
-- **Ceiling:** one frame of code-looking text on a filtered cold load, and nothing at all when the
-  first response is served from cache. A value whose attribute the response never carries (a facet
-  the page does not request) is never named at all.
-- **Upgrade path:** have the server-rendered first paint emit its facets — a `data-xps-facets`
-  payload on the mount, or the SSR handoff carrying the response it rendered — and call
-  `rememberFacetLabels` with it in `bootstrap.ts` before the widgets mount.

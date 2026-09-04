@@ -12,6 +12,19 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Fixed (core, widgets):** a facet always carries the values the request filters that attribute by.
+  After the counted values, every selected value the filtered result set has no hit for comes back at
+  `count: 0` with its label — its taxonomy tag title, the value itself for a plain facet field or for
+  a code that is not in the taxonomy at all — in the order the request sent them, and a selected
+  nested value brings the ancestors its `path` names along, so the contract's path promise still
+  holds. Both `or` and `and` refinements, drill-sideways included; numeric refinements are not facets
+  and are untouched, and the response cache key already covered the selected values. That is what
+  lets a filter UI always name what is applied, on the deep link whose refinements match nothing as
+  much as anywhere else. The server-rendered first paint of the **Search - Results** widget now
+  carries those labels on its mount as `data-xps-labels` (`attribute -> value -> label`, the selected
+  values only), and `mountAll` seeds the client's label memory from it before the first render — so a
+  filtered cold load no longer shows a stored code for one frame. `ServerResultsRender` gained a
+  `Labels` member for hosts that render the first paint themselves.
 - **Fixed (widgets):** the filter UI shows names, never stored codes. Active-filter chips read
   `Category: Grinders` — the owning widget's `label` for the attribute (`attributeLabels` still
   overrides it) and the server's label for the value, with a nested taxonomy value shown as its

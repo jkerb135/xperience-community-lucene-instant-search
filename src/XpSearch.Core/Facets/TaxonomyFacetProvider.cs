@@ -18,6 +18,10 @@ namespace XpSearch.Core.Facets;
 /// </summary>
 public sealed class TaxonomyFacetProvider : IFacetProvider
 {
+    /// <summary>What a dimension with no tag titles - anything but a taxonomy field - has.</summary>
+    private static readonly IReadOnlyDictionary<string, (string Title, string[] Path)> NoLabels =
+        new Dictionary<string, (string Title, string[] Path)>(StringComparer.Ordinal);
+
     private readonly ILuceneIndexAccessor accessor;
 
     /// <summary>Initializes a new instance of the <see cref="TaxonomyFacetProvider"/> class.</summary>
@@ -50,8 +54,12 @@ public sealed class TaxonomyFacetProvider : IFacetProvider
             string dimension = field?.LuceneName ?? attribute;
 
             var values = Read(counted, dimension, Math.Max(1, maxValues));
+            var selected = Selected(context, dimension);
+            var labels = values.Count > 0 || selected.Count > 0
+                ? ReadLabels(field, context.Request.Index)
+                : NoLabels;
 
-            ApplyLabels(field, context.Request.Index, values);
+            ApplyLabels(labels, values);
 
             // The contract promises that every ancestor a path names is itself in the list, and the
             // top-N cut above could in principle have dropped one; re-reading is lazy because
@@ -63,10 +71,79 @@ public sealed class TaxonomyFacetProvider : IFacetProvider
                 ? right.Count.CompareTo(left.Count)
                 : string.CompareOrdinal(left.Value, right.Value));
 
+            AppendSelected(values, selected, labels);
+
             facets[attribute] = [.. values];
         }
 
         return facets;
+    }
+
+    /// <summary>
+    /// Appends the values the request refines this dimension by that the filtered result set has no
+    /// hit for, at count 0 (FC-1). A refinement a visitor arrived with must always come back named,
+    /// or the UI that has to offer "remove it" can only print the stored code.
+    /// </summary>
+    /// <param name="values">The counted values, already ordered. Missing selections are appended in request order.</param>
+    /// <param name="selected">The values the request refines this dimension by, in request order.</param>
+    /// <param name="labels">The dimension's tag titles and ancestry; empty for a non-taxonomy attribute.</param>
+    internal static void AppendSelected(
+        List<FacetValue> values,
+        IReadOnlyList<string> selected,
+        IReadOnlyDictionary<string, (string Title, string[] Path)> labels)
+    {
+        ArgumentNullException.ThrowIfNull(values);
+        ArgumentNullException.ThrowIfNull(selected);
+        ArgumentNullException.ThrowIfNull(labels);
+
+        if (selected.Count == 0)
+        {
+            return;
+        }
+
+        var present = new HashSet<string>(values.Select(value => value.Value), StringComparer.Ordinal);
+
+        foreach (string value in selected)
+        {
+            // Ancestors first: the contract promises every ancestor a path names is itself in the
+            // same facet's values, and an ancestor with no hits either is not in the counted list.
+            foreach (string name in Ancestry(value, labels).Append(value))
+            {
+                if (present.Add(name))
+                {
+                    (string title, string[] path) = labels.TryGetValue(name, out var label) ? label : (name, []);
+
+                    values.Add(new FacetValue
+                    {
+                        Value = name,
+                        Label = title,
+                        Count = 0,
+                        Path = path.Length == 0 ? null : path
+                    });
+                }
+            }
+        }
+    }
+
+    private static string[] Ancestry(string value, IReadOnlyDictionary<string, (string Title, string[] Path)> labels) =>
+        labels.TryGetValue(value, out var label) ? label.Path : [];
+
+    /// <summary>The values the request refines <paramref name="dimension"/> by, in request order.</summary>
+    private static List<string> Selected(SearchContext context, string dimension)
+    {
+        var selected = new List<string>();
+
+        foreach (var filter in context.FacetFilters)
+        {
+            // NormalizeRequestStage resolved every filter's attribute to the schema field's Lucene
+            // name, which is the dimension the counts were read from.
+            if (string.Equals(filter.Attribute, dimension, StringComparison.Ordinal))
+            {
+                selected.AddRange(filter.Values ?? []);
+            }
+        }
+
+        return selected;
     }
 
     /// <summary>
@@ -140,22 +217,12 @@ public sealed class TaxonomyFacetProvider : IFacetProvider
     /// Replaces the code names of a taxonomy dimension with the tag titles the indexing strategy
     /// wrote next to them, and hands each value the ancestry written beside it.
     /// </summary>
-    /// <remarks>
-    /// The labels are read from the term dictionary of the dimension's label field rather than from
-    /// the matched documents: the term dictionary already holds one entry per distinct tag, so the
-    /// whole map costs one enumeration, and it also covers values that the current page does not
-    /// contain. A dimension written by a strategy that predates the label field simply has no terms,
-    /// and every label stays equal to its value with no path.
-    /// </remarks>
-    private void ApplyLabels(SchemaField? field, string indexName, List<FacetValue> values)
+    /// <param name="labels">The dimension's tag titles and ancestry; empty for a non-taxonomy attribute.</param>
+    /// <param name="values">The values to label.</param>
+    private static void ApplyLabels(
+        IReadOnlyDictionary<string, (string Title, string[] Path)> labels,
+        List<FacetValue> values)
     {
-        if (values.Count == 0 || field is null || field.Kind != SearchFieldKind.Taxonomy)
-        {
-            return;
-        }
-
-        var labels = ReadLabels(indexName, LuceneFieldNames.LabelFieldName(field));
-
         foreach (var value in values)
         {
             if (labels.TryGetValue(value.Value, out var label))
@@ -167,6 +234,23 @@ public sealed class TaxonomyFacetProvider : IFacetProvider
             }
         }
     }
+
+    /// <summary>
+    /// The tag titles and ancestry of a taxonomy dimension, or nothing for any other attribute -
+    /// where the label of a value is the value itself.
+    /// </summary>
+    /// <remarks>
+    /// The labels are read from the term dictionary of the dimension's label field rather than from
+    /// the matched documents: the term dictionary already holds one entry per distinct tag, so the
+    /// whole map costs one enumeration, and it also covers values that the current result set does
+    /// not contain - which is what names a selected value with no hits (FC-1). A dimension written
+    /// by a strategy that predates the label field simply has no terms, and every label stays equal
+    /// to its value with no path.
+    /// </remarks>
+    private IReadOnlyDictionary<string, (string Title, string[] Path)> ReadLabels(SchemaField? field, string indexName) =>
+        field is { Kind: SearchFieldKind.Taxonomy }
+            ? ReadLabels(indexName, LuceneFieldNames.LabelFieldName(field))
+            : NoLabels;
 
     private Dictionary<string, (string Title, string[] Path)> ReadLabels(string indexName, string labelField) =>
         accessor.UseSearcher(indexName, searcher =>

@@ -146,7 +146,59 @@ internal sealed class ServerRenderedResultsTests
         });
     }
 
-    private ResultsWidgetViewComponent ResultsWidget(ISearchPipeline pipeline, IXpSearchEditorContext? editor = null) =>
+    /// <summary>
+    /// FC-1: what the visitor's own refinements are called crosses to the client as
+    /// <c>data-xps-labels</c> on the mount, so the chips and the selected-but-empty rows of a
+    /// filtered cold load never paint a stored code.
+    /// </summary>
+    [Test]
+    public async Task The_mount_of_a_filtered_URL_carries_the_labels_of_the_selected_values()
+    {
+        var response = TwoResults();
+        response.Facets = new Dictionary<string, FacetValue[]>(StringComparer.Ordinal)
+        {
+            ["ProductFieldTags"] =
+            [
+                new FacetValue { Value = "ColdBrew", Label = "Cold brew", Count = 4 },
+                new FacetValue { Value = "HotTips", Label = "Hot tips", Count = 0 }
+            ]
+        };
+
+        var component = ResultsWidget(new FakePipeline(response), queryString: "?q=coffee&ProductFieldTags=HotTips");
+
+        var model = await component
+            .BuildModelAsync(new ResultsWidgetProperties { Index = "site-content" }, CancellationToken.None)
+            .ConfigureAwait(false);
+
+        string markup = Rendered.Html(model.Mount!);
+        var labels = Rendered.Json(markup, "data-xps-labels");
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(labels.GetProperty("ProductFieldTags").GetProperty("HotTips").GetString(), Is.EqualTo("Hot tips"));
+            Assert.That(
+                labels.GetProperty("ProductFieldTags").TryGetProperty("ColdBrew", out _),
+                Is.False,
+                "only what the visitor selected; the client learns the rest from the response");
+        });
+    }
+
+    [Test]
+    public async Task An_unfiltered_mount_carries_no_labels_attribute()
+    {
+        var component = ResultsWidget(new FakePipeline(TwoResults()));
+
+        var model = await component
+            .BuildModelAsync(new ResultsWidgetProperties { Index = "site-content" }, CancellationToken.None)
+            .ConfigureAwait(false);
+
+        Assert.That(Rendered.Html(model.Mount!), Does.Not.Contain("data-xps-labels"));
+    }
+
+    private ResultsWidgetViewComponent ResultsWidget(
+        ISearchPipeline pipeline,
+        IXpSearchEditorContext? editor = null,
+        string queryString = "?q=espresso") =>
         new(
             new XpSearchMountRenderer(),
             editor ?? new FakeEditorContext(XpSearchEditorMode.Live),
@@ -157,7 +209,7 @@ internal sealed class ServerRenderedResultsTests
                 new FakeTemplateRegistry(),
                 new CapturingLogger()))
         {
-            ViewComponentContext = new ViewComponentContext { ViewContext = ViewContext("?q=espresso") }
+            ViewComponentContext = new ViewComponentContext { ViewContext = ViewContext(queryString) }
         };
 
     private static SearchResponse TwoResults() => new()

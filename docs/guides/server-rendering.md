@@ -82,6 +82,13 @@ They appear as soon as the client hydrates.
 </script>
 ```
 
+**What the visitor's filters are called.** `render.Labels` is `attribute -> value -> label` for the
+values the request filters by — `{ "ProductFieldTags": { "HotTips": "Hot tips" } }` — so the filter UI
+of a shared, filtered URL can name them before the first client response arrives. The Page Builder
+**Search - Results** widget writes it onto its mount as `data-xps-labels`, and `mountAll` seeds the
+client from it. If you write the mount markup yourself, emit the same attribute (JSON, HTML-encoded)
+on any mount of the instance; if you call `createSearch` directly, the first response names the values.
+
 The `results` widget empties its container on its first render, so the `[data-xps-server-rendered]`
 block never coexists with the client's list. If you render the results yourself instead of using the
 `results` widget, remove the block on your first render.

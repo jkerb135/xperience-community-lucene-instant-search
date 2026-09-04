@@ -66,6 +66,13 @@ public abstract class XpSearchMountWidgetViewComponent<TProperties> : ViewCompon
     /// </summary>
     protected string CurrentIndex { get; private set; } = string.Empty;
 
+    /// <summary>
+    /// Gets or sets what the values the visitor arrived filtering by are called, rendered as
+    /// <c>data-xps-labels</c> on the mount (FC-1). Set it from
+    /// <see cref="BuildMountContentAsync"/>, which runs before the model is rebuilt with the content.
+    /// </summary>
+    protected IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>>? MountLabels { get; set; }
+
     /// <summary>Renders the widget.</summary>
     /// <param name="widget">The Page Builder component model.</param>
     /// <returns>The rendered mount view.</returns>
@@ -134,7 +141,8 @@ public abstract class XpSearchMountWidgetViewComponent<TProperties> : ViewCompon
 
         var mount = new XpSearchMount(GetWidgetType(properties), ResolveInstanceId(properties.InstanceId))
         {
-            Content = content
+            Content = content,
+            Labels = MountLabels
         };
         BuildConfig(properties, mount.Config);
         mount.InstanceConfig["index"] = index;

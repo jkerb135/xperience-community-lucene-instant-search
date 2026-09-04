@@ -223,6 +223,10 @@ public sealed class ResultsWidgetViewComponent : XpSearchMountWidgetViewComponen
                 XpSearchWidgetConstants.DefaultResultViewPath),
             cancellationToken).ConfigureAwait(false);
 
+        // What the visitor's own refinements are called, so the client can name them before its
+        // first response arrives (FC-1).
+        MountLabels = firstPaint?.Labels;
+
         return firstPaint?.Content;
     }
 

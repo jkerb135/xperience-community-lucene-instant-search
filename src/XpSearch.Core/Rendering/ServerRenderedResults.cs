@@ -42,7 +42,16 @@ public sealed record ServerResultsOptions(
 /// journaled as the same search rather than a second one.
 /// </param>
 /// <param name="PageSize">The page size the pipeline applied, after its own defaults and clamping.</param>
-public sealed record ServerResultsRender(IHtmlContent Content, string? QueryId, int PageSize);
+/// <param name="Labels">
+/// What the values the visitor arrived filtering by are called, <c>attribute -&gt; value -&gt; label</c>
+/// (FC-1). The widget hands it to the client as <c>data-xps-labels</c>, which seeds the label memory
+/// so a filtered cold load never paints a stored code. Empty when nothing is filtered.
+/// </param>
+public sealed record ServerResultsRender(
+    IHtmlContent Content,
+    string? QueryId,
+    int PageSize,
+    IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> Labels);
 
 /// <summary>
 /// Runs the visitor's initial search and renders the result cards on the server, so a shared result
@@ -141,7 +150,9 @@ public sealed class ServerRenderedResults
             return null;
         }
 
-        var render = (IHtmlContent content) => new ServerResultsRender(content, response.QueryId, (int)response.PageSize);
+        var labels = SelectedLabels(request, response);
+        var render = (IHtmlContent content) =>
+            new ServerResultsRender(content, response.QueryId, (int)response.PageSize, labels);
 
         if (response.Results is not { Length: > 0 })
         {
@@ -283,7 +294,50 @@ public sealed class ServerRenderedResults
             viewContext.HttpContext.Request.Query,
             await ResolveSchemaAsync(options.Index, cancellationToken).ConfigureAwait(false));
 
+        // Counts for the attributes the visitor filtered by, only so the response names their
+        // selected values: FC-1 makes every one of them come back, count 0 or not, and the client's
+        // label memory is seeded from that (see SelectedLabels).
+        var filtered = request.Filters?.Facets ?? [];
+        if (filtered.Length > 0)
+        {
+            request.Facets = [.. filtered.Select(facet => facet.Attribute).Distinct(StringComparer.OrdinalIgnoreCase)];
+        }
+
         return request;
+    }
+
+    /// <summary>
+    /// What the values the request filters by are called, <c>attribute -&gt; value -&gt; label</c>,
+    /// read out of the facets the response carries for those attributes (FC-1). Only the selected
+    /// values: the client needs to name what a visitor arrived with, not the whole taxonomy.
+    /// </summary>
+    private static IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> SelectedLabels(
+        SearchRequest request,
+        SearchResponse response)
+    {
+        var labels = new Dictionary<string, IReadOnlyDictionary<string, string>>(StringComparer.Ordinal);
+
+        foreach ((string attribute, var values) in response.Facets ?? [])
+        {
+            // The response keys facets by the schema's own casing, which is not necessarily the
+            // casing the query string used.
+            var selected = new HashSet<string>(
+                (request.Filters?.Facets ?? [])
+                    .Where(filter => string.Equals(filter.Attribute, attribute, StringComparison.OrdinalIgnoreCase))
+                    .SelectMany(filter => filter.Values ?? []),
+                StringComparer.Ordinal);
+
+            var named = (values ?? [])
+                .Where(value => selected.Contains(value.Value))
+                .ToDictionary(value => value.Value, value => value.Label ?? value.Value, StringComparer.Ordinal);
+
+            if (named.Count > 0)
+            {
+                labels[attribute] = named;
+            }
+        }
+
+        return labels;
     }
 
     /// <summary>

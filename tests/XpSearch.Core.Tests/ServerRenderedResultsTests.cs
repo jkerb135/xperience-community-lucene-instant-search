@@ -41,6 +41,9 @@ internal sealed class ServerRenderedResultsTests
 
     private ServiceProvider provider = null!;
 
+    /// <summary>What the last <see cref="RenderAsync"/> returned, for the assertions the markup does not carry.</summary>
+    private ServerResultsRender? lastRender;
+
     [OneTimeSetUp]
     public void SetUp()
     {
@@ -346,6 +349,76 @@ internal sealed class ServerRenderedResultsTests
         });
     }
 
+    /// <summary>
+    /// FC-1: the first paint of a filtered URL asks for counts on the attributes the visitor
+    /// filtered by - which FC-1 makes always carry those values - and hands the client what they are
+    /// called, so no chip and no fallback row paints a stored code before the first response lands.
+    /// </summary>
+    [Test]
+    public async Task The_first_paint_of_a_filtered_URL_hands_over_the_labels_of_the_selected_values()
+    {
+        var response = TwoResults();
+        response.Facets = new Dictionary<string, FacetValue[]>(StringComparer.Ordinal)
+        {
+            ["ProductFieldTags"] =
+            [
+                new FacetValue { Value = "ColdBrew", Label = "Cold brew", Count = 2 },
+                new FacetValue { Value = "HotTips", Label = "Hot tips", Count = 0 }
+            ],
+            ["CoffeeTastes"] =
+            [
+                new FacetValue { Value = "Sweet/Acidy", Label = "Acidy", Count = 0, Path = ["Sweet"] }
+            ]
+        };
+
+        var pipeline = new FakePipeline(response);
+        var schema = new IndexSchema(
+            "site-content",
+            [
+                new SchemaField("ProductFieldTags", SearchFieldKind.Taxonomy, false, true, false, true),
+                new SchemaField("CoffeeTastes", SearchFieldKind.Taxonomy, false, true, false, true),
+                new SchemaField("ProductFieldPrice", SearchFieldKind.Number, false, false, true, true)
+            ]);
+
+        var renderer = new ServerRenderedResults(
+            pipeline,
+            provider.GetRequiredService<ICompositeViewEngine>(),
+            new FakeTemplateRegistry(),
+            new CapturingLogger(),
+            new FakeSchemas(schema));
+
+        var render = await renderer.RenderAsync(
+            ViewContext("?q=coffee&ProductFieldTags=HotTips&CoffeeTastes=Sweet%2FAcidy&ProductFieldPrice_lte=200"),
+            new ServerResultsOptions("site-content", 10, [], null, null, null, []),
+            CancellationToken.None).ConfigureAwait(false);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(
+                pipeline.Requests.Single().Facets,
+                Is.EqualTo(new[] { "ProductFieldTags", "CoffeeTastes" }),
+                "counts are asked for on the filtered attributes only; a numeric refinement is not a facet");
+            Assert.That(render!.Labels.Keys, Is.EquivalentTo(new[] { "ProductFieldTags", "CoffeeTastes" }));
+            Assert.That(render.Labels["ProductFieldTags"], Is.EqualTo(new Dictionary<string, string> { ["HotTips"] = "Hot tips" }),
+                "only the selected values: the client needs to name what the visitor arrived with, not the taxonomy");
+            Assert.That(render.Labels["CoffeeTastes"], Is.EqualTo(new Dictionary<string, string> { ["Sweet/Acidy"] = "Acidy" }));
+        });
+    }
+
+    [Test]
+    public async Task An_unfiltered_first_paint_asks_for_no_facets_and_hands_over_no_labels()
+    {
+        var pipeline = new FakePipeline(TwoResults());
+
+        await RenderAsync(pipeline, queryString: "?q=espresso");
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(pipeline.Requests.Single().Facets, Is.Null);
+            Assert.That(lastRender!.Labels, Is.Empty);
+        });
+    }
+
     private static SearchResponse TwoResults() => new()
     {
         Total = 2,
@@ -414,6 +487,7 @@ internal sealed class ServerRenderedResultsTests
         var blank = new ServerResultsOptions("site-content", 0, [], null, null, null, []);
         var options = configure is null ? blank : configure(blank);
         var render = await renderer.RenderAsync(ViewContext(queryString), options, CancellationToken.None).ConfigureAwait(false);
+        lastRender = render;
 
         return render is null ? null : Html(render.Content);
     }

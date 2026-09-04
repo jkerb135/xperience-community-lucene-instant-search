@@ -234,8 +234,16 @@ value as-is. The same rule holds for `Suggestion.url`, which *is* a contract mem
 - The list is ordered by `count` descending, then by `value` ascending, so a facet list is stable between
   searches without client-side sorting.
 
-Only the attributes you asked for appear, and within them only values with a non-zero count in the current
+Only the attributes you asked for appear, and within them the values with a non-zero count in the current
 result set — a value that no longer matches disappears rather than coming back as `0`.
+
+**With one exception: the values you filtered by always come back.** Every value listed in
+`filters.facets` for an attribute you also asked counts for is in that attribute's list, with its `label`
+(and its `path`, plus any ancestor that needed it), at `count: 0` when the filtered set has no hit for it —
+last, in the order you sent them. So a UI can always name what is applied, including on a cold load of a
+shared URL whose refinements match nothing: you never have to print a stored code like `HotTips` at a
+visitor. A value that is not in the taxonomy at all — a typo in a deep link — comes back with `label`
+equal to `value` rather than vanishing.
 
 #### Hierarchical taxonomies
 
