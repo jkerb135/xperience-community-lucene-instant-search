@@ -187,8 +187,8 @@ verified live — "There are 2 results without them / Clear filters and show 2 r
 - [x] 07-02: TH-7 — merged b4d1425 (2026-09-03); owner re-walk §Z 130–131 pending
 - [x] 07-03: TH-8 — merged fa37700 (2026-09-03): kentico-violet (= default, byte-identical) + kentico-orange from one source; demo host on orange; owner visual sign-off pending (§Z 132). Follow-ups: sheet-scroll 863ffd6 (dvh + check); TH-8b in flight (brand #f05a22 fills + white labels, #c64300 ink)
 - [x] 07-04: TH-9 — merged 944da28 (2026-09-03): `xps-sidebar` card + autocomplete no-suggestions state; TH-8b (brand orange fills, ink, on-accent) merged before it
-- [ ] 07-05: TH-10 — readable specificity: `.xps.xps-<block>` scoped design rules, the reset keeps the only triple; spec `docs/internal/units/TH-10.md`; dispatched 2026-09-03 — plus TH-11 (layout-parity check shell vs theme; autocomplete row spacing regression) in the same round
-- [ ] 07-06: TH-12 — human-readable active filter chips (value labels remembered from responses, numeric ranges as sentences); spec `docs/internal/units/TH-12.md`
+- [x] 07-05: TH-10 + TH-11 — merged 0e2d7d8 (2026-09-03): readable `.xps.xps-<block>` selectors, reset keeps the only triple, layout-parity check, autocomplete spacing per board, lone-group header from the response
+- [x] 07-06: TH-12 — merged eed214c (2026-09-03): human-readable filters everywhere, DOM code-scan test
 
 ---
 *Roadmap created: 2026-09-01*
