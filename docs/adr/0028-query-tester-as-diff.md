@@ -81,6 +81,15 @@ recorded here:
 - The prototype's **selected table row** is a filled row. `Table` only offers selection through
   checkboxes (`selectable`), which would add a column the page has no use for, so selection is shown
   by emphasising the row's title and by the panel being open on it.
+- The prototype's **two-line cells** (title over URL, score over delta) cannot be honoured: a stock
+  `TableRow` is a fixed `height: 48px`, so a second line is clipped. Every cell of both tables is one
+  line — the Result cell is the title alone with the URL in its tooltip and in the row panel's header,
+  and the score carries its delta beside it. Anything that could still be too long ellipsizes and
+  carries a `title`. The same constraint fixes the column widths: a cell is
+  `min-width: <units>x8px` plus 16px of padding either side inside a grid of `auto` tracks, so a
+  column whose `maxWidth` is larger than its `minWidth` grows with its content and pushes the row past
+  the card (a 1026px row inside an 887px card, at a 1366px viewport). Every column pins `maxWidth` to
+  `minWidth`: 86 units for the diff table (882px) and 36 for each side-by-side table (418px).
 
 ## Consequences
 
