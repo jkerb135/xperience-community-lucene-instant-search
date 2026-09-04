@@ -1,0 +1,335 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    /* Values lifted from Kentico/xperience-by-kentico-admin-design-components: src/styles/tokens.css and each component's .css */
+    body { margin: 0; font-family: "Inter", system-ui, sans-serif; font-size: 14px; line-height: 20px; color: #151515; -webkit-font-smoothing: antialiased; }
+    a { color: #7f09b7; } a:hover { color: #5d0088; }
+    .desk { background: linear-gradient(0deg, rgba(198,67,0,.02), rgba(198,67,0,.02)), linear-gradient(107.51deg, #fff -22.1%, #f5f3f2 37.88%, #e5dedc 229.14%); }
+    .gt { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; }
+    .mono { font-family: monospace; font-size: 12px; line-height: 18px; }
+    .low { color: #525252; }
+    .s12 { font-size: 12px; line-height: 16px; }
+    /* Paper elevation=subtle, radius L */
+    .card { background: #fff; border-radius: 16px; box-shadow: 0 0 8px rgba(38,38,38,.03); }
+    .card-title { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-weight: 700; font-size: 24px; line-height: 32px; }
+    .hl-l { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-weight: 700; font-size: 16px; line-height: 24px; }
+    .hl-s { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-weight: 700; font-size: 14px; line-height: 16px; }
+    /* Button: pill, uppercase action-M */
+    .btn { display: inline-flex; align-items: center; justify-content: center; height: 40px; padding: 0 24px; gap: 8px; border: 1px solid transparent; border-radius: 5000px; font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 12px; font-weight: 700; line-height: 16px; letter-spacing: .1ch; text-transform: uppercase; cursor: pointer; white-space: nowrap; background: transparent; }
+    .btn-primary { background: linear-gradient(303.62deg, #c64300 -109.97%, #7f09b7 87.4%); color: #fff; box-shadow: 0 1px 8px rgba(203,142,255,.4), 0 5px 11px rgba(189,94,255,.1); }
+    .btn-secondary { border-color: #7f09b7; color: #7f09b7; }
+    .btn-tertiary { color: #7f09b7; padding: 0 8px; }
+    .btn-s { height: 32px; padding: 0 16px; font-weight: 400; }
+    /* Input / Select: pill, size-m */
+    .label { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 12px; line-height: 16px; font-weight: 700; color: #151515; display: block; margin-bottom: 4px; }
+    .input { height: 40px; width: 100%; border: 1px solid #8c8c8c; border-radius: 5000px; padding: 0 16px; font: 400 14px/20px "Inter", system-ui, sans-serif; color: #151515; background: transparent; box-sizing: border-box; }
+    .input::placeholder { color: #6f6f6f; }
+    .select { height: 40px; border: 1px solid #8c8c8c; border-radius: 5000px; padding: 0 40px 0 16px; font: 400 14px/20px "Inter", system-ui, sans-serif; color: #151515; display: flex; align-items: center; box-sizing: border-box; position: relative; min-width: 200px; }
+    .select::after { content: ""; position: absolute; right: 16px; top: 14px; width: 6px; height: 6px; border-right: 1.5px solid #151515; border-bottom: 1.5px solid #151515; transform: rotate(45deg); }
+    /* Tag: GT Walsheim 14/16, padding 8/16, radius M; dark mode text on light */
+    .tag { display: inline-flex; align-items: center; gap: 8px; font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 14px; line-height: 16px; padding: 8px 16px; border-radius: 8px; color: #fff; background: #737373; white-space: nowrap; border: none; cursor: default; }
+    .tag.sky { background: #0677a8; } .tag.yellow { background: #9e6200; } .tag.green { background: #537b00; } .tag.rose { background: #d90074; }
+    .tag.click { cursor: pointer; }
+    /* NameToggleButtons */
+    .toggles { display: flex; gap: 8px; }
+    .toggles button { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 14px; line-height: 16px; padding: 12px; border-radius: 8px; border: none; background: transparent; color: #525252; cursor: pointer; }
+    .toggles button.on { background: #5d0088; color: #fff; }
+    /* Checkbox */
+    .cb { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-family: "GT Walsheim", "Inter", system-ui, sans-serif; }
+    .cb .box { width: 20px; height: 20px; border-radius: 4px; border: 1px solid #8c8c8c; display: inline-flex; align-items: center; justify-content: center; background: #fff; }
+    .cb .box.on { background: #7f09b7; border-color: #7f09b7; }
+    /* Table: header captions on the desk, rows as bordered paper */
+    .thead { display: grid; align-items: center; height: 48px; padding: 0 16px; font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 14px; line-height: 16px; color: #525252; }
+    .trow { display: grid; align-items: center; min-height: 48px; padding: 8px 16px; background: #fff; border: 1px solid #dfdfdf; border-radius: 8px; box-sizing: border-box; cursor: pointer; }
+    .trow + .trow { margin-top: 4px; }
+    .trow:hover { background: linear-gradient(rgba(156,136,127,.3), rgba(156,136,127,.3)), #fff; }
+    .trow.sel { background: #e0dcff; }
+    .trow.dim { color: #525252; }
+    .num { font-variant-numeric: tabular-nums; }
+    /* Callout quickTip, onPaper */
+    .callout { display: flex; flex-direction: column; gap: 4px; border-radius: 16px; padding: 16px; background: linear-gradient(124.56deg, #f1f3ff 28.01%, #e0dcff 202.32%); box-shadow: 0 0 8px rgba(38,38,38,.03); }
+    .callout .sub { display: flex; align-items: center; gap: 8px; color: #3d5dff; font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 14px; line-height: 16px; }
+    .callout .content { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 16px; line-height: 24px; }
+    .ico { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+    .ico24 { width: 24px; height: 24px; }
+    .iconbtn { background: none; border: none; padding: 4px; border-radius: 4px; cursor: pointer; color: #525252; display: inline-flex; }
+    .divider { height: 1px; background: #dfdfdf; }
+    /* SidePanel size=Stackable: 760px, radius L, shadow M, fixed right with 8px insets */
+    .panel { position: absolute; top: 8px; right: 48px; bottom: 8px; width: 760px; background: #fff; border-radius: 16px; box-shadow: 0 8px 16px rgba(38,38,38,.16), 0 0 8px rgba(38,38,38,.03); display: flex; flex-direction: column; }
+    .panel .head { padding: 24px; display: flex; justify-content: space-between; gap: 8px; }
+    .panel .body { padding: 3px 24px 0; flex: 1; overflow: auto; font-family: "GT Walsheim", "Inter", system-ui, sans-serif; }
+    .panel .foot { padding: 24px; display: flex; justify-content: flex-end; gap: 12px; }
+    .kv { display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; }
+    .rule { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; border: 1px solid #dfdfdf; border-radius: 8px; background: #fff; }
+  </style>
+</helmet>
+
+<div class="desk" style="width: 1440px; min-height: 1240px; padding: 32px 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 24px; position: relative;">
+
+  <!-- Card: headline slot + form -->
+  <div class="card" style="padding: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: baseline;">
+      <div class="card-title">Query tester</div>
+      <div class="low s12">Index <span class="mono">coffee-catalogue</span> · live tuning · 3 pipeline stages</div>
+    </div>
+    <div style="display: flex; gap: 16px; align-items: flex-end; margin-top: 16px;">
+      <div style="flex: 1;">
+        <span class="label">Query <span style="color: #e10007;">*</span></span>
+        <input class="input" value="{{query}}" onInput="{{typed}}" placeholder="e.g. espresso">
+      </div>
+      <div><span class="label">Language</span><div class="select">Any language</div></div>
+      <button class="btn btn-primary" onClick="{{run}}">Run</button>
+    </div>
+    <div style="display: flex; gap: 12px; align-items: center; margin-top: 16px; flex-wrap: wrap;">
+      <button class="btn btn-tertiary btn-s" onClick="{{toggleSim}}">
+        <svg class="ico" viewBox="0 0 16 16"><path d="M8 3a3 3 0 1 1 0 6 3 3 0 0 1 0-6zM2.5 14a5.5 5.5 0 0 1 11 0"></path></svg>
+        Simulate as
+      </button>
+      <span class="low">Applied:</span>
+      <span class="tag sky">Real visitor (your contact)</span>
+      <span class="tag sky">Live tuning (A)</span>
+      <span class="low" style="margin-left: auto;">Recent:</span>
+      <sc-for list="{{recent}}" as="r" hint-placeholder-count="3">
+        <button class="btn btn-tertiary btn-s" onClick="{{r.pick}}" style="text-transform: none; letter-spacing: normal; font-size: 14px;">{{r.q}}</button>
+      </sc-for>
+    </div>
+    <sc-if value="{{simOpen}}" hint-placeholder-val="{{false}}">
+      <div class="divider" style="margin-top: 16px;"></div>
+      <div style="display: flex; gap: 16px; margin-top: 16px; align-items: flex-end;">
+        <div><span class="label">Contact group</span><div class="select">Real visitor (your contact)</div></div>
+        <div><span class="label">Tuning</span><div class="select">Live tuning (A)</div></div>
+        <div><span class="label">Results per side</span><div class="select" style="min-width: 120px;">10</div></div>
+        <div class="low s12" style="padding-bottom: 12px;">Simulation settings persist across runs.</div>
+      </div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ran}}" hint-placeholder-val="{{true}}">
+
+  <!-- Callout type=quickTip placement=onPaper, with actionButton -->
+  <div class="callout">
+    <div class="sub">
+      <svg class="ico" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6.5"></circle><path d="M8 7v4M8 5v.5"></path></svg>
+      Verdict for ‘{{ranQuery}}’
+    </div>
+    <div class="hl-s">{{verdict.title}}</div>
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
+      <div class="content">{{verdict.body}}</div>
+      <button class="btn btn-secondary">Create a rule for this query</button>
+    </div>
+  </div>
+
+  <!-- Pipeline trail: clickable Tags with Icon separators -->
+  <div class="card" style="padding: 16px 24px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+    <div class="hl-s" style="margin-right: 4px;">Pipeline</div>
+    <span class="tag" style="background: #151515;">{{ranQuery}}</span>
+    <sc-for list="{{stages}}" as="s" hint-placeholder-count="3">
+      <svg class="ico low" viewBox="0 0 16 16"><path d="M2 8h11M9 4l4 4-4 4"></path></svg>
+      <button class="tag click {{s.cls}}" onClick="{{s.pick}}">{{s.label}}</button>
+    </sc-for>
+    <sc-if value="{{stageOpen}}" hint-placeholder-val="{{true}}">
+      <div class="mono" style="flex-basis: 100%; padding: 12px 16px; background: #f5f5f5; border-radius: 8px; margin-top: 4px;">{{stageText}}</div>
+    </sc-if>
+  </div>
+
+  <!-- Card: results, one list two rankings -->
+  <div class="card" style="padding: 24px;">
+    <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
+      <div class="card-title">Results for ‘{{ranQuery}}’</div>
+      <div class="low"><b style="color: #151515;">{{counts.tuned}}</b> tuned · <b style="color: #151515;">{{counts.raw}}</b> raw · <b style="color: #151515;">{{counts.changed}}</b> changed · 6 ms / 4 ms</div>
+      <div style="margin-left: auto; display: flex; gap: 24px; align-items: center;">
+        <sc-if value="{{isDiff}}" hint-placeholder-val="{{true}}"><label class="cb" onClick="{{toggleOnly}}">
+          <span class="box {{onlyCls}}"><svg class="ico" viewBox="0 0 16 16" style="stroke: #fff; width: 12px; height: 12px;"><path d="M3 8.5l3 3 7-7"></path></svg></span>
+          Only changes
+        </label></sc-if>
+        <div class="toggles">
+          <button class="{{diffCls}}" onClick="{{viewDiff}}">Diff</button>
+          <button class="{{sideCls}}" onClick="{{viewSide}}">Side by side</button>
+        </div>
+      </div>
+    </div>
+
+    <sc-if value="{{isDiff}}" hint-placeholder-val="{{true}}">
+      <div class="thead" style="grid-template-columns: 64px 64px 180px 1fr 120px 300px;">
+        <div class="num">Tuned</div><div class="num">Raw</div><div>Change</div><div>Result</div><div class="num" style="text-align: right;">Score</div><div style="padding-left: 16px;">Why</div>
+      </div>
+      <sc-for list="{{rows}}" as="h" hint-placeholder-count="6">
+        <div class="trow {{h.cls}}" style="grid-template-columns: 64px 64px 180px 1fr 120px 300px;" onClick="{{h.pick}}">
+          <div class="num gt" style="font-weight: 700;">{{h.tuned}}</div>
+          <div class="num low">{{h.raw}}</div>
+          <div><span class="tag {{h.color}}"><svg class="ico" viewBox="0 0 16 16"><path d="{{h.iconPath}}"></path></svg>{{h.change}}</span></div>
+          <div><div style="font-weight: 600;">{{h.title}}</div><div class="mono low">{{h.url}}</div></div>
+          <div class="num" style="text-align: right;"><div style="font-weight: 600;">{{h.score}}</div><div class="low s12">{{h.delta}}</div></div>
+          <div class="low s12" style="padding-left: 16px;">{{h.whyText}}</div>
+        </div>
+      </sc-for>
+    </sc-if>
+
+    <sc-if value="{{isSide}}" hint-placeholder-val="{{false}}">
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px;">
+        <div>
+          <div class="hl-l" style="margin-bottom: 4px;">With tuning</div>
+          <div class="low s12" style="margin-bottom: 12px;">Rules, synonyms, stopwords, field weights</div>
+          <sc-for list="{{tunedList}}" as="h" hint-placeholder-count="6">
+            <div class="trow {{h.cls}}" style="grid-template-columns: 40px 1fr auto 80px;" onClick="{{h.pick}}">
+              <div class="num gt" style="font-weight: 700;">{{h.tuned}}</div>
+              <div style="font-weight: 600;">{{h.title}}</div>
+              <div><sc-if value="{{h.changed}}" hint-placeholder-val="{{false}}"><span class="tag {{h.color}}">{{h.change}}</span></sc-if></div>
+              <div class="num" style="text-align: right;">{{h.score}}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div>
+          <div class="hl-l" style="margin-bottom: 4px;">Without tuning</div>
+          <div class="low s12" style="margin-bottom: 12px;">Raw index, no rules applied</div>
+          <sc-for list="{{rawList}}" as="h" hint-placeholder-count="5">
+            <div class="trow {{h.cls}}" style="grid-template-columns: 40px 1fr 80px;" onClick="{{h.pick}}">
+              <div class="num gt" style="font-weight: 700;">{{h.raw}}</div>
+              <div style="font-weight: 600;">{{h.title}}</div>
+              <div class="num" style="text-align: right;">{{h.base}}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+
+  <!-- SidePanel size=Stackable: score breakdown and the rules that caused it -->
+  <sc-if value="{{hasSel}}" hint-placeholder-val="{{true}}">
+    <div class="panel">
+      <div class="head">
+        <div>
+          <div class="card-title" style="padding: 0;">{{sel.title}}</div>
+          <div class="mono low">{{sel.url}}</div>
+        </div>
+        <button class="iconbtn" onClick="{{close}}" aria-label="Close">
+          <svg class="ico ico24" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+        </button>
+      </div>
+      <div class="body">
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+          <span class="tag {{sel.color}}" style="align-self: flex-start;">{{sel.summary}}</span>
+          <div>
+            <div class="hl-s" style="margin-bottom: 12px;">How the score was built</div>
+            <div class="kv">
+              <sc-for list="{{sel.steps}}" as="st" hint-placeholder-count="3">
+                <div class="{{st.cls}}">{{st.t}}</div><div class="num {{st.cls}}" style="text-align: right;">{{st.v}}</div>
+              </sc-for>
+            </div>
+          </div>
+          <div>
+            <div class="hl-s" style="margin-bottom: 12px;">Rules that touched this result</div>
+            <sc-if value="{{sel.hasRules}}" hint-placeholder-val="{{true}}">
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <sc-for list="{{sel.rules}}" as="r" hint-placeholder-count="1">
+                  <div class="rule">
+                    <div><div style="font-weight: 600;">{{r.name}}</div><div class="low s12">{{r.kind}}</div></div>
+                    <button class="btn btn-tertiary btn-s">Open rule</button>
+                  </div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{sel.noRules}}" hint-placeholder-val="{{false}}">
+              <div class="low">None. Only the query-level stages apply.</div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+      <div class="foot">
+        <button class="btn btn-secondary">Bury for ‘{{ranQuery}}’</button>
+        <button class="btn btn-primary">Pin for ‘{{ranQuery}}’</button>
+      </div>
+    </div>
+  </sc-if>
+
+  </sc-if>
+
+</div>
+</x-dc>
+<script data-dc-script data-props='{"$preview":{"width":1440,"height":1240}}'>
+const HITS = [
+  { id: 'anfim', title: 'AnfimSuperCaimano-9sat8ifd', url: '/products/anfim-super-caimano', tuned: 1, raw: 1, score: 0.433, base: 0.462, change: 'Unchanged', why: [], rules: [],
+    steps: [['Lucene score', '0.462'], ['ArticleTitle ×2', '0.433'], ['Final', '0.433']] },
+  { id: 'macap4', title: 'MacapM4D-rxxdx4w2', url: '/products/macap-m4d', tuned: 2, raw: 3, score: 0.412, base: 0.005, change: 'Moved up', why: ['Pin: “espresso grinders” → #2'], rules: [{ name: 'espresso grinders', kind: 'Pin rule · matches query “espresso”' }],
+    steps: [['Lucene score', '0.005'], ['Clicks boost ×2.5', '0.012'], ['Pinned to #2', '0.412'], ['Final', '0.412']] },
+  { id: 'tamper', title: 'EspressoTamper58mm-p0q2', url: '/products/espresso-tamper-58', tuned: 3, raw: '—', score: 0.310, base: 0, change: 'Added', why: ['Popularity boost ×2.0', 'Synonym: tamper'], rules: [{ name: 'Popularity boost', kind: 'Boost rule · signal 63924…' }],
+    steps: [['Lucene score', '0.155'], ['Popularity boost ×2.0', '0.310'], ['Final', '0.310']] },
+  { id: 'salvador', title: 'ElSalvadorFincaSanJose-64iaoyy6', url: '/products/el-salvador-finca-san-jose', tuned: 4, raw: 2, score: 0.006, base: 0.007, change: 'Moved down', why: ['Displaced by pin'], rules: [],
+    steps: [['Lucene score', '0.007'], ['ArticleTitle ×2', '0.006'], ['Final', '0.006']] },
+  { id: 'mazzer', title: 'MazzerSuperJollyDR-scmsdass', url: '/products/mazzer-super-jolly-dr', tuned: 5, raw: 4, score: 0.005, base: 0.005, change: 'Unchanged', why: [], rules: [],
+    steps: [['Lucene score', '0.005'], ['Final', '0.005']] },
+  { id: 'macap2', title: 'MacapM2D-x020z0w0', url: '/products/macap-m2d', tuned: 6, raw: 5, score: 0.003, base: 0.003, change: 'Unchanged', why: [], rules: [],
+    steps: [['Lucene score', '0.003'], ['Final', '0.003']] },
+];
+// Tag colour + xp icon per change, as in the shipped template (xp-minus / xp-arrow-up / xp-arrow-down / xp-plus / xp-ban-sign)
+const CHANGE = {
+  'Unchanged': ['', 'M3 8h10'],
+  'Moved up': ['sky', 'M8 13V3M4 7l4-4 4 4'],
+  'Moved down': ['yellow', 'M8 3v10M4 9l4 4 4-4'],
+  'Added': ['green', 'M8 3v10M3 8h10'],
+  'Removed': ['rose', 'M8 2a6 6 0 1 1 0 12A6 6 0 0 1 8 2zM4 4l8 8'],
+};
+const STAGES = [
+  { label: 'weight:ArticleTitle×2', text: 'weight:ArticleTitle×2 — field weights from the index settings; title matches count double.' },
+  { label: 'popularity ×2.0', text: 'Popularity boost from 1 document(s), up to 2.0× (signal 639240368370000000).' },
+  { label: 'clicks ×2.5 / 30d', text: 'Clicks boost: up to 2.5× for documents clicked in the last 30 days.' },
+];
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { query: 'espresso', ranQuery: 'espresso', ran: true, simOpen: false, onlyChanges: false, view: 'diff', sel: null, stage: -1 }; }
+  renderVals() {
+    const s = this.state;
+    const fmt = (n) => typeof n === 'number' ? n.toFixed(3) : n;
+    const mark = (h) => ({
+      ...h, score: fmt(h.score), base: fmt(h.base), color: CHANGE[h.change][0], iconPath: CHANGE[h.change][1], changed: h.change !== 'Unchanged',
+      whyText: h.why.join(' · '),
+      delta: h.change === 'Added' ? 'not in raw' : h.change === 'Unchanged' ? `base ${fmt(h.base)}` : `${h.score > h.base ? '+' : ''}${(h.score - h.base).toFixed(3)} vs base`,
+      cls: (h.id === s.sel ? 'sel ' : '') + (h.change === 'Unchanged' ? 'dim' : ''),
+      pick: () => this.setState({ sel: h.id === s.sel ? null : h.id }),
+    });
+    const all = HITS.map(mark);
+    const rows = all.filter((h) => !s.onlyChanges || h.changed);
+    const visible = s.view === 'diff' ? rows : all;
+    const selHit = visible.some((h) => h.id === s.sel) ? HITS.find((h) => h.id === s.sel) : undefined;
+    const changed = HITS.filter((h) => h.change !== 'Unchanged').length;
+    const n = (c) => HITS.filter((h) => h.change === c).length;
+    const tally = [['Moved up', 'moved up'], ['Added', 'added'], ['Moved down', 'moved down'], ['Removed', 'removed']].filter(([c]) => n(c)).map(([c, w]) => `${n(c)} ${w}`).join(', ');
+    return {
+      query: s.query, ranQuery: s.ranQuery, ran: s.ran, simOpen: s.simOpen,
+      counts: { tuned: rows.length, raw: rows.filter((h) => h.raw !== '—').length, changed: rows.filter((h) => h.changed).length },
+      typed: (e) => this.setState({ query: e.target.value }),
+      run: () => this.setState({ ran: true, ranQuery: s.query.trim() || s.ranQuery }),
+      toggleSim: () => this.setState({ simOpen: !s.simOpen }),
+      recent: ['grinder', 'decaf', 'v60'].map((q) => ({ q, pick: () => this.setState({ query: q, ranQuery: q, ran: true }) })),
+      verdict: changed === 0
+        ? { title: 'Tuning made no difference to this query', body: 'Both rankings are identical. If this query matters, a pin or boost rule is the lever.' }
+        : { title: `Tuning changed ${changed} of ${HITS.length} results`, body: `${tally}. Select a row to see how its score was built.` },
+      stages: STAGES.map((st, i) => ({ label: st.label, cls: i === s.stage ? 'sky' : '', pick: () => this.setState({ stage: i === s.stage ? -1 : i }) })),
+      stageOpen: s.stage >= 0, stageText: s.stage >= 0 ? STAGES[s.stage].text : '',
+      onlyCls: s.onlyChanges ? 'on' : '', toggleOnly: () => this.setState({ onlyChanges: !s.onlyChanges }),
+      isDiff: s.view === 'diff', isSide: s.view === 'side',
+      diffCls: s.view === 'diff' ? 'on' : '', sideCls: s.view === 'side' ? 'on' : '',
+      viewDiff: () => this.setState({ view: 'diff' }), viewSide: () => this.setState({ view: 'side' }),
+      rows,
+      tunedList: all.filter((h) => h.change !== 'Removed'),
+      rawList: all.filter((h) => h.raw !== '—').sort((a, b) => a.raw - b.raw),
+      hasSel: !!selHit,
+      sel: selHit ? { ...selHit, color: CHANGE[selHit.change][0],
+        summary: selHit.change === 'Added' ? `Added · not in raw ranking → tuned #${selHit.tuned}` : `${selHit.change} · raw #${selHit.raw} → tuned #${selHit.tuned}`,
+        hasRules: selHit.rules.length > 0, noRules: selHit.rules.length === 0,
+        steps: selHit.steps.map(([t, v], i, a) => ({ t, v, cls: i === a.length - 1 ? 'hl-s' : 'low' })) }
+        : { title: '', url: '', color: '', summary: '', steps: [], rules: [], hasRules: false, noRules: true },
+      close: () => this.setState({ sel: null }),
+    };
+  }
+}
+</script>
+</body>
+</html>
