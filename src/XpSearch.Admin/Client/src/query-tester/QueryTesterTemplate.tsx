@@ -39,7 +39,7 @@ import type { ComponentCell, IconName, TableColumn, TableRow } from '@kentico/xp
 import { usePageCommand } from '@kentico/xperience-admin-base';
 
 import { column } from '../analytics/ReportTable';
-import { flexRow, mono, muted } from '../theme';
+import { flexRow, flexRowNoWrap, mono, muted, oneLine } from '../theme';
 
 /*
  * Client template of the query tester (spec 8.4), rebuilt for QT-2 to the owner's prototype
@@ -219,11 +219,15 @@ const summary = (row: DiffRow): string => {
   return `${changes[row.hit.change].label} · raw #${row.raw} → tuned #${row.tuned}`;
 };
 
+/*
+ * A stock TableRow is a fixed 48px tall, so every cell of both tables is one line: Inline would wrap
+ * the icon above the tag inside a narrow cell, and a second line would be clipped (ADR-0028).
+ */
 const ChangeTag = ({ change }: { readonly change: ResultChange }) => (
-  <Inline spacing={Spacing.XS}>
+  <span style={flexRowNoWrap}>
     <Icon name={changes[change].icon} />
     <Tag label={changes[change].label} readOnly background={{ color: changes[change].color }} />
-  </Inline>
+  </span>
 );
 
 /** ComponentCell renders <cell.component />, so a cell holds a component, not an element. */
@@ -236,18 +240,22 @@ const node = (columnName: string, render: () => ReactElement): ComponentCell => 
 const dim = (unchanged: boolean, value: string): ReactElement =>
   unchanged ? <p style={muted}>{value}</p> : <span>{value}</span>;
 
+/** The title alone; the URL is in the row panel's header and in the cell's tooltip. */
 const Title = ({ hit, selected }: { readonly hit: Hit; readonly selected: boolean }) => (
-  <Stack spacing={Spacing.XS}>
-    <strong style={selected ? { color: Colors.TextHighEmphasis } : undefined}>{hit.title || hit.id}</strong>
-    {hit.url === '' ? null : <p style={mono}>{hit.url}</p>}
-  </Stack>
+  <strong
+    style={selected ? { ...oneLine, color: Colors.TextHighEmphasis } : oneLine}
+    title={hit.url === '' ? hit.title || hit.id : `${hit.title || hit.id} — ${hit.url}`}
+  >
+    {hit.title || hit.id}
+  </strong>
 );
 
+/** The final score, then what the tuning did to it, on the same line. */
 const Score = ({ row }: { readonly row: DiffRow }) => (
-  <Stack align={LayoutAlignment.End} spacing={Spacing.XS}>
+  <span style={{ ...flexRowNoWrap, columnGap: '6px' }}>
     <strong>{round(row.hit.score)}</strong>
-    <p style={muted}>{delta(row)}</p>
-  </Stack>
+    <span style={muted}>{delta(row)}</span>
+  </span>
 );
 
 /** The verdict headline and body: what the tuning did to this query, in one sentence. */
@@ -364,13 +372,21 @@ export const QueryTesterTemplate = ({ selectedIndexName, languages, contactGroup
     setSelected((current) => (current === id ? '' : id));
   };
 
+  /*
+   * The table is a grid of `auto` tracks whose cells carry `min-width: <units>x8px`,
+   * `max-width: <units>x8px` and 16px of padding either side (content-box), so a column is exactly
+   * `units x 8 + 32` wide when the two are equal - and an `auto` track grows to its content when they
+   * are not, which is what put a 1026px row inside an 887px card. Every column is therefore pinned:
+   * 86 units x 8 + 6 cells x 32 + the row's 2px border = 882px, inside the 887px of card content at a
+   * 1366px viewport. Cells are single-line (the row is a fixed 48px), so long text ellipsizes.
+   */
   const diffColumns: TableColumn[] = [
-    column('tuned', 'Tuned #', { maxWidth: 8 }),
-    column('raw', 'Raw #', { maxWidth: 8 }),
-    column('change', 'Change', { minWidth: 20, maxWidth: 24, contentType: ColumnContentType.Component }),
-    column('result', 'Result', { minWidth: 30, contentType: ColumnContentType.Component }),
-    column('score', 'Score', { maxWidth: 16, contentType: ColumnContentType.Component }),
-    ...(narrow ? [] : [column('why', 'Why', { minWidth: 24, contentType: ColumnContentType.Component })]),
+    column('tuned', 'Tuned #', { minWidth: 6, maxWidth: 6 }),
+    column('raw', 'Raw #', { minWidth: 6, maxWidth: 6 }),
+    column('change', 'Change', { minWidth: 19, maxWidth: 19, contentType: ColumnContentType.Component }),
+    column('result', 'Result', { minWidth: 23, maxWidth: 23, contentType: ColumnContentType.Component }),
+    column('score', 'Score', { minWidth: 16, maxWidth: 16, contentType: ColumnContentType.Component }),
+    ...(narrow ? [] : [column('why', 'Why', { minWidth: 16, maxWidth: 16, contentType: ColumnContentType.Component })]),
   ];
 
   const diffRows: TableRow[] = shown.map((row) => ({
@@ -382,15 +398,24 @@ export const QueryTesterTemplate = ({ selectedIndexName, languages, contactGroup
       node('change', () => <ChangeTag change={row.hit.change} />),
       node('result', () => <Title hit={row.hit} selected={row.hit.id === selected} />),
       node('score', () => <Score row={row} />),
-      ...(narrow ? [] : [node('why', () => <p style={muted}>{row.hit.boosts.join(' · ')}</p>)]),
+      ...(narrow
+        ? []
+        : [
+            node('why', () => (
+              <p style={{ ...muted, ...oneLine }} title={row.hit.boosts.join(' · ')}>
+                {row.hit.boosts.join(' · ')}
+              </p>
+            )),
+          ]),
     ],
   }));
 
+  // Half a card is ~435px at 1366: 36 units + 4 cells x 32px + the border is 418px. Same arithmetic.
   const sideColumns = (position: string): TableColumn[] => [
-    column('position', position, { maxWidth: 8 }),
-    column('result', 'Result', { minWidth: 30, contentType: ColumnContentType.Component }),
-    column('change', 'Change', { minWidth: 16, maxWidth: 20, contentType: ColumnContentType.Component }),
-    column('score', 'Score', { maxWidth: 12, contentType: ColumnContentType.Component }),
+    column('position', position, { minWidth: 4, maxWidth: 4 }),
+    column('result', 'Result', { minWidth: 13, maxWidth: 13, contentType: ColumnContentType.Component }),
+    column('change', 'Change', { minWidth: 12, maxWidth: 12, contentType: ColumnContentType.Component }),
+    column('score', 'Score', { minWidth: 7, maxWidth: 7, contentType: ColumnContentType.Component }),
   ];
 
   const sideRows = (hits: Hit[], tuned: boolean): TableRow[] =>
@@ -400,13 +425,15 @@ export const QueryTesterTemplate = ({ selectedIndexName, languages, contactGroup
       cells: [
         node('position', () => dim(hit.change === 'Unchanged', String(hit.position))),
         node('result', () => <Title hit={hit} selected={hit.id === selected} />),
+        // The prototype's side-by-side marks a moved row with the tag alone; the icon belongs to the
+        // diff table, where the column is wide enough for both.
         node('change', () =>
-          hit.change === 'Unchanged' ? <span /> : <ChangeTag change={hit.change} />),
-        node('score', () => (
-          <Stack align={LayoutAlignment.End}>
-            <strong>{round(tuned ? hit.score : hit.baseScore)}</strong>
-          </Stack>
-        )),
+          hit.change === 'Unchanged' ? (
+            <span />
+          ) : (
+            <Tag label={changes[hit.change].label} readOnly background={{ color: changes[hit.change].color }} />
+          )),
+        node('score', () => <strong>{round(tuned ? hit.score : hit.baseScore)}</strong>),
       ],
     }));
 
@@ -462,8 +489,8 @@ export const QueryTesterTemplate = ({ selectedIndexName, languages, contactGroup
             </form>
 
             <Row spacing={Spacing.M} alignY={LayoutAlignment.Center}>
-              <Column cols={narrow ? Cols.Col12 : Cols.Col6}>
-                <Inline spacing={Spacing.S}>
+              <Column cols={narrow ? Cols.Col12 : Cols.Col8}>
+                <span style={flexRowNoWrap}>
                   <Button
                     label="Simulate as"
                     icon="xp-user"
@@ -482,22 +509,24 @@ export const QueryTesterTemplate = ({ selectedIndexName, languages, contactGroup
                     readOnly
                     background={{ color: Colors.BackgroundTagSkyBlue }}
                   />
-                </Inline>
+                </span>
               </Column>
-              <Column>
+              <Column cols={narrow ? Cols.Col12 : Cols.Col4}>
                 {recent.length === 0 ? null : (
-                  <Inline spacing={Spacing.XS}>
-                    <p style={muted}>Recent:</p>
-                    {recent.map((entry) => (
-                      <Button
-                        key={entry}
-                        label={entry}
-                        color={ButtonColor.Tertiary}
-                        size={ButtonSize.S}
-                        onClick={() => submit(entry, language)}
-                      />
-                    ))}
-                  </Inline>
+                  <Stack align={narrow ? LayoutAlignment.Start : LayoutAlignment.End}>
+                    <span style={flexRowNoWrap}>
+                      <p style={muted}>Recent:</p>
+                      {recent.map((entry) => (
+                        <Button
+                          key={entry}
+                          label={entry}
+                          color={ButtonColor.Tertiary}
+                          size={ButtonSize.S}
+                          onClick={() => submit(entry, language)}
+                        />
+                      ))}
+                    </span>
+                  </Stack>
                 )}
               </Column>
             </Row>

@@ -16,5 +16,14 @@ export const flexRow: CSSProperties = { display:"flex", flexDirection: 'row', al
 /** A rewritten query or a URL, where character alignment carries meaning. */
 export const mono: CSSProperties = { fontFamily: 'monospace', fontSize: '12px', lineHeight: '18px', margin: 0 };
 
+/**
+ * One line of a fixed-height table cell: the stock TableRow is 48px tall, so anything that could
+ * wrap has to be clipped with an ellipsis instead (QT-2, ADR-0028). Pair it with a `title`.
+ */
+export const oneLine: CSSProperties = { minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' };
+
+/** A row of controls that must stay on one line, e.g. an icon next to its tag inside a table cell. */
+export const flexRowNoWrap: CSSProperties = { ...flexRow, columnGap: '8px', flexWrap: 'nowrap', whiteSpace: 'nowrap' };
+
 /** The one figure a KPI tile or a stats strip is about. */
 export const figure: CSSProperties = { fontSize: '32px', lineHeight: '38px', fontWeight: 700, margin: 0 };
