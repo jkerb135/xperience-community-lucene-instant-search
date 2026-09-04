@@ -126,6 +126,10 @@ Two stock `Table`s in a two-column flex wrapper `gap: 24px`, each column `flex: 
 - Footer (the panel's `footer` slot): flex row `justify-content: flex-end; gap: 12px;` secondary
   **Bury for ‘q’**, primary **Pin for ‘q’**.
 
+### A.8a Owner additions (2026-09-03)
+- **Panel padding**: the SidePanel content must carry the A.8 spacing exactly (24px header, body sides 24px / top 3px, sections `gap: 24px`, score rows `padding: 4px 0` with a 16px label/value gap, rule rows `8px 16px`, footer 24px with the buttons 12px apart, right-aligned). Verify with a row selected.
+- **Whole row clickable**: clicking anywhere on a row (Tuned #, Change chip, Score…) opens the panel, not only the Result cell — use the stock `Table` row click for the full `TableRow`; component cells must not swallow the click; `cursor: pointer` across the full row.
+
 ### A.9 Checks and deliverables
 - `npm run typecheck`, `npm run build` (the SCSS module must compile through the existing
   sass-loader rule; do NOT change webpack config), Admin suite green (`PageCommandDiscoveryTests`
