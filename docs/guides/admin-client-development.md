@@ -37,9 +37,11 @@ from `tsconfig.json` and never bundled) and `npm run start` (webpack dev server 
 | `Client/src/query-tester/QueryTesterTemplate.tsx` | Client template of the query tester. |
 | `Client/src/analytics/AnalyticsDashboardTemplate.tsx` | Client template of the dashboard. |
 | `Client/src/analytics/ReportTable.tsx`, `VolumeChart.tsx` | The dashboard's report card (a `Card` around the stock `Table`) and its inline-SVG chart. |
-| `Client/src/theme.ts` | The three text treatments no component exposes, built from the package's `Colors` tokens. There is no stylesheet and no style loader. |
+| `Client/src/status/`, `rule-builder/`, `experiments/` | Client templates of the index status page, the if/then rule builder and the experiment detail page. |
+| `Client/src/<page>/<Page>.module.scss` | Each page's layout wrappers — see *Layout guidelines for custom pages* below. |
+| `Client/src/theme.ts` | The text treatments no component exposes (`muted`, `figure`, `stateFigure`, `flexRow`), built from the package's `Colors` tokens. |
 
-Both pages are built to the owner's design spec
+These pages are built to the owner's design spec
 (<https://claude.ai/design/p/d9cffec1-046f-46e2-b611-d162418351f9>) and may only use
 `@kentico/xperience-admin-components`. Check a component and its prop names in
 `node_modules/@kentico/xperience-admin-components/dist/entry.d.ts` before using it — that file is the
@@ -149,3 +151,74 @@ runtime — never bundle your own copy.
 class-name map. Plain `*.css` / `*.scss` imports are global. Sass (`sass` + `sass-loader`) runs
 before the same css-loader pipeline, so nesting, variables and partials all work; the rule-builder
 styles (`src/rule-builder/RuleBuilderTemplate.module.scss`) are the in-tree example.
+
+## Layout guidelines for custom pages
+
+Every custom page in this module — the query tester, the analytics dashboard, the index status page,
+the rule builder and the experiment detail page — follows the same six rules. The query tester
+(`src/query-tester/QueryTesterTemplate.tsx` and its `.module.scss`) is the reference implementation;
+copy its patterns rather than inventing new ones.
+
+**1. Kentico components stay.** `Table`, `Pagination`, `Card`, `Callout`, `SidePanel`, `Tag`,
+`Button`, `Input`, `Select`, `Checkbox`, `NameToggleButtons`, `Headline`, `Icon`, `Divider` and
+`Stack` are never re-implemented. Write your own markup only where the package has no component for
+the thing — a chart, a stacked bar, a drag handle, an iconed chip — and list each such region in the
+page's ADR.
+
+**2. Layout is done by wrappers.** Flex or CSS grid containers of your own, in a `.module.scss` next
+to the template, set `flex-direction`, `gap`, `justify-content` and `align-items`; the stock
+components go inside them. If you must override a stock component's geometry, hook its hashed class
+prefix (`:global([class*="table-row___"])`) and record the override in
+`docs/internal/KNOWN-LIMITATIONS.md`.
+
+**3. One spacing rhythm, on the 8px grid.** Page sections and cards are **24px** apart
+(`<Stack spacing={Spacing.XL}>` or `gap: 24px`). Sections inside a card are **16px** apart. Inline
+groups use 8, 12 or 16px. Card padding is the stock 24px, and a page adds **no page-level padding of
+its own** — the administration shell already pads it. Never 10, 14 or 20px.
+
+**4. One page header pattern.** A flex row with `justify-content: space-between` and `align-items:
+baseline` (`center` when the right side is a button): the title on the left — the card headline's
+24/32 when the page opens with a card, `<Headline size={HeadlineSize.L}>` otherwise — with the muted
+meta line (`Index … · …`) beside or directly under it, and the page's actions on the right.
+
+**5. Tokens only.** Colours come from the package's `--color-*` custom properties in stylesheets and
+from `Colors` in TypeScript. No literal hex, and **no `var(--x, #fallback)` fallbacks**: a fallback
+silently hides a misspelled token name. Verify a name exists before using it —
+
+```bash
+grep -o -- '--color-[a-z-]*' \
+  node_modules/@kentico/xperience-admin-components/dist/entry.js | sort -u
+```
+
+(`--color-border-selected`, for one, does not exist; the product accent is
+`--color-product-selected`.) The package ships colour tokens only, so spacing and radii are literals
+on the 8px grid (4 / 8 / 16px radii). Font sizes come from the ramp — 11, 12, 14, 16, 24 — with
+weights 400 / 600 / 700, `"GT Walsheim", sans-serif` for headlines, tags and buttons, and Inter for
+body text.
+
+**6. Text treatments live in `src/theme.ts`** (`muted`, `figure`, `stateFigure`, `flexRow`). Add a
+treatment there instead of writing an inline `style={{ … }}` literal in a template. An inline style
+is for **data** only — the colour of a chart series or the width of a bar segment.
+
+`npm run test` enforces rules 3 and 5 statically over every stylesheet in `src`
+(`src/layout.test.ts`).
+
+### `Row` inside a `Stack`
+
+`Stack` spaces its children with `margin-top`, and `Row` sets a negative inline `margin-top` of its
+own spacing to compensate the gutter padding its `Column`s add. A `Row` placed directly in a `Stack`
+therefore cancels the stack's gap and its cards touch. Wrap it in a plain `<div>`:
+
+```tsx
+<Stack spacing={Spacing.XL}>
+  <Card>…</Card>
+
+  <div>
+    <Row spacing={Spacing.L}>
+      <Column>…</Column>
+      <Column>…</Column>
+    </Row>
+  </div>
+</Stack>
+```
+

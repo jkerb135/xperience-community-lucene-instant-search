@@ -95,23 +95,25 @@ const Figure = ({ label, value, hint }: { readonly label: string; readonly value
 
 const VariantCard = ({ stats, title, description }: { readonly stats: VariantStats; readonly title: string; readonly description: string }) => (
   <Card headline={title} description={description} fullHeight>
-    <Stack spacing={Spacing.M}>
+    <Stack spacing={Spacing.L}>
       <Figure label="Searches" value={count(stats.searches)} hint="sample size" />
-      <Row spacing={Spacing.L}>
-        <Column>
-          <Figure
-            label="Zero-result rate"
-            value={rate(stats.zeroResultSearches, stats.searches)}
-            hint={`${count(stats.zeroResultSearches)} found nothing`}
-          />
-        </Column>
-        <Column>
-          <Figure label="Click-through rate" value={rate(stats.clicks, stats.searches)} hint={`${count(stats.clicks)} clicks`} />
-        </Column>
-        <Column>
-          <Figure label="Avg. clicked position" value={position(stats.averageClickedPosition)} hint="lower is better" />
-        </Column>
-      </Row>
+      <div>
+        <Row spacing={Spacing.L}>
+          <Column>
+            <Figure
+              label="Zero-result rate"
+              value={rate(stats.zeroResultSearches, stats.searches)}
+              hint={`${count(stats.zeroResultSearches)} found nothing`}
+            />
+          </Column>
+          <Column>
+            <Figure label="Click-through rate" value={rate(stats.clicks, stats.searches)} hint={`${count(stats.clicks)} clicks`} />
+          </Column>
+          <Column>
+            <Figure label="Avg. clicked position" value={position(stats.averageClickedPosition)} hint="lower is better" />
+          </Column>
+        </Row>
+      </div>
     </Stack>
   </Card>
 );
@@ -207,7 +209,7 @@ export const ExperimentDetailTemplate = ({ indexName, minSplit, maxSplit }: Expe
 
       {loaded ? (
         <div aria-live="polite">
-          <Stack spacing={Spacing.L}>
+          <Stack spacing={Spacing.XL}>
             <Card>
               <Row spacing={Spacing.L} alignY={LayoutAlignment.Center}>
                 <Column>
@@ -276,14 +278,21 @@ export const ExperimentDetailTemplate = ({ indexName, minSplit, maxSplit }: Expe
 
             {draft ? null : (
               <>
-                <Row spacing={Spacing.L}>
-                  <Column cols={narrow ? Cols.Col12 : Cols.Col6}>
-                    <VariantCard stats={report.a} title="Variant A — live tuning" description={`${count(report.a.searches)} searches`} />
-                  </Column>
-                  <Column cols={narrow ? Cols.Col12 : Cols.Col6}>
-                    <VariantCard stats={report.b} title="Variant B — draft tuning" description={`${count(report.b.searches)} searches`} />
-                  </Column>
-                </Row>
+                {/*
+                  * Row carries a negative margin-top of its own spacing (it compensates the gutter
+                  * padding its Columns add), which would cancel the Stack's gap and leave the
+                  * variant cards touching the status card. The plain div takes the 24px instead.
+                  */}
+                <div>
+                  <Row spacing={Spacing.L}>
+                    <Column cols={narrow ? Cols.Col12 : Cols.Col6}>
+                      <VariantCard stats={report.a} title="Variant A — live tuning" description={`${count(report.a.searches)} searches`} />
+                    </Column>
+                    <Column cols={narrow ? Cols.Col12 : Cols.Col6}>
+                      <VariantCard stats={report.b} title="Variant B — draft tuning" description={`${count(report.b.searches)} searches`} />
+                    </Column>
+                  </Row>
+                </div>
 
                 <Callout type={CalloutType.QuickTip} placement={CalloutPlacementType.OnDesk} subheadline="Quick tip" headline="What these numbers are">
                   <p>

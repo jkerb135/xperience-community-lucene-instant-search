@@ -4,10 +4,9 @@
  */
 
 .page {
-  padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 }
 
 .header {
@@ -71,7 +70,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 
 .sectionRow {
@@ -84,7 +83,7 @@
 .summaryRow {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
 }
 
 .summaryText {
@@ -116,7 +115,7 @@
 /* The row being dragged, or lifted by the keyboard grab: faded, and outlined while grabbed. */
 .actionRowLifted {
   opacity: 0.6;
-  outline: 2px dashed var(--color-border-selected, #7d3fa0);
+  outline: 2px dashed var(--color-product-selected);
   outline-offset: 2px;
 }
 
@@ -129,7 +128,7 @@
   right: 0;
   height: 3px;
   border-radius: 2px;
-  background: var(--color-border-selected, #7d3fa0);
+  background: var(--color-product-selected);
 }
 
 .insertBefore::before {
@@ -146,18 +145,18 @@
   align-items: center;
   padding: 4px 2px;
   border-radius: 4px;
-  color: var(--color-text-low-emphasis, #8f8f8f);
+  color: var(--color-text-low-emphasis);
   cursor: grab;
 
   &:hover,
   &:focus-visible {
-    color: var(--color-text-default, #262626);
-    background: var(--color-background-selected, #f5f0fa);
+    color: var(--color-text-default-on-light);
+    background: var(--color-background-selected);
   }
 
   &[aria-pressed='true'] {
     cursor: grabbing;
-    color: var(--color-text-default, #262626);
+    color: var(--color-text-default-on-light);
   }
 }
 
@@ -181,9 +180,9 @@
 
 /* The dashed drop area both Add buttons sit in. */
 .addArea {
-  border: 1px dashed var(--color-border-default, #b5b5b5);
+  border: 1px dashed var(--color-border-default);
   border-radius: 4px;
-  padding: 10px;
+  padding: 12px;
   display: flex;
   justify-content: center;
 }
@@ -234,10 +233,10 @@
 }
 
 .toggleFields {
-  padding-left: 46px;
+  padding-left: 48px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .filterRow {
@@ -247,7 +246,7 @@
 }
 
 .filterIs {
-  padding-bottom: 10px;
+  padding-bottom: 12px;
   color: var(--color-text-low-emphasis);
   font-size: 12px;
 }
@@ -255,11 +254,11 @@
 .panelFooter {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 12px;
 }
 
 .error {
-  color: var(--color-alert-text, #b42318);
+  color: var(--color-alert-text);
   font-size: 12px;
   line-height: 16px;
   margin: 4px 0 0;
@@ -277,7 +276,7 @@
   align-items: center;
   gap: 8px;
   margin: 0;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .pickerList {
@@ -286,7 +285,7 @@
   padding: 0;
   max-height: 240px;
   overflow-y: auto;
-  border: 1px solid var(--color-border-default, #e2e2e2);
+  border: 1px solid var(--color-border-default);
   border-radius: 8px;
 }
 
@@ -296,9 +295,9 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
-  padding: 10px 14px;
+  padding: 8px 16px;
   border: 0;
-  border-top: 1px solid var(--color-border-default, #ececec);
+  border-top: 1px solid var(--color-border-default);
   background: transparent;
   text-align: left;
   cursor: pointer;
@@ -309,29 +308,29 @@
 
   &:hover,
   &:focus-visible {
-    background: var(--color-background-selected, #f5f0fa);
+    background: var(--color-background-selected);
   }
 }
 
 .pickerOptionSelected {
-  background: var(--color-background-selected, #f5f0fa);
+  background: var(--color-background-selected);
   font-weight: 600;
 }
 
 .pickerTitle {
-  font-size: 13.5px;
+  font-size: 14px;
 }
 
 .pickerUrl {
-  font-size: 11.5px;
-  color: var(--color-text-low-emphasis, #8f8f8f);
+  font-size: 12px;
+  color: var(--color-text-low-emphasis);
 }
 
 /* 5e: at 1024 the If / Then label moves above its stack and the cards go full width. */
 @media (max-width: 1024px) {
   .flow {
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
   }
 
   .flowLabel {
