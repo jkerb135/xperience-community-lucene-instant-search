@@ -14,6 +14,7 @@
 }
 
 .xps .xps-suggestions__panel .xps-suggestions__group-title {
+  @include b.suggestions-group-title;
   color: var(--xps-color-muted);
   font-size: 0.6875em;
   font-weight: 700;
@@ -23,6 +24,7 @@
 
 /* A rule between sources, lighter than the panel's own edge. */
 .xps .xps-suggestions__panel .xps-suggestions__group + .xps-suggestions__group {
+  @include b.suggestions-group-gap;
   border-top: 1px solid color-mix(in srgb, var(--xps-color-border) 60%, var(--xps-color-surface));
 }
 
@@ -91,6 +93,7 @@
 }
 
 .xps .xps-suggestions__panel .xps-suggestions__footer {
+  @include b.suggestions-footer;
   background-color: color-mix(in srgb, var(--xps-color-border) 25%, var(--xps-color-surface));
   border-top: 1px solid var(--xps-color-border);
 }

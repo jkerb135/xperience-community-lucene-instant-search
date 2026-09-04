@@ -20,9 +20,13 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
   by **both** stylesheets. New `themes/scripts/check-layout.mjs` (wired into `npm run check`) is what
   keeps it that way: it renders every fixture with the shell alone and with shell + palette, both
   palettes, and fails if any layout property the shell declares computes differently once the theme
-  is loaded — the theme may only add visuals. A `suggestions` widget in `mode: "mixed"` now also
-  labels a lone group (a single Pages group says **Pages**), since the answer could have come from
-  either source; the single-source modes keep their header-less list.
+  is loaded — the theme may only add visuals. The panel's boxes are the design board's own pixels again — rows `9px 14px` with a
+  `10px` gap, group headings `12px 14px 4px` with `6px` above every group after the first, footer
+  `10px 14px`, panel `8px` under the field — each written against `--xps-space` so the one spacing
+  knob still works, and asserted at its default. And a lone group is now labelled whenever the
+  response says which source its entries came from (`Suggestion.group`, which the server sends in
+  every suggest mode): typing "pr" and matching only pages shows the **Pages** heading, in the
+  standalone widget and in the search box's integrated popup alike.
 
 - **Changed (themes):** the default theme's selectors say what they paint. Every design rule is now
   scoped to its widget block — `.xps.xps-pagination .xps-pagination__link`,

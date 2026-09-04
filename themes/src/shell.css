@@ -5,11 +5,29 @@
 /* The footer's keycaps: 20px tall, per the autocomplete board. */
 /* The filter column's card. Padding is the box, not the paint, so it is structure the shell states
    as well — a shell-only site gets the same column, just without the surface around it (TH-11). */
-/* The popup's offset from the field it belongs to (design board `Autocomplete.dc.html`: 8px).
-   The panel is absolutely positioned at `top: 100%`, so without this it touches the input. */
-/* An autocomplete row. The panel renders an option as an `<li>` when it shows a single source and
-   as a `<div>` inside a group otherwise, and the theme's reset flattens the `<li>` — so the row's
-   box has to come from here, stated by both stylesheets (TH-11). */
+/* The autocomplete panel's boxes are the design board's own pixels (`Autocomplete.dc.html`), not
+ * the generic rhythm: the popup is drawn to the pixel and the owner's rule is that the shipped
+ * default IS the design. They are still written against `--xps-space` so the one spacing knob keeps
+ * working — at its default of 12px each of these computes to exactly the board's value:
+ *
+ *   $panel-inline  = --xps-space + 2px         14px   row, header and footer flanks
+ *   $row-block     = --xps-space * 0.75         9px   row height above and below the text
+ *   $footer-block  = --xps-space - 2px         10px   footer height
+ *   $header-bottom = --xps-space / 3            4px   header's own gap to its first row
+ *   $panel-offset  = --xps-space * 2 / 3        8px   panel's gap to the field
+ *
+ * `themes/scripts/check-layout.mjs` asserts the computed pixels at the default, so a change to one
+ * of these expressions that stops matching the board fails the build.
+ */
+/* The popup's offset from the field it belongs to (board: 8px). The panel is absolutely positioned
+   at `top: 100%`, so without this it touches the input. */
+/* An autocomplete row (board: 9px 14px). The panel renders an option as an `<li>` when it shows a
+   single source and as a `<div>` inside a group otherwise, and the theme's reset flattens the
+   `<li>` — so the row's box has to come from here, stated by both stylesheets (TH-11). */
+/* A source's heading (board: 12px 14px 4px). */
+/* The gap the board leaves above every group after the first, under the hairline the theme draws.
+   The group is an `<li>`: without this the reset flattens it. */
+/* The keyboard-hints bar (board: 10px 14px). */
 /* Screen-reader-only text is a box too: the theme's element reset would otherwise flatten it. */
 /* xperience-search — shell.css
  * Generated from themes/src/scss/shell.scss — run `npm run build` in themes/, do not edit by hand.
@@ -772,7 +790,7 @@
   position: absolute;
   inset-inline: 0;
   top: 100%;
-  margin-top: 0.5rem;
+  margin-top: calc(var(--xps-space) * 2 / 3);
   z-index: 20;
   max-height: 60vh;
   overflow-y: auto;
@@ -780,7 +798,7 @@
 }
 
 .xps-suggestions__group-title {
-  padding: var(--xps-space) var(--xps-space) calc(var(--xps-space) / 4);
+  padding: var(--xps-space) calc(var(--xps-space) + 2px) calc(var(--xps-space) / 3);
 }
 
 /* The recents group heading: its Clear control sits at the far end of the same row. */
@@ -808,11 +826,16 @@
   min-width: 0;
 }
 
+/* The board's 10px row gap; the document row overrides it with its own stacked spacing below. */
+.xps-suggestions__group + .xps-suggestions__group {
+  margin-top: calc(var(--xps-space) / 2);
+}
+
 .xps-suggestions__option {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
-  padding: calc(var(--xps-space) / 2) var(--xps-space);
+  gap: calc(var(--xps-space) - 2px);
+  padding: calc(var(--xps-space) * 0.75) calc(var(--xps-space) + 2px);
   cursor: pointer;
 }
 
@@ -839,7 +862,7 @@
 }
 
 .xps-suggestions__footer {
-  padding: calc(var(--xps-space) / 2) var(--xps-space);
+  padding: calc(var(--xps-space) - 2px) calc(var(--xps-space) + 2px);
 }
 
 /* Nothing matched: a centred block where the rows would have been (Autocomplete.dc.html). */

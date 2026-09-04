@@ -197,8 +197,47 @@ for (const fixture of fixtures) {
   }
 }
 
+// The autocomplete panel is drawn to the pixel on `docs/internal/design/Autocomplete.dc.html`, and
+// the shipped default IS the design (owner, 2026-09-01). Those boxes are written against
+// `--xps-space` so the one spacing knob still works (`src/scss/_boxes.scss`), which means an
+// expression can drift off the board without anything else noticing — so the board's own pixels are
+// asserted here, at the default 12px token, in the themed render.
+const BOARD = [
+  ['.xps-suggestions__panel', 'margin-top', '8px'],
+  ['.xps-suggestions__option--query', 'padding-top', '9px'],
+  ['.xps-suggestions__option--query', 'padding-bottom', '9px'],
+  ['.xps-suggestions__option--query', 'padding-left', '14px'],
+  ['.xps-suggestions__option--query', 'padding-right', '14px'],
+  ['.xps-suggestions__option--query', 'column-gap', '10px'],
+  ['.xps-suggestions__group-title', 'padding-top', '12px'],
+  ['.xps-suggestions__group-title', 'padding-right', '14px'],
+  ['.xps-suggestions__group-title', 'padding-bottom', '4px'],
+  ['.xps-suggestions__group-title', 'padding-left', '14px'],
+  ['.xps-suggestions__group + .xps-suggestions__group', 'margin-top', '6px'],
+  ['.xps-suggestions__footer', 'padding-top', '10px'],
+  ['.xps-suggestions__footer', 'padding-bottom', '10px'],
+  ['.xps-suggestions__footer', 'padding-left', '14px'],
+  ['.xps-suggestions__footer', 'padding-right', '14px'],
+];
+
+await page.goto(
+  write('board-suggestions.html', document_(readFileSync(join(themes, 'fixtures/suggestions.html'), 'utf8'), PALETTES[0]))
+);
+const board = await page.evaluate((expected) =>
+  expected.map(([selector, property, want]) => {
+    const element = document.querySelector(selector);
+    const got = element === null ? '(no such element)' : getComputedStyle(element).getPropertyValue(property);
+    return { selector, property, want, got };
+  }), BOARD);
+for (const { selector, property, want, got } of board) {
+  if (got !== want) problems.push(`board Autocomplete.dc.html: "${selector}" ${property} is ${got}, the board says ${want}`);
+}
+
 await browser.close();
 
+console.log(
+  `        layout: ${board.length} of the autocomplete board's own pixels at the default --xps-space`
+);
 console.log(
   `        layout: ${compared} shell-declared values across ${fixtures.length} fixtures × ${PALETTES.length} palettes, ` +
     'shell alone vs shell+palette'

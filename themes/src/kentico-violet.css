@@ -5,11 +5,29 @@
 /* The footer's keycaps: 20px tall, per the autocomplete board. */
 /* The filter column's card. Padding is the box, not the paint, so it is structure the shell states
    as well — a shell-only site gets the same column, just without the surface around it (TH-11). */
-/* The popup's offset from the field it belongs to (design board `Autocomplete.dc.html`: 8px).
-   The panel is absolutely positioned at `top: 100%`, so without this it touches the input. */
-/* An autocomplete row. The panel renders an option as an `<li>` when it shows a single source and
-   as a `<div>` inside a group otherwise, and the theme's reset flattens the `<li>` — so the row's
-   box has to come from here, stated by both stylesheets (TH-11). */
+/* The autocomplete panel's boxes are the design board's own pixels (`Autocomplete.dc.html`), not
+ * the generic rhythm: the popup is drawn to the pixel and the owner's rule is that the shipped
+ * default IS the design. They are still written against `--xps-space` so the one spacing knob keeps
+ * working — at its default of 12px each of these computes to exactly the board's value:
+ *
+ *   $panel-inline  = --xps-space + 2px         14px   row, header and footer flanks
+ *   $row-block     = --xps-space * 0.75         9px   row height above and below the text
+ *   $footer-block  = --xps-space - 2px         10px   footer height
+ *   $header-bottom = --xps-space / 3            4px   header's own gap to its first row
+ *   $panel-offset  = --xps-space * 2 / 3        8px   panel's gap to the field
+ *
+ * `themes/scripts/check-layout.mjs` asserts the computed pixels at the default, so a change to one
+ * of these expressions that stops matching the board fails the build.
+ */
+/* The popup's offset from the field it belongs to (board: 8px). The panel is absolutely positioned
+   at `top: 100%`, so without this it touches the input. */
+/* An autocomplete row (board: 9px 14px). The panel renders an option as an `<li>` when it shows a
+   single source and as a `<div>` inside a group otherwise, and the theme's reset flattens the
+   `<li>` — so the row's box has to come from here, stated by both stylesheets (TH-11). */
+/* A source's heading (board: 12px 14px 4px). */
+/* The gap the board leaves above every group after the first, under the hairline the theme draws.
+   The group is an `<li>`: without this the reset flattens it. */
+/* The keyboard-hints bar (board: 10px 14px). */
 /* Screen-reader-only text is a box too: the theme's element reset would otherwise flatten it. */
 /* xperience-search — default.css
  * Generated from themes/src/scss/default.scss — run `npm run build` in themes/, do not edit by hand.
@@ -837,7 +855,7 @@
  * suggestions
  * ------------------------------------------------------------------------ */
 .xps .xps-suggestions__panel.xps-suggestions__panel {
-  margin-top: 0.5rem;
+  margin-top: calc(var(--xps-space) * 2 / 3);
   background-color: var(--xps-color-surface);
   border: 1px solid var(--xps-color-border);
   border-radius: var(--xps-radius);
@@ -845,6 +863,7 @@
 }
 
 .xps .xps-suggestions__panel .xps-suggestions__group-title {
+  padding: var(--xps-space) calc(var(--xps-space) + 2px) calc(var(--xps-space) / 3);
   color: var(--xps-color-muted);
   font-size: 0.6875em;
   font-weight: 700;
@@ -854,6 +873,7 @@
 
 /* A rule between sources, lighter than the panel's own edge. */
 .xps .xps-suggestions__panel .xps-suggestions__group + .xps-suggestions__group {
+  margin-top: calc(var(--xps-space) / 2);
   border-top: 1px solid color-mix(in srgb, var(--xps-color-border) 60%, var(--xps-color-surface));
 }
 
@@ -868,7 +888,7 @@
 .xps .xps-suggestions__panel .xps-suggestions__option {
   /* The row's box, restated from the shell's own source: with a single source in the panel the
      option is an `<li>`, and the element reset above flattens it (TH-11). */
-  padding: calc(var(--xps-space) / 2) var(--xps-space);
+  padding: calc(var(--xps-space) * 0.75) calc(var(--xps-space) + 2px);
   /* Rows read from the start edge, whatever the host page centres. */
   text-align: start;
 }
@@ -922,6 +942,7 @@
 }
 
 .xps .xps-suggestions__panel .xps-suggestions__footer {
+  padding: calc(var(--xps-space) - 2px) calc(var(--xps-space) + 2px);
   background-color: color-mix(in srgb, var(--xps-color-border) 25%, var(--xps-color-surface));
   border-top: 1px solid var(--xps-color-border);
 }
