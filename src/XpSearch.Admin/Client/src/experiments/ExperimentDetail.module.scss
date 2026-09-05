@@ -1,0 +1,88 @@
+/*
+ * Experiment detail layout (UX-3a), built from docs/internal/design/ExperimentDetail.dc.html. Every
+ * region is a stock @kentico/xperience-admin-components component; this file supplies only the flex
+ * containers and the two card overrides the board asks for, as the query tester does
+ * (query-tester/QueryTesterTemplate.module.scss). There is no own markup on this page.
+ */
+
+/*
+ * Card's body pads 24px under the headline slot; the board puts 16px between a card header and the
+ * first row, and lays the card's sections out as a 16px flex column.
+ */
+.card :global([class*="card-body___"]) {
+  padding-top: 16px;
+  gap: 16px;
+}
+
+/** Card headline slot: the title cluster left, the actions and the state tags right. */
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+/** Title (inherits the slot's 24/32 bold) over its muted meta line. */
+.headerTitle {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/** The right cluster: the actions, then the state tags 8px apart. */
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/** The draft split field and its two buttons, bottoms aligned. */
+.formRow {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+.splitField {
+  width: 240px;
+}
+
+/* ---------------------------------------------------------------- variants */
+
+.variants {
+  display: flex;
+  gap: 24px;
+  align-items: stretch;
+}
+
+.variant {
+  flex: 1;
+  min-width: 0;
+}
+
+/** The four mini figures of a variant card. */
+.figures {
+  display: flex;
+  gap: 16px;
+}
+
+.figure {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* `sm` in the admin shell is <= 1365.98px (ADR-0020): the two variant cards stack. */
+@media (max-width: 1365px) {
+  .variants {
+    flex-direction: column;
+  }
+}
