@@ -9,20 +9,21 @@ import {
   Card,
   Checkbox,
   DateTimeRangeInput,
-  Colors, Column,
+  Colors,
+  Divider,
+  DividerOrientation,
   DropDownActionMenu,
   DropDownPlacement,
   FormItemWrapper,
   Headline,
   HeadlineSize,
-  Input, LayoutAlignment,
-  MenuItem, Row,
-  SidePanelManager, Spacing,
+  Input,
+  MenuItem,
+  SidePanelManager,
   Tag,
 } from '@kentico/xperience-admin-components';
 import { usePageCommand } from '@kentico/xperience-admin-base';
 
-import { muted } from '../theme';
 import { ConditionPanel } from './ConditionPanel';
 import { ActionPanel } from './ActionPanel';
 import { ActionRow, gripId } from './ActionRow';
@@ -47,6 +48,9 @@ import styles from './RuleBuilderTemplate.module.scss';
  * Client template of the if/then rule builder (ADR-0022), built to the owner's approved design
  * canvas: 5a the editor, 5b the add-action menu, 5c the five new editors, 5d validation,
  * 5e narrow at 1024, 5f the condition side panel, 5g the action side panel, 5h the pickers.
+ * UX-3b restyled it to the board docs/internal/design/RuleBuilder.dc.html — a header card holding
+ * the rule's settings, then the If and Then flows — with the layout in
+ * RuleBuilderTemplate.module.scss and every region on its stock component.
  * Registered as
  * "@xperience-community/xperience-search/RuleBuilder"; the back end is
  * XpSearch.Admin.UIPages.RuleBuilder.RuleBuilderPage.
@@ -290,34 +294,100 @@ export const RuleBuilderTemplate = ({
   return (
     <SidePanelManager>
       <div className={styles.page}>
-        <div className={styles.header}>
-          <div>
-            <Headline size={HeadlineSize.L}>{isNew ? 'New rule' : name || 'Rule'}</Headline>
-            <p style={muted}>
-              Index <strong>{indexName}</strong>
-              {variantBanner === '' ? '' : ` · ${variantBanner}`}
-            </p>
-          </div>
-          <div className={styles.headerActions}>
-            {isNew || readOnly ? null : (
-              <Button
-                label="Delete"
-                destructive
-                color={ButtonColor.Tertiary}
-                onClick={() => {
-                  void remove();
-                }}
-              />
-            )}
-            <Button
-              label="Cancel"
-              color={ButtonColor.Secondary}
-              onClick={() => {
-                void cancel();
-              }}
-            />
-            <Button label="Save rule" color={ButtonColor.Primary} inProgress={saving} disabled={blocked} onClick={submit} />
-          </div>
+        <div className={styles.card}>
+          <Card
+            headline={
+              <div className={styles.cardHeader}>
+                <div className={styles.titleBlock}>
+                  <div>{isNew ? 'New rule' : name || 'Rule'}</div>
+                  <p className={styles.detail}>
+                    Index <span className={styles.mono}>{indexName}</span>
+                    {variantBanner === '' ? '' : ` · ${variantBanner}`}
+                  </p>
+                </div>
+                <div className={styles.headerActions}>
+                  {isNew || readOnly ? null : (
+                    <Button
+                      label="Delete"
+                      destructive
+                      color={ButtonColor.Tertiary}
+                      onClick={() => {
+                        void remove();
+                      }}
+                    />
+                  )}
+                  <Button
+                    label="Cancel"
+                    color={ButtonColor.Secondary}
+                    onClick={() => {
+                      void cancel();
+                    }}
+                  />
+                  <Button label="Save rule" color={ButtonColor.Primary} inProgress={saving} disabled={blocked} onClick={submit} />
+                </div>
+              </div>
+            }
+          >
+            <Divider orientation={DividerOrientation.Horizontal} />
+            <div className={styles.settings}>
+              <div className={styles.settingsName}>
+                <Input
+                  label="Rule name"
+                  markAsRequired
+                  value={name}
+                  invalid={nameErrors.length > 0}
+                  validationMessage={nameErrors[0]}
+                  explanationText="Shown in the ranking explanation, so name it after what it does."
+                  onChange={(event) => setName(event.target.value)}
+                />
+              </div>
+              <div className={styles.settingsCheck}>
+                <Checkbox label="Enabled" checked={enabled} onChange={(event) => setEnabled(event.target.checked)} />
+              </div>
+              <div className={styles.settingsSmall}>
+                <Input
+                  label="Priority"
+                  type="number"
+                  value={String(priority)}
+                  explanationText="Lower wins."
+                  onChange={(event) => setPriority(Number(event.target.value) || 0)}
+                />
+              </div>
+              <div className={styles.settingsDate}>
+                <FormItemWrapper
+                  label="Runs"
+                  explanationText={
+                    validFrom === '' && validTo === ''
+                      ? 'Empty = always.'
+                      : validFrom === '' || validTo === ''
+                        ? `Open-ended window (${validFrom || '…'} – ${validTo || '…'}); picking a range replaces it.`
+                        : undefined
+                  }
+                >
+                  <DateTimeRangeInput
+                    timeZone="UTC"
+                    showTime={false}
+                    minDate={new Date()}
+                    allowClear
+                    value={
+                      validFrom !== '' && validTo !== ''
+                        ? { from: new Date(`${validFrom}T00:00:00Z`), to: new Date(`${validTo}T00:00:00Z`) }
+                        : null
+                    }
+                    onChange={(range: any) => {
+                      if (range === null) {
+                        setValidFrom('');
+                        setValidTo('');
+                        return;
+                      }
+                      setValidFrom(range.from.toISOString().slice(0, 10));
+                      setValidTo(range.to.toISOString().slice(0, 10));
+                    }}
+                  />
+                </FormItemWrapper>
+              </div>
+            </div>
+          </Card>
         </div>
 
         {variantBanner === '' ? null : (
@@ -366,67 +436,13 @@ export const RuleBuilderTemplate = ({
           </p>
         ))}
 
-        <Card>
-          <Row alignY={LayoutAlignment.Center} spacing={Spacing.M}>
-            <Column>
-              <Input
-                  label="Rule name"
-                  markAsRequired
-                  value={name}
-                  invalid={nameErrors.length > 0}
-                  validationMessage={nameErrors[0]}
-                  explanationText="Shown in the ranking explanation, so name it after what it does."
-                  onChange={(event) => setName(event.target.value)}
-              />
-            </Column>
-            <Column>
-              <Checkbox label="Enabled" checked={enabled} onChange={(event) => setEnabled(event.target.checked)} />
-            </Column>
-            <Column>
-              <Input
-                  label="Priority"
-                  type="number"
-                  value={String(priority)}
-                  explanationText="Lower wins."
-                  onChange={(event) => setPriority(Number(event.target.value) || 0)}
-              />
-            </Column>
-            <Column>
-              <FormItemWrapper
-                  label="Runs"
-                  explanationText={validFrom === '' && validTo === '' ? 'Empty = always.'
-                      : validFrom === '' || validTo === '' ? `Open-ended window (${validFrom || '…'} – ${validTo || '…'}); picking a range replaces it.`
-                      : undefined}>
-                <DateTimeRangeInput
-                    timeZone="UTC"
-                    showTime={false}
-                    minDate={new Date()}
-                    allowClear
-                    value={validFrom !== '' && validTo !== ''
-                        ? {from: new Date(`${validFrom}T00:00:00Z`), to: new Date(`${validTo}T00:00:00Z`)}
-                        : null}
-                    onChange={(range: any) => {
-                      if (range === null) {
-                        setValidFrom('');
-                        setValidTo('');
-                        return;
-                      }
-                      setValidFrom(range.from.toISOString().slice(0, 10));
-                      setValidTo(range.to.toISOString().slice(0, 10));
-                    }}
-                />
-              </FormItemWrapper>
-            </Column>
-          </Row>
-        </Card>
-
         <div className={styles.flow}>
           <div className={styles.flowLabel}>
             <div className={styles.sectionRow}>
-              <Headline size={HeadlineSize.M}>Condition</Headline>
+              <Headline size={HeadlineSize.L}>Condition</Headline>
               <Tag label="If" readOnly background={{ color: Colors.BackgroundTagXperienceViolet }} />
             </div>
-            <p style={muted}>All conditions must hold. A rule needs at least one.</p>
+            <p className={styles.detail}>All conditions must hold. A rule needs at least one.</p>
           </div>
           <div className={styles.flowStack}>
             {fragments.length === 0 ? (
@@ -443,32 +459,32 @@ export const RuleBuilderTemplate = ({
             ) : null}
 
             {fragments.map((fragment, index) => (
-              <Card key={fragment.id}>
-                <div className={styles.summaryRow}>
-                  <div className={styles.summaryText}>
-                    <span className={styles.summaryTitle}>{`Condition ${index + 1}`}</span>
-                    <span>{describe(fragment, contactGroups)}</span>
+              <div className={styles.summaryCard} key={fragment.id}>
+                <Card>
+                  <div className={styles.summaryRow}>
+                    <div className={styles.summaryText}>
+                      <span className={styles.summaryTitle}>{`Condition ${index + 1}`}</span>
+                      <span className={styles.detail}>{describe(fragment, contactGroups)}</span>
+                    </div>
+                    <div className={styles.rowActions}>
+                      <Button
+                        label="Edit"
+                        title={`Edit condition ${index + 1}`}
+                        color={ButtonColor.Tertiary}
+                        size={ButtonSize.S}
+                        onClick={() => setEditing(index)}
+                      />
+                      <Button
+                        label="Delete"
+                        title={`Delete condition ${index + 1}`}
+                        color={ButtonColor.Tertiary}
+                        size={ButtonSize.S}
+                        onClick={() => setFragments((current) => current.filter((_, i) => i !== index))}
+                      />
+                    </div>
                   </div>
-                  <div className={styles.rowActions}>
-                    <Button
-                      label="Edit"
-                      title={`Edit condition ${index + 1}`}
-                      color={ButtonColor.Tertiary}
-                      size={ButtonSize.XS}
-                      onClick={() => setEditing(index)}
-                    />
-                    <Button
-                      label="Remove"
-                      title={`Remove condition ${index + 1}`}
-                      icon="xp-bin"
-                      destructive
-                      color={ButtonColor.Quinary}
-                      size={ButtonSize.XS}
-                      onClick={() => setFragments((current) => current.filter((_, i) => i !== index))}
-                    />
-                  </div>
-                </div>
-              </Card>
+                </Card>
+              </div>
             ))}
 
             {conditionErrors.map((message) => (
@@ -486,10 +502,10 @@ export const RuleBuilderTemplate = ({
         <div className={styles.flow}>
           <div className={styles.flowLabel}>
             <div className={styles.sectionRow}>
-              <Headline size={HeadlineSize.M}>Action</Headline>
-              <Tag label="Then" readOnly background={{ color: Colors.BackgroundTagSkyBlue }} />
+              <Headline size={HeadlineSize.L}>Action</Headline>
+              <Tag label="Then" readOnly background={{ color: Colors.BackgroundTagXperienceViolet }} />
             </div>
-            <p style={muted}>
+            <p className={styles.detail}>
               Applied in order. Pin, hide, boost, bury, filter, rewrite the query, redirect, or return custom data.
             </p>
           </div>

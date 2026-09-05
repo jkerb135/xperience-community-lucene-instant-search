@@ -13,6 +13,17 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 ## [Unreleased]
 
 - **Changed (admin):** the analytics dashboard and the experiment detail page are rebuilt to the approved design boards (`docs/internal/design/Analytics.dc.html`, `docs/internal/design/ExperimentDetail.dc.html`). Analytics opens with a header card carrying the index meta line and the range / date range / rows-per-page filters instead of a bare headline; the KPI tiles are one flex row of four equal cards (two per row under `sm`); the chart card has a legend row and a **Show the numbers** toggle button; every report table reads its query bold on the left and its numbers right, with the page count and the stock `Pagination` on one row. The experiment page puts the name, the meta line, the running actions and the state tags in one header card - a discarded variant B is tagged Kentico orange - and shows each variant as four mini figures in a card of its own. Every region keeps its stock component; the layout lives in `analytics/AnalyticsDashboard.module.scss` and `experiments/ExperimentDetail.module.scss`. See ADR-0020.
+- **Changed (admin):** the index status page and the rule builder are rebuilt to the approved design
+  boards (`docs/internal/design/Status.dc.html`, `docs/internal/design/RuleBuilder.dc.html`). Status
+  opens with a header card carrying the rebuild button, and its counts are four tiles — health,
+  documents, sources, last external write — over the documents-by-source card and the ingestion log,
+  whose numbers now read right, whose timestamp is monospace and whose message is muted and wraps.
+  The rule builder puts the rule's name, *Enabled*, priority and run window in the header card under
+  a divider beside Cancel and Save, and both the *If* and *Then* flows label their stack with a
+  headline and a violet tag; every condition and action card is a bold title over a muted detail line
+  with tertiary Edit and Delete, and the dashed add areas keep the drag-and-drop reorder untouched.
+  Every region stays on its stock component; the layout lives in each page's `.module.scss`.
+
 - **Changed (admin):** the custom pages follow one layout guideline. The analytics dashboard, the index status page, the rule builder and the experiment detail page now use the rhythm the query tester established — 24px between cards, 16px inside one, no page-level padding of their own (the administration shell pads the page) and no spacing off the 8px grid. Colours are named only through the component package's `--color-*` tokens: every hex fallback is gone, and the rule builder's drag insertion line and lifted outline use `--color-product-selected` (the `--color-border-selected` they named does not exist). Cards that used to touch — the experiment status card and its variant cards — are apart again. The volume chart's inline styles moved into `analytics/AnalyticsDashboard.module.scss`. The guidelines are written down in *Layout guidelines for custom pages* in `docs/guides/admin-client-development.md`.
 - **Fixed (core):** an injected (pinned-in) result now reports its score under the query (0 when it
   does not match) instead of the id lookup's score, and its score steps are explained from the same

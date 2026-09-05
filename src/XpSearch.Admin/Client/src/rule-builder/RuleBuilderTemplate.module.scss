@@ -1,7 +1,12 @@
 /*
- * Layout of the if/then rule builder (design canvas 5a-5h). Scoped by css-loader's CSS-module
- * handling of *.module.css. Colours and type come from the components library's own tokens.
+ * Layout of the if/then rule builder, rebuilt by UX-3b to the approved board
+ * docs/internal/design/RuleBuilder.dc.html. Every region keeps its stock component; this file only
+ * supplies the flex containers the board asks for and targeted overrides on our own wrappers, the
+ * way query-tester/QueryTesterTemplate.module.scss does. Colours are the components package's own
+ * tokens; the package ships no spacing tokens, so gaps and type are literals.
  */
+
+$product: "GT Walsheim", sans-serif;
 
 .page {
   display: flex;
@@ -9,20 +14,67 @@
   gap: 24px;
 }
 
-.header {
+.mono {
+  font-family: monospace;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+/** The board's muted 12/16 prose: a card's detail line, a flow label's helper. */
+.detail {
+  margin: 0;
+  color: var(--color-text-low-emphasis);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+/*
+ * The board pads a card 24px on every side; the stock headline adds another 24 on top of the card's
+ * own padding, and the body's 24 is the board's 16 between the header and the first row.
+ */
+.card {
+  :global([class*="card-title___"]) {
+    padding-top: 0;
+  }
+
+  :global([class*="card-body___"]) {
+    padding-top: 16px;
+    gap: 16px;
+  }
+}
+
+/** Card headline slot: the rule name over its muted index line, the page's actions right. */
+/*
+ * A condition or action card carries no headline, so its body carries the whole 24px card padding
+ * and spaces the summary row from anything under it at the board's 16.
+ */
+.summaryCard,
+.actionRow {
+  :global([class*="card-body___"]) {
+    padding-top: 0;
+    gap: 16px;
+  }
+}
+
+.cardHeader {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
 }
 
-.headerActions {
+.titleBlock {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  gap: 4px;
 }
 
-/* 5a: the rule-level settings strip — one row of small fields, wrapping at narrow. */
+.headerActions {
+  display: flex;
+  gap: 12px;
+}
+
+/* The rule-level settings strip under the divider: one row of fields, bottoms aligned. */
 .settings {
   display: flex;
   flex-wrap: wrap;
@@ -31,20 +83,21 @@
 }
 
 .settingsName {
-  flex: 1 1 220px;
+  flex: 1;
   min-width: 200px;
 }
 
 .settingsSmall {
-  width: 110px;
+  width: 120px;
 }
 
 .settingsDate {
-  width: 160px;
+  width: 280px;
 }
 
+/* The checkbox has no label or hint of its own; this sits it on the inputs' control line. */
 .settingsCheck {
-  padding-bottom: 8px;
+  padding-bottom: 12px;
 }
 
 /*
@@ -62,7 +115,7 @@
   flex: 0 0 200px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
 }
 
 .flowStack {
@@ -79,11 +132,15 @@
   gap: 8px;
 }
 
-/* The read-only condition summary row: text on the left, Edit and Delete on the right. */
+/*
+ * A condition or action card: the grip (actions only) and the summary on the left, Edit and Delete
+ * on the right.
+ */
 .summaryRow {
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .summaryText {
@@ -95,12 +152,15 @@
 }
 
 .summaryTitle {
+  font-family: $product;
   font-weight: 700;
+  font-size: 14px;
+  line-height: 16px;
 }
 
 .rowActions {
   display: flex;
-  gap: 4px;
+  gap: 8px;
 }
 
 /*
@@ -178,35 +238,16 @@
   white-space: nowrap;
 }
 
-/* The dashed drop area both Add buttons sit in. */
+/* The dashed area both Add buttons sit in (own markup: the package has no such container). */
 .addArea {
   border: 1px dashed var(--color-border-default);
-  border-radius: 4px;
+  border-radius: 8px;
   padding: 12px;
   display: flex;
   justify-content: center;
 }
 
-.cardHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.cardTitle {
-  font-weight: 700;
-}
-
-/* One action editor's fields: they sit on a line and wrap rather than scroll. */
-.fields {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 16px;
-}
-
+/* One action editor's fields in its side panel: they sit on a line and wrap rather than scroll. */
 .fieldGrow {
   flex: 1 1 220px;
   min-width: 180px;
@@ -214,10 +255,6 @@
 
 .fieldSmall {
   width: 120px;
-}
-
-.fieldFull {
-  width: 100%;
 }
 
 /* 5c: the custom-data editor is read as code, so it is the one monospace control on the page. */
@@ -338,7 +375,8 @@
     flex: 1 1 auto;
   }
 
-  .header {
+  .cardHeader {
     flex-direction: column;
+    align-items: flex-start;
   }
 }

@@ -637,13 +637,17 @@ and how to lift it.
   though health is degraded; the full history is on the Ingestion log listing.
 - **Upgrade path:** a second `ReadRecentAsync` call filtered to failures, merged ahead of the ten.
 
-## Narrow-viewport ingestion rows in `XpSearch.Admin/Client/src/status/IndexStatusTemplate.module.css`
+## Table cell overrides in `XpSearch.Admin/Client/src/status/IndexStatusTemplate.module.scss`
 
-- **Simplified:** `Table` sizes its cells with inline `min-width`/`max-width`, so the 1024 board's
-  "message on a second line" is achieved by overriding those inline widths through the cell's
-  `data-testid="table-cell-message"` attribute inside the page's own module stylesheet.
-- **Ceiling:** the override depends on a components-library DOM attribute. If a future release drops
-  it, the message column simply scrolls horizontally again instead of wrapping.
+- **Simplified:** `Table` sizes its cells with inline `min-width`/`max-width` and gives each one a
+  `data-testid="table-cell-<column>"`, which is the only hook a page has on a single column. The
+  1024 board's "message on a second line", the right-aligned number columns and the board's mono
+  timestamp / muted message are therefore rules on that attribute inside the page's own module
+  stylesheet, next to the `[class*="table-row___"]` row-height override the query tester
+  established (UX-3b).
+- **Ceiling:** the overrides depend on components-library DOM attributes and hashed class-name
+  prefixes. If a future release drops them the numbers read centred again and the message column
+  scrolls horizontally instead of wrapping; nothing fails loudly.
 - **Upgrade path:** a `Table` prop for a full-width overflow cell, or rows built from `Row`/`Column`
   once the components library offers an invalid-row treatment outside `Table`.
 
@@ -1382,11 +1386,12 @@ and how to lift it.
   change to `$color-on-accent` in `tokens/_kentico-orange.scss`. The other AA-clean option is a
   larger, bolder button label (≥18.66px bold), which is a board change, not a token change.
 
-## The query tester's stock-component overrides key off hashed class names (`QueryTesterTemplate.module.scss`, QT-3a)
+## The custom pages' stock-component overrides key off hashed class names (`QueryTesterTemplate.module.scss`, QT-3a; `IndexStatusTemplate.module.scss` and `RuleBuilderTemplate.module.scss`, UX-3b)
 
-- **Simplified:** the design needs three things the components package does not expose as props — a
-  `Card` body padded 16 instead of 24, a `Callout` whose inner `Stack` spaces at 4px, and a `Table`
-  row that grows past 48px for two-line cells. Each is a rule scoped to one of our own wrapper
+- **Simplified:** the design needs four things the components package does not expose as props — a
+  `Card` body padded 16 (or 0, under a card with no headline) instead of 24, a card title without
+  the 24px the package adds on top of the card's own padding, a `Callout` whose inner `Stack` spaces
+  at 4px, and a `Table` row that grows past 48px for two-line cells. Each is a rule scoped to one of our own wrapper
   elements that selects the package's element by `[class*="card-body___"]` / `[class*="table-row___"]`
   and friends — the stable prefix of its CSS-module class name.
 - **Ceiling:** a components release that renames those CSS modules silently drops the override and
