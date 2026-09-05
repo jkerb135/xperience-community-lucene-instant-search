@@ -223,7 +223,7 @@ export const ActionPanel = ({ editing, index, attributes, errors, onApply, onDis
       }
     >
       {draft === undefined ? null : (
-        <Stack spacing={Spacing.L}>
+        <Stack spacing={Spacing.XL}>
           {[...errors, ...refused].map((message) => (
             <p key={message} className={styles.error} role="alert">
               {message}

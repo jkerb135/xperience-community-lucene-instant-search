@@ -179,7 +179,7 @@ export const ActionRow = ({
           </span>
           <div className={styles.summaryText}>
             <span className={styles.summaryTitle}>{`${String(index + 1)} · ${label}`}</span>
-            <span>
+            <span className={styles.detail}>
               {describeAction(action)}
               {isOrphaned(action) ? (
                 <>
@@ -194,16 +194,14 @@ export const ActionRow = ({
               label="Edit"
               title={`Edit ${label}`}
               color={ButtonColor.Tertiary}
-              size={ButtonSize.XS}
+              size={ButtonSize.S}
               onClick={onEdit}
             />
             <Button
-              label="Remove"
-              title={`Remove ${label}`}
-              icon="xp-bin"
-              destructive
-              color={ButtonColor.Quinary}
-              size={ButtonSize.XS}
+              label="Delete"
+              title={`Delete ${label}`}
+              color={ButtonColor.Tertiary}
+              size={ButtonSize.S}
               onClick={onRemove}
             />
           </div>

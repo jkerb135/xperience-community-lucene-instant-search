@@ -11,8 +11,6 @@ import {
     Colors,
     ColumnContentType,
     Dialog,
-    Headline,
-    HeadlineSize,
     Spinner,
     StringCell,
     Table,
@@ -23,12 +21,15 @@ import {
 import {usePageCommand} from '@kentico/xperience-admin-base';
 
 import {muted, stateFigure} from '../theme';
-import styles from './IndexStatusTemplate.module.css';
+import styles from './IndexStatusTemplate.module.scss';
 
 /*
  * Client template of the index status page (spec 10.8). Registered as
  * "@xperience-community/xperience-search/IndexStatus"; the back end is
- * XpSearch.Admin.UIPages.IndexStatusPage.
+ * XpSearch.Admin.UIPages.IndexStatusPage. UX-3b rebuilt it to the approved board
+ * docs/internal/design/Status.dc.html: a header card, four figure tiles, the documents-by-source
+ * card and the ingestion log. Every region keeps its stock component; the layout is in
+ * IndexStatusTemplate.module.scss.
  * https://docs.kentico.com/documentation/developers-and-admins/customization/extend-the-administration-interface/ui-pages
  */
 
@@ -193,6 +194,7 @@ export const IndexStatusTemplate = ({indexName}: IndexStatusProps) => {
     const rebuildButton = (
         <Button
             label="Rebuild index"
+            icon="xp-bin"
             destructive
             color={ButtonColor.Primary}
             onClick={() => setConfirming(true)}
@@ -200,10 +202,14 @@ export const IndexStatusTemplate = ({indexName}: IndexStatusProps) => {
         />
     );
 
-    const figure = (label: string, value: string) => (
-        <div key={label}>
-            <p style={muted}>{label}</p>
-            <p style={stateFigure}>{value}</p>
+    /** One figure tile of the board: muted label, the 24/32 figure, muted hint. */
+    const figure = (label: string, value: string, hint: string) => (
+        <div key={label} className={styles.tile}>
+            <Card>
+                <p style={muted}>{label}</p>
+                <p style={stateFigure}>{value}</p>
+                <p style={muted}>{hint}</p>
+            </Card>
         </div>
     );
 
@@ -215,7 +221,7 @@ export const IndexStatusTemplate = ({indexName}: IndexStatusProps) => {
                 node('source', () => (
                     <span>
             <span className={styles.swatch} style={{background: sourceColors[index % sourceColors.length]}}/>
-            <span>{row.source}</span>
+            <span className={styles.sourceName}>{row.source}</span>
             <span className={styles.sourceKind}> — {row.kind}</span>
           </span>
                 )),
@@ -233,7 +239,9 @@ export const IndexStatusTemplate = ({indexName}: IndexStatusProps) => {
             cells: [
                 text('timestamp', entry.timestamp),
                 text('source', entry.source),
-                node('operation', () => <Tag label={entry.operation} readOnly/>),
+                node('operation', () => (
+                    <Tag label={entry.operation} readOnly background={{color: Colors.BackgroundTagSkyBlue}}/>
+                )),
                 text('count', entry.count.toLocaleString()),
                 node('result', () => (
                     <Tag
@@ -249,21 +257,30 @@ export const IndexStatusTemplate = ({indexName}: IndexStatusProps) => {
     return (
         <>
             <Stack spacing={Spacing.XL}>
-                <div className={styles.header}>
-                    <div>
-                        <Headline size={HeadlineSize.L}>Status</Headline>
-                        <p className={styles.subtitle}>
-                            Index <strong>{indexName}</strong> · Lucene
-                        </p>
-                    </div>
-                    {rebuilding ? (
-                        <span className={styles.inProgress}>
-                            <Spinner/>
-                            <Tag label="Rebuilding" readOnly/>
-                        </span>
-                    ) : (
-                        rebuildButton
-                    )}
+                <div className={styles.card}>
+                    <Card
+                        headline={
+                            <div className={styles.cardHeader}>
+                                <div className={styles.titleBlock}>
+                                    <div>Status</div>
+                                    <p style={muted}>
+                                        Index <span className={styles.mono}>{indexName}</span> · Lucene
+                                    </p>
+                                </div>
+                                {rebuilding ? (
+                                    <span className={styles.healthState}>
+                                        <Spinner/>
+                                        <Tag label="Rebuilding" readOnly/>
+                                    </span>
+                                ) : (
+                                    rebuildButton
+                                )}
+                            </div>
+                        }
+                    >
+                        {/* The board's header card is the header row alone; Card renders no body for it. */}
+                        {null}
+                    </Card>
                 </div>
 
                 <div aria-live="polite">
@@ -284,27 +301,33 @@ export const IndexStatusTemplate = ({indexName}: IndexStatusProps) => {
 
                         {!loading && status && status.error === '' ? (
                             <>
-                                <Card>
-                                    <div className={styles.figures}>
-                                        {rebuilding ? (
-                                            <span className={styles.inProgress}>
-                                                <Spinner/>
-                                                <Tag label="Rebuild in progress" readOnly/>
+                                <div className={styles.tiles}>
+                                    <div className={`${styles.tile} ${styles.healthTile}`}>
+                                        <Card>
+                                            <span className={styles.healthState}>
+                                                {rebuilding ? (
+                                                    <>
+                                                        <Spinner/>
+                                                        <Tag label="Rebuild in progress" readOnly/>
+                                                    </>
+                                                ) : (
+                                                    <Tag
+                                                        label={degraded ? 'Degraded' : 'Healthy'}
+                                                        readOnly
+                                                        background={{color: degraded ? Colors.AlertBackgroundHighEmphasis : Colors.SuccessBackgroundHighEmphasis}}
+                                                    />
+                                                )}
                                             </span>
-                                        ) : (
-                                            <Tag
-                                                label={degraded ? 'Degraded' : 'Healthy'}
-                                                readOnly
-                                                background={{color: degraded ? Colors.AlertBackgroundHighEmphasis : Colors.SuccessBackgroundHighEmphasis}}
-                                            />
-                                        )}
-                                        {figure('Documents', status.documents.toLocaleString())}
-                                        {degraded ? figure('Failed writes', status.failedWrites.toLocaleString()) : figure('Sources', status.sources.toLocaleString())}
-                                        {rebuilding
-                                            ? figure('Started', rebuildStartedAt)
-                                            : figure('Last external write', status.lastWrite === '' ? 'never' : status.lastWrite)}
+                                        </Card>
                                     </div>
-                                </Card>
+                                    {figure('Documents', status.documents.toLocaleString(), 'In the index now')}
+                                    {degraded
+                                        ? figure('Failed writes', status.failedWrites.toLocaleString(), 'Queued writes that never reached Lucene')
+                                        : figure('Sources', status.sources.toLocaleString(), 'Content types and external systems')}
+                                    {rebuilding
+                                        ? figure('Started', rebuildStartedAt, 'The rebuild running now')
+                                        : figure('Last external write', status.lastWrite === '' ? 'never' : status.lastWrite, 'Through the ingestion API')}
+                                </div>
 
                                 {degraded && !rebuilding ? (
                                     <Callout
@@ -327,36 +350,48 @@ export const IndexStatusTemplate = ({indexName}: IndexStatusProps) => {
                                     </Callout>
                                 ) : null}
 
-                                <Card headline="Documents by source">
-                                    <div className={styles.bar}>
-                                        {status.bySource.map((row, index) => (
-                                            <div
-                                                key={row.source}
-                                                className={styles.segment}
-                                                style={{
-                                                    width: `${row.share * 100}%`,
-                                                    background: sourceColors[index % sourceColors.length],
-                                                }}
-                                            />
+                                <div className={styles.card}>
+                                    <Card headline="Documents by source">
+                                        <div className={styles.bar}>
+                                            {status.bySource.map((row, index) => (
+                                                <div
+                                                    key={row.source}
+                                                    className={styles.segment}
+                                                    style={{
+                                                        width: `${row.share * 100}%`,
+                                                        background: sourceColors[index % sourceColors.length],
+                                                    }}
+                                                />
+                                            ))}
+                                        </div>
+                                        <div className={`${styles.table} ${styles.sources}`}>
+                                            <Table columns={sourceColumns} rows={sourceRows(status)}/>
+                                        </div>
+                                        {missingSources(status).map((source) => (
+                                            <p key={source} className={styles.alertNote}>
+                                                {source} has never written successfully — its documents are absent from
+                                                the index.
+                                            </p>
                                         ))}
-                                    </div>
-                                    <Table columns={sourceColumns} rows={sourceRows(status)}/>
-                                    {missingSources(status).map((source) => (
-                                        <p key={source} className={styles.alertNote}>
-                                            {source} has never written successfully — its documents are absent from
-                                            the index.
-                                        </p>
-                                    ))}
-                                </Card>
+                                    </Card>
+                                </div>
 
-                                <Card
-                                    headline="Recent ingestion"
-                                    description={degraded ? `${status.failedWrites} failed entries first` : 'Last 10 entries'}
-                                >
-                                    <div className={styles.ingestion}>
-                                        <Table columns={ingestionColumns} rows={ingestionRows(status)}/>
-                                    </div>
-                                </Card>
+                                <div className={styles.card}>
+                                    <Card
+                                        headline={
+                                            <div className={styles.cardHeader}>
+                                                <div>Recent ingestion</div>
+                                                <p style={muted}>
+                                                    {degraded ? `${status.failedWrites} failed entries first` : 'Last 10 entries'}
+                                                </p>
+                                            </div>
+                                        }
+                                    >
+                                        <div className={`${styles.table} ${styles.ingestion}`}>
+                                            <Table columns={ingestionColumns} rows={ingestionRows(status)}/>
+                                        </div>
+                                    </Card>
+                                </div>
                             </>
                         ) : null}
                     </Stack>

@@ -1,0 +1,230 @@
+/*
+ * Index status layout (UX-3b), built to docs/internal/design/Status.dc.html. Every region keeps its
+ * stock component; this file only supplies the flex containers the board asks for and a handful of
+ * targeted overrides on our own wrappers, the way query-tester/QueryTesterTemplate.module.scss does.
+ *
+ * The package ships colour tokens only (`--color-*`), so gaps, radii and type are literals: 24px
+ * between cards, 16px inside one, and the board's 12/16 muted prose.
+ */
+
+/* ---------------------------------------------------------------- shared text treatments */
+
+.mono {
+  font-family: monospace;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+/* ---------------------------------------------------------------- card rhythm */
+
+/*
+ * The board pads a card 24px on every side; the stock headline adds another 24 on top of the card's
+ * own padding, and the body's 24 is the board's 16 between the header and the first row.
+ */
+.card {
+  :global([class*="card-title___"]) {
+    padding-top: 0;
+  }
+
+  :global([class*="card-body___"]) {
+    padding-top: 16px;
+    gap: 16px;
+  }
+}
+
+/** Card headline slot: title (and the meta line under it) left, the page's action right. */
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+/** Title over the muted `Index … · Lucene` line. */
+.titleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ---------------------------------------------------------------- figure tiles */
+
+.tiles {
+  display: flex;
+  gap: 16px;
+}
+
+/*
+ * Card takes no className, so each tile is a wrapper the flex sizing hangs on (Card is `flex: 1 1 0`
+ * inside it). A tile has no headline, so its body carries the whole 24px card padding.
+ */
+.tile {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+
+  :global([class*="card-body___"]) {
+    padding-top: 0;
+    gap: 4px;
+  }
+}
+
+/** The health tile is fixed and holds one centred tag. */
+.healthTile {
+  flex: 0 0 200px;
+
+  :global([class*="card-body___"]) {
+    justify-content: center;
+  }
+}
+
+/** The health tag, or the spinner and the tag that replace it while a rebuild runs. */
+.healthState {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.alertNote {
+  margin: 8px 0 0;
+  color: var(--color-alert-text);
+}
+
+/* ---------------------------------------------------------------- documents by source */
+
+/* The stacked bar: one segment per source, widths summing to 100%. Own markup (ADR-0020). */
+.bar {
+  display: flex;
+  width: 100%;
+  height: 16px;
+  gap: 2px;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.segment {
+  height: 100%;
+  min-width: 2px;
+}
+
+.swatch {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.sourceName {
+  font-weight: 700;
+}
+
+.sourceKind {
+  color: var(--color-text-low-emphasis);
+  font-size: 12px;
+}
+
+/* ---------------------------------------------------------------- both tables */
+
+/*
+ * The stock row is a fixed 48px with 48px line-height cells; the board's rows are 48px minimum and
+ * grow for a wrapped message, 4px apart. The shell also centres a cell's text, and every column of
+ * these two tables reads left but the numbers.
+ */
+.table {
+  :global([class*="table-row___"]) {
+    height: auto;
+    min-height: 48px;
+  }
+
+  :global([class*="table-row___"]):not(:last-child) {
+    margin-bottom: 4px;
+  }
+
+  /* The package pins the 48px line-height from `.table-row .table-row-cell`; match its specificity. */
+  :global([class*="table-row___"]) :global([class*="table-row-cell___"]) {
+    line-height: 16px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    white-space: normal;
+  }
+
+  :global([class*="table-header-col___"]) {
+    justify-content: flex-start;
+    text-align: left;
+  }
+}
+
+/** Documents and Share, the 2nd and 3rd columns of the sources table. */
+.sources {
+  :global([class*="table-header-col___"]):nth-child(2),
+  :global([class*="table-header-col___"]):nth-child(3) {
+    justify-content: flex-end;
+    text-align: right;
+  }
+
+  [data-testid='table-cell-documents'],
+  [data-testid='table-cell-share'] {
+    justify-content: flex-end;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/** Count, the 4th column of the ingestion table. */
+.ingestion {
+  width: 100%;
+
+  :global([class*="table-header-col___"]):nth-child(4) {
+    justify-content: flex-end;
+    text-align: right;
+  }
+
+  [data-testid='table-cell-count'] {
+    justify-content: flex-end;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Timestamp is mono 12/18 and the message is the board's muted 12/16; both outrank the row rule. */
+  :global([class*="table-row___"]) [data-testid='table-cell-timestamp'] {
+    font-family: monospace;
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  :global([class*="table-row___"]) [data-testid='table-cell-message'] {
+    color: var(--color-text-low-emphasis);
+    font-size: 12px;
+    line-height: 16px;
+  }
+}
+
+/* The narrow board (1024): the ingestion message drops to a line of its own. */
+@media (max-width: 1024px) {
+  .tiles {
+    flex-wrap: wrap;
+  }
+
+  /*
+   * Table sizes its cells with inline min/max widths, so the message can only take a line of its
+   * own by overriding them. The hook is the cell's own column name, which this file owns.
+   * If a future components release drops the attribute the row simply scrolls again.
+   */
+  .ingestion [role='row'] {
+    flex-wrap: wrap;
+  }
+
+  .ingestion [data-testid='table-cell-message'] {
+    min-width: 100% !important;
+    max-width: 100% !important;
+  }
+}

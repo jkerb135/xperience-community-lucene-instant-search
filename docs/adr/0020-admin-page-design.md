@@ -88,8 +88,17 @@ the dashboard's `CreateRule`. The client never builds an admin URL.
   one, no page-level padding, and colours named only through the package's `--color-*` tokens. They
   are written down in *Layout guidelines for custom pages* in
   `docs/guides/admin-client-development.md` and checked statically by
-  `src/XpSearch.Admin/Client/src/layout.test.ts`. The regions that are our own markup because the
+  `src/XpSearch.Admin/Client/src/layout.test.ts`. Each of those pages has an approved board of its
+  own, the way `docs/internal/design/QueryTester.dc.html` is the query tester's:
+  `docs/internal/design/Analytics.dc.html`, `docs/internal/design/Status.dc.html`,
+  `docs/internal/design/RuleBuilder.dc.html` and `docs/internal/design/ExperimentDetail.dc.html`.
+  Opened at 1440px, a board's `<style>` block carries every value the page's `.module.scss` uses
+  (UX-3). The regions that are our own markup because the
   package has no component for them are: the analytics volume chart (inline SVG, its legend and its
   axis labels), the index status page's stacked “documents by source” bar and its source
-  swatches, and the rule builder's drag grip, drop-insertion line, dashed add area and item-picker
-  list. Everything else on those pages is a stock component.
+  swatches, and the rule builder's drag grip, drop-insertion line, dashed add areas and item-picker
+  list. Everything else on those pages is a stock component: on the status page the header and the
+  two lower cards are `Card`s (the four figure tiles are `Card`s in a flex row), the health and
+  operation markers are `Tag`s and both tables are `Table`s; on the rule builder the header card
+  holds the rule's settings on stock `Input`, `Checkbox` and `DateTimeRangeInput` controls under a
+  `Divider`, each condition and action is a `Card` and both editors are `SidePanel`s.
