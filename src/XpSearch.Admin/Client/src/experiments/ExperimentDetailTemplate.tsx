@@ -7,23 +7,18 @@ import {
   CalloutType,
   Card,
   Colors,
-  Cols,
-  Column,
   Dialog,
-  Headline,
-  HeadlineSize,
   Input,
-  LayoutAlignment,
-  Row,
   Spacing,
   Spinner,
   Stack,
   Tag,
-  useMediaBreakpoints,
 } from '@kentico/xperience-admin-components';
 import { usePageCommand } from '@kentico/xperience-admin-base';
 
-import { figure, muted } from '../theme';
+import { muted, stateFigure } from '../theme';
+
+import styles from './ExperimentDetail.module.scss';
 
 /*
  * Client template of the experiment detail page (amendment 2026-08-25). Registered as
@@ -86,36 +81,36 @@ const rate = (part: number, whole: number): string => (whole === 0 ? '—' : `${
 const position = (value: number | null): string => (value === null ? '—' : value.toFixed(1));
 
 const Figure = ({ label, value, hint }: { readonly label: string; readonly value: string; readonly hint: string }) => (
-  <div>
+  <div className={styles.figure}>
     <p style={muted}>{label}</p>
-    <p style={figure}>{value}</p>
+    <p style={stateFigure}>{value}</p>
     <p style={muted}>{hint}</p>
   </div>
 );
 
-const VariantCard = ({ stats, title, description }: { readonly stats: VariantStats; readonly title: string; readonly description: string }) => (
-  <Card headline={title} description={description} fullHeight>
-    <Stack spacing={Spacing.L}>
-      <Figure label="Searches" value={count(stats.searches)} hint="sample size" />
-      <div>
-        <Row spacing={Spacing.L}>
-          <Column>
-            <Figure
-              label="Zero-result rate"
-              value={rate(stats.zeroResultSearches, stats.searches)}
-              hint={`${count(stats.zeroResultSearches)} found nothing`}
-            />
-          </Column>
-          <Column>
-            <Figure label="Click-through rate" value={rate(stats.clicks, stats.searches)} hint={`${count(stats.clicks)} clicks`} />
-          </Column>
-          <Column>
-            <Figure label="Avg. clicked position" value={position(stats.averageClickedPosition)} hint="lower is better" />
-          </Column>
-        </Row>
+const VariantCard = ({ stats, title }: { readonly stats: VariantStats; readonly title: string }) => (
+  <div className={`${styles.variant} ${styles.card}`}>
+    <Card
+      headline={
+        <div className={styles.headerTitle}>
+          <span>{title}</span>
+          <p style={muted}>{`${count(stats.searches)} searches`}</p>
+        </div>
+      }
+      fullHeight
+    >
+      <div className={styles.figures}>
+        <Figure label="Searches" value={count(stats.searches)} hint="sample size" />
+        <Figure
+          label="Zero-result rate"
+          value={rate(stats.zeroResultSearches, stats.searches)}
+          hint={`${count(stats.zeroResultSearches)} found nothing`}
+        />
+        <Figure label="Click-through rate" value={rate(stats.clicks, stats.searches)} hint={`${count(stats.clicks)} clicks`} />
+        <Figure label="Avg clicked position" value={position(stats.averageClickedPosition)} hint="lower is better" />
       </div>
-    </Stack>
-  </Card>
+    </Card>
+  </div>
 );
 
 export const ExperimentDetailTemplate = ({ indexName, minSplit, maxSplit }: ExperimentDetailProps) => {
@@ -124,7 +119,6 @@ export const ExperimentDetailTemplate = ({ indexName, minSplit, maxSplit }: Expe
   const [split, setSplit] = useState('');
   const [confirming, setConfirming] = useState<Confirmation>(undefined);
   const [working, setWorking] = useState(false);
-  const { sm: narrow } = useMediaBreakpoints();
 
   const received = (response: Report | undefined) => {
     setLoading(false);
@@ -183,14 +177,96 @@ export const ExperimentDetailTemplate = ({ indexName, minSplit, maxSplit }: Expe
 
   return (
     <Stack spacing={Spacing.XL}>
-      <div>
-        <Headline size={HeadlineSize.L}>{loaded ? report.name : 'Experiment'}</Headline>
-        <p style={muted}>
-          Index <strong>{indexName}</strong>
-          {loaded ? ` · ${report.splitPercent}% of traffic to variant B` : ''}
-          {loaded && report.started !== '' ? ` · started ${report.started} UTC` : ''}
-          {loaded && report.ended !== '' ? ` · ended ${report.ended} UTC` : ''}
-        </p>
+      {/*
+        * The board's header card: the experiment name and its meta line left, the running actions
+        * and the state tags right. The draft controls need an Input, so they stay in the card's
+        * body under the header, where the page has always had them.
+        */}
+      <div className={styles.card}>
+        <Card
+          headline={
+            <div className={styles.cardHeader}>
+              <div className={styles.headerTitle}>
+                <span>{loaded ? report.name : 'Experiment'}</span>
+                <p style={muted}>
+                  Index <strong>{indexName}</strong>
+                  {loaded ? ` · ${report.splitPercent}% of traffic to variant B` : ''}
+                  {loaded && report.started !== '' ? ` · started ${report.started} UTC` : ''}
+                  {loaded && report.ended !== '' ? ` · ended ${report.ended} UTC` : ''}
+                </p>
+              </div>
+              {loaded ? (
+                <div className={styles.headerActions}>
+                  {running ? (
+                    <>
+                      <Button
+                        label="Promote B to live"
+                        color={ButtonColor.Primary}
+                        destructive
+                        disabled={working}
+                        onClick={() => setConfirming('promote')}
+                      />
+                      <Button
+                        label="Discard B"
+                        color={ButtonColor.Secondary}
+                        destructive
+                        disabled={working}
+                        onClick={() => setConfirming('discard')}
+                      />
+                    </>
+                  ) : null}
+                  <div className={styles.tags}>
+                    <Tag
+                      label={report.state}
+                      readOnly
+                      background={{ color: running ? Colors.SuccessBackgroundHighEmphasis : Colors.BackgroundTagGrey }}
+                    />
+                    {concluded ? (
+                      <Tag
+                        label={`Variant B ${report.outcome.toLowerCase()}`}
+                        readOnly
+                        background={{
+                          color: report.outcome === 'Promoted' ? Colors.SuccessBackgroundHighEmphasis : Colors.BackgroundTagKenticoOrange,
+                        }}
+                      />
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          }
+        >
+          {draft ? (
+            <div className={styles.formRow}>
+              <div className={styles.splitField}>
+                <Input
+                  label="Traffic to variant B (%)"
+                  type="number"
+                  min={minSplit}
+                  max={maxSplit}
+                  value={split}
+                  explanationText={splitValid ? undefined : `Between ${minSplit} and ${maxSplit}: both variants need traffic.`}
+                  invalid={!splitValid}
+                  onChange={(event) => setSplit(event.target.value)}
+                />
+              </div>
+              <Button
+                label="Save split"
+                color={ButtonColor.Secondary}
+                disabled={!splitValid || working}
+                onClick={() => run(() => void setSplitCommand({ splitPercent }))}
+              />
+              <Button label="Start experiment" color={ButtonColor.Primary} disabled={working} onClick={() => setConfirming('start')} />
+            </div>
+          ) : null}
+
+          {draft ? (
+            <p style={muted}>
+              Variant B is a copy of the live tuning. Edit it in the Rules, Synonyms, Field weights and Stopwords tabs above, then start the
+              experiment. Nobody sees variant B until then.
+            </p>
+          ) : null}
+        </Card>
       </div>
 
       {loading ? <Spinner /> : null}
@@ -210,88 +286,11 @@ export const ExperimentDetailTemplate = ({ indexName, minSplit, maxSplit }: Expe
       {loaded ? (
         <div aria-live="polite">
           <Stack spacing={Spacing.XL}>
-            <Card>
-              <Row spacing={Spacing.L} alignY={LayoutAlignment.Center}>
-                <Column>
-                  <Tag
-                    label={report.state}
-                    readOnly
-                    background={{ color: running ? Colors.SuccessBackgroundHighEmphasis : Colors.BackgroundTagGrey }}
-                  />
-                  {concluded ? (
-                    <Tag
-                      label={`Variant B ${report.outcome.toLowerCase()}`}
-                      readOnly
-                      background={{ color: report.outcome === 'Promoted' ? Colors.SuccessBackgroundHighEmphasis : Colors.BackgroundTagGrey }}
-                    />
-                  ) : null}
-                </Column>
-                <Column cols={narrow ? Cols.Col12 : Cols.Col6}>
-                  {draft ? (
-                    <Row spacing={Spacing.M} alignY={LayoutAlignment.End}>
-                      <Column>
-                        <Input
-                          label="Traffic to variant B (%)"
-                          type="number"
-                          min={minSplit}
-                          max={maxSplit}
-                          value={split}
-                          explanationText={splitValid ? undefined : `Between ${minSplit} and ${maxSplit}: both variants need traffic.`}
-                          invalid={!splitValid}
-                          onChange={(event) => setSplit(event.target.value)}
-                        />
-                      </Column>
-                      <Column>
-                        <Button
-                          label="Save split"
-                          color={ButtonColor.Secondary}
-                          disabled={!splitValid || working}
-                          onClick={() => run(() => void setSplitCommand({ splitPercent }))}
-                        />
-                      </Column>
-                      <Column>
-                        <Button label="Start experiment" color={ButtonColor.Primary} disabled={working} onClick={() => setConfirming('start')} />
-                      </Column>
-                    </Row>
-                  ) : null}
-
-                  {running ? (
-                    <Row spacing={Spacing.M} alignY={LayoutAlignment.End}>
-                      <Column>
-                        <Button label="Promote B to live" color={ButtonColor.Primary} destructive disabled={working} onClick={() => setConfirming('promote')} />
-                      </Column>
-                      <Column>
-                        <Button label="Discard B" color={ButtonColor.Secondary} destructive disabled={working} onClick={() => setConfirming('discard')} />
-                      </Column>
-                    </Row>
-                  ) : null}
-                </Column>
-              </Row>
-
-              {draft ? (
-                <p style={muted}>
-                  Variant B is a copy of the live tuning. Edit it in the Rules, Synonyms, Field weights and Stopwords tabs above, then start the
-                  experiment. Nobody sees variant B until then.
-                </p>
-              ) : null}
-            </Card>
-
             {draft ? null : (
               <>
-                {/*
-                  * Row carries a negative margin-top of its own spacing (it compensates the gutter
-                  * padding its Columns add), which would cancel the Stack's gap and leave the
-                  * variant cards touching the status card. The plain div takes the 24px instead.
-                  */}
-                <div>
-                  <Row spacing={Spacing.L}>
-                    <Column cols={narrow ? Cols.Col12 : Cols.Col6}>
-                      <VariantCard stats={report.a} title="Variant A — live tuning" description={`${count(report.a.searches)} searches`} />
-                    </Column>
-                    <Column cols={narrow ? Cols.Col12 : Cols.Col6}>
-                      <VariantCard stats={report.b} title="Variant B — draft tuning" description={`${count(report.b.searches)} searches`} />
-                    </Column>
-                  </Row>
+                <div className={styles.variants}>
+                  <VariantCard stats={report.a} title="Variant A — live tuning" />
+                  <VariantCard stats={report.b} title="Variant B — draft tuning" />
                 </div>
 
                 <Callout type={CalloutType.QuickTip} placement={CalloutPlacementType.OnDesk} subheadline="Quick tip" headline="What these numbers are">

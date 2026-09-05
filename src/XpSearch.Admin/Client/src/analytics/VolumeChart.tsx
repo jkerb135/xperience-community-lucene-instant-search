@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import {
+  Button,
+  ButtonColor,
   Card,
   CellType,
   Colors,
   ColumnContentType,
   Headline,
   HeadlineSize,
-  Inline,
-  Spacing,
   Table,
 } from '@kentico/xperience-admin-components';
 import type { StringCell, TableColumn, TableRow } from '@kentico/xperience-admin-components';
@@ -15,13 +15,13 @@ import type { StringCell, TableColumn, TableRow } from '@kentico/xperience-admin
 import { muted } from '../theme';
 import { TablePager } from './ReportTable';
 
-import './ReportTable.scss';
 import styles from './AnalyticsDashboard.module.scss';
 
 /*
  * Searches and zero-result searches over time. The design system exposes no line chart - only
- * FunnelChart - and a chart library is not worth a dependency for two series, so this is plain SVG
- * with a table fallback for screen readers. See docs/adr/0016-admin-client.md.
+ * FunnelChart - and a chart library is not worth a dependency for two series, so the plot, its
+ * legend and its axis labels are our own markup, with a table fallback for screen readers. See
+ * docs/adr/0016-admin-client.md and docs/internal/design/Analytics.dc.html.
  */
 
 export interface VolumePoint {
@@ -95,6 +95,7 @@ const Legend = ({ color, label }: { readonly color: string; readonly label: stri
 
 export const VolumeChart = ({ points, formatDay, pageSize }: VolumeChartProps) => {
   const [page, setPage] = useState(1);
+  const [showNumbers, setShowNumbers] = useState(false);
 
   const peak = Math.max(...points.map((point) => point.volume), 1);
   const labels = points.filter((_, index) => index % Math.ceil(points.length / 6) === 0);
@@ -103,47 +104,60 @@ export const VolumeChart = ({ points, formatDay, pageSize }: VolumeChartProps) =
   const current = Math.min(page, totalPages);
 
   return (
-    <Card
-      headline={<Headline size={HeadlineSize.S}>Searches over time</Headline>}
-      description={
-        <Inline spacing={Spacing.L}>
-          <Legend color={searchesColor} label="Searches" />
-          <Legend color={zeroColor} label="Zero-result searches" />
-        </Inline>
-      }
-    >
-      <svg
-        viewBox={`0 -10 ${width} ${height + 20}`}
-        preserveAspectRatio="none"
-        role="img"
-        aria-label={`Searches per day, peaking at ${peak}. The same numbers are in the table below the chart.`}
-        className={styles.plot}
+    <div className={styles.card}>
+      <Card
+        headline={
+          <div className={styles.cardHeader}>
+            <Headline size={HeadlineSize.L}>Searches over time</Headline>
+            <div className={styles.legendRow}>
+              <Legend color={searchesColor} label="Searches" />
+              <Legend color={zeroColor} label="Zero-result searches" />
+            </div>
+          </div>
+        }
       >
-        {[0, 60, 120].map((y) => (
-          <line key={y} x1="0" y1={y} x2={width} y2={y} stroke={Colors.DividerDefault} strokeWidth="1" strokeDasharray="3 4" />
-        ))}
-        <line x1="0" y1={height} x2={width} y2={height} stroke={Colors.BorderDefault} strokeWidth="1" />
-        <path d={path(points.map((point) => point.volume), peak)} fill="none" stroke={searchesColor} strokeWidth="2" />
-        <path d={path(points.map((point) => point.zeroResultVolume), peak)} fill="none" stroke={zeroColor} strokeWidth="2" />
-      </svg>
-      <div className={styles.axis}>
-        {labels.map((point) => (
-          <span key={point.day} style={muted}>
-            {formatDay(point.day)}
-          </span>
-        ))}
-      </div>
-      <details>
-        <summary>Show the numbers</summary>
-        <Table
-          columns={numberColumns}
-          rows={points.slice((current - 1) * pageSize, current * pageSize).map(numberRow(formatDay))}
-          isHeaderVisible
-        />
-        {totalPages > 1 ? (
-          <TablePager page={current} totalPages={totalPages} total={points.length} onChange={setPage} />
+        <svg
+          viewBox={`0 -10 ${width} ${height + 20}`}
+          preserveAspectRatio="none"
+          role="img"
+          aria-label={`Searches per day, peaking at ${peak}. The same numbers are in the table below the chart.`}
+          className={styles.plot}
+        >
+          <line x1="0" y1={height} x2={width} y2={height} stroke={Colors.BorderDefault} strokeWidth="1" />
+          <path d={path(points.map((point) => point.volume), peak)} fill="none" stroke={searchesColor} strokeWidth="2" />
+          <path d={path(points.map((point) => point.zeroResultVolume), peak)} fill="none" stroke={zeroColor} strokeWidth="2" />
+        </svg>
+        <div className={styles.axis}>
+          {labels.map((point) => (
+            <span key={point.day} style={muted}>
+              {formatDay(point.day)}
+            </span>
+          ))}
+        </div>
+        <div className={styles.toggleRow}>
+          <Button
+            label={showNumbers ? 'Hide the numbers' : 'Show the numbers'}
+            icon="xp-chevron-down"
+            color={ButtonColor.Tertiary}
+            active={showNumbers}
+            onClick={() => setShowNumbers(!showNumbers)}
+          />
+        </div>
+        {showNumbers ? (
+          <div className={styles.numbers}>
+            <div className={styles.table}>
+              <Table
+                columns={numberColumns}
+                rows={points.slice((current - 1) * pageSize, current * pageSize).map(numberRow(formatDay))}
+                isHeaderVisible
+              />
+            </div>
+            {totalPages > 1 ? (
+              <TablePager page={current} totalPages={totalPages} total={points.length} onChange={setPage} />
+            ) : null}
+          </div>
         ) : null}
-      </details>
-    </Card>
+      </Card>
+    </div>
   );
 };

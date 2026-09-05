@@ -93,3 +93,13 @@ the dashboard's `CreateRule`. The client never builds an admin URL.
   axis labels), the index status page's stacked “documents by source” bar and its source
   swatches, and the rule builder's drag grip, drop-insertion line, dashed add area and item-picker
   list. Everything else on those pages is a stock component.
+- **The approved boards are the source of truth for these pages (UX-3, 2026-09-04).** Each page has
+  a board in `docs/internal/design/`, read at 1440px, whose `<style>` block carries every value:
+  `Analytics.dc.html`, `Status.dc.html`, `RuleBuilder.dc.html` and `ExperimentDetail.dc.html`,
+  beside the query tester's `QueryTester.dc.html` (ADR-0028). The own-markup regions per page are:
+  **Analytics** — the volume chart's SVG plot, its legend swatches and its axis labels;
+  **Status** — the stacked "documents by source" bar and its swatches; **Rule builder** — the drag
+  grip, the drop-insertion line, the dashed add areas and the item-picker list;
+  **Experiment detail** — none, the page is stock components in flex wrappers only. A page's card
+  title is the `Card` headline slot (the package's only 24/32 bold text); `Headline` size L is the
+  16/24 section title the boards use inside a card.

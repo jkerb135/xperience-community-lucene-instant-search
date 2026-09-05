@@ -1,18 +1,87 @@
 /*
- * Layout wrappers for the analytics dashboard and its volume chart.
+ * Analytics dashboard layout (UX-3a). Every region keeps its stock
+ * @kentico/xperience-admin-components component; this file supplies the flex containers the board
+ * asks for and a handful of targeted overrides on our own wrappers. Values come from
+ * docs/internal/design/Analytics.dc.html; the patterns are the query tester's
+ * (QueryTesterTemplate.module.scss).
  *
- * The chart's own markup: the SVG plot, its legend and its axis labels. No component in
- * @kentico/xperience-admin-components draws a line chart, so these are the only regions of the
- * analytics dashboard that are not a stock component. Layout only, on the 8px grid; the one colour
- * that stays inline is the legend swatch's, because it is the series' data, not styling.
+ * The volume chart's SVG, its legend swatches and its axis labels are the only own markup here:
+ * the package draws no line chart (ADR-0020).
  */
 
-/** Page header: title with its meta line left, actions right (this page has none yet). */
-.header {
+/* ---------------------------------------------------------------- card rhythm */
+
+/*
+ * Card's body pads 24px under the headline slot; the board puts 16px between a card header and the
+ * first row, and lays the card's sections out as a 16px flex column.
+ */
+.card :global([class*="card-body___"]) {
+  padding-top: 16px;
+  gap: 16px;
+}
+
+/** Card headline slot: title (inherits the slot's 24/32 bold) left, meta right. */
+.cardHeader {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   gap: 16px;
+}
+
+/** The header rows that carry a tag or a control read centred rather than on the text baseline. */
+.middle {
+  align-items: center;
+}
+
+/** Title + count tag, inside the headline slot's left cluster. */
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* ---------------------------------------------------------------- header card filters */
+
+/** Range / Date range / Rows per page / Load, bottoms aligned. */
+.formRow {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+.dateField {
+  width: 240px;
+}
+
+.rowsField {
+  width: 120px;
+}
+
+/* ---------------------------------------------------------------- KPI tiles */
+
+.tiles {
+  display: flex;
+  gap: 16px;
+}
+
+.tile {
+  flex: 1;
+  min-width: 0;
+}
+
+/** Label / figure / hint, 4px apart, inside the tile card's body. */
+.tileBody {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ---------------------------------------------------------------- chart */
+
+.legendRow {
+  display: flex;
+  align-items: center;
+  gap: 24px;
 }
 
 .legend {
@@ -36,4 +105,87 @@
 .axis {
   display: flex;
   justify-content: space-between;
+}
+
+/** The numbers table under the chart, revealed by "Show the numbers". */
+.numbers {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/** The toggle sits at the start of its row, at the button's own size. */
+.toggleRow {
+  display: flex;
+}
+
+/* ---------------------------------------------------------------- tables */
+
+/* The admin shell centres a table cell's caption; every column of these tables reads left but the
+ * numbers, which are picked out by position below. */
+.table :global([class*="table-header-col___"]),
+.table :global([class*="table-row-cell___"]) {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+/* Volume is the 2nd caption of the zero-result table; Volume and p95 the 2nd and 3rd of a query
+ * table; every column but the query of the click-through one. */
+.zeroTable :global([class*="table-header-col___"]):nth-child(2),
+.queryTable :global([class*="table-header-col___"]):nth-child(2),
+.queryTable :global([class*="table-header-col___"]):nth-child(3),
+.clickTable :global([class*="table-header-col___"]):nth-child(n + 2) {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+/**
+ * Every component cell's root: a flex item that may shrink and ellipsize. `align-items` is the
+ * vertical axis here (the root is a flex ROW), so the horizontal side is `justify-content`.
+ */
+.cell {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+/** Query, Last seen, Action. */
+.cellStart {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+/** Every number. */
+.cellEnd {
+  justify-content: flex-end;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.query {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/** Page count left, stock Pagination right. */
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ---------------------------------------------------------------- narrow board */
+
+/* `sm` in the admin shell is <= 1365.98px (ADR-0020): the tiles go two per row, the tables fit. */
+@media (max-width: 1365px) {
+  .tiles {
+    flex-wrap: wrap;
+  }
+
+  .tile {
+    flex: 1 1 calc(50% - 8px);
+  }
 }
