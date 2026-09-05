@@ -1,0 +1,121 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: "Inter", system-ui, sans-serif; font-size: 14px; line-height: 20px; color: #151515; -webkit-font-smoothing: antialiased; }
+    a { color: #7f09b7; } a:hover { color: #5d0088; }
+    .desk { background: linear-gradient(0deg, rgba(198,67,0,.02), rgba(198,67,0,.02)), linear-gradient(107.51deg, #fff -22.1%, #f5f3f2 37.88%, #e5dedc 229.14%); width: 1440px; padding: 32px 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 24px; }
+    .gt { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; }
+    .mono { font-family: monospace; font-size: 12px; line-height: 18px; }
+    .low { color: #525252; }
+    .s12 { font-size: 12px; line-height: 16px; }
+    .card { background: #fff; border-radius: 16px; box-shadow: 0 0 8px rgba(38,38,38,.03); padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+    .card-title { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-weight: 700; font-size: 24px; line-height: 32px; }
+    .hl-l { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-weight: 700; font-size: 16px; line-height: 24px; }
+    .hl-s { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-weight: 700; font-size: 14px; line-height: 16px; }
+    .row { display: flex; align-items: center; gap: 16px; }
+    .between { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; height: 40px; padding: 0 24px; gap: 8px; border: 1px solid transparent; border-radius: 5000px; font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 12px; font-weight: 700; line-height: 16px; letter-spacing: .1ch; text-transform: uppercase; white-space: nowrap; background: transparent; color: #7f09b7; }
+    .btn-primary { background: linear-gradient(303.62deg, #c64300 -109.97%, #7f09b7 87.4%); color: #fff; box-shadow: 0 1px 8px rgba(203,142,255,.4), 0 5px 11px rgba(189,94,255,.1); }
+    .btn-secondary { border-color: #7f09b7; }
+    .btn-tertiary { padding: 0 8px; }
+    .btn-alert { background: #e10007; color: #fff; }
+    .btn-s { height: 32px; padding: 0 16px; font-weight: 400; }
+    .btn:disabled, .btn.disabled { background: #dfdfdf; color: #8c8c8c; box-shadow: none; border-color: transparent; }
+    .label { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 12px; line-height: 16px; font-weight: 700; display: block; margin-bottom: 4px; }
+    .hint { color: #525252; font-size: 12px; line-height: 16px; margin-top: 4px; }
+    .input, .select { height: 40px; border: 1px solid #8c8c8c; border-radius: 5000px; padding: 0 16px; font: 400 14px/20px "Inter", system-ui, sans-serif; color: #151515; background: #fff; box-sizing: border-box; display: flex; align-items: center; }
+    .input.empty { color: #6f6f6f; }
+    .select { padding-right: 40px; position: relative; min-width: 160px; }
+    .select::after { content: ""; position: absolute; right: 16px; top: 14px; width: 6px; height: 6px; border-right: 1.5px solid #151515; border-bottom: 1.5px solid #151515; transform: rotate(45deg); }
+    .tag { display: inline-flex; align-items: center; gap: 8px; font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 14px; line-height: 16px; padding: 8px 16px; border-radius: 8px; color: #fff; background: #737373; white-space: nowrap; }
+    .tag.sky { background: #0677a8; } .tag.green { background: #537b00; } .tag.success { background: #007d72; } .tag.alert { background: #e10007; } .tag.violet { background: #af00fa; } .tag.dark { background: #151515; } .tag.orange { background: #c64300; }
+    .toggles { display: flex; gap: 8px; }
+    .toggles span { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 14px; line-height: 16px; padding: 12px; border-radius: 8px; color: #525252; }
+    .toggles span.on { background: #5d0088; color: #fff; }
+    .cb { display: inline-flex; align-items: center; gap: 8px; font-family: "GT Walsheim", "Inter", system-ui, sans-serif; }
+    .cb .box { width: 20px; height: 20px; border-radius: 4px; border: 1px solid #8c8c8c; display: inline-flex; align-items: center; justify-content: center; background: #fff; }
+    .cb .box.on { background: #7f09b7; border-color: #7f09b7; }
+    .thead { display: flex; gap: 16px; align-items: center; height: 48px; padding: 0 16px; font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 14px; line-height: 16px; color: #525252; }
+    .trow { display: flex; gap: 16px; align-items: center; min-height: 48px; padding: 8px 16px; background: #fff; border: 1px solid #dfdfdf; border-radius: 8px; box-sizing: border-box; }
+    .trow + .trow { margin-top: 4px; }
+    .c { min-width: 0; }
+    .num { font-variant-numeric: tabular-nums; }
+    .tiles { display: flex; gap: 16px; }
+    .tile { flex: 1; background: #fff; border-radius: 16px; box-shadow: 0 0 8px rgba(38,38,38,.03); padding: 24px; display: flex; flex-direction: column; gap: 4px; }
+    .figure { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 32px; line-height: 38px; font-weight: 700; }
+    .figure-s { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 24px; line-height: 32px; font-weight: 700; }
+    .callout { display: flex; flex-direction: column; gap: 4px; border-radius: 16px; padding: 16px; background: linear-gradient(124.56deg, #f1f3ff 28.01%, #e0dcff 202.32%); box-shadow: 0 0 8px rgba(38,38,38,.03); }
+    .callout.warn { background: linear-gradient(124.56deg, #fff1e4 28.01%, #ffd6d6 202.32%); }
+    .callout .sub { display: flex; align-items: center; gap: 8px; color: #3d5dff; font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 14px; line-height: 16px; }
+    .callout.warn .sub { color: #9e6200; }
+    .callout .content { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 16px; line-height: 24px; }
+    .ico { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+    .pager { display: flex; align-items: center; justify-content: space-between; padding-top: 8px; }
+    .pages { display: flex; align-items: center; gap: 8px; }
+    .pages span { width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-family: "GT Walsheim", "Inter", system-ui, sans-serif; color: #151515; }
+    .pages span.on { background: #7f09b7; color: #fff; }
+    .divider { height: 1px; background: #dfdfdf; }
+    .swatch { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 8px; vertical-align: middle; }
+    .bar { display: flex; width: 100%; height: 16px; gap: 2px; overflow: hidden; border-radius: 8px; }
+    .dashed { border: 1px dashed #8c8c8c; border-radius: 8px; padding: 12px; display: flex; justify-content: center; }
+    .flow { display: flex; gap: 24px; align-items: flex-start; }
+    .flow-label { width: 200px; flex: 0 0 200px; display: flex; flex-direction: column; gap: 8px; }
+    .flow-stack { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+    .stack { display: flex; flex-direction: column; gap: 16px; }
+    .stack-s { display: flex; flex-direction: column; gap: 8px; }
+    .field { display: flex; flex-direction: column; }
+    .grow { flex: 1; min-width: 0; }
+</style>
+</helmet>
+<div class="desk">
+
+  <div class="card">
+    <div class="between" style="align-items: center;">
+      <div><div class="card-title">Dancing Goat Experiment</div><div class="low s12">Index <span class="mono">DancingGoatSample</span> · 50% of traffic to variant B · started 2026-09-01 05:13 UTC · ended 2026-09-01 05:13 UTC</div></div>
+      <div class="row" style="gap: 8px;"><span class="tag">Concluded</span><span class="tag orange">Variant B discarded</span></div>
+    </div>
+  </div>
+
+  <div class="row" style="gap: 24px; align-items: stretch;">
+    
+  <div class="card grow">
+    <div class="card-title">Variant A — live tuning</div>
+    <div class="low s12" style="margin-top: -12px;">0 searches</div>
+    <div class="tiles" style="gap: 16px;">
+      <div class="stack-s" style="gap: 4px; flex: 1;"><div class="low s12">Searches</div><div class="figure-s">0</div><div class="low s12">sample size</div></div>
+      <div class="stack-s" style="gap: 4px; flex: 1;"><div class="low s12">Zero-result rate</div><div class="figure-s">—</div><div class="low s12">0 found nothing</div></div>
+      <div class="stack-s" style="gap: 4px; flex: 1;"><div class="low s12">Click-through rate</div><div class="figure-s">—</div><div class="low s12">0 clicks</div></div>
+      <div class="stack-s" style="gap: 4px; flex: 1;"><div class="low s12">Avg clicked position</div><div class="figure-s">—</div><div class="low s12">lower is better</div></div>
+    </div>
+  </div>
+    
+  <div class="card grow">
+    <div class="card-title">Variant B — draft tuning</div>
+    <div class="low s12" style="margin-top: -12px;">0 searches</div>
+    <div class="tiles" style="gap: 16px;">
+      <div class="stack-s" style="gap: 4px; flex: 1;"><div class="low s12">Searches</div><div class="figure-s">0</div><div class="low s12">sample size</div></div>
+      <div class="stack-s" style="gap: 4px; flex: 1;"><div class="low s12">Zero-result rate</div><div class="figure-s">—</div><div class="low s12">0 found nothing</div></div>
+      <div class="stack-s" style="gap: 4px; flex: 1;"><div class="low s12">Click-through rate</div><div class="figure-s">—</div><div class="low s12">0 clicks</div></div>
+      <div class="stack-s" style="gap: 4px; flex: 1;"><div class="low s12">Avg clicked position</div><div class="figure-s">—</div><div class="low s12">lower is better</div></div>
+    </div>
+  </div>
+  </div>
+
+  <div class="callout">
+    <div class="sub"><svg class="ico" viewBox="0 0 16 16"><path d="M8 1.5a6.5 6.5 0 1 1 0 13 6.5 6.5 0 0 1 0-13zM8 7v4M8 5v.5"></path></svg> Quick tip</div>
+    <div class="hl-s">What these numbers are</div>
+    <div class="content">A: 0 searches / B: 0 searches, 2026-09-01 05:13 UTC to 2026-09-01 05:13 UTC. These are the rates observed on those searches, nothing more. The page does not test them for statistical significance and does not pick a winner: with small samples the two sides differ by chance most of the time. Let the experiment collect enough traffic that you would bet on the difference yourself before concluding it.</div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,133 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: "Inter", system-ui, sans-serif; font-size: 14px; line-height: 20px; color: #151515; -webkit-font-smoothing: antialiased; }
+    a { color: #7f09b7; } a:hover { color: #5d0088; }
+    .desk { background: linear-gradient(0deg, rgba(198,67,0,.02), rgba(198,67,0,.02)), linear-gradient(107.51deg, #fff -22.1%, #f5f3f2 37.88%, #e5dedc 229.14%); width: 1440px; padding: 32px 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 24px; }
+    .gt { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; }
+    .mono { font-family: monospace; font-size: 12px; line-height: 18px; }
+    .low { color: #525252; }
+    .s12 { font-size: 12px; line-height: 16px; }
+    .card { background: #fff; border-radius: 16px; box-shadow: 0 0 8px rgba(38,38,38,.03); padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+    .card-title { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-weight: 700; font-size: 24px; line-height: 32px; }
+    .hl-l { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-weight: 700; font-size: 16px; line-height: 24px; }
+    .hl-s { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-weight: 700; font-size: 14px; line-height: 16px; }
+    .row { display: flex; align-items: center; gap: 16px; }
+    .between { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; height: 40px; padding: 0 24px; gap: 8px; border: 1px solid transparent; border-radius: 5000px; font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 12px; font-weight: 700; line-height: 16px; letter-spacing: .1ch; text-transform: uppercase; white-space: nowrap; background: transparent; color: #7f09b7; }
+    .btn-primary { background: linear-gradient(303.62deg, #c64300 -109.97%, #7f09b7 87.4%); color: #fff; box-shadow: 0 1px 8px rgba(203,142,255,.4), 0 5px 11px rgba(189,94,255,.1); }
+    .btn-secondary { border-color: #7f09b7; }
+    .btn-tertiary { padding: 0 8px; }
+    .btn-alert { background: #e10007; color: #fff; }
+    .btn-s { height: 32px; padding: 0 16px; font-weight: 400; }
+    .btn:disabled, .btn.disabled { background: #dfdfdf; color: #8c8c8c; box-shadow: none; border-color: transparent; }
+    .label { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 12px; line-height: 16px; font-weight: 700; display: block; margin-bottom: 4px; }
+    .hint { color: #525252; font-size: 12px; line-height: 16px; margin-top: 4px; }
+    .input, .select { height: 40px; border: 1px solid #8c8c8c; border-radius: 5000px; padding: 0 16px; font: 400 14px/20px "Inter", system-ui, sans-serif; color: #151515; background: #fff; box-sizing: border-box; display: flex; align-items: center; }
+    .input.empty { color: #6f6f6f; }
+    .select { padding-right: 40px; position: relative; min-width: 160px; }
+    .select::after { content: ""; position: absolute; right: 16px; top: 14px; width: 6px; height: 6px; border-right: 1.5px solid #151515; border-bottom: 1.5px solid #151515; transform: rotate(45deg); }
+    .tag { display: inline-flex; align-items: center; gap: 8px; font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 14px; line-height: 16px; padding: 8px 16px; border-radius: 8px; color: #fff; background: #737373; white-space: nowrap; }
+    .tag.sky { background: #0677a8; } .tag.green { background: #537b00; } .tag.success { background: #007d72; } .tag.alert { background: #e10007; } .tag.violet { background: #af00fa; } .tag.dark { background: #151515; } .tag.orange { background: #c64300; }
+    .toggles { display: flex; gap: 8px; }
+    .toggles span { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 14px; line-height: 16px; padding: 12px; border-radius: 8px; color: #525252; }
+    .toggles span.on { background: #5d0088; color: #fff; }
+    .cb { display: inline-flex; align-items: center; gap: 8px; font-family: "GT Walsheim", "Inter", system-ui, sans-serif; }
+    .cb .box { width: 20px; height: 20px; border-radius: 4px; border: 1px solid #8c8c8c; display: inline-flex; align-items: center; justify-content: center; background: #fff; }
+    .cb .box.on { background: #7f09b7; border-color: #7f09b7; }
+    .thead { display: flex; gap: 16px; align-items: center; height: 48px; padding: 0 16px; font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 14px; line-height: 16px; color: #525252; }
+    .trow { display: flex; gap: 16px; align-items: center; min-height: 48px; padding: 8px 16px; background: #fff; border: 1px solid #dfdfdf; border-radius: 8px; box-sizing: border-box; }
+    .trow + .trow { margin-top: 4px; }
+    .c { min-width: 0; }
+    .num { font-variant-numeric: tabular-nums; }
+    .tiles { display: flex; gap: 16px; }
+    .tile { flex: 1; background: #fff; border-radius: 16px; box-shadow: 0 0 8px rgba(38,38,38,.03); padding: 24px; display: flex; flex-direction: column; gap: 4px; }
+    .figure { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 32px; line-height: 38px; font-weight: 700; }
+    .figure-s { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 24px; line-height: 32px; font-weight: 700; }
+    .callout { display: flex; flex-direction: column; gap: 4px; border-radius: 16px; padding: 16px; background: linear-gradient(124.56deg, #f1f3ff 28.01%, #e0dcff 202.32%); box-shadow: 0 0 8px rgba(38,38,38,.03); }
+    .callout.warn { background: linear-gradient(124.56deg, #fff1e4 28.01%, #ffd6d6 202.32%); }
+    .callout .sub { display: flex; align-items: center; gap: 8px; color: #3d5dff; font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 14px; line-height: 16px; }
+    .callout.warn .sub { color: #9e6200; }
+    .callout .content { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 16px; line-height: 24px; }
+    .ico { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+    .pager { display: flex; align-items: center; justify-content: space-between; padding-top: 8px; }
+    .pages { display: flex; align-items: center; gap: 8px; }
+    .pages span { width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-family: "GT Walsheim", "Inter", system-ui, sans-serif; color: #151515; }
+    .pages span.on { background: #7f09b7; color: #fff; }
+    .divider { height: 1px; background: #dfdfdf; }
+    .swatch { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 8px; vertical-align: middle; }
+    .bar { display: flex; width: 100%; height: 16px; gap: 2px; overflow: hidden; border-radius: 8px; }
+    .dashed { border: 1px dashed #8c8c8c; border-radius: 8px; padding: 12px; display: flex; justify-content: center; }
+    .flow { display: flex; gap: 24px; align-items: flex-start; }
+    .flow-label { width: 200px; flex: 0 0 200px; display: flex; flex-direction: column; gap: 8px; }
+    .flow-stack { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+    .stack { display: flex; flex-direction: column; gap: 16px; }
+    .stack-s { display: flex; flex-direction: column; gap: 8px; }
+    .field { display: flex; flex-direction: column; }
+    .grow { flex: 1; min-width: 0; }
+</style>
+</helmet>
+<div class="desk">
+
+  <div class="card">
+    <div class="between" style="align-items: center;">
+      <div><div class="card-title">New rule</div><div class="low s12">Index <span class="mono">DancingGoatSample</span></div></div>
+      <div class="row" style="gap: 12px;"><span class="btn btn-secondary">Cancel</span><span class="btn btn-primary disabled">Save rule</span></div>
+    </div>
+    <div class="divider"></div>
+    <div class="row" style="align-items: flex-end;">
+      <div class="field grow"><span class="label">Rule name <span style="color: #e10007;">*</span></span><div class="input empty">Espresso grinders</div><div class="hint">Shown in the ranking explanation, so name it after what it does.</div></div>
+      <div class="field"><span class="label">&nbsp;</span><span class="cb" style="height: 40px;"><span class="box on"><svg class="ico" viewBox="0 0 16 16"><path d="M3 8.5l3 3 7-7"></path></svg></span> Enabled</span><div class="hint">&nbsp;</div></div>
+      <div class="field" style="width: 120px;"><span class="label">Priority</span><div class="input">100</div><div class="hint">Lower wins.</div></div>
+      <div class="field" style="width: 280px;"><span class="label">Runs</span><div class="input empty" style="justify-content: space-between;">mm/dd/yyyy – mm/dd/yyyy <svg class="ico" viewBox="0 0 16 16"><path d="M3 6h10M3 3h10v10H3zM6 1v3M10 1v3"></path></svg></div><div class="hint">Empty = always.</div></div>
+    </div>
+  </div>
+
+  <div class="flow">
+    <div class="flow-label">
+      <div class="row" style="gap: 8px;"><span class="hl-l">Condition</span><span class="tag violet">If</span></div>
+      <div class="low s12">All conditions must hold. A rule needs at least one.</div>
+    </div>
+    <div class="flow-stack">
+      <div class="card">
+        <div class="between" style="align-items: center;">
+          <div class="stack-s" style="gap: 4px;"><div class="hl-s">Query contains “espresso”</div><div class="low s12">Raw text · any language · everyone</div></div>
+          <div class="row" style="gap: 8px;"><span class="btn btn-tertiary btn-s">Edit</span><span class="btn btn-tertiary btn-s">Delete</span></div>
+        </div>
+      </div>
+      <div class="dashed"><span class="btn btn-tertiary btn-s"><svg class="ico" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"></path></svg> Add condition</span></div>
+    </div>
+  </div>
+
+  <div class="flow">
+    <div class="flow-label">
+      <div class="row" style="gap: 8px;"><span class="hl-l">Action</span><span class="tag violet">Then</span></div>
+      <div class="low s12">Applied in order. Pin, hide, boost, bury, filter, rewrite the query, redirect, or return custom data.</div>
+    </div>
+    <div class="flow-stack">
+      <div class="card">
+        <div class="between" style="align-items: center;">
+          <div class="row" style="gap: 12px;"><svg class="ico" viewBox="0 0 16 16"><path d="M6 3h.5M6 8h.5M6 13h.5M10 3h.5M10 8h.5M10 13h.5"></path></svg><div class="hl-s">Pin a result</div></div>
+          <div class="row" style="gap: 8px;"><span class="btn btn-tertiary btn-s">Delete</span></div>
+        </div>
+        <div class="row" style="align-items: flex-end;">
+          <div class="field grow"><span class="label">Result</span><div class="input">MacapM4D-rxxdx4w2 <span class="low s12" style="margin-left: 8px;">/products/macap-m4d</span></div></div>
+          <div class="field" style="width: 120px;"><span class="label">Position</span><div class="input">2</div></div>
+        </div>
+      </div>
+      <div class="dashed"><span class="btn btn-tertiary btn-s"><svg class="ico" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"></path></svg> Add action</span></div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>
