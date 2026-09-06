@@ -98,6 +98,14 @@ the dashboard's `CreateRule`. The client never builds an admin URL.
   axis labels), the index status page's stacked “documents by source” bar and its source
   swatches, and the rule builder's drag grip, drop-insertion line, dashed add area and item-picker
   list. Everything else on those pages is a stock component.
+- **The rule builder's two side panels have boards of their own (UX-4, 2026-09-05):**
+  `docs/internal/design/rule-builder-panels/` — `Main`, `ConditionExpression` and `ConditionEmpty`
+  for the condition panel, `ActionPanel` (pin), `ActionBoost`, `ActionText`, `ActionCustomData` for
+  the action panel, plus the `PickerStates` and `AttributeRows` state boards and `canvas.json` with
+  the notes. Both panels are a stock `SidePanel` `Stackable` whose body is a `Stack` XL with stock
+  `Divider`s; the **item picker's result list is the only own markup in them** (the package has no
+  list-of-results component), and every other region — switches, selects, inputs, the JSON text
+  area, the yellow *no longer in the index* tag, the *Searching…* spinner — is stock.
 - **The approved boards are the source of truth for these pages (UX-3, 2026-09-04).** Each page has
   a board in `docs/internal/design/`, read at 1440px, whose `<style>` block carries every value:
   `Analytics.dc.html`, `Status.dc.html`, `RuleBuilder.dc.html` and `ExperimentDetail.dc.html`,

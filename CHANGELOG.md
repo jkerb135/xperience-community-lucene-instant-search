@@ -12,6 +12,17 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Changed (admin):** rule builder panels rebuilt to the approved boards
+  (`docs/internal/design/rule-builder-panels/`). Both side panels are `Stackable` and open with a
+  one-line description of what they are for — the condition panel's three switch sections are
+  separated by dividers and their fields sit on rows (operator beside the words, contact group
+  beside the language) 48px in under the switch, and each action panel opens with its kind's line
+  before its fields. Pin's **Position** now explains *1 is the first result.* and Boost's
+  **Multiplier** *Above 0. 2 doubles the score.*; **Replace word**'s second field is labelled
+  *Replace with*; **Redirect**'s placeholder reads *e.g. /campaigns/grinder-week*; the item picker
+  carries a search icon, spins while it searches and only offers **Details** once an item is chosen;
+  and *Remove*, *Add row*, *Edit as text*, *Back to rows* and *Details* are size S like the page's
+  Edit and Delete. Behaviour, commands, drag-and-drop and validation are unchanged. See ADR-0020.
 - **Changed (admin):** the analytics dashboard and the experiment detail page are rebuilt to the approved design boards (`docs/internal/design/Analytics.dc.html`, `docs/internal/design/ExperimentDetail.dc.html`). Analytics opens with a header card carrying the index meta line and the range / date range / rows-per-page filters instead of a bare headline; the KPI tiles are one flex row of four equal cards (two per row under `sm`); the chart card has a legend row and a **Show the numbers** toggle button; every report table reads its query bold on the left and its numbers right, with the page count and the stock `Pagination` on one row. The experiment page puts the name, the meta line, the running actions and the state tags in one header card - a discarded variant B is tagged Kentico orange - and shows each variant as four mini figures in a card of its own. Every region keeps its stock component; the layout lives in `analytics/AnalyticsDashboard.module.scss` and `experiments/ExperimentDetail.module.scss`. See ADR-0020.
 - **Changed (admin):** the index status page and the rule builder are rebuilt to the approved design
   boards (`docs/internal/design/Status.dc.html`, `docs/internal/design/RuleBuilder.dc.html`). Status

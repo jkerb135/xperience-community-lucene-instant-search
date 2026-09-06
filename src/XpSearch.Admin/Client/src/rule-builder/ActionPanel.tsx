@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import {
   Button,
   ButtonColor,
+  Divider,
+  DividerOrientation,
   Input,
   SidePanel,
   SidePanelSize,
@@ -19,9 +21,11 @@ import type { Action, Filter } from './model';
 import styles from './RuleBuilderTemplate.module.scss';
 
 /*
- * One action's side panel (design canvas 5g): the same SidePanel machinery the condition panel uses
- * - focus trap, Esc and the close button both routed through onClose to Discard, full width at
- * narrow widths - with one body per action type. Apply is local; the page's Save rule persists.
+ * One action's side panel, rebuilt to the approved boards docs/internal/design/rule-builder-panels/
+ * (ActionPanel = pin, ActionBoost, ActionText, ActionCustomData): the same SidePanel machinery the
+ * condition panel uses - focus trap, Esc and the close button both routed through onClose to
+ * Discard - with one body per action type, each opening with the type's one-line subtitle. Apply is
+ * local; the page's Save rule persists.
  */
 
 interface ActionPanelProps {
@@ -104,11 +108,13 @@ export const ActionPanel = ({ editing, index, attributes, errors, onApply, onDis
         return (
           <>
             {item('Find the item')}
+            <Divider orientation={DividerOrientation.Horizontal} />
             <div className={styles.fieldSmall}>
               <Input
                 label="Position"
                 type="number"
                 value={String(action.position)}
+                explanationText="1 is the first result."
                 onChange={(event) => change({ position: Number(event.target.value) || 0 })}
               />
             </div>
@@ -133,11 +139,13 @@ export const ActionPanel = ({ editing, index, attributes, errors, onApply, onDis
             {item('Find the item')}
             <p style={muted}>…or boost everything matching:</p>
             {attributeRows}
+            <Divider orientation={DividerOrientation.Horizontal} />
             <div className={styles.fieldSmall}>
               <Input
                 label="Multiplier"
                 type="number"
                 value={String(action.multiplier)}
+                explanationText="Above 0. 2 doubles the score."
                 onChange={(event) => change({ multiplier: Number(event.target.value) || 0 })}
               />
             </div>
@@ -159,7 +167,7 @@ export const ActionPanel = ({ editing, index, attributes, errors, onApply, onDis
 
       case 'replaceWord':
         return (
-          <>
+          <Stack spacing={Spacing.L}>
             <Input
               label="Replace"
               value={action.word}
@@ -167,12 +175,12 @@ export const ActionPanel = ({ editing, index, attributes, errors, onApply, onDis
               onChange={(event) => change({ word: event.target.value })}
             />
             <Input
-              label="…with"
+              label="Replace with"
               value={action.replacement}
               placeholder="e.g. grinder"
               onChange={(event) => change({ replacement: event.target.value })}
             />
-          </>
+          </Stack>
         );
 
       case 'replaceQuery':
@@ -190,7 +198,7 @@ export const ActionPanel = ({ editing, index, attributes, errors, onApply, onDis
           <Input
             label="Send the visitor to"
             value={action.url}
-            placeholder="/campaigns/grinder-week"
+            placeholder="e.g. /campaigns/grinder-week"
             onChange={(event) => change({ url: event.target.value })}
           />
         );
@@ -210,7 +218,7 @@ export const ActionPanel = ({ editing, index, attributes, errors, onApply, onDis
   return (
     <SidePanel
       isVisible={draft !== undefined}
-      size={SidePanelSize.Full}
+      size={SidePanelSize.Stackable}
       headline={draft === undefined ? '' : `${String(index + 1)} · ${actionLabels[draft.type].label}`}
       tooltips={{ close: 'Discard' }}
       // Esc, the close button and a click outside all arrive here, and all of them discard.
@@ -224,6 +232,8 @@ export const ActionPanel = ({ editing, index, attributes, errors, onApply, onDis
     >
       {draft === undefined ? null : (
         <Stack spacing={Spacing.XL}>
+          {/* SidePanel has no subtitle slot, so the board's one-liner is the first body child. */}
+          <p className={styles.panelSubtitle}>{actionLabels[draft.type].subtitle}</p>
           {[...errors, ...refused].map((message) => (
             <p key={message} className={styles.error} role="alert">
               {message}

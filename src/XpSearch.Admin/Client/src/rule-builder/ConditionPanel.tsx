@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import {
   Button,
   ButtonColor,
+  Divider,
+  DividerOrientation,
   Input,
   MenuItem,
   Select,
@@ -16,8 +18,10 @@ import type { ContactGroup, Fragment, QueryOperator } from './model';
 import styles from './RuleBuilderTemplate.module.scss';
 
 /*
- * The condition side panel of design canvas 5f: Query / Filters / Context toggles, Apply writing
- * back to the summary row only. Nothing here persists — the page's Save rule does that.
+ * The condition side panel of the approved board docs/internal/design/rule-builder-panels/Main.dc.html
+ * (ConditionExpression / ConditionEmpty are its other two states): Query / Filters / Context, each a
+ * Switch with its fields indented under it, a Divider between them. Apply writes back to the summary
+ * row only. Nothing here persists - the page's Save rule does that.
  *
  * The package exports a SidePanel (verified in
  * node_modules/@kentico/xperience-admin-components/dist/entry.d.ts: `export declare const SidePanel`
@@ -30,7 +34,7 @@ interface ConditionPanelProps {
   /** The card being edited, or undefined when the panel is closed. */
   readonly editing?: Fragment;
   readonly index: number;
-  /** The facetable attributes of the index, for the Filters rows (design canvas 5h). */
+  /** The facetable attributes of the index, for the Filters rows (the AttributeRows board). */
   readonly attributes: string[];
   readonly contactGroups: ContactGroup[];
   readonly languages: string[];
@@ -55,7 +59,7 @@ export const ConditionPanel = ({ editing, index, attributes, contactGroups, lang
   return (
     <SidePanel
       isVisible={draft !== undefined}
-      size={SidePanelSize.Full}
+      size={SidePanelSize.Stackable}
       headline={`Condition ${index + 1}`}
       tooltips={{ close: 'Discard' }}
       // Esc, the close button and a click outside all arrive here, and all of them discard.
@@ -69,6 +73,9 @@ export const ConditionPanel = ({ editing, index, attributes, contactGroups, lang
     >
       {draft === undefined ? null : (
         <Stack spacing={Spacing.XL}>
+          {/* SidePanel has no subtitle slot, so the board's one-liner is the first body child. */}
+          <p className={styles.panelSubtitle}>All parts you switch on must hold.</p>
+
           <div className={styles.toggleGroup}>
             <Switch
               size={SwitchSize.M}
@@ -78,21 +85,27 @@ export const ConditionPanel = ({ editing, index, attributes, contactGroups, lang
             />
             {draft.queryEnabled ? (
               <div className={styles.toggleFields}>
-                <Select
-                  label="The visitor's search"
-                  value={draft.queryOperator}
-                  onChange={(value) => change({ queryOperator: (value ?? 'contains') as QueryOperator })}
-                >
-                  {operators.map((operator) => (
-                    <MenuItem key={operator.id} primaryLabel={operator.label} value={operator.id} />
-                  ))}
-                </Select>
-                <Input
-                  label="Words to look for"
-                  value={draft.queryPattern}
-                  placeholder="e.g. grinder"
-                  onChange={(event) => change({ queryPattern: event.target.value })}
-                />
+                <div className={styles.fieldRow}>
+                  <div className={styles.fieldOperator}>
+                    <Select
+                      label="The visitor's search"
+                      value={draft.queryOperator}
+                      onChange={(value) => change({ queryOperator: (value ?? 'contains') as QueryOperator })}
+                    >
+                      {operators.map((operator) => (
+                        <MenuItem key={operator.id} primaryLabel={operator.label} value={operator.id} />
+                      ))}
+                    </Select>
+                  </div>
+                  <div className={styles.fieldGrow}>
+                    <Input
+                      label="Words to look for"
+                      value={draft.queryPattern}
+                      placeholder="e.g. grinder"
+                      onChange={(event) => change({ queryPattern: event.target.value })}
+                    />
+                  </div>
+                </div>
                 <Switch
                   size={SwitchSize.M}
                   label="Match plurals & synonyms"
@@ -103,6 +116,8 @@ export const ConditionPanel = ({ editing, index, attributes, contactGroups, lang
             ) : null}
           </div>
 
+          <Divider orientation={DividerOrientation.Horizontal} />
+
           <div className={styles.toggleGroup}>
             <Switch
               size={SwitchSize.M}
@@ -111,9 +126,13 @@ export const ConditionPanel = ({ editing, index, attributes, contactGroups, lang
               onChange={(value) => change({ filtersEnabled: value, filters: value && draft.filters.length === 0 ? [{ attribute: '', value: '' }] : draft.filters })}
             />
             {draft.filtersEnabled ? (
-              <AttributeRows rows={draft.filters} attributes={attributes} onChange={(filters) => change({ filters })} />
+              <div className={styles.toggleFields}>
+                <AttributeRows rows={draft.filters} attributes={attributes} onChange={(filters) => change({ filters })} />
+              </div>
             ) : null}
           </div>
+
+          <Divider orientation={DividerOrientation.Horizontal} />
 
           <div className={styles.toggleGroup}>
             <Switch
@@ -124,22 +143,28 @@ export const ConditionPanel = ({ editing, index, attributes, contactGroups, lang
             />
             {draft.contextEnabled ? (
               <div className={styles.toggleFields}>
-                <Select
-                  label="Contact group"
-                  value={draft.contactGroup}
-                  onChange={(value) => change({ contactGroup: value ?? '' })}
-                >
-                  <MenuItem primaryLabel="Everyone" value="" />
-                  {contactGroups.map((group) => (
-                    <MenuItem key={group.codeName} primaryLabel={group.displayName} value={group.codeName} />
-                  ))}
-                </Select>
-                <Select label="Language" value={draft.language} onChange={(value) => change({ language: value ?? '' })}>
-                  <MenuItem primaryLabel="Any" value="" />
-                  {languages.map((code) => (
-                    <MenuItem key={code} primaryLabel={code} value={code} />
-                  ))}
-                </Select>
+                <div className={styles.fieldRow}>
+                  <div className={styles.fieldGrow}>
+                    <Select
+                      label="Contact group"
+                      value={draft.contactGroup}
+                      onChange={(value) => change({ contactGroup: value ?? '' })}
+                    >
+                      <MenuItem primaryLabel="Everyone" value="" />
+                      {contactGroups.map((group) => (
+                        <MenuItem key={group.codeName} primaryLabel={group.displayName} value={group.codeName} />
+                      ))}
+                    </Select>
+                  </div>
+                  <div className={styles.fieldLanguage}>
+                    <Select label="Language" value={draft.language} onChange={(value) => change({ language: value ?? '' })}>
+                      <MenuItem primaryLabel="Any" value="" />
+                      {languages.map((code) => (
+                        <MenuItem key={code} primaryLabel={code} value={code} />
+                      ))}
+                    </Select>
+                  </div>
+                </div>
               </div>
             ) : null}
           </div>

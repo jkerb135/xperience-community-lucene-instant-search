@@ -22,18 +22,36 @@ export const actionTypes = [
 
 export type ActionType = (typeof actionTypes)[number];
 
-/** What each action type is called, and whether it is new in this release (canvas 5b). */
-export const actionLabels: Record<ActionType, { readonly label: string; readonly hint?: string; readonly isNew?: boolean }> = {
-  pin: { label: 'Pin an item' },
-  hide: { label: 'Hide an item', isNew: true },
-  boost: { label: 'Boost matching results' },
-  bury: { label: 'Bury matching results' },
-  filterResults: { label: 'Filter results', hint: 'attribute is value' },
-  removeWord: { label: 'Remove word', isNew: true },
-  replaceWord: { label: 'Replace word', isNew: true },
-  replaceQuery: { label: 'Replace query', isNew: true },
-  redirect: { label: 'Redirect' },
-  customData: { label: 'Return custom data', isNew: true },
+/**
+ * What each action type is called, the one line its side panel opens with (the panel boards in
+ * `docs/internal/design/rule-builder-panels/`), and whether it is new in this release (canvas 5b).
+ */
+export const actionLabels: Record<
+  ActionType,
+  { readonly label: string; readonly subtitle: string; readonly hint?: string; readonly isNew?: boolean }
+> = {
+  pin: { label: 'Pin an item', subtitle: 'Put one item at a fixed position whenever this rule fires.' },
+  hide: { label: 'Hide an item', subtitle: 'Take one item out of the results whenever this rule fires.', isNew: true },
+  boost: { label: 'Boost matching results', subtitle: 'Multiply the score of one item, or of everything the rows match.' },
+  bury: { label: 'Bury matching results', subtitle: 'Sink one item, or everything the rows match, to the bottom.' },
+  filterResults: {
+    label: 'Filter results',
+    subtitle: 'Keep only the results the rows match.',
+    hint: 'attribute is value',
+  },
+  removeWord: { label: 'Remove word', subtitle: 'Drop one word from the query before it runs.', isNew: true },
+  replaceWord: {
+    label: 'Replace word',
+    subtitle: 'Swap one word of the query for another before it runs.',
+    isNew: true,
+  },
+  replaceQuery: { label: 'Replace query', subtitle: 'Search for different words than the visitor typed.', isNew: true },
+  redirect: { label: 'Redirect', subtitle: 'Send the visitor to a URL instead of showing results.' },
+  customData: {
+    label: 'Return custom data',
+    subtitle: 'Return a JSON object with the results for the front end to use.',
+    isNew: true,
+  },
 };
 
 export interface Filter {

@@ -90,8 +90,9 @@ You do not edit a condition on this screen. **Edit** on a card, or **Add conditi
 area below them, opens the side panel. A brand-new rule shows a *Start with a condition* tip instead
 of cards, and **Save rule** stays disabled until there is one — see *What stops a save* below.
 
-**The side panel.** Three switches: **Query**, **Filters** and **Context**. Turn one on and its
-fields appear under it.
+**The side panel.** It opens with one line saying what it is for — *All parts you switch on must
+hold.* — and then three switches: **Query**, **Filters** and **Context**. Turn one on and its fields
+appear under it.
 
 - **Query** — the operator (*Contains*, *Is exactly*, *Starts with*), the words, and
   **Match plurals & synonyms** (this is the *analyzed* comparison described below).
@@ -138,15 +139,17 @@ action** opens the menu of the ten kinds listed below and then opens the panel o
 kind. A kind already used stays available, because a rule may pin several items or chain rewrites.
 An action you discard before filling anything in is not added at all.
 
-**The action panel.** The same panel as a condition's — **Apply** writes back to the row and closes,
+**The action panel.** The same panel as a condition's, opening with one line on what the kind does —
+**Apply** writes back to the row and closes,
 **Discard**, the close button, `Esc` and a click outside throw the changes away, the keyboard stays
 inside it while it is open, and it covers the page on a narrow screen. Its body depends on the kind:
 
 - **Pin**, **Hide**, **Boost** and **Bury** get the **item picker**: type into **Find the item** and
   the index is searched as you stop typing. Select a result, or walk the list with the `↑` and
   `↓` keys and press `Enter`. The chosen item is shown by title and URL — the stored result id
-  lives behind **Details**, because it is not something anyone should have to read. Pin adds
-  **Position**; Boost adds **Multiplier**.
+  lives behind **Details**, which appears once you have chosen something, because the id is not
+  something anyone should have to read. Pin adds **Position** (*1 is the first result.*); Boost adds
+  **Multiplier** (*Above 0. 2 doubles the score.*).
 - **Filter results**, and the "everything matching" half of **Boost** and **Bury**, get **attribute
   rows**: **Attribute** is a drop-down of the fields this index can facet on, and **Value** a
   drop-down of the values the index really holds right now, each with the number of documents

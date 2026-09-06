@@ -15,8 +15,9 @@ import type { Filter } from './model';
 import styles from './RuleBuilderTemplate.module.scss';
 
 /*
- * The attribute + value picker of design canvas 5h, used by the Filter results panel, the Boost
- * "matching" variant and the condition Filters rows - the same anatomy in all three. The attribute
+ * The attribute + value rows of the approved board docs/internal/design/rule-builder-panels/
+ * AttributeRows.dc.html, used by the Filter results panel, the Boost "matching" variant and the
+ * condition Filters rows - the same anatomy in all three. The attribute
  * comes from the index schema's facetable fields; the value from a facet-only query, so the list is
  * what the index really holds, with counts. An attribute the index does not facet falls back to a
  * plain text value.
@@ -112,7 +113,7 @@ export const AttributeRows = ({ rows, attributes, onChange }: AttributeRowsProps
 
   if (text !== undefined) {
     return (
-      <div className={styles.toggleFields}>
+      <div className={styles.attributeRows}>
         <Input
           label="Expression"
           value={text}
@@ -127,7 +128,7 @@ export const AttributeRows = ({ rows, attributes, onChange }: AttributeRowsProps
           <Button
             label="Back to rows"
             color={ButtonColor.Quinary}
-            size={ButtonSize.XS}
+            size={ButtonSize.S}
             onClick={() => setText(undefined)}
           />
         </div>
@@ -136,9 +137,9 @@ export const AttributeRows = ({ rows, attributes, onChange }: AttributeRowsProps
   }
 
   return (
-    <div className={styles.toggleFields}>
+    <div className={styles.attributeRows}>
       {rows.map((row, at) => (
-        <div key={at} className={styles.filterRow}>
+        <div key={at} className={styles.fieldRow}>
           <div className={styles.fieldGrow}>
             {attributes.length === 0 ? (
               <Input
@@ -174,28 +175,31 @@ export const AttributeRows = ({ rows, attributes, onChange }: AttributeRowsProps
               onChange={(value) => change(at, { value })}
             />
           </div>
-          <Button
-            label="Remove"
-            title={`Remove row ${String(at + 1)}`}
-            icon="xp-times"
-            color={ButtonColor.Quinary}
-            size={ButtonSize.XS}
-            onClick={() => onChange(rows.filter((_, index) => index !== at))}
-          />
+          <div className={styles.rowRemove}>
+            <Button
+              label="Remove"
+              title={`Remove row ${String(at + 1)}`}
+              icon="xp-times"
+              color={ButtonColor.Quinary}
+              size={ButtonSize.S}
+              onClick={() => onChange(rows.filter((_, index) => index !== at))}
+            />
+          </div>
         </div>
       ))}
 
       <div className={styles.rowActions}>
         <Button
           label="Add row"
+          icon="xp-plus"
           color={ButtonColor.Tertiary}
-          size={ButtonSize.XS}
+          size={ButtonSize.S}
           onClick={() => onChange([...rows, { attribute: '', value: '' }])}
         />
         <Button
           label="Edit as text"
           color={ButtonColor.Quinary}
-          size={ButtonSize.XS}
+          size={ButtonSize.S}
           onClick={() => setText(composeExpression(rows))}
         />
       </div>
