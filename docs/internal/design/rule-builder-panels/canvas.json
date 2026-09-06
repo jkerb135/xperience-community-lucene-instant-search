@@ -1,0 +1,116 @@
+{
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 824,
+      "h": 964,
+      "title": "Condition panel"
+    },
+    {
+      "file": "ConditionExpression.dc.html",
+      "x": 944,
+      "y": 0,
+      "w": 824,
+      "h": 964,
+      "title": "Condition — expression mode"
+    },
+    {
+      "file": "ConditionEmpty.dc.html",
+      "x": 1888,
+      "y": 0,
+      "w": 824,
+      "h": 964,
+      "title": "Condition — first open"
+    },
+    {
+      "file": "ActionPanel.dc.html",
+      "x": 2832,
+      "y": 0,
+      "w": 824,
+      "h": 964,
+      "title": "Action — Pin an item"
+    },
+    {
+      "file": "ActionBoost.dc.html",
+      "x": 3776,
+      "y": 0,
+      "w": 824,
+      "h": 964,
+      "title": "Action — Boost by attribute rows"
+    },
+    {
+      "file": "ActionText.dc.html",
+      "x": 0,
+      "y": 1240,
+      "w": 1616,
+      "h": 710,
+      "title": "Action — Redirect / Replace query / Remove word / Replace word"
+    },
+    {
+      "file": "ActionCustomData.dc.html",
+      "x": 1736,
+      "y": 1240,
+      "w": 824,
+      "h": 964,
+      "title": "Action — Return custom data"
+    },
+    {
+      "file": "PickerStates.dc.html",
+      "x": 2680,
+      "y": 1240,
+      "w": 824,
+      "h": 1592,
+      "title": "Item picker states"
+    },
+    {
+      "file": "AttributeRows.dc.html",
+      "x": 3624,
+      "y": 1240,
+      "w": 824,
+      "h": 1380,
+      "title": "Attribute row states"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "anatomy",
+      "x": 0,
+      "y": -300,
+      "w": 900,
+      "text": "Panel anatomy — stock SidePanel (size Stackable, 760px, radius 16): headline 24/32 with a one-line muted subtitle, close icon top right (tooltip “Discard”). Body sections 24px apart, separated by a stock Divider; footer = Discard (secondary) and Apply (primary) right-aligned, 12px apart. Esc, the X and a click outside all discard; Apply writes back to the card only — the page’s Save rule persists."
+    },
+    {
+      "id": "switch",
+      "x": 1000,
+      "y": -300,
+      "w": 860,
+      "text": "Switch-section pattern (condition panel) — a stock Switch (size M) heads each section: Query / Filters / Context. Its fields sit 48px in under the switch, rows of stock Select + Input with 8px gaps and 16px between rows. A section that is off shows only its switch. Only one condition card may have Query on and one Context on; the page refuses a second."
+    },
+    {
+      "id": "picker",
+      "x": 1960,
+      "y": -300,
+      "w": 860,
+      "text": "Item picker (Pin / Hide / Boost / Bury) — stock Input (“Find the item”) over our own list markup: bordered 8px rows, title 14 over url 12 muted, selected row lilac #e0dcff + 600. Under the list a muted status line (Searching… / N matches. / No matches. Try fewer words.) and a quinary “Details” that reveals the stored id. A chosen item reads “Selected: title url”; one the index lost shows its id with a yellow Tag."
+    },
+    {
+      "id": "rows",
+      "x": 2920,
+      "y": -300,
+      "w": 860,
+      "text": "Attribute rows (condition Filters, Filter results, Boost / Bury “matching”) — per row a stock Select (attribute; facetable fields of the index) · “is” · stock Select of real index values with counts, or a stock Input when the attribute is not facetable · quinary Remove. Under the rows: tertiary Add row + quinary Edit as text, which swaps the rows for one Input “Expression” and a Back to rows button."
+    },
+    {
+      "id": "components",
+      "x": 0,
+      "y": 2340,
+      "w": 1200,
+      "text": "Component map — SidePanel (frame, headline, footer) · Switch (section heads, Match plurals & synonyms) · Select (operator, attribute, value, contact group, language) · Input (words, expression, position, multiplier, word, …with, search instead for, send the visitor to, picker search) · TextArea (JSON, monospace) · Button (Discard secondary, Apply primary, Add row tertiary, Remove / Edit as text / Back to rows / Details quinary) · Tag (yellow “no longer in the index”) · Spinner (Searching…) · Divider between sections. Own markup only: the picker result list and the dashed add areas on the page."
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}
