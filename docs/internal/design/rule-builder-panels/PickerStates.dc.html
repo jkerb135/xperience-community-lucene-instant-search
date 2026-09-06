@@ -1,0 +1,188 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: "Inter", system-ui, sans-serif; font-size: 14px; line-height: 20px; color: #151515; -webkit-font-smoothing: antialiased; }
+    a { color: #7f09b7; } a:hover { color: #5d0088; }
+    .desk { background: linear-gradient(0deg, rgba(198,67,0,.02), rgba(198,67,0,.02)), linear-gradient(107.51deg, #fff -22.1%, #f5f3f2 37.88%, #e5dedc 229.14%); width: 1440px; padding: 32px 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 24px; }
+    .gt { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; }
+    .mono { font-family: monospace; font-size: 12px; line-height: 18px; }
+    .low { color: #525252; }
+    .s12 { font-size: 12px; line-height: 16px; }
+    .card { background: #fff; border-radius: 16px; box-shadow: 0 0 8px rgba(38,38,38,.03); padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+    .card-title { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-weight: 700; font-size: 24px; line-height: 32px; }
+    .hl-l { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-weight: 700; font-size: 16px; line-height: 24px; }
+    .hl-s { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-weight: 700; font-size: 14px; line-height: 16px; }
+    .row { display: flex; align-items: center; gap: 16px; }
+    .between { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; height: 40px; padding: 0 24px; gap: 8px; border: 1px solid transparent; border-radius: 5000px; font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 12px; font-weight: 700; line-height: 16px; letter-spacing: .1ch; text-transform: uppercase; white-space: nowrap; background: transparent; color: #7f09b7; }
+    .btn-primary { background: linear-gradient(303.62deg, #c64300 -109.97%, #7f09b7 87.4%); color: #fff; box-shadow: 0 1px 8px rgba(203,142,255,.4), 0 5px 11px rgba(189,94,255,.1); }
+    .btn-secondary { border-color: #7f09b7; }
+    .btn-tertiary { padding: 0 8px; }
+    .btn-alert { background: #e10007; color: #fff; }
+    .btn-s { height: 32px; padding: 0 16px; font-weight: 400; }
+    .btn:disabled, .btn.disabled { background: #dfdfdf; color: #8c8c8c; box-shadow: none; border-color: transparent; }
+    .label { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 12px; line-height: 16px; font-weight: 700; display: block; margin-bottom: 4px; }
+    .hint { color: #525252; font-size: 12px; line-height: 16px; margin-top: 4px; }
+    .input, .select { height: 40px; border: 1px solid #8c8c8c; border-radius: 5000px; padding: 0 16px; font: 400 14px/20px "Inter", system-ui, sans-serif; color: #151515; background: #fff; box-sizing: border-box; display: flex; align-items: center; }
+    .input.empty { color: #6f6f6f; }
+    .select { padding-right: 40px; position: relative; min-width: 160px; }
+    .select::after { content: ""; position: absolute; right: 16px; top: 14px; width: 6px; height: 6px; border-right: 1.5px solid #151515; border-bottom: 1.5px solid #151515; transform: rotate(45deg); }
+    .tag { display: inline-flex; align-items: center; gap: 8px; font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 14px; line-height: 16px; padding: 8px 16px; border-radius: 8px; color: #fff; background: #737373; white-space: nowrap; }
+    .tag.sky { background: #0677a8; } .tag.green { background: #537b00; } .tag.success { background: #007d72; } .tag.alert { background: #e10007; } .tag.violet { background: #af00fa; } .tag.dark { background: #151515; } .tag.orange { background: #c64300; }
+    .toggles { display: flex; gap: 8px; }
+    .toggles span { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 14px; line-height: 16px; padding: 12px; border-radius: 8px; color: #525252; }
+    .toggles span.on { background: #5d0088; color: #fff; }
+    .cb { display: inline-flex; align-items: center; gap: 8px; font-family: "GT Walsheim", "Inter", system-ui, sans-serif; }
+    .cb .box { width: 20px; height: 20px; border-radius: 4px; border: 1px solid #8c8c8c; display: inline-flex; align-items: center; justify-content: center; background: #fff; }
+    .cb .box.on { background: #7f09b7; border-color: #7f09b7; }
+    .thead { display: flex; gap: 16px; align-items: center; height: 48px; padding: 0 16px; font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 14px; line-height: 16px; color: #525252; }
+    .trow { display: flex; gap: 16px; align-items: center; min-height: 48px; padding: 8px 16px; background: #fff; border: 1px solid #dfdfdf; border-radius: 8px; box-sizing: border-box; }
+    .trow + .trow { margin-top: 4px; }
+    .c { min-width: 0; }
+    .num { font-variant-numeric: tabular-nums; }
+    .tiles { display: flex; gap: 16px; }
+    .tile { flex: 1; background: #fff; border-radius: 16px; box-shadow: 0 0 8px rgba(38,38,38,.03); padding: 24px; display: flex; flex-direction: column; gap: 4px; }
+    .figure { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 32px; line-height: 38px; font-weight: 700; }
+    .figure-s { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 24px; line-height: 32px; font-weight: 700; }
+    .callout { display: flex; flex-direction: column; gap: 4px; border-radius: 16px; padding: 16px; background: linear-gradient(124.56deg, #f1f3ff 28.01%, #e0dcff 202.32%); box-shadow: 0 0 8px rgba(38,38,38,.03); }
+    .callout.warn { background: linear-gradient(124.56deg, #fff1e4 28.01%, #ffd6d6 202.32%); }
+    .callout .sub { display: flex; align-items: center; gap: 8px; color: #3d5dff; font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 14px; line-height: 16px; }
+    .callout.warn .sub { color: #9e6200; }
+    .callout .content { font-family: "GT Walsheim", "Inter", system-ui, sans-serif; font-size: 16px; line-height: 24px; }
+    .ico { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+    .pager { display: flex; align-items: center; justify-content: space-between; padding-top: 8px; }
+    .pages { display: flex; align-items: center; gap: 8px; }
+    .pages span { width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-family: "GT Walsheim", "Inter", system-ui, sans-serif; color: #151515; }
+    .pages span.on { background: #7f09b7; color: #fff; }
+    .divider { height: 1px; background: #dfdfdf; }
+    .swatch { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 8px; vertical-align: middle; }
+    .bar { display: flex; width: 100%; height: 16px; gap: 2px; overflow: hidden; border-radius: 8px; }
+    .dashed { border: 1px dashed #8c8c8c; border-radius: 8px; padding: 12px; display: flex; justify-content: center; }
+    .flow { display: flex; gap: 24px; align-items: flex-start; }
+    .flow-label { width: 200px; flex: 0 0 200px; display: flex; flex-direction: column; gap: 8px; }
+    .flow-stack { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+    .stack { display: flex; flex-direction: column; gap: 16px; }
+    .stack-s { display: flex; flex-direction: column; gap: 8px; }
+    .field { display: flex; flex-direction: column; }
+    .grow { flex: 1; min-width: 0; }
+
+    .desk { min-height: 0; padding: 32px; gap: 32px; width: auto; }
+    /* SidePanel size=Stackable: 760px, radius L, shadow M */
+    .panel { width: 760px; min-height: 900px; background: #fff; border-radius: 16px; box-shadow: 0 8px 16px rgba(38,38,38,.16), 0 0 8px rgba(38,38,38,.03); display: flex; flex-direction: column; box-sizing: border-box; }
+    .panel.short { min-height: 0; }
+    .panel .head { padding: 24px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+    .panel .body { padding: 3px 24px 0; flex: 1; display: flex; flex-direction: column; gap: 24px; font-family: "GT Walsheim", "Inter", system-ui, sans-serif; }
+    .panel .foot { padding: 24px; display: flex; justify-content: flex-end; gap: 12px; }
+    .ico24 { width: 24px; height: 24px; }
+    .iconbtn { display: inline-flex; padding: 4px; color: #525252; }
+    /* Switch size=M */
+    .switch { display: inline-flex; align-items: center; gap: 12px; }
+    .switch .track { width: 40px; height: 24px; border-radius: 12px; background: #dfdfdf; position: relative; flex: none; }
+    .switch .track.on { background: #7f09b7; }
+    .switch .track::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; }
+    .switch .track.on::after { left: 19px; }
+    .section { display: flex; flex-direction: column; gap: 8px; }
+    .indent { padding-left: 48px; display: flex; flex-direction: column; gap: 16px; }
+    .frow { display: flex; align-items: flex-end; gap: 8px; }
+    .is { padding-bottom: 12px; color: #525252; font-size: 12px; line-height: 16px; }
+    .btn-quinary { color: #151515; padding: 0 8px; }
+    .btn-alignrow { margin-bottom: 4px; }
+    .note { color: #525252; font-size: 12px; line-height: 16px; }
+    .error { color: #e10007; font-size: 12px; line-height: 16px; }
+    /* Item picker (own markup): bordered 8px list, lilac selected row */
+    .picker { display: flex; flex-direction: column; gap: 8px; }
+    .chosen { display: flex; align-items: center; gap: 8px; font-family: "Inter", system-ui, sans-serif; font-size: 14px; line-height: 20px; }
+    .list { border: 1px solid #dfdfdf; border-radius: 8px; overflow: hidden; }
+    .opt { display: flex; flex-direction: column; gap: 2px; padding: 8px 16px; border-top: 1px solid #dfdfdf; font-family: "Inter", system-ui, sans-serif; }
+    .opt:first-child { border-top: 0; }
+    .opt.sel { background: #e0dcff; font-weight: 600; }
+    .opt .t { font-size: 14px; line-height: 20px; }
+    .opt .u { font-size: 12px; line-height: 16px; color: #525252; }
+    .tag.yellow { background: #9e6200; }
+    /* Spinner size=S */
+    .spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #e0dcff; border-top-color: #7f09b7; flex: none; }
+    /* TextArea: radius 20 like the pill inputs' corners, monospace only for JSON */
+    .textarea { border: 1px solid #8c8c8c; border-radius: 20px; padding: 10px 16px; font-family: monospace; font-size: 12px; line-height: 18px; color: #151515; white-space: pre; min-height: 92px; box-sizing: border-box; }
+    /* Select open: the MenuItem list under the control */
+    .field.hasmenu { position: relative; }
+    .menu { position: absolute; left: 0; right: 0; top: 100%; margin-top: 4px; z-index: 1; background: #fff; border-radius: 8px; box-shadow: 0 8px 16px rgba(38,38,38,.16), 0 0 8px rgba(38,38,38,.03); padding: 8px 0; font-family: "Inter", system-ui, sans-serif; }
+    .mi { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 10px 16px; font-size: 14px; line-height: 20px; }
+    .mi.on { background: #e0dcff; }
+    .mi .sec { color: #525252; font-size: 12px; line-height: 16px; }
+    .select.open { border-color: #7f09b7; }
+    /* States boards: one paper with captioned regions */
+    .states { width: 760px; background: #fff; border-radius: 16px; box-shadow: 0 0 8px rgba(38,38,38,.03); padding: 24px; box-sizing: border-box; display: flex; flex-direction: column; gap: 24px; }
+    .cap { display: flex; flex-direction: column; gap: 4px; }
+    .grid2 { display: grid; grid-template-columns: 760px 760px; gap: 32px; }
+</style>
+</helmet>
+<div class="desk" style="width: 824px;">
+
+<div class="states">
+  <div class="cap"><span class="hl-s">Loading</span><span class="low s12">the query settled 300 ms ago; the index is being asked</span></div>
+  
+    <div class="picker">
+      <div class="field "><span class="label">Find the item</span><div class="input" style="justify-content: space-between;">macap<svg class="ico" viewBox="0 0 16 16"><path d="M7 12A5 5 0 1 0 7 2a5 5 0 0 0 0 10zM11 11l3 3"></path></svg></div></div>
+      
+      
+      
+      <div class="note"><span class="row" style="gap: 8px;"><span class="spin"></span>Searching…</span></div>
+      <div><span class="btn btn-quinary btn-s">Details</span></div>
+    </div>
+  <div class="divider"></div>
+  <div class="cap"><span class="hl-s">No results</span><span class="low s12">the list is empty and the status line says so</span></div>
+  
+    <div class="picker">
+      <div class="field "><span class="label">Find the item</span><div class="input" style="justify-content: space-between;">macapp grinder<svg class="ico" viewBox="0 0 16 16"><path d="M7 12A5 5 0 1 0 7 2a5 5 0 0 0 0 10zM11 11l3 3"></path></svg></div></div>
+      
+      
+      
+      <div class="note">No matches. Try fewer words.</div>
+      <div><span class="btn btn-quinary btn-s">Details</span></div>
+    </div>
+  <div class="divider"></div>
+  <div class="cap"><span class="hl-s">Error</span><span class="low s12">the SearchItems command failed; role=alert line under the input</span></div>
+  
+    <div class="picker">
+      <div class="field "><span class="label">Find the item</span><div class="input" style="justify-content: space-between;">macap<svg class="ico" viewBox="0 0 16 16"><path d="M7 12A5 5 0 1 0 7 2a5 5 0 0 0 0 10zM11 11l3 3"></path></svg></div></div>
+      
+      <div class="error" role="alert">The index could not be searched: DancingGoatSample is rebuilding.</div>
+      
+      <div class="note">No matches. Try fewer words.</div>
+      <div><span class="btn btn-quinary btn-s">Details</span></div>
+    </div>
+  <div class="divider"></div>
+  <div class="cap"><span class="hl-s">Chosen item gone</span><span class="low s12">a saved rule names an id the index no longer holds</span></div>
+  
+    <div class="picker">
+      <div class="field "><span class="label">Find the item</span><div class="input empty" style="justify-content: space-between;">Search this index — ↑↓ walks the results, Enter picks one<svg class="ico" viewBox="0 0 16 16"><path d="M7 12A5 5 0 1 0 7 2a5 5 0 0 0 0 10zM11 11l3 3"></path></svg></div></div>
+      <div class="chosen"><span>b0606bb5-6a0c-4f0e-9b0e-2a4d7a0c2f11:en</span><span class="tag yellow">no longer in the index</span></div>
+      
+      <div class="list"><div class="opt"><span class="t">AnfimSuperCaimano-9sat8ifd</span><span class="u">/products/anfim-super-caimano</span></div><div class="opt"><span class="t">MacapM4D-rxxdx4w2</span><span class="u">/products/macap-m4d</span></div></div>
+      <div class="note">2 matches.</div>
+      <div><span class="btn btn-quinary btn-s">Details</span></div>
+    </div>
+  <div class="divider"></div>
+  <div class="cap"><span class="hl-s">Details expanded</span><span class="low s12">the stored id, only on request</span></div>
+  
+    <div class="picker">
+      <div class="field "><span class="label">Find the item</span><div class="input" style="justify-content: space-between;">macap<svg class="ico" viewBox="0 0 16 16"><path d="M7 12A5 5 0 1 0 7 2a5 5 0 0 0 0 10zM11 11l3 3"></path></svg></div></div>
+      <div class="chosen"><span>Selected: <b>MacapM4D-rxxdx4w2</b></span><span class="low">/products/macap-m4d</span></div>
+      
+      <div class="list"><div class="opt"><span class="t">AnfimSuperCaimano-9sat8ifd</span><span class="u">/products/anfim-super-caimano</span></div><div class="opt sel"><span class="t">MacapM4D-rxxdx4w2</span><span class="u">/products/macap-m4d</span></div></div>
+      <div class="note">2 matches.</div>
+      <div><span class="btn btn-quinary btn-s">Hide details</span><div class="note" style="margin-top: 4px;">Stored result id: b0606bb5-6a0c-4f0e-9b0e-2a4d7a0c2f11:en</div></div>
+    </div>
+</div>
+</div>
+</x-dc>
+</body>
+</html>

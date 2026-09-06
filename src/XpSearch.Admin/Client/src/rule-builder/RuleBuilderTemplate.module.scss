@@ -20,8 +20,13 @@ $product: "GT Walsheim", sans-serif;
   line-height: 18px;
 }
 
-/** The board's muted 12/16 prose: a card's detail line, a flow label's helper. */
-.detail {
+/**
+ * The board's muted 12/16 prose: a card's detail line, a flow label's helper, the one-line subtitle
+ * a side panel opens with and the picker's status line.
+ */
+.detail,
+.panelSubtitle,
+.pickerStatus {
   margin: 0;
   color: var(--color-text-low-emphasis);
   font-size: 12px;
@@ -257,12 +262,21 @@ $product: "GT Walsheim", sans-serif;
   width: 120px;
 }
 
+/* The two fixed widths the condition panel's rows ask for. */
+.fieldOperator {
+  width: 200px;
+}
+
+.fieldLanguage {
+  width: 160px;
+}
+
 /* 5c: the custom-data editor is read as code, so it is the one monospace control on the page. */
 .jsonArea textarea {
   font-family: monospace;
 }
 
-/* 5f: inside the side panel, a toggle's fields are indented under it. */
+/* Condition panel: a switch heads its section and its fields are indented 48px under it. */
 .toggleGroup {
   display: flex;
   flex-direction: column;
@@ -273,12 +287,20 @@ $product: "GT Walsheim", sans-serif;
   padding-left: 48px;
   display: flex;
   flex-direction: column;
+  gap: 16px;
+}
+
+/* Fields that share a line: the query row, the context row, one attribute row. */
+.fieldRow {
+  display: flex;
+  align-items: flex-end;
   gap: 8px;
 }
 
-.filterRow {
+/* The attribute rows are their own column; whoever uses them supplies the indent, if any. */
+.attributeRows {
   display: flex;
-  align-items: flex-end;
+  flex-direction: column;
   gap: 8px;
 }
 
@@ -286,6 +308,12 @@ $product: "GT Walsheim", sans-serif;
   padding-bottom: 12px;
   color: var(--color-text-low-emphasis);
   font-size: 12px;
+  line-height: 16px;
+}
+
+/* Remove carries no label, so it sits on the controls' line rather than the row's bottom edge. */
+.rowRemove {
+  margin-bottom: 4px;
 }
 
 .panelFooter {
@@ -301,7 +329,7 @@ $product: "GT Walsheim", sans-serif;
   margin: 4px 0 0;
 }
 
-/* 5h: the item picker — a search box over a short, scrollable result list. */
+/* PickerStates board: a search box over a short, scrollable result list. */
 .picker {
   display: flex;
   flex-direction: column;
@@ -314,6 +342,7 @@ $product: "GT Walsheim", sans-serif;
   gap: 8px;
   margin: 0;
   font-size: 14px;
+  line-height: 20px;
 }
 
 .pickerList {
@@ -322,7 +351,7 @@ $product: "GT Walsheim", sans-serif;
   padding: 0;
   max-height: 240px;
   overflow-y: auto;
-  border: 1px solid var(--color-border-default);
+  border: 1px solid var(--color-divider-default);
   border-radius: 8px;
 }
 
@@ -334,7 +363,7 @@ $product: "GT Walsheim", sans-serif;
   gap: 2px;
   padding: 8px 16px;
   border: 0;
-  border-top: 1px solid var(--color-border-default);
+  border-top: 1px solid var(--color-divider-default);
   background: transparent;
   text-align: left;
   cursor: pointer;
@@ -356,11 +385,24 @@ $product: "GT Walsheim", sans-serif;
 
 .pickerTitle {
   font-size: 14px;
+  line-height: 20px;
 }
 
 .pickerUrl {
   font-size: 12px;
+  line-height: 16px;
   color: var(--color-text-low-emphasis);
+}
+
+/* The status line carries the Spinner while a search runs. */
+.pickerStatus {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pickerSpinner {
+  font-size: 16px;
 }
 
 /* 5e: at 1024 the If / Then label moves above its stack and the cards go full width. */

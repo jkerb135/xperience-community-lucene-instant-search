@@ -4,7 +4,9 @@ import {
   ButtonColor,
   ButtonSize,
   Colors,
+  Icon,
   Input,
+  Spinner,
   Tag,
 } from '@kentico/xperience-admin-components';
 import { usePageCommand } from '@kentico/xperience-admin-base';
@@ -14,8 +16,9 @@ import type { Action } from './model';
 import styles from './RuleBuilderTemplate.module.scss';
 
 /*
- * The item picker of design canvas 5h: a debounced search over this index and a keyboard-navigable
- * result list. What is stored is the result id; the id itself is only shown behind "details", or as
+ * The item picker of the approved board docs/internal/design/rule-builder-panels/PickerStates.dc.html:
+ * a debounced search over this index and a keyboard-navigable result list. What is stored is the
+ * result id; the id itself is only shown behind "details" - offered once an item is chosen - or as
  * the warning row of an action whose item has left the index.
  *
  * The search runs through the RuleBuilderPage SearchItems command, which reads the index without
@@ -95,6 +98,7 @@ export const ItemPicker = ({ action, label, onPick }: ItemPickerProps) => {
         label={label}
         value={query}
         placeholder="Search this index — ↑↓ walks the results, Enter picks one"
+        actionElement={<Icon name="xp-magnifier" />}
         onChange={(event) => setQuery(event.target.value)}
       />
 
@@ -143,21 +147,31 @@ export const ItemPicker = ({ action, label, onPick }: ItemPickerProps) => {
         ))}
       </ul>
 
-      <p style={muted} aria-live="polite">
-        {searching ? 'Searching…' : items.length === 0 ? 'No matches. Try fewer words.' : `${String(items.length)} matches.`}
+      <p className={styles.pickerStatus} aria-live="polite">
+        {searching ? (
+          <>
+            <Spinner className={styles.pickerSpinner} />
+            Searching…
+          </>
+        ) : items.length === 0 ? (
+          'No matches. Try fewer words.'
+        ) : (
+          `${String(items.length)} matches.`
+        )}
       </p>
 
-      <div>
-        <Button
-          label={showId ? 'Hide details' : 'Details'}
-          color={ButtonColor.Quinary}
-          size={ButtonSize.XS}
-          onClick={() => setShowId((current) => !current)}
-        />
-        {showId ? (
-          <p style={muted}>Stored result id: {action.targetId === '' ? '—' : action.targetId}</p>
-        ) : null}
-      </div>
+      {/* The stored id is only worth offering once there is one: nothing chosen, nothing to reveal. */}
+      {chosen ? (
+        <div>
+          <Button
+            label={showId ? 'Hide details' : 'Details'}
+            color={ButtonColor.Quinary}
+            size={ButtonSize.S}
+            onClick={() => setShowId((current) => !current)}
+          />
+          {showId ? <p style={muted}>Stored result id: {action.targetId}</p> : null}
+        </div>
+      ) : null}
     </div>
   );
 };
