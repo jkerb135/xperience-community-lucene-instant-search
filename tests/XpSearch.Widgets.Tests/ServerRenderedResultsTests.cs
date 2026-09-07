@@ -21,6 +21,8 @@ using XpSearch.Core.Pipeline;
 using XpSearch.Core.Rendering;
 using XpSearch.Widgets.Components.Widgets.XpSearch;
 using XpSearch.Widgets.Mounting;
+using XpSearch.Widgets.Rendering;
+using XpSearch.Widgets.TagHelpers;
 
 using NUnit.Framework;
 
@@ -48,6 +50,9 @@ internal sealed class ServerRenderedResultsTests
         services.AddSingleton<IWebHostEnvironment>(new StubEnvironment());
         services.AddSingleton<IHostEnvironment>(new StubEnvironment());
         services.AddControllersWithViews().AddApplicationPart(typeof(XpSearchMountRenderer).Assembly);
+        // The widget services a host registers, with the project's indexes stubbed.
+        services.AddSingleton<XpSearch.Widgets.Options.IXpSearchIndexCatalog>(new FakeIndexCatalog("site-content"));
+        services.AddXpSearchWidgets();
 
         provider = services.BuildServiceProvider();
     }
@@ -194,6 +199,64 @@ internal sealed class ServerRenderedResultsTests
 
         Assert.That(Rendered.Html(model.Mount!), Does.Not.Contain("data-xps-labels"));
     }
+
+    /// <summary>
+    /// RZ-1: the <c>&lt;xps-results&gt;</c> tag element renders the same first paint, labels included,
+    /// as the Page Builder widget - the parity check for the one widget that has server content.
+    /// </summary>
+    [Test]
+    public void The_results_tag_element_renders_the_same_first_paint_as_the_widget()
+    {
+        var response = TwoResults();
+        response.Facets = new Dictionary<string, FacetValue[]>(StringComparer.Ordinal)
+        {
+            ["ProductFieldTags"] = [new FacetValue { Value = "HotTips", Label = "Hot tips", Count = 0 }]
+        };
+
+        const string queryString = "?q=coffee&ProductFieldTags=HotTips";
+        var properties = new ResultsWidgetProperties { Index = "site-content", ResultsPerPage = 5 };
+        var component = ResultsWidget(new FakePipeline(response), queryString: queryString);
+
+        string widget = Rendered.Html(component.BuildModel(properties).Mount!);
+        string tag = TagHelperTests.Tag(
+            new ResultsTagHelper(new XpSearchMountRenderer(), new FakeIndexCatalog("site-content"), ServerResults(new FakePipeline(response)))
+            {
+                Options = component.ToOptions(properties),
+                ViewContext = ViewContext(queryString)
+            },
+            "xps-results");
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(tag, Does.Contain("data-xps-server-rendered"));
+            Assert.That(tag, Does.Contain("data-xps-labels"));
+            Assert.That(tag, Is.EqualTo(widget));
+        });
+    }
+
+    /// <summary>RZ-1 §1.5: <c>Html.XpSearchAsync</c> emits what the tag element emits.</summary>
+    [Test]
+    public async Task The_html_helper_renders_a_widget_from_its_options_record()
+    {
+        var html = provider.GetRequiredService<IHtmlHelper>();
+        ((IViewContextAware)html).Contextualize(ViewContext("?q=espresso"));
+
+        var options = new FacetListOptions { Index = "site-content", Attribute = "tags", Label = "Tags" };
+        string rendered = Rendered.Html(await html.XpSearchAsync(options).ConfigureAwait(false));
+
+        string tag = TagHelperTests.Tag(
+            new FacetListTagHelper(new XpSearchMountRenderer(), new FakeIndexCatalog("site-content")) { Options = options },
+            "xps-facet-list");
+
+        Assert.That(rendered, Is.EqualTo(tag));
+    }
+
+    private ServerRenderedResults ServerResults(ISearchPipeline pipeline) =>
+        new(
+            pipeline,
+            provider.GetRequiredService<ICompositeViewEngine>(),
+            new FakeTemplateRegistry(),
+            new CapturingLogger());
 
     private ResultsWidgetViewComponent ResultsWidget(
         ISearchPipeline pipeline,
