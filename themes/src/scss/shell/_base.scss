@@ -184,9 +184,10 @@
    (default.css). A shell-only site draws its own.
 
    The modifiers below are the vocabulary the server's first paint draws a widget's shape with
-   (SK-1): one per part a widget has. `--xps-skeleton-width` varies one bar's width where the
-   design does (facet labels at 45-70%, a 44px control label), leaving the modifier's own width as
-   the default. */
+   (SK-1): one per part a widget has. Each carries the design's own width through
+   `--xps-skeleton-width`; the rules at the end of this file vary it per row where the design does
+   (facet labels at 45-70%, a 44px control label), and a site can restate the property to vary it
+   further. The markup never carries a `style` attribute. */
 .xps-skeleton {
   display: block;
   width: var(--xps-skeleton-width, 100%);
@@ -245,3 +246,94 @@
   height: 12px;
 }
 
+
+/* The per-bar widths the Skeleton board draws, scoped to each widget's skeleton root. They live
+   here, not in a `style` attribute, so a host with a strict `style-src` Content Security Policy
+   still gets the drawing — and so a site can restate any of them. */
+.xps-facet-list--skeleton .xps-facet-list__title .xps-skeleton--heading {
+  --xps-skeleton-width: 40%;
+}
+
+.xps-facet-list--skeleton .xps-facet-list__item:nth-child(1) .xps-skeleton--text {
+  --xps-skeleton-width: 55%;
+}
+
+.xps-facet-list--skeleton .xps-facet-list__item:nth-child(2) .xps-skeleton--text {
+  --xps-skeleton-width: 70%;
+}
+
+.xps-facet-list--skeleton .xps-facet-list__item:nth-child(3) .xps-skeleton--text {
+  --xps-skeleton-width: 45%;
+}
+
+.xps-facet-list--skeleton .xps-facet-list__item:nth-child(4) .xps-skeleton--text {
+  --xps-skeleton-width: 60%;
+}
+
+.xps-category-tree--skeleton .xps-skeleton--count {
+  --xps-skeleton-width: 16px;
+}
+
+.xps-category-tree--skeleton .xps-category-tree__link .xps-skeleton--text {
+  --xps-skeleton-width: 40%;
+}
+
+.xps-category-tree--skeleton .xps-category-tree__list--lvl1 .xps-category-tree__item:nth-child(1) .xps-skeleton--text {
+  --xps-skeleton-width: 50%;
+}
+
+.xps-category-tree--skeleton .xps-category-tree__list--lvl1 .xps-category-tree__item:nth-child(2) .xps-skeleton--text {
+  --xps-skeleton-width: 45%;
+}
+
+.xps-category-tree--skeleton .xps-category-tree__list--lvl1 .xps-category-tree__item:nth-child(3) .xps-skeleton--text {
+  --xps-skeleton-width: 60%;
+}
+
+.xps-range-filter--skeleton .xps-range-filter__title .xps-skeleton--heading {
+  --xps-skeleton-width: 30%;
+}
+
+.xps-range-filter--skeleton .xps-range-filter__input:first-child .xps-skeleton--control {
+  --xps-skeleton-width: 24px;
+}
+
+.xps-range-filter--skeleton .xps-range-filter__separator .xps-skeleton--control {
+  --xps-skeleton-width: 14px;
+}
+
+.xps-range-filter--skeleton .xps-range-filter__input:last-child .xps-skeleton--control {
+  --xps-skeleton-width: 28px;
+}
+
+.xps-toggle-filter--skeleton .xps-skeleton--text {
+  --xps-skeleton-width: 50%;
+}
+
+.xps-sort-select--skeleton .xps-skeleton--line {
+  --xps-skeleton-width: 44px;
+}
+
+.xps-filter-sort--skeleton .xps-skeleton--control {
+  --xps-skeleton-width: 88px;
+}
+
+.xps-pagination--skeleton .xps-skeleton--box {
+  --xps-skeleton-width: 36px;
+}
+
+.xps-active-filters--skeleton .xps-skeleton--control {
+  --xps-skeleton-width: 96px;
+}
+
+.xps-clear-filters--skeleton .xps-skeleton--line {
+  --xps-skeleton-width: 56px;
+}
+
+.xps-load-more--skeleton .xps-skeleton--control {
+  --xps-skeleton-width: 120px;
+}
+
+.xps-suggestions--skeleton .xps-skeleton--control {
+  --xps-skeleton-width: 160px;
+}
