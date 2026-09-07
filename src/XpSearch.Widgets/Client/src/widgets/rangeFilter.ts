@@ -14,7 +14,13 @@ import { withRange } from '../behaviors/range';
 import { attributeLabelOrWarn, declareAttribute } from '../labels';
 import { formatNumber, html, render } from '../templates/html';
 import type { Widget } from '../types';
-import { createRoot, resolveContainer, widgetId } from './dom';
+import {
+  createRoot,
+  isServerRendered,
+  resolveContainer,
+  takeOver,
+  widgetId,
+} from './dom';
 
 export type RangeFilterWidgetParams = {
   container: string | HTMLElement;
@@ -62,9 +68,14 @@ export function rangeFilter(params: RangeFilterWidgetParams): Widget {
       );
       const label = named ?? UNNAMED_RANGE;
 
-      if (isFirstRender) {
+      if (isFirstRender) root = createRoot(container, 'div', 'xps xps-range-filter');
+      if (!root) return;
+      // Nothing has answered yet: whatever the server painted stays on screen (SK-1).
+      if (options.results === null && isServerRendered(root)) return;
+      takeOver(root);
+      // Built once, on the render this widget first paints (SK-1).
+      if (controls.length < 4) {
         const id = (part: string): string => widgetId(container, attribute, part);
-        root = createRoot(container, 'div', 'xps xps-range-filter');
         render(
           html`<h3 class="xps-range-filter__title" id="${id('title')}">${label}</h3>
   <div class="xps-range-filter__track" role="group" aria-labelledby="${id('title')}">
@@ -120,7 +131,7 @@ export function rangeFilter(params: RangeFilterWidgetParams): Widget {
         root.addEventListener('input', (event) => edit(event, false));
         root.addEventListener('change', (event) => edit(event, true));
       }
-      if (!root || !values || !track || controls.length < 4) return;
+      if (!values || !track || controls.length < 4) return;
 
       apply = options.apply;
       const [lower, upper] = options.start;

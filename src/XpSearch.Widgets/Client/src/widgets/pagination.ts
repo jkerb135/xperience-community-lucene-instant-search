@@ -10,7 +10,7 @@
 import { withPagination } from '../behaviors/pagination';
 import { html, type Renderable } from '../templates/html';
 import type { Widget } from '../types';
-import { createRoot, renderKeepingFocus, resolveContainer } from './dom';
+import { createRoot, isServerRendered, renderKeepingFocus, resolveContainer, takeOver } from './dom';
 
 export type PaginationWidgetParams = {
   container: string | HTMLElement;
@@ -44,12 +44,14 @@ const control = (
   urlFor: (page: number) => string
 ): Renderable => {
   const body = html`<span aria-hidden="true">${GLYPHS[kind]}</span><span class="xps-sr-only">${name}</span>`;
+  // `rel` on the two step controls only: `prev`/`next` describe the sequence a crawler follows.
+  const rel = kind === 'previous' ? html.raw(' rel="prev"') : kind === 'next' ? html.raw(' rel="next"') : '';
   return html`<li class="xps-pagination__item xps-pagination__item--${kind}${
     disabled ? ' xps-pagination__item--disabled' : ''
   }">${
     disabled
       ? html`<span class="xps-pagination__link" aria-disabled="true">${body}</span>`
-      : html`<a class="xps-pagination__link" href="${urlFor(page)}" data-xps-page="${page}">${body}</a>`
+      : html`<a class="xps-pagination__link"${rel} href="${urlFor(page)}" data-xps-page="${page}">${body}</a>`
   }</li>`;
 };
 
@@ -91,6 +93,9 @@ export function pagination(params: PaginationWidgetParams): Widget {
         });
       }
       if (!root) return;
+      // Nothing has answered yet: whatever the server painted stays on screen (SK-1).
+      if (options.results === null && isServerRendered(root)) return;
+      takeOver(root);
 
       const { pages, current, totalPages, urlFor } = options;
       const first = pages[0] ?? 0;

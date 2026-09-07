@@ -13,7 +13,14 @@ import {
 import { attributeLabelOrWarn } from '../labels';
 import { html, type Renderable } from '../templates/html';
 import type { Widget } from '../types';
-import { createRoot, renderKeepingFocus, resolveContainer, widgetId } from './dom';
+import {
+  createRoot,
+  isServerRendered,
+  renderKeepingFocus,
+  resolveContainer,
+  takeOver,
+  widgetId,
+} from './dom';
 
 /** The attribute filters both widgets share, spelled out (they cannot be intersected in). */
 type Scope = {
@@ -71,6 +78,9 @@ export function activeFilters(params: ActiveFiltersWidgetParams): Widget {
         });
       }
       if (!root) return;
+      // Nothing has answered yet: whatever the server painted stays on screen (SK-1).
+      if (options.results === null && isServerRendered(root)) return;
+      takeOver(root);
 
       root.classList.toggle('xps-active-filters--empty', !options.canApply);
       renderKeepingFocus(
@@ -103,24 +113,28 @@ export function activeFilters(params: ActiveFiltersWidgetParams): Widget {
 
 export function clearFilters(params: ClearFiltersWidgetParams): Widget {
   const container = resolveContainer(params.container, 'clearFilters');
+  let root: HTMLElement | undefined;
   let button: HTMLButtonElement | undefined;
   let clearAll: () => void = () => {};
 
   const widget = withActiveFilters<ClearFiltersWidgetParams>(
     (options, isFirstRender) => {
       clearAll = options.clearAll;
-      if (isFirstRender) {
-        const root = createRoot(container, 'div', 'xps xps-clear-filters');
+      if (isFirstRender) root = createRoot(container, 'div', 'xps xps-clear-filters');
+      if (!root) return;
+      // Nothing has answered yet: whatever the server painted stays on screen (SK-1).
+      if (options.results === null && isServerRendered(root)) return;
+      takeOver(root);
+      if (!button) {
         // The button is never removed from the DOM, so pressing it does not destroy focus.
         button = container.ownerDocument.createElement('button');
         button.className = 'xps-button xps-button--link xps-clear-filters__button';
         button.type = 'button';
         button.textContent = options.params.label ?? 'Clear all';
         button.addEventListener('click', () => clearAll());
+        root.textContent = '';
         root.appendChild(button);
       }
-      const root = button?.parentElement;
-      if (!button || !root) return;
       button.disabled = !options.canApply;
       root.classList.toggle('xps-clear-filters--disabled', !options.canApply);
     },

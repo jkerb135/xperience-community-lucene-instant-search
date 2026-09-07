@@ -17,7 +17,7 @@ import {
   type TemplateHelpers,
 } from '../templates/html';
 import type { RenderOptions, Result, Widget } from '../types';
-import { createRoot, resolveContainer, setAttr } from './dom';
+import { createRoot, isServerRendered, resolveContainer, setAttr, takeOver } from './dom';
 
 /** What `templates.empty` receives: the query, and whether filters are narrowing it. */
 export interface EmptyTemplateData {
@@ -329,6 +329,9 @@ export function results<TAttributes extends Record<string, unknown> = Record<str
       });
     }
     if (!root || !status) return;
+    // Nothing has answered yet: whatever the server painted stays on screen (SK-1).
+    if (options.results === null && isServerRendered(root)) return;
+    takeOver(root);
 
     const query = options.state.query;
     const busy = options.search.status === 'loading' || options.search.status === 'stalled';
@@ -379,8 +382,9 @@ export function results<TAttributes extends Record<string, unknown> = Record<str
     root.classList.toggle('xps-results--empty', empty);
     root.classList.toggle('xps-results--loading', busy);
     setAttr(root, 'aria-busy', busy);
-    // Replace everything after the status element, so the live region survives the render.
-    while (root.lastChild && root.lastChild !== status) root.removeChild(root.lastChild);
+    // Replace every child but the status element, so the live region survives the render. The
+    // status is appended after adopted server content, so it is not always the last child.
+    for (const child of [...root.childNodes]) if (child !== status) root.removeChild(child);
     root.insertAdjacentHTML('beforeend', toHtml(body));
     if (status.textContent !== announcement) status.textContent = announcement;
   };

@@ -13,7 +13,7 @@ import {
   type TemplateHelpers,
 } from '../templates/html';
 import type { Widget } from '../types';
-import { createRoot, resolveContainer } from './dom';
+import { createRoot, isServerRendered, resolveContainer, takeOver } from './dom';
 
 export type ResultStatsWidgetParams = {
   container: string | HTMLElement;
@@ -72,6 +72,9 @@ export function resultStats(params: ResultStatsWidgetParams): Widget {
     (options, isFirstRender) => {
       if (isFirstRender) root = createRoot(container, 'div', 'xps xps-result-stats');
       if (!root) return;
+      // Nothing has answered yet: whatever the server painted stays on screen (SK-1).
+      if (options.results === null && isServerRendered(root)) return;
+      takeOver(root);
       const { textTemplate } = options.params;
       const template: (data: ResultStatsRenderState, tools: TemplateHelpers) => Renderable =
         options.params.templates?.text ??

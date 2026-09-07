@@ -53,16 +53,42 @@ export function widgetId(container: HTMLElement, widget: string, part: string): 
   return `${base}-${part}`;
 }
 
+/** Marks the element the server rendered inside a mount, until the widget has painted over it. */
+const SERVER_RENDERED = 'data-xps-server-rendered';
+
 /**
  * Empties `container` and puts the widget root inside it — the mount element itself is never the
  * root, so an unhydrated `.xps-mount` stays unstyled (MARKUP.md, "Page Builder mount").
+ *
+ * Server-rendered content is adopted instead: an element carrying `data-xps-server-rendered` with
+ * the requested tag name becomes the root, children and all, so the pre-JavaScript page is handed
+ * over rather than replaced (SK-1). Anything else in the container is still discarded.
  */
 export function createRoot(container: HTMLElement, tagName: string, className: string): HTMLElement {
+  const first = container.firstElementChild;
+  if (first?.hasAttribute(SERVER_RENDERED) && first.localName === tagName.toLowerCase()) {
+    first.className = className;
+    return first as HTMLElement;
+  }
   container.textContent = '';
   const root = container.ownerDocument.createElement(tagName);
   root.className = className;
   container.appendChild(root);
   return root;
+}
+
+/**
+ * Whether `root` still holds what the server rendered. True until the widget's first real paint,
+ * which removes the attribute: a renderer with nothing to show yet (`results === null`) leaves an
+ * adopted root alone rather than painting a skeleton over it.
+ */
+export function isServerRendered(root: HTMLElement): boolean {
+  return root.hasAttribute(SERVER_RENDERED);
+}
+
+/** Ends the handover: the widget owns `root` from here on. */
+export function takeOver(root: HTMLElement): void {
+  root.removeAttribute(SERVER_RENDERED);
 }
 
 /**

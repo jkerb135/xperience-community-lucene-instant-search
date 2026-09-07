@@ -11,7 +11,15 @@ import { withCategoryTree, type CategoryTreeItem } from '../behaviors/categoryTr
 import { attributeLabelOrWarn, declareAttribute, UNNAMED_GROUP } from '../labels';
 import { html, type Renderable } from '../templates/html';
 import type { Widget } from '../types';
-import { chevron, createRoot, renderKeepingFocus, resolveContainer, widgetId } from './dom';
+import {
+  chevron,
+  createRoot,
+  isServerRendered,
+  renderKeepingFocus,
+  resolveContainer,
+  takeOver,
+  widgetId,
+} from './dom';
 
 export type CategoryTreeWidgetParams = {
   container: string | HTMLElement;
@@ -93,6 +101,9 @@ export function categoryTree(params: CategoryTreeWidgetParams): Widget {
         });
       }
       if (!root) return;
+      // Nothing has answered yet: whatever the server painted stays on screen (SK-1).
+      if (options.results === null && isServerRendered(root)) return;
+      takeOver(root);
 
       root.setAttribute('aria-label', label);
       // Nothing to navigate is nothing to render: hide the control rather than leave a bare

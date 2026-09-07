@@ -12,7 +12,7 @@ import { withSearchBox } from '../behaviors/searchBox';
 import { withSuggestions, type SuggestionsRenderState } from '../behaviors/suggestions';
 import { html, render } from '../templates/html';
 import type { RenderOptions, Widget } from '../types';
-import { createRoot, resolveContainer, widgetId } from './dom';
+import { createRoot, isServerRendered, resolveContainer, takeOver, widgetId } from './dom';
 import { createRecents, recentsStorage, type Recents } from './recentSearches';
 import { bindCombobox, renderPanel } from './suggestionsPanel';
 
@@ -87,6 +87,8 @@ export function searchBox(params: SearchBoxWidgetParams): Widget {
   let recents: Recents | undefined;
   /** Re-runs the last popup render, for a change only the recents know about. */
   let repaint: () => void = () => {};
+  /** What the visitor had already typed into the server's form, until the first render hands it over. */
+  let carried: { value: string; focused: boolean } | undefined;
 
   const box = withSearchBox<SearchBoxWidgetParams>(
     (options, isFirstRender) => {
@@ -104,6 +106,15 @@ export function searchBox(params: SearchBoxWidgetParams): Widget {
 
       if (isFirstRender) {
         root = createRoot(container, 'form', 'xps xps-search-box');
+        // The server's form is replaced by the identical client one, but a visitor may have typed
+        // into it before the bundle ran: that value and the focus are carried over below (SK-1).
+        if (isServerRendered(root)) {
+          const served = root.querySelector<HTMLInputElement>('input[name="q"]');
+          if (served) {
+            carried = { value: served.value, focused: root.ownerDocument.activeElement === served };
+          }
+          takeOver(root);
+        }
         root.setAttribute('role', 'search');
         root.setAttribute('novalidate', '');
         render(
@@ -159,6 +170,17 @@ export function searchBox(params: SearchBoxWidgetParams): Widget {
       // Only assign when it actually differs: assigning moves the caret to the end.
       if (input.value !== options.query) input.value = options.query;
       reset.hidden = !showReset || options.query === '';
+
+      if (carried) {
+        const { value, focused } = carried;
+        carried = undefined;
+        // `apply` searches for it, so the state catches up with what was already in the field.
+        if (value !== options.query) {
+          input.value = value;
+          apply(value);
+        }
+        if (focused) input.focus();
+      }
     },
     () => {
       container.textContent = '';
