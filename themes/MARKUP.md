@@ -327,7 +327,7 @@ Fixture: `fixtures/pagination.html`. Root `<nav class="xps xps-pagination" aria-
 | `xps-pagination__item--current` | modifier | Sits alongside `--page`; the link gets `aria-current="page"`. |
 | `xps-pagination__item--ellipsis` | modifier | Gap in the number run. |
 | `xps-pagination__item--disabled` | modifier | Only on the end controls at the range boundary. |
-| `xps-pagination__link` | `<a href>` — or `<span aria-disabled="true">` when disabled | A disabled control is a `<span>`: no href, not focusable, nothing for a keyboard user to land on that does nothing. The enabled previous and next links carry `rel="prev"` / `rel="next"`; no other link does. |
+| `xps-pagination__link` | `<a href>` — or `<span aria-disabled="true">` when disabled | A disabled control is a `<span>`: no href, not focusable, nothing for a keyboard user to land on that does nothing. The enabled previous and next links carry `rel="prev"` / `rel="next"`; no other link does. Every enabled link also carries `data-xps-page="N"` — the click handler reads it, so a link without it navigates instead of applying the page in place. |
 | `xps-pagination__ellipsis` | `<span aria-hidden="true">` | |
 
 Every control's visible content is a glyph marked `aria-hidden="true"` plus an `xps-sr-only`
