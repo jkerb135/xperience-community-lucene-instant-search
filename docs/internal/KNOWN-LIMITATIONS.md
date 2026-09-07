@@ -1427,3 +1427,19 @@ and how to lift it.
   height); until then the recapture in `docs/internal/screenshot-manifest.md` after a package bump is
   the check.
 
+## The sample pins `vitest` a major ahead of the client (`samples/CustomWidget.Dropdown/package.json`)
+
+- **Simplified:** the sample asks for `vitest@^5.0.0` while `src/XpSearch.Widgets/Client` still runs
+  `4.1.11`. The bump is not for a feature: `npm install` on npm 11.5.1 (arborist 9.1.3) crashes with
+  `Cannot read properties of null (reading 'edgesOut')` for any `vitest@^4`. vite 8 lists
+  `@vitejs/devtools` as an optional peer, which lists `@vitejs/devtools-vitest`, which declares
+  `peerDependencies.vitest: "*"`. Since vitest 5.0.0 shipped (2026-09-05) that `*` resolves to a
+  different major than the project's own vitest, arborist builds the 5.0.0 node with no parent while
+  walking the peer set, and `#loadPeerSet` dereferences `node.parent`. With the sample on `^5` the
+  wildcard resolves to the version already in the tree and the walk is fine.
+- **Ceiling:** the same crash returns for npm ≤ 11.5.1 the day vitest 6.0.0 is published, whatever
+  the sample pins, because the wildcard peer tracks `latest`. The client's lockfile is not affected
+  (`npm ci` never walks peer sets from the registry).
+- **Upgrade path:** npm 12.0.2 resolves the same manifests without the crash (verified 2026-09-06);
+  once the machines that run `samples/pack-and-build.mjs` are on npm ≥ 12 the sample can pin whatever
+  vitest the client pins. `legacy-peer-deps=true` in a sample `.npmrc` also sidesteps it.
