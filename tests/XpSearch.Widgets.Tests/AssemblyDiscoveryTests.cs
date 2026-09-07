@@ -75,7 +75,9 @@ internal sealed class AssemblyDiscoveryTests
             XpSearchWidgetConstants.SuggestionsIdentifier,
             XpSearchWidgetConstants.RangeFilterIdentifier,
             XpSearchWidgetConstants.ActiveFiltersIdentifier,
-            XpSearchWidgetConstants.ClearFiltersIdentifier
+            XpSearchWidgetConstants.ClearFiltersIdentifier,
+            XpSearchWidgetConstants.ToggleFilterIdentifier,
+            XpSearchWidgetConstants.LoadMoreIdentifier
         }));
     }
 

@@ -93,6 +93,14 @@ internal static class Widgets
         IXpSearchMountRenderer renderer, IXpSearchEditorContext editor, IXpSearchIndexCatalog catalog) =>
         new(new ClearFiltersTagHelper(renderer, catalog), editor);
 
+    internal static ToggleFilterWidgetViewComponent ToggleFilter(
+        IXpSearchMountRenderer renderer, IXpSearchEditorContext editor, IXpSearchIndexCatalog catalog) =>
+        new(new ToggleFilterTagHelper(renderer, catalog), editor);
+
+    internal static LoadMoreWidgetViewComponent LoadMore(
+        IXpSearchMountRenderer renderer, IXpSearchEditorContext editor, IXpSearchIndexCatalog catalog) =>
+        new(new LoadMoreTagHelper(renderer, catalog), editor);
+
     internal static SuggestionsWidgetViewComponent Suggestions(
         IXpSearchMountRenderer renderer, IXpSearchEditorContext editor, IXpSearchIndexCatalog catalog) =>
         new(new SuggestionsTagHelper(renderer, catalog), editor);

@@ -210,6 +210,82 @@ internal sealed class TagHelperTests
     }
 
     [Test]
+    public void The_toggle_filter_tag_carries_the_single_value_it_switches_on()
+    {
+        string markup = Tag(
+            new ToggleFilterTagHelper(renderer, catalog)
+            {
+                Index = Index,
+                Attribute = "language",
+                Value = "en",
+                Label = "English only",
+                ShowCount = false
+            },
+            "xps-toggle-filter");
+
+        var config = Rendered.Json(markup, "data-xps-config");
+        Expect.Multiple(() =>
+        {
+            Assert.That(Rendered.Attribute(markup, "data-xps-widget"), Is.EqualTo("toggleFilter"));
+            Assert.That(config.GetProperty("attribute").GetString(), Is.EqualTo("language"));
+            Assert.That(config.GetProperty("value").GetString(), Is.EqualTo("en"));
+            Assert.That(config.GetProperty("label").GetString(), Is.EqualTo("English only"));
+            Assert.That(config.GetProperty("showCount").GetBoolean(), Is.False);
+        });
+
+        // The JavaScript default is the same "true", so an untouched tag still filters a flag.
+        var plain = Rendered.Json(
+            Tag(new ToggleFilterTagHelper(renderer, catalog) { Index = Index, Attribute = "isFeatured" }, "xps-toggle-filter"),
+            "data-xps-config");
+        Expect.Multiple(() =>
+        {
+            Assert.That(plain.GetProperty("value").GetString(), Is.EqualTo("true"));
+            Assert.That(plain.GetProperty("showCount").GetBoolean(), Is.True);
+            Assert.That(plain.TryGetProperty("label", out _), Is.False);
+        });
+
+        var noAttribute = Assert.Throws<InvalidOperationException>(new Action(
+            () => Tag(new ToggleFilterTagHelper(renderer, catalog) { Index = Index }, "xps-toggle-filter")));
+        Assert.That(noAttribute!.Message, Does.Contain("attribute"));
+    }
+
+    [Test]
+    public void The_load_more_tag_emits_only_what_departs_from_the_JavaScript_defaults()
+    {
+        string configured = Tag(
+            new LoadMoreTagHelper(renderer, catalog)
+            {
+                Index = Index,
+                AutoLoad = false,
+                TitleAttribute = " heading ",
+                UrlAttribute = "permalink",
+                SnippetAttributes = ["teaser", "excerpt"],
+                MoreLabel = "Show more coffee",
+                ExhaustedLabel = "That is all of it"
+            },
+            "xps-load-more");
+
+        var config = Rendered.Json(configured, "data-xps-config");
+        Expect.Multiple(() =>
+        {
+            Assert.That(Rendered.Attribute(configured, "data-xps-widget"), Is.EqualTo("loadMore"));
+            Assert.That(config.GetProperty("autoLoad").GetBoolean(), Is.False);
+            Assert.That(config.GetProperty("titleAttribute").GetString(), Is.EqualTo("heading"));
+            Assert.That(config.GetProperty("urlAttribute").GetString(), Is.EqualTo("permalink"));
+            Assert.That(
+                config.GetProperty("snippetAttributes").EnumerateArray().Select(name => name.GetString()),
+                Is.EqualTo(new[] { "teaser", "excerpt" }));
+            Assert.That(config.GetProperty("labels").GetProperty("more").GetString(), Is.EqualTo("Show more coffee"));
+            Assert.That(config.GetProperty("labels").GetProperty("exhausted").GetString(), Is.EqualTo("That is all of it"));
+        });
+
+        // Scrolling loads the next page out of the box, so an untouched tag carries nothing at all.
+        Assert.That(
+            Rendered.Attribute(Tag(new LoadMoreTagHelper(renderer, catalog) { Index = Index }, "xps-load-more"), "data-xps-config"),
+            Is.EqualTo("{}"));
+    }
+
+    [Test]
     public void The_generic_widget_tag_mounts_any_registered_JavaScript_widget()
     {
         string markup = Tag(

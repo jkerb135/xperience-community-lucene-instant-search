@@ -72,6 +72,36 @@ internal sealed class UnconfiguredStateTests
         });
     }
 
+    [Test]
+    public void A_toggle_without_an_attribute_is_unconfigured_even_with_an_index()
+    {
+        var component = Widgets.ToggleFilter(renderer, new FakeEditorContext(XpSearchEditorMode.Edit), twoIndexes);
+
+        var model = component.BuildModel(new ToggleFilterWidgetProperties { Index = "site-content" });
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(model.Mount, Is.Null);
+            Assert.That(model.EditorMessage, Does.Contain("attribute"));
+        });
+    }
+
+    [Test]
+    public void A_load_more_widget_needs_nothing_but_an_index()
+    {
+        var component = Widgets.LoadMore(renderer, new FakeEditorContext(XpSearchEditorMode.Live), twoIndexes);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(component.BuildModel(new LoadMoreWidgetProperties { Index = "site-content" }).Mount, Is.Not.Null);
+            // Two indexes and none picked: the same instruction every widget gives.
+            Assert.That(
+                Widgets.LoadMore(renderer, new FakeEditorContext(XpSearchEditorMode.Edit), twoIndexes)
+                    .BuildModel(new LoadMoreWidgetProperties()).EditorMessage,
+                Does.Contain("Select a search index"));
+        });
+    }
+
     [TestCase(null, null, "attribute")]
     [TestCase(null, 100.0, "Minimum")]
     [TestCase(10.0, 10.0, "Minimum")]

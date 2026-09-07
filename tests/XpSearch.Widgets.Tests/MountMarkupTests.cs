@@ -517,6 +517,72 @@ internal sealed class MountMarkupTests
     }
 
     [Test]
+    public void ToggleFilter_emits_the_attribute_and_the_one_value_it_switches_on()
+    {
+        var component = Widgets.ToggleFilter(renderer, editor, catalog);
+
+        string markup = Render(component, new ToggleFilterWidgetProperties
+        {
+            Index = Index,
+            Attribute = "language",
+            Value = " en ",
+            Label = "English only",
+            ShowCount = false
+        });
+
+        var config = Rendered.Json(markup, "data-xps-config");
+        Expect.Multiple(() =>
+        {
+            Assert.That(Rendered.Attribute(markup, "data-xps-widget"), Is.EqualTo("toggleFilter"));
+            Assert.That(config.GetProperty("attribute").GetString(), Is.EqualTo("language"));
+            Assert.That(config.GetProperty("value").GetString(), Is.EqualTo("en"));
+            Assert.That(config.GetProperty("label").GetString(), Is.EqualTo("English only"));
+            Assert.That(config.GetProperty("showCount").GetBoolean(), Is.False);
+        });
+
+        // A widget saved with the value cleared still filters the flag the property promises.
+        string flag = Render(component, new ToggleFilterWidgetProperties
+        {
+            Index = Index,
+            Attribute = "isFeatured",
+            Value = string.Empty
+        });
+        Assert.That(Rendered.Json(flag, "data-xps-config").GetProperty("value").GetString(), Is.EqualTo("true"));
+    }
+
+    [Test]
+    public void LoadMore_emits_the_scroll_opt_out_and_the_button_labels()
+    {
+        var component = Widgets.LoadMore(renderer, editor, catalog);
+
+        string markup = Render(component, new LoadMoreWidgetProperties
+        {
+            Index = Index,
+            AutoLoad = false,
+            TitleAttribute = "heading",
+            SnippetAttributes = "teaser\r\n excerpt ",
+            MoreLabel = "Show more coffee"
+        });
+
+        var config = Rendered.Json(markup, "data-xps-config");
+        Expect.Multiple(() =>
+        {
+            Assert.That(Rendered.Attribute(markup, "data-xps-widget"), Is.EqualTo("loadMore"));
+            Assert.That(config.GetProperty("autoLoad").GetBoolean(), Is.False);
+            Assert.That(config.GetProperty("titleAttribute").GetString(), Is.EqualTo("heading"));
+            Assert.That(
+                config.GetProperty("snippetAttributes").EnumerateArray().Select(name => name.GetString()),
+                Is.EqualTo(new[] { "teaser", "excerpt" }));
+            Assert.That(config.GetProperty("labels").GetProperty("more").GetString(), Is.EqualTo("Show more coffee"));
+            Assert.That(config.GetProperty("labels").TryGetProperty("exhausted", out _), Is.False);
+        });
+
+        // Untouched, every option is the JavaScript's own default.
+        string untouched = Render(component, new LoadMoreWidgetProperties { Index = Index });
+        Assert.That(Rendered.Attribute(untouched, "data-xps-config"), Is.EqualTo("{}"));
+    }
+
+    [Test]
     public void ResultStats_emits_its_text_template_and_empty_state_text()
     {
         var component = Widgets.ResultStats(renderer, editor, catalog);

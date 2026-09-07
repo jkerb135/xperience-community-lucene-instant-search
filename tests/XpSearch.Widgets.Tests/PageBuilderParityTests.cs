@@ -129,11 +129,37 @@ internal sealed class PageBuilderParityTests
                 new PaginationTagHelper(renderer, catalog),
                 new PaginationWidgetProperties { Index = Index },
                 "xps-pagination")),
-            Pair("loadMore", BothWays(
+            Pair("pagination:loadMore", BothWays(
                 Widgets.Pagination(renderer, editor, catalog),
                 new PaginationTagHelper(renderer, catalog),
                 new PaginationWidgetProperties { Index = Index, Style = PaginationWidgetProperties.StyleLoadMore },
                 "xps-pagination")),
+            Pair("toggleFilter", BothWays(
+                Widgets.ToggleFilter(renderer, editor, catalog),
+                new ToggleFilterTagHelper(renderer, catalog),
+                new ToggleFilterWidgetProperties
+                {
+                    Index = Index,
+                    Attribute = "language",
+                    Value = "en",
+                    Label = "English only",
+                    ShowCount = false
+                },
+                "xps-toggle-filter")),
+            Pair("loadMore", BothWays(
+                Widgets.LoadMore(renderer, editor, catalog),
+                new LoadMoreTagHelper(renderer, catalog),
+                new LoadMoreWidgetProperties
+                {
+                    Index = Index,
+                    AutoLoad = false,
+                    TitleAttribute = "heading",
+                    UrlAttribute = "permalink",
+                    SnippetAttributes = "teaser\r\nexcerpt",
+                    MoreLabel = "Show more coffee",
+                    ExhaustedLabel = "That is all of it"
+                },
+                "xps-load-more")),
             Pair("resultStats", BothWays(
                 Widgets.ResultStats(renderer, editor, catalog),
                 new ResultStatsTagHelper(renderer, catalog),
@@ -177,8 +203,8 @@ internal sealed class PageBuilderParityTests
             }
         });
 
-        // The 12 shipped widgets, the two pagination styles counted once.
-        Assert.That(pairs.Select(pair => pair.Widget).Distinct().Count(), Is.EqualTo(13));
+        // The 14 shipped widgets, plus the pagination widget's load-more style.
+        Assert.That(pairs.Select(pair => pair.Widget).Distinct().Count(), Is.EqualTo(15));
     }
 
     private static (string, string, string) Pair(string widget, (string PageBuilder, string Tag) markup) =>
@@ -222,7 +248,7 @@ internal sealed class TagHelperAttributeTests
     public void Every_option_has_exactly_one_kebab_cased_attribute()
     {
         var helpers = TagHelpers().ToList();
-        Assert.That(helpers, Has.Count.EqualTo(13), "the 12 shipped widgets and <xps-widget>");
+        Assert.That(helpers, Has.Count.EqualTo(15), "the 14 shipped widgets and <xps-widget>");
 
         Expect.Multiple(() =>
         {
@@ -247,6 +273,48 @@ internal sealed class TagHelperAttributeTests
                 Assert.That(tagHelper.GetCustomAttribute<HtmlTargetElementAttribute>()?.Tag, Does.StartWith("xps-"), tagHelper.Name);
             }
         });
+    }
+
+    /// <summary>
+    /// RZ-1's 14/14: every Page Builder widget is a tag helper's editor face, and no tag helper is
+    /// missing its Page Builder widget. <c>&lt;xps-widget&gt;</c> is the one tag with no Page Builder
+    /// counterpart - a custom JavaScript widget mounts through the third-party base class instead.
+    /// </summary>
+    [Test]
+    public void The_shipped_tag_helpers_and_the_Page_Builder_widgets_are_the_same_set_of_options()
+    {
+        var tagHelperOptions = TagHelpers()
+            .Select(pair => pair.Options)
+            .Where(options => options != typeof(WidgetOptions))
+            .ToList();
+
+        var widgetOptions = typeof(XpSearchMountTagHelper<>).Assembly
+            .GetTypes()
+            .Where(type => !type.IsAbstract)
+            .Select(Component)
+            .Where(component => component is not null)
+            .Select(component => component!.GetGenericArguments()[1])
+            .ToList();
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(tagHelperOptions, Has.Count.EqualTo(14), "14 JavaScript widgets, 14 tag helpers");
+            Assert.That(widgetOptions, Is.EquivalentTo(tagHelperOptions));
+        });
+    }
+
+    private static Type? Component(Type type)
+    {
+        for (var current = type.BaseType; current is not null; current = current.BaseType)
+        {
+            if (current.IsGenericType
+                && current.GetGenericTypeDefinition() == typeof(XpSearchMountWidgetViewComponent<,>))
+            {
+                return current;
+            }
+        }
+
+        return null;
     }
 
     [Test]
