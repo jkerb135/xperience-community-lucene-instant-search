@@ -71,7 +71,8 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
   thing: the search box is a working `method="get"` form, and once the Results widget of the same
   search has rendered earlier on the page, pagination emits real `?…&page=N` links (`rel="prev"` /
   `rel="next"`), result stats the count sentence, and active filters a removable chip per filtered
-  value, each linking to the URL without it. A page without JavaScript can therefore search, page and
+  value, each linking to the URL without it, and "Clear all" a link to the URL without any filter and
+  without the page. A page without JavaScript can therefore search, page and
   unfilter. Widgets placed before the results still paint skeletons
   (`docs/internal/KNOWN-LIMITATIONS.md`). Custom tag helpers inherit the skeleton default for free;
   override `BuildContentAsync` to render something truer.

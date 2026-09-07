@@ -304,6 +304,50 @@ internal sealed class ServerRenderedResultsTests
         });
     }
 
+    /// <summary>
+    /// SK-1 §2.3: "Clear all" works without JavaScript - an anchor to the same URL without the
+    /// filters and without the page, keeping the query, the sort and foreign parameters. Nothing
+    /// filtered is a skeleton.
+    /// </summary>
+    [Test]
+    public async Task Clear_all_filters_is_a_link_to_the_unfiltered_url()
+    {
+        var response = TwoResults();
+        response.Facets = new Dictionary<string, FacetValue[]>(StringComparer.Ordinal)
+        {
+            ["ProductFieldTags"] = [new FacetValue { Value = "HotTips", Label = "Hot tips", Count = 3 }]
+        };
+
+        var filtered = ViewContext("?q=espresso&sort=price&ProductFieldTags=HotTips&ProductFieldTags_op=and&utm_source=news&page=2");
+        var unfiltered = ViewContext("?q=espresso&utm_source=news");
+
+        foreach (var viewContext in new[] { filtered, unfiltered })
+        {
+            await Widgets
+                .Results(new XpSearchMountRenderer(), new FakeEditorContext(XpSearchEditorMode.Live), new FakeIndexCatalog("site-content"), ServerResults(new FakePipeline(response)))
+                .WithViewContext(viewContext)
+                .BuildModelAsync(new ResultsWidgetProperties { Index = "site-content", ResultsPerPage = 10 }, CancellationToken.None)
+                .ConfigureAwait(false);
+        }
+
+        string live = TagHelperTests.Tag(
+            new ClearFiltersTagHelper(new XpSearchMountRenderer(), new FakeIndexCatalog("site-content")) { ViewContext = filtered },
+            "xps-clear-filters");
+        string skeleton = TagHelperTests.Tag(
+            new ClearFiltersTagHelper(new XpSearchMountRenderer(), new FakeIndexCatalog("site-content")) { ViewContext = unfiltered },
+            "xps-clear-filters");
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(live, Does.Contain(
+                "<div data-xps-server-rendered class=\"xps xps-clear-filters\">"
+                + "<a class=\"xps-button xps-button--link xps-clear-filters__button\""
+                + " href=\"?q=espresso&amp;sort=price&amp;utm_source=news\">Clear all</a></div>"));
+            Assert.That(live, Does.Not.Contain("--skeleton"));
+            Assert.That(skeleton, Does.Contain("xps-clear-filters--skeleton").And.Not.Contain("<a "));
+        });
+    }
+
     /// <summary>The other order: nothing has run yet, so the same widgets paint their skeletons.</summary>
     [Test]
     public void A_widget_rendered_before_the_results_paints_its_skeleton()
