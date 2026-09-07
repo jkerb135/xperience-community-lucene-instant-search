@@ -9,6 +9,7 @@ using XpSearch.Widgets.Components.Widgets.XpSearch;
 using XpSearch.Widgets.Mounting;
 using XpSearch.Widgets.Options;
 using XpSearch.Widgets.Resources;
+using XpSearch.Widgets.TagHelpers;
 
 [assembly: RegisterWidget(
     identifier: XpSearchWidgetConstants.SearchBoxIdentifier,
@@ -89,68 +90,35 @@ public sealed class SearchBoxWidgetProperties : XpSearchMountWidgetProperties
 }
 
 /// <summary>Renders the <c>searchBox</c> mount.</summary>
-public sealed class SearchBoxWidgetViewComponent : XpSearchMountWidgetViewComponent<SearchBoxWidgetProperties>
+public sealed class SearchBoxWidgetViewComponent : XpSearchMountWidgetViewComponent<SearchBoxWidgetProperties, SearchBoxOptions>
 {
     /// <summary>Initializes a new instance of the <see cref="SearchBoxWidgetViewComponent"/> class.</summary>
-    /// <param name="renderer">Renders the mount element.</param>
+    /// <param name="tagHelper">The widget's tag helper.</param>
     /// <param name="editorContext">The current editing mode.</param>
-    /// <param name="indexCatalog">The registered indexes.</param>
     public SearchBoxWidgetViewComponent(
-        IXpSearchMountRenderer renderer,
-        IXpSearchEditorContext editorContext,
-        IXpSearchIndexCatalog indexCatalog)
-        : base(renderer, editorContext, indexCatalog)
+        XpSearchMountTagHelper<SearchBoxOptions> tagHelper,
+        IXpSearchEditorContext editorContext)
+        : base(tagHelper, editorContext)
     {
     }
 
     /// <inheritdoc />
-    protected override string WidgetType => "searchBox";
-
-    /// <inheritdoc />
-    protected override void BuildConfig(SearchBoxWidgetProperties properties, IDictionary<string, object?> config)
+    public override SearchBoxOptions ToOptions(SearchBoxWidgetProperties properties)
     {
         ArgumentNullException.ThrowIfNull(properties);
-        ArgumentNullException.ThrowIfNull(config);
 
-        ReflectConfig(properties, config);
-        // URL syncing is a property of the search, not an option of the input; it goes to the instance.
-        config.Remove("syncStateToUrl");
-
-        // The JavaScript reads one nested group: present means on, absent means off.
-        config.Remove("enableSuggestions");
-        config.Remove("suggestionLimit");
-        config.Remove("recentSearches");
-
-        if (properties.EnableSuggestions)
+        return new SearchBoxOptions
         {
-            var suggestions = new Dictionary<string, object?>();
-
-            if (properties.SuggestionLimit > 0)
-            {
-                suggestions["limit"] = properties.SuggestionLimit;
-            }
-
-            // Recents are on by default in the JavaScript, so only the opt-out has to be said.
-            if (!properties.RecentSearches)
-            {
-                suggestions["recentSearches"] = false;
-            }
-
-            config["suggestions"] = suggestions;
-        }
-    }
-
-    /// <inheritdoc />
-    /// <remarks>
-    /// Emitted whether on or off: an explicit <c>false</c> in the markup is how a page with a second,
-    /// deliberately non-syncing search reads as configured rather than forgotten.
-    /// </remarks>
-    protected override void BuildInstanceConfig(SearchBoxWidgetProperties properties, IDictionary<string, object?> instanceConfig)
-    {
-        ArgumentNullException.ThrowIfNull(properties);
-        ArgumentNullException.ThrowIfNull(instanceConfig);
-
-        instanceConfig["routing"] = properties.SyncStateToUrl;
+            Index = properties.Index,
+            InstanceId = properties.InstanceId,
+            Placeholder = properties.Placeholder,
+            ShowReset = properties.ShowReset,
+            Autofocus = properties.Autofocus,
+            EnableSuggestions = properties.EnableSuggestions,
+            SuggestionLimit = properties.SuggestionLimit,
+            RecentSearches = properties.RecentSearches,
+            SyncStateToUrl = properties.SyncStateToUrl
+        };
     }
 
     /// <inheritdoc />

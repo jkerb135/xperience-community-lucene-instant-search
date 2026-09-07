@@ -10,6 +10,7 @@ using XpSearch.Widgets.Components.Widgets.XpSearch;
 using XpSearch.Widgets.Mounting;
 using XpSearch.Widgets.Options;
 using XpSearch.Widgets.Resources;
+using XpSearch.Widgets.TagHelpers;
 
 [assembly: RegisterWidget(
     identifier: XpSearchWidgetConstants.PaginationIdentifier,
@@ -26,10 +27,10 @@ namespace XpSearch.Widgets.Components.Widgets.XpSearch;
 public sealed class PaginationWidgetProperties : XpSearchMountWidgetProperties
 {
     /// <summary>The <see cref="Style"/> value that renders numbered page links.</summary>
-    public const string StyleNumbered = "numbered";
+    public const string StyleNumbered = PaginationOptions.StyleNumbered;
 
     /// <summary>The <see cref="Style"/> value that renders a "load more" button.</summary>
-    public const string StyleLoadMore = "loadMore";
+    public const string StyleLoadMore = PaginationOptions.StyleLoadMore;
 
     /// <summary>Gets or sets which pagination control is rendered.</summary>
     [DropDownComponent(
@@ -42,33 +43,29 @@ public sealed class PaginationWidgetProperties : XpSearchMountWidgetProperties
 }
 
 /// <summary>Renders the <c>pagination</c> (or <c>loadMore</c>) mount.</summary>
-public sealed class PaginationWidgetViewComponent : XpSearchMountWidgetViewComponent<PaginationWidgetProperties>
+public sealed class PaginationWidgetViewComponent : XpSearchMountWidgetViewComponent<PaginationWidgetProperties, PaginationOptions>
 {
     /// <summary>Initializes a new instance of the <see cref="PaginationWidgetViewComponent"/> class.</summary>
-    /// <param name="renderer">Renders the mount element.</param>
+    /// <param name="tagHelper">The widget's tag helper.</param>
     /// <param name="editorContext">The current editing mode.</param>
-    /// <param name="indexCatalog">The registered indexes.</param>
     public PaginationWidgetViewComponent(
-        IXpSearchMountRenderer renderer,
-        IXpSearchEditorContext editorContext,
-        IXpSearchIndexCatalog indexCatalog)
-        : base(renderer, editorContext, indexCatalog)
+        XpSearchMountTagHelper<PaginationOptions> tagHelper,
+        IXpSearchEditorContext editorContext)
+        : base(tagHelper, editorContext)
     {
     }
 
     /// <inheritdoc />
-    protected override string WidgetType => "pagination";
-
-    /// <inheritdoc />
-    /// <remarks>The style picks the JavaScript widget rather than becoming an option of one.</remarks>
-    protected override string GetWidgetType(PaginationWidgetProperties properties) =>
-        string.Equals(properties?.Style, PaginationWidgetProperties.StyleLoadMore, StringComparison.OrdinalIgnoreCase)
-            ? "loadMore"
-            : "pagination";
-
-    /// <inheritdoc />
-    protected override void BuildConfig(PaginationWidgetProperties properties, IDictionary<string, object?> config)
+    public override PaginationOptions ToOptions(PaginationWidgetProperties properties)
     {
+        ArgumentNullException.ThrowIfNull(properties);
+
+        return new PaginationOptions
+        {
+            Index = properties.Index,
+            InstanceId = properties.InstanceId,
+            Style = properties.Style
+        };
     }
 
     /// <inheritdoc />
@@ -76,7 +73,7 @@ public sealed class PaginationWidgetViewComponent : XpSearchMountWidgetViewCompo
     {
         ArgumentNullException.ThrowIfNull(properties);
 
-        if (string.Equals(GetWidgetType(properties), "loadMore", StringComparison.Ordinal))
+        if (string.Equals(TagHelper.GetWidgetType(ToOptions(properties)), "loadMore", StringComparison.Ordinal))
         {
             return EditorPreview.El("div", "xps-load-more")
                 .Add(EditorPreview.Button("xps-button xps-load-more__load-more", WidgetResources.Preview_LoadMore));

@@ -54,12 +54,25 @@ public static class XpSearchAssets
             // stylesheet is the only thing this helper may point a <link> at.
             : throw new ArgumentException($"'{theme}' is not a shipped theme. Use one of: {string.Join(", ", themes.Keys)}.", nameof(theme));
 
-    /// <summary>Builds the asset tags.</summary>
+    /// <summary>Builds the asset tags: the stylesheets followed by the script.</summary>
     /// <param name="pathBase">The application's path base, so the tags work under a virtual directory.</param>
     /// <param name="defaultTheme">Whether a visual theme is loaded on top of the structural stylesheet.</param>
     /// <param name="theme">Which palette to load, one of <see cref="ThemeNames"/>. Ignored when <paramref name="defaultTheme"/> is false.</param>
     /// <returns>The tags, in load order.</returns>
-    public static IHtmlContent Render(PathString pathBase, bool defaultTheme = true, string theme = DefaultThemeName)
+    public static IHtmlContent Render(PathString pathBase, bool defaultTheme = true, string theme = DefaultThemeName) =>
+        new HtmlContentBuilder()
+            .AppendHtml(RenderStyles(pathBase, defaultTheme, theme))
+            .AppendHtml(RenderScripts(pathBase));
+
+    /// <summary>
+    /// Builds the stylesheet links alone, for a host that puts them in the <c>&lt;head&gt;</c> and the
+    /// script at the end of the body.
+    /// </summary>
+    /// <param name="pathBase">The application's path base, so the tags work under a virtual directory.</param>
+    /// <param name="defaultTheme">Whether a visual theme is loaded on top of the structural stylesheet.</param>
+    /// <param name="theme">Which palette to load, one of <see cref="ThemeNames"/>. Ignored when <paramref name="defaultTheme"/> is false.</param>
+    /// <returns>The links, in load order.</returns>
+    public static IHtmlContent RenderStyles(PathString pathBase, bool defaultTheme = true, string theme = DefaultThemeName)
     {
         var content = new HtmlContentBuilder();
         content.AppendHtml(Stylesheet(pathBase, ShellStylesheetPath));
@@ -69,13 +82,20 @@ public static class XpSearchAssets
             content.AppendHtml(Stylesheet(pathBase, ThemeStylesheetPath(theme)));
         }
 
+        return content;
+    }
+
+    /// <summary>Builds the script tag alone.</summary>
+    /// <param name="pathBase">The application's path base, so the tag works under a virtual directory.</param>
+    /// <returns>The script tag.</returns>
+    public static IHtmlContent RenderScripts(PathString pathBase)
+    {
         // `defer` runs the bundle before DOMContentLoaded, which is when it calls mountAll().
         var script = new TagBuilder("script") { TagRenderMode = TagRenderMode.Normal };
         script.Attributes["src"] = pathBase.Add(ScriptPath).Value;
         script.Attributes["defer"] = "defer";
-        content.AppendHtml(script);
 
-        return content;
+        return script;
     }
 
     private static TagBuilder Stylesheet(PathString pathBase, string path)

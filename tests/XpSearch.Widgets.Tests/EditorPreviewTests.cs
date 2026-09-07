@@ -31,39 +31,44 @@ internal sealed class EditorPreviewTests
     }
 
     /// <summary>Every widget, configured enough to render, in the mode under test.</summary>
-    private IEnumerable<(string WidgetType, string Markup)> AllWidgets(XpSearchEditorMode mode)
+    private IEnumerable<(string Name, string WidgetType, string Markup)> AllWidgets(XpSearchEditorMode mode)
     {
         var editor = new FakeEditorContext(mode);
 
-        yield return ("searchBox", Render(new SearchBoxWidgetViewComponent(renderer, editor, catalog),
+        yield return ("searchBox", "searchBox", Render(Widgets.SearchBox(renderer, editor, catalog),
             new SearchBoxWidgetProperties { Index = Index, Placeholder = "Find coffee" }, mode));
-        yield return ("results", Render(new ResultsWidgetViewComponent(renderer, editor, catalog),
+        yield return ("results", "results", Render(Widgets.Results(renderer, editor, catalog),
             new ResultsWidgetProperties { Index = Index, ResultsPerPage = 20, ResultTemplate = "MyCo.Card", Fields = "title\nurl" }, mode));
-        yield return ("facetList", Render(new FacetListWidgetViewComponent(renderer, editor, catalog),
+        yield return ("facetList", "facetList", Render(Widgets.FacetList(renderer, editor, catalog),
             new FacetListWidgetProperties { Index = Index, Attribute = "contentType", Label = "Content type", ShowMore = true }, mode));
-        yield return ("categoryTree", Render(new CategoryTreeWidgetViewComponent(renderer, editor, catalog),
+        yield return ("categoryTree", "categoryTree", Render(Widgets.CategoryTree(renderer, editor, catalog),
             new CategoryTreeWidgetProperties { Index = Index, Attribute = "categories", Label = "Categories" }, mode));
-        yield return ("pagination", Render(new PaginationWidgetViewComponent(renderer, editor, catalog),
+        yield return ("pagination", "pagination", Render(Widgets.Pagination(renderer, editor, catalog),
             new PaginationWidgetProperties { Index = Index }, mode));
-        yield return ("loadMore", Render(new PaginationWidgetViewComponent(renderer, editor, catalog),
+        yield return ("pagination:loadMore", "loadMore", Render(Widgets.Pagination(renderer, editor, catalog),
             new PaginationWidgetProperties { Index = Index, Style = PaginationWidgetProperties.StyleLoadMore }, mode));
-        yield return ("resultStats", Render(new ResultStatsWidgetViewComponent(renderer, editor, catalog),
+        yield return ("resultStats", "resultStats", Render(Widgets.ResultStats(renderer, editor, catalog),
             new ResultStatsWidgetProperties { Index = Index, TextTemplate = "{total} hits in {tookMs} ms" }, mode));
-        yield return ("sortSelect", Render(new SortSelectWidgetViewComponent(renderer, editor, catalog, SortOptions()),
+        yield return ("sortSelect", "sortSelect", Render(Widgets.SortSelect(renderer, editor, catalog, SortOptions()),
             new SortSelectWidgetProperties { Index = Index, Label = "Sort by", SortOptions = "relevance;Most relevant\r\nnewest;Newest first" }, mode));
-        yield return ("suggestions", Render(new SuggestionsWidgetViewComponent(renderer, editor, catalog),
+        yield return ("suggestions", "suggestions", Render(Widgets.Suggestions(renderer, editor, catalog),
             new SuggestionsWidgetProperties { Index = Index, MaxItems = 7 }, mode));
-        yield return ("rangeFilter", Render(new RangeFilterWidgetViewComponent(renderer, editor, catalog),
+        yield return ("rangeFilter", "rangeFilter", Render(Widgets.RangeFilter(renderer, editor, catalog),
             new RangeFilterWidgetProperties { Index = Index, Attribute = "price", Label = "Price", Minimum = 0m, Maximum = 500m, Step = 5m, Unit = "USD" }, mode));
-        yield return ("activeFilters", Render(new ActiveFiltersWidgetViewComponent(renderer, editor, catalog),
+        yield return ("activeFilters", "activeFilters", Render(Widgets.ActiveFilters(renderer, editor, catalog),
             new ActiveFiltersWidgetProperties { Index = Index, Scroll = true }, mode));
-        yield return ("clearFilters", Render(new ClearFiltersWidgetViewComponent(renderer, editor, catalog),
+        yield return ("clearFilters", "clearFilters", Render(Widgets.ClearFilters(renderer, editor, catalog),
             new ClearFiltersWidgetProperties { Index = Index, Label = "Start over" }, mode));
+        yield return ("toggleFilter", "toggleFilter", Render(Widgets.ToggleFilter(renderer, editor, catalog),
+            new ToggleFilterWidgetProperties { Index = Index, Attribute = "language", Value = "en", Label = "English only" }, mode));
+        yield return ("loadMore", "loadMore", Render(Widgets.LoadMore(renderer, editor, catalog),
+            new LoadMoreWidgetProperties { Index = Index, MoreLabel = "Show more coffee" }, mode));
     }
 
-    private static string Render<TProperties>(
-        XpSearchMountWidgetViewComponent<TProperties> component, TProperties properties, XpSearchEditorMode mode)
+    private static string Render<TProperties, TOptions>(
+        XpSearchMountWidgetViewComponent<TProperties, TOptions> component, TProperties properties, XpSearchEditorMode mode)
         where TProperties : XpSearchMountWidgetProperties, new()
+        where TOptions : XpSearchMountOptions, new()
     {
         var model = component.BuildModel(properties);
 
@@ -85,7 +90,7 @@ internal sealed class EditorPreviewTests
     [TestCase(XpSearchEditorMode.ReadOnly)]
     public void Every_widget_previews_itself_in_the_Page_Builder(XpSearchEditorMode mode)
     {
-        foreach ((string widgetType, string markup) in AllWidgets(mode))
+        foreach ((_, string widgetType, string markup) in AllWidgets(mode))
         {
             Expect.Multiple(() =>
             {
@@ -112,7 +117,7 @@ internal sealed class EditorPreviewTests
     [TestCase(XpSearchEditorMode.Preview)]
     public void Outside_the_Page_Builder_every_widget_still_renders_its_mount(XpSearchEditorMode mode)
     {
-        foreach ((string widgetType, string markup) in AllWidgets(mode))
+        foreach ((_, string widgetType, string markup) in AllWidgets(mode))
         {
             Assert.That(markup, Does.StartWith("<div class=\"xps-mount\""), widgetType);
         }
@@ -121,7 +126,7 @@ internal sealed class EditorPreviewTests
     [Test]
     public void A_preview_is_inert_no_links_no_working_controls()
     {
-        foreach ((string widgetType, string markup) in AllWidgets(XpSearchEditorMode.Edit))
+        foreach ((_, string widgetType, string markup) in AllWidgets(XpSearchEditorMode.Edit))
         {
             Expect.Multiple(() =>
             {
@@ -139,7 +144,7 @@ internal sealed class EditorPreviewTests
     [Test]
     public void The_configured_values_an_editor_typed_are_what_the_preview_shows()
     {
-        var previews = AllWidgets(XpSearchEditorMode.Edit).ToDictionary(widget => widget.WidgetType, widget => widget.Markup);
+        var previews = AllWidgets(XpSearchEditorMode.Edit).ToDictionary(widget => widget.Name, widget => widget.Markup);
 
         Expect.Multiple(() =>
         {
@@ -157,7 +162,10 @@ internal sealed class EditorPreviewTests
             Assert.That(previews["categoryTree"], Does.Contain("xps-category-tree__toggle"));
             Assert.That(previews["activeFilters"], Does.Contain("xps-active-filters--scroll").And.Contain("xps-chip__remove"));
             Assert.That(previews["clearFilters"], Does.Contain("Start over").And.Contain("xps-button--link"));
-            Assert.That(previews["loadMore"], Does.Contain("xps-load-more__load-more"));
+            Assert.That(previews["pagination:loadMore"], Does.Contain("xps-load-more__load-more"));
+            Assert.That(previews["loadMore"], Does.Contain("Show more coffee").And.Contain("xps-load-more__list"));
+            Assert.That(previews["toggleFilter"], Does.Contain("English only").And.Contain("language")
+                .And.Contain("xps-toggle-filter__checkbox"));
             Assert.That(previews["pagination"], Does.Contain("xps-pagination__item--current"));
         });
     }
@@ -167,7 +175,7 @@ internal sealed class EditorPreviewTests
     {
         static string Preview(int resultsPerPage)
         {
-            var component = new ResultsWidgetViewComponent(
+            var component = Widgets.Results(
                 new XpSearchMountRenderer(), new FakeEditorContext(XpSearchEditorMode.Edit), new FakeIndexCatalog(Index));
 
             return Rendered.Html(component.BuildModel(new ResultsWidgetProperties { Index = Index, ResultsPerPage = resultsPerPage }).Preview!);
@@ -186,7 +194,7 @@ internal sealed class EditorPreviewTests
     [Test]
     public void A_property_value_cannot_become_markup_in_a_preview()
     {
-        var component = new FacetListWidgetViewComponent(
+        var component = Widgets.FacetList(
             renderer, new FakeEditorContext(XpSearchEditorMode.Edit), catalog);
 
         string markup = Rendered.Html(component.BuildModel(new FacetListWidgetProperties
@@ -206,7 +214,7 @@ internal sealed class EditorPreviewTests
     [Test]
     public void An_unconfigured_widget_keeps_its_instruction_block_in_the_Page_Builder()
     {
-        var component = new FacetListWidgetViewComponent(
+        var component = Widgets.FacetList(
             renderer, new FakeEditorContext(XpSearchEditorMode.Edit), catalog);
 
         var model = component.BuildModel(new FacetListWidgetProperties { Index = Index });
@@ -223,7 +231,7 @@ internal sealed class EditorPreviewTests
     public void A_third_party_widget_gets_a_labelled_preview_from_the_base_class_alone()
     {
         var component = new DropdownFacetWidgetViewComponent(
-            renderer, new FakeEditorContext(XpSearchEditorMode.Edit), catalog);
+            new DropdownFacetTagHelper(renderer, catalog), new FakeEditorContext(XpSearchEditorMode.Edit));
 
         string markup = Rendered.Html(component
             .BuildModel(new DropdownFacetWidgetProperties { Index = Index, Attribute = "brand" })

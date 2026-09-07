@@ -33,3 +33,54 @@ public sealed class XpSearchAssetsTagHelper : TagHelper
         output.Content.SetHtmlContent(XpSearchAssets.Render(ViewContext.HttpContext.Request.PathBase, DefaultTheme, Theme));
     }
 }
+
+/// <summary>
+/// <c>&lt;xps-search-styles /&gt;</c> - emits only the stylesheet links, for a host that loads them in
+/// the <c>&lt;head&gt;</c> and the script at the end of the body.
+/// </summary>
+[HtmlTargetElement("xps-search-styles", TagStructure = TagStructure.WithoutEndTag)]
+public sealed class XpSearchStylesTagHelper : TagHelper
+{
+    /// <summary>Gets or sets whether the opt-in visual theme is loaded. Set <c>default-theme="false"</c> to load only the structural stylesheet.</summary>
+    [HtmlAttributeName("default-theme")]
+    public bool DefaultTheme { get; set; } = true;
+
+    /// <summary>Gets or sets which shipped palette is loaded: <c>default</c> (= <c>kentico-violet</c>) or <c>kentico-orange</c>.</summary>
+    [HtmlAttributeName("theme")]
+    public string Theme { get; set; } = XpSearchAssets.DefaultThemeName;
+
+    /// <summary>Gets or sets the current view context.</summary>
+    [HtmlAttributeNotBound]
+    [ViewContext]
+    public ViewContext ViewContext { get; set; } = null!;
+
+    /// <inheritdoc />
+    public override void Process(TagHelperContext context, TagHelperOutput output)
+    {
+        ArgumentNullException.ThrowIfNull(output);
+
+        output.TagName = null;
+        output.Content.SetHtmlContent(XpSearchAssets.RenderStyles(ViewContext.HttpContext.Request.PathBase, DefaultTheme, Theme));
+    }
+}
+
+/// <summary>
+/// <c>&lt;xps-search-scripts /&gt;</c> - emits only the script tag of the Xperience Search client.
+/// </summary>
+[HtmlTargetElement("xps-search-scripts", TagStructure = TagStructure.WithoutEndTag)]
+public sealed class XpSearchScriptsTagHelper : TagHelper
+{
+    /// <summary>Gets or sets the current view context.</summary>
+    [HtmlAttributeNotBound]
+    [ViewContext]
+    public ViewContext ViewContext { get; set; } = null!;
+
+    /// <inheritdoc />
+    public override void Process(TagHelperContext context, TagHelperOutput output)
+    {
+        ArgumentNullException.ThrowIfNull(output);
+
+        output.TagName = null;
+        output.Content.SetHtmlContent(XpSearchAssets.RenderScripts(ViewContext.HttpContext.Request.PathBase));
+    }
+}

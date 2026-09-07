@@ -12,6 +12,7 @@ using XpSearch.Widgets.Components.Widgets.XpSearch;
 using XpSearch.Widgets.Mounting;
 using XpSearch.Widgets.Options;
 using XpSearch.Widgets.Resources;
+using XpSearch.Widgets.TagHelpers;
 
 [assembly: RegisterWidget(
     identifier: XpSearchWidgetConstants.CategoryTreeIdentifier,
@@ -67,26 +68,33 @@ public sealed class CategoryTreeWidgetProperties : XpSearchMountWidgetProperties
 }
 
 /// <summary>Renders the <c>categoryTree</c> mount.</summary>
-public sealed class CategoryTreeWidgetViewComponent : XpSearchMountWidgetViewComponent<CategoryTreeWidgetProperties>
+public sealed class CategoryTreeWidgetViewComponent : XpSearchMountWidgetViewComponent<CategoryTreeWidgetProperties, CategoryTreeOptions>
 {
     /// <summary>Initializes a new instance of the <see cref="CategoryTreeWidgetViewComponent"/> class.</summary>
-    /// <param name="renderer">Renders the mount element.</param>
+    /// <param name="tagHelper">The widget's tag helper.</param>
     /// <param name="editorContext">The current editing mode.</param>
-    /// <param name="indexCatalog">The registered indexes.</param>
     public CategoryTreeWidgetViewComponent(
-        IXpSearchMountRenderer renderer,
-        IXpSearchEditorContext editorContext,
-        IXpSearchIndexCatalog indexCatalog)
-        : base(renderer, editorContext, indexCatalog)
+        XpSearchMountTagHelper<CategoryTreeOptions> tagHelper,
+        IXpSearchEditorContext editorContext)
+        : base(tagHelper, editorContext)
     {
     }
 
     /// <inheritdoc />
-    protected override string WidgetType => "categoryTree";
+    public override CategoryTreeOptions ToOptions(CategoryTreeWidgetProperties properties)
+    {
+        ArgumentNullException.ThrowIfNull(properties);
 
-    /// <inheritdoc />
-    protected override string? ConfigurationHint(CategoryTreeWidgetProperties properties) =>
-        string.IsNullOrWhiteSpace(properties?.Attribute) ? WidgetResources.Hint_SelectAttribute : null;
+        return new CategoryTreeOptions
+        {
+            Index = properties.Index,
+            InstanceId = properties.InstanceId,
+            Attribute = properties.Attribute,
+            Label = properties.Label,
+            Limit = properties.Limit,
+            Collapsible = properties.Collapsible
+        };
+    }
 
     /// <inheritdoc />
     protected override IHtmlContent BuildEditorPreview(CategoryTreeWidgetProperties properties)

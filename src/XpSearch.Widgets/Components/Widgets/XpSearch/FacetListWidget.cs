@@ -12,6 +12,7 @@ using XpSearch.Widgets.Components.Widgets.XpSearch;
 using XpSearch.Widgets.Mounting;
 using XpSearch.Widgets.Options;
 using XpSearch.Widgets.Resources;
+using XpSearch.Widgets.TagHelpers;
 
 [assembly: RegisterWidget(
     identifier: XpSearchWidgetConstants.FacetListIdentifier,
@@ -83,26 +84,35 @@ public sealed class FacetListWidgetProperties : XpSearchMountWidgetProperties
 }
 
 /// <summary>Renders the <c>facetList</c> mount.</summary>
-public sealed class FacetListWidgetViewComponent : XpSearchMountWidgetViewComponent<FacetListWidgetProperties>
+public sealed class FacetListWidgetViewComponent : XpSearchMountWidgetViewComponent<FacetListWidgetProperties, FacetListOptions>
 {
     /// <summary>Initializes a new instance of the <see cref="FacetListWidgetViewComponent"/> class.</summary>
-    /// <param name="renderer">Renders the mount element.</param>
+    /// <param name="tagHelper">The widget's tag helper.</param>
     /// <param name="editorContext">The current editing mode.</param>
-    /// <param name="indexCatalog">The registered indexes.</param>
     public FacetListWidgetViewComponent(
-        IXpSearchMountRenderer renderer,
-        IXpSearchEditorContext editorContext,
-        IXpSearchIndexCatalog indexCatalog)
-        : base(renderer, editorContext, indexCatalog)
+        XpSearchMountTagHelper<FacetListOptions> tagHelper,
+        IXpSearchEditorContext editorContext)
+        : base(tagHelper, editorContext)
     {
     }
 
     /// <inheritdoc />
-    protected override string WidgetType => "facetList";
+    public override FacetListOptions ToOptions(FacetListWidgetProperties properties)
+    {
+        ArgumentNullException.ThrowIfNull(properties);
 
-    /// <inheritdoc />
-    protected override string? ConfigurationHint(FacetListWidgetProperties properties) =>
-        string.IsNullOrWhiteSpace(properties?.Attribute) ? WidgetResources.Hint_SelectAttribute : null;
+        return new FacetListOptions
+        {
+            Index = properties.Index,
+            InstanceId = properties.InstanceId,
+            Attribute = properties.Attribute,
+            Label = properties.Label,
+            Operator = properties.Operator,
+            Limit = properties.Limit,
+            ShowMore = properties.ShowMore,
+            Collapsible = properties.Collapsible
+        };
+    }
 
     /// <inheritdoc />
     protected override IHtmlContent BuildEditorPreview(FacetListWidgetProperties properties)

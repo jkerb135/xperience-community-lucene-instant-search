@@ -110,6 +110,10 @@ Editor properties: **Search index** and **Instance ID** (from the base class), t
 Without an attribute the widget renders an instruction block for editors and nothing at all on the
 live site.
 
+The C# file holds all three layers of one widget: `DropdownFacetOptions` (what it needs to render),
+`DropdownFacetTagHelper` (`<my-dropdown-facet attribute="brand" />`, and the only place the mount is
+built) and the Page Builder widget, whose `ToOptions` maps the editor's properties onto the record.
+
 The identifiers must match, dot and all: `registerWidgetType('myCompany.dropdownFacet')` and
 `WidgetType => "myCompany.dropdownFacet"` are the same string in two languages, while
 `[RegisterWidget(identifier: "MyCompany.DropdownFacet")]` is the Xperience-side, Pascal-cased one.
@@ -124,5 +128,5 @@ cd dotnet && dotnet test                              # 3 NUnit tests
 The vitest suite stubs `fetch` with a documented-shape `SearchResponse`, asserts the rendered
 options, the markup contract and the escaping, and asserts through `search.actions.getState()` that
 changing the selection replaces the active facet value rather than adding to it — including two
-changes in a row with no render in between. The NUnit suite calls the base class's public
-`BuildModel(properties)` and asserts the emitted mount element.
+changes in a row with no render in between. The NUnit suite calls the widget's public
+`BuildModelAsync(properties, cancellationToken)` and asserts the emitted mount element.

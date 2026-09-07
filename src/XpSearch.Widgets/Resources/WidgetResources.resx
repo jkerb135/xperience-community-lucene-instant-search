@@ -73,6 +73,9 @@
   <data name="Hint_SelectIndex" xml:space="preserve">
     <value>Select a search index.</value>
   </data>
+  <data name="Hint_WidgetType" xml:space="preserve">
+    <value>Name the JavaScript widget in the type attribute.</value>
+  </data>
   <data name="Hint_SelectAttribute" xml:space="preserve">
     <value>Select the attribute this facet filters on.</value>
   </data>
@@ -93,6 +96,9 @@
   </data>
   <data name="Preview_Note_Attribute" xml:space="preserve">
     <value>Attribute: {0}</value>
+  </data>
+  <data name="Preview_Note_ToggleFilter" xml:space="preserve">
+    <value>Attribute: {0} · value: {1}</value>
   </data>
   <data name="Preview_Note_Results" xml:space="preserve">
     <value>Results per page: {0} · template: {1} · fields: {2}</value>

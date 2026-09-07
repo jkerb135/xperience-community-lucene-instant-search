@@ -7,6 +7,7 @@ using XpSearch.Widgets;
 using XpSearch.Widgets.Components.Widgets.XpSearch;
 using XpSearch.Widgets.Mounting;
 using XpSearch.Widgets.Options;
+using XpSearch.Widgets.TagHelpers;
 
 [assembly: RegisterWidget(
     identifier: XpSearchWidgetConstants.ResultStatsIdentifier,
@@ -23,7 +24,7 @@ namespace XpSearch.Widgets.Components.Widgets.XpSearch;
 public sealed class ResultStatsWidgetProperties : XpSearchMountWidgetProperties
 {
     /// <summary>The wording a freshly placed widget shows, matching the shipped design.</summary>
-    public const string DefaultTextTemplate = "{total} results for “{query}” ({tookMs} ms)";
+    public const string DefaultTextTemplate = ResultStatsOptions.DefaultTextTemplate;
 
     /// <summary>
     /// Gets or sets the wording of the result line. The default is the design's own wording;
@@ -46,22 +47,31 @@ public sealed class ResultStatsWidgetProperties : XpSearchMountWidgetProperties
 }
 
 /// <summary>Renders the <c>resultStats</c> mount.</summary>
-public sealed class ResultStatsWidgetViewComponent : XpSearchMountWidgetViewComponent<ResultStatsWidgetProperties>
+public sealed class ResultStatsWidgetViewComponent : XpSearchMountWidgetViewComponent<ResultStatsWidgetProperties, ResultStatsOptions>
 {
     /// <summary>Initializes a new instance of the <see cref="ResultStatsWidgetViewComponent"/> class.</summary>
-    /// <param name="renderer">Renders the mount element.</param>
+    /// <param name="tagHelper">The widget's tag helper.</param>
     /// <param name="editorContext">The current editing mode.</param>
-    /// <param name="indexCatalog">The registered indexes.</param>
     public ResultStatsWidgetViewComponent(
-        IXpSearchMountRenderer renderer,
-        IXpSearchEditorContext editorContext,
-        IXpSearchIndexCatalog indexCatalog)
-        : base(renderer, editorContext, indexCatalog)
+        XpSearchMountTagHelper<ResultStatsOptions> tagHelper,
+        IXpSearchEditorContext editorContext)
+        : base(tagHelper, editorContext)
     {
     }
 
     /// <inheritdoc />
-    protected override string WidgetType => "resultStats";
+    public override ResultStatsOptions ToOptions(ResultStatsWidgetProperties properties)
+    {
+        ArgumentNullException.ThrowIfNull(properties);
+
+        return new ResultStatsOptions
+        {
+            Index = properties.Index,
+            InstanceId = properties.InstanceId,
+            TextTemplate = properties.TextTemplate,
+            EmptyText = properties.EmptyText
+        };
+    }
 
     /// <inheritdoc />
     /// <remarks>

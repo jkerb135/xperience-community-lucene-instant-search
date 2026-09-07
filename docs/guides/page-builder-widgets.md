@@ -50,6 +50,8 @@ live-site code takes a dependency on `Kentico.Xperience.Admin` either way.
 | Search - Filter & sort sheet | `XpSearch.FilterSort` | `filterSort` |
 | Search - Active filters | `XpSearch.ActiveFilters` | `activeFilters` |
 | Search - Clear filters | `XpSearch.ClearFilters` | `clearFilters` |
+| Search - Toggle filter | `XpSearch.ToggleFilter` | `toggleFilter` |
+| Search - Load more | `XpSearch.LoadMore` | `loadMore` |
 
 Every widget renders exactly this, and nothing else:
 
@@ -89,6 +91,8 @@ Then, per widget:
 | Range filter | Attribute (numeric or date) · Label · Minimum · Maximum · Step · "From" label · "To" label · Unit (shown after the two inputs: "USD", "kg") — see [The range filter's bounds are hand-configured](#the-range-filters-bounds-are-hand-configured) |
 | Filter & sort sheet | Facet groups (one `attribute;Label` per line, in the order they appear in the sheet) · Sort options (one `key;Label` per line, exactly as the sort selector takes them — leave empty for no "Sort by" section) · Label · Apply button text (`{count}` becomes the live count of the pending selection; empty leaves "Show {count} results"). The mobile counterpart of the facet sidebar: the mount renders only a toolbar button, and the sheet it opens is built in the browser. Place it alongside the facet list widgets, not instead of them — see [Mobile filtering](widget-reference.md#mobile-filtering) |
 | Suggestions | Mode (matching documents / popular queries / both) · Maximum items (capped by the index's *Maximum suggestion count*) · Offer recent searches. Whether an index answers with documents, with query suggestions or with both is server-side configuration; the Mode property records the editor’s intent and does not change the request. Popular queries are counted over the index's *Query suggestion window (days)* |
+| Toggle filter | Attribute · Value · Label · Show the count. One checkbox for a single value of a facet attribute — “English only”, “In stock” — where a whole facet list would be one row long. The attribute drop-down is the same facetable-field list the facet list offers, and an empty Value means `true`, which is what a boolean field carries. Empty Label shows the name the index gives the value, never the field code |
+| Load more | Load the next page on scroll · Title attribute · Link attribute · Snippet attributes · Button text · Button text when everything is loaded. **It replaces the Search - Results and Search - Pagination widgets and cannot sit beside them** — it renders the result cards itself and owns which page the search is on, so a Pagination widget in the same instance fights it for the page and throws the accumulated list away. The page size is the search instance’s; with no Results widget on the page that is the index’s *Default page size*. The button is always there, `disabled` once everything is loaded, and the scroll sentinel is an addition to it, never a replacement |
 
 A blank text property is left out of `data-xps-config` entirely, so the JavaScript widget's own default
 applies rather than an empty string overriding it.

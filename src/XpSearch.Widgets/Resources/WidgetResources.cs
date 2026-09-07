@@ -24,6 +24,8 @@ internal static class WidgetResources
 
     internal static string Hint_SelectIndex => Get(nameof(Hint_SelectIndex));
 
+    internal static string Hint_WidgetType => Get(nameof(Hint_WidgetType));
+
     internal static string Hint_SelectAttribute => Get(nameof(Hint_SelectAttribute));
 
     internal static string Hint_RangeBounds => Get(nameof(Hint_RangeBounds));
@@ -37,6 +39,8 @@ internal static class WidgetResources
     internal static string Preview_Note_Generic => Get(nameof(Preview_Note_Generic));
 
     internal static string Preview_Note_Attribute => Get(nameof(Preview_Note_Attribute));
+
+    internal static string Preview_Note_ToggleFilter => Get(nameof(Preview_Note_ToggleFilter));
 
     internal static string Preview_Note_Results => Get(nameof(Preview_Note_Results));
 

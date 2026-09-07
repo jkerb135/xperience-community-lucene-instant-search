@@ -10,6 +10,7 @@ using XpSearch.Widgets.Components.Widgets.XpSearch;
 using XpSearch.Widgets.Mounting;
 using XpSearch.Widgets.Options;
 using XpSearch.Widgets.Resources;
+using XpSearch.Widgets.TagHelpers;
 
 [assembly: RegisterWidget(
     identifier: XpSearchWidgetConstants.SuggestionsIdentifier,
@@ -26,13 +27,13 @@ namespace XpSearch.Widgets.Components.Widgets.XpSearch;
 public sealed class SuggestionsWidgetProperties : XpSearchMountWidgetProperties
 {
     /// <summary>The <see cref="Mode"/> value that suggests matching documents.</summary>
-    public const string ModeDocuments = "documents";
+    public const string ModeDocuments = SuggestionsOptions.ModeDocuments;
 
     /// <summary>The <see cref="Mode"/> value that suggests previously popular queries.</summary>
-    public const string ModeQuerySuggestions = "querySuggestions";
+    public const string ModeQuerySuggestions = SuggestionsOptions.ModeQuerySuggestions;
 
     /// <summary>The <see cref="Mode"/> value that suggests both, queries first (SG-1).</summary>
-    public const string ModeMixed = "mixed";
+    public const string ModeMixed = SuggestionsOptions.ModeMixed;
 
     /// <summary>Gets or sets what the suggestions are drawn from.</summary>
     [DropDownComponent(
@@ -64,38 +65,34 @@ public sealed class SuggestionsWidgetProperties : XpSearchMountWidgetProperties
 }
 
 /// <summary>Renders the <c>suggestions</c> mount.</summary>
-public sealed class SuggestionsWidgetViewComponent : XpSearchMountWidgetViewComponent<SuggestionsWidgetProperties>
+public sealed class SuggestionsWidgetViewComponent : XpSearchMountWidgetViewComponent<SuggestionsWidgetProperties, SuggestionsOptions>
 {
     /// <summary>What a widget saved before the count was required - and could hold 0 - is read as.</summary>
-    private const int FallbackMaxItems = 5;
+    private const int FallbackMaxItems = SuggestionsOptions.DefaultLimit;
 
     /// <summary>Initializes a new instance of the <see cref="SuggestionsWidgetViewComponent"/> class.</summary>
-    /// <param name="renderer">Renders the mount element.</param>
+    /// <param name="tagHelper">The widget's tag helper.</param>
     /// <param name="editorContext">The current editing mode.</param>
-    /// <param name="indexCatalog">The registered indexes.</param>
     public SuggestionsWidgetViewComponent(
-        IXpSearchMountRenderer renderer,
-        IXpSearchEditorContext editorContext,
-        IXpSearchIndexCatalog indexCatalog)
-        : base(renderer, editorContext, indexCatalog)
+        XpSearchMountTagHelper<SuggestionsOptions> tagHelper,
+        IXpSearchEditorContext editorContext)
+        : base(tagHelper, editorContext)
     {
     }
 
     /// <inheritdoc />
-    protected override string WidgetType => "suggestions";
-
-    /// <inheritdoc />
-    protected override void BuildConfig(SuggestionsWidgetProperties properties, IDictionary<string, object?> config)
+    public override SuggestionsOptions ToOptions(SuggestionsWidgetProperties properties)
     {
         ArgumentNullException.ThrowIfNull(properties);
-        ArgumentNullException.ThrowIfNull(config);
 
-        // Which of the two an index answers with is server-side configuration, so "mode" documents
-        // the editor's intent for the index; it does not change the request the widget sends.
-        config["mode"] = string.IsNullOrWhiteSpace(properties.Mode) ? SuggestionsWidgetProperties.ModeDocuments : properties.Mode;
-        // "limit" is what POST /api/xpsearch/suggest calls it.
-        config["limit"] = MaxItems(properties);
-        config["recentSearches"] = properties.RecentSearches;
+        return new SuggestionsOptions
+        {
+            Index = properties.Index,
+            InstanceId = properties.InstanceId,
+            Mode = properties.Mode,
+            Limit = MaxItems(properties),
+            RecentSearches = properties.RecentSearches
+        };
     }
 
     /// <inheritdoc />

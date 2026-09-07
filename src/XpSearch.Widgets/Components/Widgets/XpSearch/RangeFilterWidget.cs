@@ -12,6 +12,7 @@ using XpSearch.Widgets.Components.Widgets.XpSearch;
 using XpSearch.Widgets.Mounting;
 using XpSearch.Widgets.Options;
 using XpSearch.Widgets.Resources;
+using XpSearch.Widgets.TagHelpers;
 
 [assembly: RegisterWidget(
     identifier: XpSearchWidgetConstants.RangeFilterIdentifier,
@@ -98,80 +99,36 @@ public sealed class RangeFilterWidgetProperties : XpSearchMountWidgetProperties
 }
 
 /// <summary>Renders the <c>rangeFilter</c> mount.</summary>
-public sealed class RangeFilterWidgetViewComponent : XpSearchMountWidgetViewComponent<RangeFilterWidgetProperties>
+public sealed class RangeFilterWidgetViewComponent : XpSearchMountWidgetViewComponent<RangeFilterWidgetProperties, RangeFilterOptions>
 {
     /// <summary>Initializes a new instance of the <see cref="RangeFilterWidgetViewComponent"/> class.</summary>
-    /// <param name="renderer">Renders the mount element.</param>
+    /// <param name="tagHelper">The widget's tag helper.</param>
     /// <param name="editorContext">The current editing mode.</param>
-    /// <param name="indexCatalog">The registered indexes.</param>
     public RangeFilterWidgetViewComponent(
-        IXpSearchMountRenderer renderer,
-        IXpSearchEditorContext editorContext,
-        IXpSearchIndexCatalog indexCatalog)
-        : base(renderer, editorContext, indexCatalog)
+        XpSearchMountTagHelper<RangeFilterOptions> tagHelper,
+        IXpSearchEditorContext editorContext)
+        : base(tagHelper, editorContext)
     {
     }
 
     /// <inheritdoc />
-    protected override string WidgetType => "rangeFilter";
-
-    /// <inheritdoc />
-    protected override string? ConfigurationHint(RangeFilterWidgetProperties properties)
+    public override RangeFilterOptions ToOptions(RangeFilterWidgetProperties properties)
     {
         ArgumentNullException.ThrowIfNull(properties);
 
-        if (string.IsNullOrWhiteSpace(properties.Attribute))
+        return new RangeFilterOptions
         {
-            return WidgetResources.Hint_SelectAttribute;
-        }
-
-        // Without usable bounds the JavaScript widget renders a disabled control, which is worse than
-        // telling the editor what is missing.
-        return properties.Minimum is null || properties.Maximum is null || properties.Minimum >= properties.Maximum
-            ? WidgetResources.Hint_RangeBounds
-            : null;
-    }
-
-    /// <inheritdoc />
-    protected override void BuildConfig(RangeFilterWidgetProperties properties, IDictionary<string, object?> config)
-    {
-        ArgumentNullException.ThrowIfNull(properties);
-        ArgumentNullException.ThrowIfNull(config);
-
-        config["attribute"] = properties.Attribute.Trim();
-        config["min"] = properties.Minimum;
-        config["max"] = properties.Maximum;
-
-        if (properties.Step is > 0)
-        {
-            config["step"] = properties.Step;
-        }
-
-        if (!string.IsNullOrWhiteSpace(properties.Label))
-        {
-            config["label"] = properties.Label;
-        }
-
-        var labels = new Dictionary<string, object?>(StringComparer.Ordinal);
-        if (!string.IsNullOrWhiteSpace(properties.FromLabel))
-        {
-            labels["from"] = properties.FromLabel;
-        }
-
-        if (!string.IsNullOrWhiteSpace(properties.ToLabel))
-        {
-            labels["to"] = properties.ToLabel;
-        }
-
-        if (labels.Count > 0)
-        {
-            config["labels"] = labels;
-        }
-
-        if (!string.IsNullOrWhiteSpace(properties.Unit))
-        {
-            config["unit"] = properties.Unit.Trim();
-        }
+            Index = properties.Index,
+            InstanceId = properties.InstanceId,
+            Attribute = properties.Attribute,
+            Label = properties.Label,
+            Minimum = properties.Minimum,
+            Maximum = properties.Maximum,
+            Step = properties.Step,
+            FromLabel = properties.FromLabel,
+            ToLabel = properties.ToLabel,
+            Unit = properties.Unit
+        };
     }
 
     /// <inheritdoc />

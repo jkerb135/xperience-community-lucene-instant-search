@@ -50,8 +50,8 @@ dotnet run --project tests/XpSearch.Bench/XpSearch.Bench.csproj -c Release -- --
 cd src/XpSearch.Widgets/Client && npm run contract:gen && npm run contract:check
 ```
 
-Suite sizes (2026-09-01, after HL-1): Core 347, Admin 260, Ingestion 47, Widgets 78, Client 16,
-JS 286 (the former `widgets.test.ts` facet-count flake is fixed — a disposed `SearchClient` no
+Suite sizes (2026-09-06, RZ-1 B): Core 385, Admin 275, Ingestion 47, Widgets 112, Client 16,
+JS 307 (the former `widgets.test.ts` facet-count flake is fixed — a disposed `SearchClient` no
 longer retries a failed probe into the next test's fetch log) — if
 your run shows fewer, you ran the wrong project. There is no solution file in the repo root; run each
 test project by path. The Admin C# suite needs `src/XpSearch.Admin/Client` built first, like the
@@ -59,10 +59,17 @@ Widgets one.
 
 ## Patterns to copy (don't invent parallel ones)
 
-- New Page Builder widget / widget property: `Components/Widgets/XpSearch/SearchBoxWidget.cs`;
-  mount base `Mounting/XpSearchMountWidgetViewComponent.cs` (`BuildConfig` reflects ALL public
-  properties — override and `Remove(...)` to keep a property out of `data-xps-config`);
-  markup tests in `tests/XpSearch.Widgets.Tests/MountMarkupTests.cs`.
+- New widget (RZ-1, three layers): the options record + tag helper is the ONE implementation of
+  "options in, mount out" — copy `TagHelpers/FacetListTagHelper.cs` (`Merge`, `Validate`,
+  `BuildConfig` — the base reflects ALL public option properties into `data-xps-config`, so override
+  `BuildConfig` to shape it) and register it in
+  `DependencyInjection/XpSearchWidgetsServiceCollectionExtensions.cs`
+  (`AddXpSearchWidget<TTagHelper, TOptions>()`). The Page Builder widget is editor concerns only:
+  copy `Components/Widgets/XpSearch/FacetListWidget.cs` — properties class with the form
+  annotations, `ToOptions(properties)`, `BuildEditorPreview` — over the base
+  `Mounting/XpSearchMountWidgetViewComponent<TProperties, TOptions>`. Tests: `TagHelperTests`,
+  `PageBuilderParityTests` (PB output ≡ tag output, byte for byte) and `MountMarkupTests` in
+  `tests/XpSearch.Widgets.Tests/`.
 - JS widget: `Client/src/widgets/`, registry + trust-boundary config parsing in
   `Client/src/bootstrap.ts` (`readMountConfig`).
 - New JS widget entry point: add it to `Client/scripts/widget-entries.mjs` (rollup input, the

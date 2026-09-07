@@ -12,6 +12,34 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Breaking (widgets):** a Page Builder widget now derives from
+  `XpSearchMountWidgetViewComponent<TProperties, TOptions>` and maps its editor properties onto the
+  widget's options record in `ToOptions(properties)`; everything else it used to own moved to the
+  widget's tag helper (RZ-1, ADR-0029). `BuildConfig`, `BuildInstanceConfig`, `GetWidgetType`,
+  `BuildMountContentAsync`, `ConfigurationHint`, `ReflectConfig`, `CurrentIndex` and `MountLabels` are
+  gone from the base class - override the same members on `XpSearchMountTagHelper<TOptions>` instead,
+  where `ConfigurationHint` is now `Validate`. The constructor takes the tag helper and the editor
+  context (`IXpSearchMountRenderer` and `IXpSearchIndexCatalog` moved to the tag helper), and
+  `BuildModel(properties)` is now `BuildModelAsync(properties, cancellationToken)`. Rendered markup is
+  unchanged, byte for byte. `samples/CustomWidget.Dropdown` shows the new shape.
+- **Added (widgets):** tag helpers, so a Razor developer never hand-writes a mount div. One per
+  shipped widget - `<xps-search-box>`, `<xps-results>`, `<xps-facet-list>`, `<xps-category-tree>`,
+  `<xps-range-filter>`, `<xps-sort-select>`, `<xps-pagination>`, `<xps-result-stats>`,
+  `<xps-active-filters>`, `<xps-clear-filters>`, `<xps-filter-sort>`, `<xps-suggestions>` - each
+  taking kebab-cased attributes or a whole options record (`options="@model"`), plus `<xps-search>`
+  for the index, instance and instance-wide options of everything inside it, `<xps-widget>` for any
+  widget registered with `registerWidgetType()`, and `@await Html.XpSearchAsync(options)`. An
+  unrenderable tag throws at render time instead of emitting an empty div. A custom widget registers
+  its own pair with `services.AddXpSearchWidget<TTagHelper, TOptions>()`.
+- **Added (widgets):** the last two JavaScript widgets get their tag helper and their Page Builder
+  widget, which closes 14/14 across all three layers (RZ-1 §1.6). `<xps-toggle-filter>` /
+  **Search - Toggle filter** (`XpSearch.ToggleFilter`) is one checkbox for a single value of a facet
+  attribute; `<xps-load-more>` / **Search - Load more** (`XpSearch.LoadMore`) is the endless result
+  list, which **replaces the Results and Pagination widgets** and cannot sit beside them - it renders
+  the cards itself and owns the page (MB-1). Both take the JavaScript widget's own options, kebab-cased.
+- **Added (widgets):** `<xps-search-styles />` and `<xps-search-scripts />` (and
+  `Html.XpSearchStyles()` / `Html.XpSearchScripts()`), so the stylesheets can sit in `<head>` and the
+  bundle at the end of the body. `<xps-search-assets />` stays as the shorthand for both.
 - **Changed (widgets):** hydration is a handover, not a repaint (SK-1). A mount holding what the
   server rendered — the results list, or a widget's skeleton — is now **adopted** by the client
   (`createRoot` keeps the element carrying `data-xps-server-rendered` when its tag name matches) and

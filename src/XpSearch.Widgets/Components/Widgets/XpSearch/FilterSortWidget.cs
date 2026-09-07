@@ -13,6 +13,7 @@ using XpSearch.Widgets.Mounting;
 using XpSearch.Widgets.Options;
 using XpSearch.Widgets.Resources;
 using XpSearch.Widgets.Sorting;
+using XpSearch.Widgets.TagHelpers;
 
 [assembly: RegisterWidget(
     identifier: XpSearchWidgetConstants.FilterSortIdentifier,
@@ -72,68 +73,32 @@ public sealed class FilterSortWidgetProperties : XpSearchMountWidgetProperties
 }
 
 /// <summary>Renders the <c>filterSort</c> mount.</summary>
-public sealed class FilterSortWidgetViewComponent : XpSearchMountWidgetViewComponent<FilterSortWidgetProperties>
+public sealed class FilterSortWidgetViewComponent : XpSearchMountWidgetViewComponent<FilterSortWidgetProperties, FilterSortOptions>
 {
-    private readonly IOptionsMonitor<XpSearchOptions> searchOptions;
-
     /// <summary>Initializes a new instance of the <see cref="FilterSortWidgetViewComponent"/> class.</summary>
-    /// <param name="renderer">Renders the mount element.</param>
+    /// <param name="tagHelper">The widget's tag helper.</param>
     /// <param name="editorContext">The current editing mode.</param>
-    /// <param name="indexCatalog">The registered indexes.</param>
-    /// <param name="searchOptions">Supplies the sort keys configured per index.</param>
     public FilterSortWidgetViewComponent(
-        IXpSearchMountRenderer renderer,
-        IXpSearchEditorContext editorContext,
-        IXpSearchIndexCatalog indexCatalog,
-        IOptionsMonitor<XpSearchOptions> searchOptions)
-        : base(renderer, editorContext, indexCatalog)
+        XpSearchMountTagHelper<FilterSortOptions> tagHelper,
+        IXpSearchEditorContext editorContext)
+        : base(tagHelper, editorContext)
     {
-        ArgumentNullException.ThrowIfNull(searchOptions);
-        this.searchOptions = searchOptions;
     }
 
     /// <inheritdoc />
-    protected override string WidgetType => "filterSort";
-
-    /// <inheritdoc />
-    protected override string? ConfigurationHint(FilterSortWidgetProperties properties) =>
-        SortOptionsValidation.Parse(properties?.Facets).Count == 0 ? WidgetResources.Hint_FilterSortFacets : null;
-
-    /// <inheritdoc />
-    protected override void BuildConfig(FilterSortWidgetProperties properties, IDictionary<string, object?> config)
+    public override FilterSortOptions ToOptions(FilterSortWidgetProperties properties)
     {
         ArgumentNullException.ThrowIfNull(properties);
-        ArgumentNullException.ThrowIfNull(config);
 
-        config["facets"] = Facets(properties)
-            .Select(facet => new Dictionary<string, object?>(StringComparer.Ordinal)
-            {
-                ["attribute"] = facet.Value,
-                ["label"] = facet.Label
-            })
-            .ToList();
-
-        var sort = SortOptionsValidation.ParseValid(properties.SortOptions, IndexOptions());
-        if (sort.Count > 0)
+        return new FilterSortOptions
         {
-            config["sortOptions"] = sort
-                .Select(option => new Dictionary<string, object?>(StringComparer.Ordinal)
-                {
-                    ["value"] = option.Value,
-                    ["label"] = option.Label
-                })
-                .ToList();
-        }
-
-        if (!string.IsNullOrWhiteSpace(properties.Label))
-        {
-            config["label"] = properties.Label;
-        }
-
-        if (!string.IsNullOrWhiteSpace(properties.ApplyLabel))
-        {
-            config["applyLabel"] = properties.ApplyLabel;
-        }
+            Index = properties.Index,
+            InstanceId = properties.InstanceId,
+            Facets = properties.Facets,
+            SortOptions = properties.SortOptions,
+            Label = properties.Label,
+            ApplyLabel = properties.ApplyLabel
+        };
     }
 
     /// <inheritdoc />
@@ -161,7 +126,4 @@ public sealed class FilterSortWidgetViewComponent : XpSearchMountWidgetViewCompo
     /// </summary>
     private static IReadOnlyList<SortOption> Facets(FilterSortWidgetProperties properties) =>
         SortOptionsValidation.Parse(properties.Facets);
-
-    private XpSearchIndexOptions? IndexOptions() =>
-        searchOptions.CurrentValue.Indexes.TryGetValue(CurrentIndex, out var options) ? options : null;
 }
