@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Razor.TagHelpers;
+﻿using Microsoft.AspNetCore.Razor.TagHelpers;
 
 using XpSearch.Widgets.Mounting;
 using XpSearch.Widgets.Options;
@@ -28,6 +28,13 @@ public sealed record SearchBoxOptions : XpSearchMountOptions
 
     /// <summary>Gets whether the search keeps its state in the page URL (spec §5.5). An instance-wide option.</summary>
     public bool SyncStateToUrl { get; init; } = true;
+
+    /// <summary>
+    /// Gets whether the search runs once as the page loads, before the visitor has typed. An
+    /// instance-wide option; null keeps the JavaScript default, <see langword="true"/>, and leaves an
+    /// enclosing <c>&lt;xps-search search-on-initial-load&gt;</c> to decide.
+    /// </summary>
+    public bool? SearchOnInitialLoad { get; init; }
 }
 
 /// <summary><c>&lt;xps-search-box /&gt;</c> - mounts the <c>searchBox</c> widget.</summary>
@@ -70,6 +77,10 @@ public sealed class SearchBoxTagHelper : XpSearchMountTagHelper<SearchBoxOptions
     [HtmlAttributeName("sync-state-to-url")]
     public bool? SyncStateToUrl { get; set; }
 
+    /// <summary>Gets or sets <see cref="SearchBoxOptions.SearchOnInitialLoad"/>.</summary>
+    [HtmlAttributeName("search-on-initial-load")]
+    public bool? SearchOnInitialLoad { get; set; }
+
     /// <inheritdoc />
     protected override string WidgetType => "searchBox";
 
@@ -86,7 +97,8 @@ public sealed class SearchBoxTagHelper : XpSearchMountTagHelper<SearchBoxOptions
             EnableSuggestions = EnableSuggestions ?? options.EnableSuggestions,
             SuggestionLimit = SuggestionLimit ?? options.SuggestionLimit,
             RecentSearches = RecentSearches ?? options.RecentSearches,
-            SyncStateToUrl = SyncStateToUrl ?? options.SyncStateToUrl
+            SyncStateToUrl = SyncStateToUrl ?? options.SyncStateToUrl,
+            SearchOnInitialLoad = SearchOnInitialLoad ?? options.SearchOnInitialLoad
         };
     }
 
@@ -97,8 +109,10 @@ public sealed class SearchBoxTagHelper : XpSearchMountTagHelper<SearchBoxOptions
         ArgumentNullException.ThrowIfNull(config);
 
         ReflectConfig(options, config);
-        // URL syncing is a property of the search, not an option of the input; it goes to the instance.
+        // URL syncing and the initial search are properties of the search, not options of the input;
+        // they go to the instance.
         config.Remove("syncStateToUrl");
+        config.Remove("searchOnInitialLoad");
 
         // The JavaScript reads one nested group: present means on, absent means off.
         config.Remove("enableSuggestions");
@@ -135,5 +149,11 @@ public sealed class SearchBoxTagHelper : XpSearchMountTagHelper<SearchBoxOptions
         ArgumentNullException.ThrowIfNull(instanceConfig);
 
         instanceConfig["routing"] = options.SyncStateToUrl;
+
+        // Unlike routing, silence is meaningful here: it lets the enclosing <xps-search> decide.
+        if (options.SearchOnInitialLoad is not null)
+        {
+            instanceConfig["searchOnInitialLoad"] = options.SearchOnInitialLoad;
+        }
     }
 }

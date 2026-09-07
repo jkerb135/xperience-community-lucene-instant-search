@@ -1,4 +1,4 @@
-using Kentico.PageBuilder.Web.Mvc;
+﻿using Kentico.PageBuilder.Web.Mvc;
 using Kentico.Xperience.Admin.Base.FormAnnotations;
 
 using Microsoft.AspNetCore.Html;
@@ -42,6 +42,17 @@ public sealed class ActiveFiltersWidgetProperties : XpSearchMountWidgetPropertie
         ExplanationText = "Off, the chips wrap onto as many rows as they need. Use it where the row's height has to stay fixed, such as a sticky toolbar.",
         Order = OrderFirstWidgetProperty + 10)]
     public bool Scroll { get; set; }
+
+    /// <summary>
+    /// Gets or sets what each attribute is called on its chips, one per line as
+    /// <c>attribute;Label</c>. Empty leaves every chip to the widget that filters the attribute.
+    /// </summary>
+    [TextAreaComponent(
+        Label = "Attribute names",
+        Tooltip = "What each filtered attribute is called on its chips, one per line.",
+        ExplanationText = "One per line, as attribute;Label - for example contentType;Content type. Only needed for an attribute whose own filtering widget is not on this page: a chip otherwise reads the label of the Search - Facet list, Search - Category tree or Search - Range filter widget that filters it.",
+        Order = OrderFirstWidgetProperty + 20)]
+    public string AttributeLabels { get; set; } = string.Empty;
 }
 
 /// <summary>Renders the <c>activeFilters</c> mount.</summary>
@@ -67,7 +78,8 @@ public sealed class ActiveFiltersWidgetViewComponent : XpSearchMountWidgetViewCo
             Index = properties.Index,
             InstanceId = properties.InstanceId,
             Title = properties.Title,
-            Scroll = properties.Scroll
+            Scroll = properties.Scroll,
+            AttributeLabels = ActiveFiltersTagHelper.ParseAttributeLabels(properties.AttributeLabels)
         };
     }
 

@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Razor.TagHelpers;
+﻿using Microsoft.AspNetCore.Razor.TagHelpers;
 
 namespace XpSearch.Widgets.TagHelpers;
 
@@ -23,6 +23,9 @@ public sealed class XpSearchScope
 
     /// <summary>Gets the index fields the search retrieves for each result.</summary>
     public IReadOnlyList<string>? Fields { get; init; }
+
+    /// <summary>Gets whether the search runs once as the page loads, before the visitor has typed.</summary>
+    public bool? SearchOnInitialLoad { get; init; }
 
     /// <summary>Reads the scope a parent <c>&lt;xps-search&gt;</c> published, or <see langword="null"/>.</summary>
     /// <param name="context">The tag helper context of the mount.</param>
@@ -50,6 +53,11 @@ public sealed class XpSearchScope
         if (Fields is { Count: > 0 } && !instanceConfig.ContainsKey("fields"))
         {
             instanceConfig["fields"] = Fields;
+        }
+
+        if (SearchOnInitialLoad is not null && !instanceConfig.ContainsKey("searchOnInitialLoad"))
+        {
+            instanceConfig["searchOnInitialLoad"] = SearchOnInitialLoad;
         }
     }
 }
@@ -81,6 +89,13 @@ public sealed class XpSearchTagHelper : TagHelper
     [HtmlAttributeName("fields")]
     public IEnumerable<string>? Fields { get; set; }
 
+    /// <summary>
+    /// Gets or sets whether the search runs once as the page loads. Unset keeps the JavaScript
+    /// default, <see langword="true"/>; a search box's own value wins.
+    /// </summary>
+    [HtmlAttributeName("search-on-initial-load")]
+    public bool? SearchOnInitialLoad { get; set; }
+
     /// <inheritdoc />
     public override void Process(TagHelperContext context, TagHelperOutput output)
     {
@@ -94,7 +109,8 @@ public sealed class XpSearchTagHelper : TagHelper
             Instance = Instance,
             Routing = Routing,
             PageSize = PageSize,
-            Fields = Fields?.ToList()
+            Fields = Fields?.ToList(),
+            SearchOnInitialLoad = SearchOnInitialLoad
         };
 
         output.TagName = null;
