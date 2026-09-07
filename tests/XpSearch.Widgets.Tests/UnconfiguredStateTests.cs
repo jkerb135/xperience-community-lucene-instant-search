@@ -15,7 +15,7 @@ internal sealed class UnconfiguredStateTests
     private readonly FakeIndexCatalog twoIndexes = new("site-content", "products");
 
     private SearchBoxWidgetViewComponent Component(XpSearchEditorMode mode) =>
-        new(renderer, new FakeEditorContext(mode), twoIndexes);
+        Widgets.SearchBox(renderer, new FakeEditorContext(mode), twoIndexes);
 
     [TestCase(XpSearchEditorMode.Edit)]
     [TestCase(XpSearchEditorMode.ReadOnly)]
@@ -61,7 +61,7 @@ internal sealed class UnconfiguredStateTests
     [Test]
     public void A_facet_without_an_attribute_is_unconfigured_even_with_an_index()
     {
-        var component = new FacetListWidgetViewComponent(renderer, new FakeEditorContext(XpSearchEditorMode.Edit), twoIndexes);
+        var component = Widgets.FacetList(renderer, new FakeEditorContext(XpSearchEditorMode.Edit), twoIndexes);
 
         var model = component.BuildModel(new FacetListWidgetProperties { Index = "site-content" });
 
@@ -79,7 +79,7 @@ internal sealed class UnconfiguredStateTests
     public void A_range_filter_without_an_attribute_or_without_usable_bounds_is_unconfigured(
         double? minimum, double? maximum, string expected)
     {
-        var component = new RangeFilterWidgetViewComponent(renderer, new FakeEditorContext(XpSearchEditorMode.Edit), twoIndexes);
+        var component = Widgets.RangeFilter(renderer, new FakeEditorContext(XpSearchEditorMode.Edit), twoIndexes);
 
         var model = component.BuildModel(new RangeFilterWidgetProperties
         {
@@ -99,7 +99,7 @@ internal sealed class UnconfiguredStateTests
     [Test]
     public void A_sort_selector_whose_keys_the_API_would_reject_is_unconfigured()
     {
-        var component = new SortSelectWidgetViewComponent(
+        var component = Widgets.SortSelect(
             renderer,
             new FakeEditorContext(XpSearchEditorMode.Edit),
             twoIndexes,

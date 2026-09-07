@@ -8,6 +8,7 @@ using XpSearch.Widgets;
 using XpSearch.Widgets.Components.Widgets.XpSearch;
 using XpSearch.Widgets.Mounting;
 using XpSearch.Widgets.Options;
+using XpSearch.Widgets.TagHelpers;
 
 [assembly: RegisterWidget(
     identifier: XpSearchWidgetConstants.ActiveFiltersIdentifier,
@@ -44,22 +45,31 @@ public sealed class ActiveFiltersWidgetProperties : XpSearchMountWidgetPropertie
 }
 
 /// <summary>Renders the <c>activeFilters</c> mount.</summary>
-public sealed class ActiveFiltersWidgetViewComponent : XpSearchMountWidgetViewComponent<ActiveFiltersWidgetProperties>
+public sealed class ActiveFiltersWidgetViewComponent : XpSearchMountWidgetViewComponent<ActiveFiltersWidgetProperties, ActiveFiltersOptions>
 {
     /// <summary>Initializes a new instance of the <see cref="ActiveFiltersWidgetViewComponent"/> class.</summary>
-    /// <param name="renderer">Renders the mount element.</param>
+    /// <param name="tagHelper">The widget's tag helper.</param>
     /// <param name="editorContext">The current editing mode.</param>
-    /// <param name="indexCatalog">The registered indexes.</param>
     public ActiveFiltersWidgetViewComponent(
-        IXpSearchMountRenderer renderer,
-        IXpSearchEditorContext editorContext,
-        IXpSearchIndexCatalog indexCatalog)
-        : base(renderer, editorContext, indexCatalog)
+        XpSearchMountTagHelper<ActiveFiltersOptions> tagHelper,
+        IXpSearchEditorContext editorContext)
+        : base(tagHelper, editorContext)
     {
     }
 
     /// <inheritdoc />
-    protected override string WidgetType => "activeFilters";
+    public override ActiveFiltersOptions ToOptions(ActiveFiltersWidgetProperties properties)
+    {
+        ArgumentNullException.ThrowIfNull(properties);
+
+        return new ActiveFiltersOptions
+        {
+            Index = properties.Index,
+            InstanceId = properties.InstanceId,
+            Title = properties.Title,
+            Scroll = properties.Scroll
+        };
+    }
 
     /// <inheritdoc />
     /// <remarks>Two chips of the shape the live widget renders; the values are only known at run time.</remarks>

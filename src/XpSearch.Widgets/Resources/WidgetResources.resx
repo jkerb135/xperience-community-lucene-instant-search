@@ -73,6 +73,9 @@
   <data name="Hint_SelectIndex" xml:space="preserve">
     <value>Select a search index.</value>
   </data>
+  <data name="Hint_WidgetType" xml:space="preserve">
+    <value>Name the JavaScript widget in the type attribute.</value>
+  </data>
   <data name="Hint_SelectAttribute" xml:space="preserve">
     <value>Select the attribute this facet filters on.</value>
   </data>

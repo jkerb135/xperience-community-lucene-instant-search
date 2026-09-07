@@ -76,7 +76,7 @@ internal sealed class MountViewRenderingTests
     [Test]
     public async Task A_configured_widget_renders_its_mount_element()
     {
-        var component = new SearchBoxWidgetViewComponent(
+        var component = Widgets.SearchBox(
             new XpSearchMountRenderer(),
             new FakeEditorContext(XpSearchEditorMode.Live),
             new FakeIndexCatalog("site-content"));
@@ -94,7 +94,7 @@ internal sealed class MountViewRenderingTests
     [Test]
     public async Task A_configured_widget_renders_its_preview_inside_the_Page_Builder()
     {
-        var component = new SearchBoxWidgetViewComponent(
+        var component = Widgets.SearchBox(
             new XpSearchMountRenderer(),
             new FakeEditorContext(XpSearchEditorMode.Edit),
             new FakeIndexCatalog("site-content"));
@@ -112,7 +112,7 @@ internal sealed class MountViewRenderingTests
     [Test]
     public async Task An_unconfigured_widget_renders_the_instruction_block_for_an_editor()
     {
-        var component = new SearchBoxWidgetViewComponent(
+        var component = Widgets.SearchBox(
             new XpSearchMountRenderer(),
             new FakeEditorContext(XpSearchEditorMode.Edit),
             new FakeIndexCatalog("a", "b"));
@@ -130,7 +130,7 @@ internal sealed class MountViewRenderingTests
     [Test]
     public async Task An_unconfigured_widget_renders_nothing_for_a_visitor()
     {
-        var component = new SearchBoxWidgetViewComponent(
+        var component = Widgets.SearchBox(
             new XpSearchMountRenderer(),
             new FakeEditorContext(XpSearchEditorMode.Live),
             new FakeIndexCatalog("a", "b"));

@@ -13,18 +13,22 @@ namespace MyCompany.Search.Widgets.Tests;
 public sealed class DropdownFacetWidgetTests
 {
     private static DropdownFacetWidgetViewComponent CreateComponent(XpSearchEditorMode mode = XpSearchEditorMode.Live) =>
-        new(new XpSearchMountRenderer(), new StubEditorContext(mode), new StubIndexCatalog());
+        new(
+            new DropdownFacetTagHelper(new XpSearchMountRenderer(), new StubIndexCatalog()),
+            new StubEditorContext(mode));
 
     [Test]
-    public void BuildModel_ConfiguredWidget_EmitsMountForTheJavaScriptWidget()
+    public async System.Threading.Tasks.Task BuildModel_ConfiguredWidget_EmitsMountForTheJavaScriptWidget()
     {
-        var model = CreateComponent().BuildModel(new DropdownFacetWidgetProperties
-        {
-            Index = "site-content",
-            Attribute = "brand",
-            Label = "Brand",
-            AllLabel = "Any brand",
-        });
+        var model = await CreateComponent().BuildModelAsync(
+            new DropdownFacetWidgetProperties
+            {
+                Index = "site-content",
+                Attribute = "brand",
+                Label = "Brand",
+                AllLabel = "Any brand",
+            },
+            System.Threading.CancellationToken.None);
 
         var mount = Render(model);
 
@@ -42,9 +46,11 @@ public sealed class DropdownFacetWidgetTests
     }
 
     [Test]
-    public void BuildModel_NoAttribute_RendersNothingOnTheLiveSite()
+    public async System.Threading.Tasks.Task BuildModel_NoAttribute_RendersNothingOnTheLiveSite()
     {
-        var model = CreateComponent().BuildModel(new DropdownFacetWidgetProperties { Index = "site-content" });
+        var model = await CreateComponent().BuildModelAsync(
+            new DropdownFacetWidgetProperties { Index = "site-content" },
+            System.Threading.CancellationToken.None);
 
         Assert.Multiple(() =>
         {
@@ -54,10 +60,11 @@ public sealed class DropdownFacetWidgetTests
     }
 
     [Test]
-    public void BuildModel_NoAttribute_InstructsTheEditor()
+    public async System.Threading.Tasks.Task BuildModel_NoAttribute_InstructsTheEditor()
     {
-        var model = CreateComponent(XpSearchEditorMode.Edit)
-            .BuildModel(new DropdownFacetWidgetProperties { Index = "site-content" });
+        var model = await CreateComponent(XpSearchEditorMode.Edit).BuildModelAsync(
+            new DropdownFacetWidgetProperties { Index = "site-content" },
+            System.Threading.CancellationToken.None);
 
         Assert.Multiple(() =>
         {

@@ -2,12 +2,14 @@ using Kentico.Xperience.Admin.Base.FormAnnotations;
 
 using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.AspNetCore.Razor.TagHelpers;
 
 using NUnit.Framework;
 
 using XpSearch.Core;
 using XpSearch.Widgets.Mounting;
 using XpSearch.Widgets.Options;
+using XpSearch.Widgets.TagHelpers;
 
 namespace XpSearch.Widgets.Tests;
 
@@ -28,21 +30,64 @@ internal sealed class DropdownFacetWidgetProperties : XpSearchMountWidgetPropert
     public string AllLabel { get; set; } = "All";
 }
 
-internal sealed class DropdownFacetWidgetViewComponent
-    : XpSearchMountWidgetViewComponent<DropdownFacetWidgetProperties>
+internal sealed record DropdownFacetOptions : XpSearchMountOptions
 {
-    public DropdownFacetWidgetViewComponent(
-        IXpSearchMountRenderer renderer,
-        IXpSearchEditorContext editorContext,
-        IXpSearchIndexCatalog indexCatalog)
-        : base(renderer, editorContext, indexCatalog)
+    public string? Attribute { get; init; }
+
+    public string Label { get; init; } = "Filter";
+
+    public string AllLabel { get; init; } = "All";
+}
+
+[HtmlTargetElement("my-dropdown-facet")]
+internal sealed class DropdownFacetTagHelper : XpSearchMountTagHelper<DropdownFacetOptions>
+{
+    public DropdownFacetTagHelper(IXpSearchMountRenderer renderer, IXpSearchIndexCatalog indexCatalog)
+        : base(renderer, indexCatalog)
     {
     }
 
+    [HtmlAttributeName("attribute")]
+    public string? Attribute { get; set; }
+
+    [HtmlAttributeName("label")]
+    public string? Label { get; set; }
+
+    [HtmlAttributeName("all-label")]
+    public string? AllLabel { get; set; }
+
     protected override string WidgetType => "myCompany.dropdownFacet";
 
-    protected override string? ConfigurationHint(DropdownFacetWidgetProperties properties) =>
-        string.IsNullOrWhiteSpace(properties.Attribute) ? "Select the attribute to filter on." : null;
+    public override string? Validate(DropdownFacetOptions options) =>
+        base.Validate(options)
+        ?? (string.IsNullOrWhiteSpace(options?.Attribute) ? "Select the attribute to filter on." : null);
+
+    protected override DropdownFacetOptions Merge(DropdownFacetOptions options) => options with
+    {
+        Attribute = Attribute ?? options.Attribute,
+        Label = Label ?? options.Label,
+        AllLabel = AllLabel ?? options.AllLabel
+    };
+}
+
+internal sealed class DropdownFacetWidgetViewComponent
+    : XpSearchMountWidgetViewComponent<DropdownFacetWidgetProperties, DropdownFacetOptions>
+{
+    public DropdownFacetWidgetViewComponent(
+        XpSearchMountTagHelper<DropdownFacetOptions> tagHelper,
+        IXpSearchEditorContext editorContext)
+        : base(tagHelper, editorContext)
+    {
+    }
+
+    public override DropdownFacetOptions ToOptions(DropdownFacetWidgetProperties properties) => new()
+    {
+        Index = properties.Index,
+        InstanceId = properties.InstanceId,
+        Attribute = properties.Attribute,
+        Label = properties.Label,
+        AllLabel = properties.AllLabel
+    };
 }
 
 /// <summary>
@@ -50,17 +95,23 @@ internal sealed class DropdownFacetWidgetViewComponent
 /// markup, built with TagBuilder so every editor-typed value is encoded.
 /// </summary>
 internal sealed class PreviewingDropdownFacetWidgetViewComponent
-    : XpSearchMountWidgetViewComponent<DropdownFacetWidgetProperties>
+    : XpSearchMountWidgetViewComponent<DropdownFacetWidgetProperties, DropdownFacetOptions>
 {
     public PreviewingDropdownFacetWidgetViewComponent(
-        IXpSearchMountRenderer renderer,
-        IXpSearchEditorContext editorContext,
-        IXpSearchIndexCatalog indexCatalog)
-        : base(renderer, editorContext, indexCatalog)
+        XpSearchMountTagHelper<DropdownFacetOptions> tagHelper,
+        IXpSearchEditorContext editorContext)
+        : base(tagHelper, editorContext)
     {
     }
 
-    protected override string WidgetType => "myCompany.dropdownFacet";
+    public override DropdownFacetOptions ToOptions(DropdownFacetWidgetProperties properties) => new()
+    {
+        Index = properties.Index,
+        InstanceId = properties.InstanceId,
+        Attribute = properties.Attribute,
+        Label = properties.Label,
+        AllLabel = properties.AllLabel
+    };
 
     protected override IHtmlContent BuildEditorPreview(DropdownFacetWidgetProperties properties)
     {
@@ -99,7 +150,9 @@ internal sealed class PreviewingDropdownFacetWidgetViewComponent
 internal sealed class ThirdPartyWidgetTests
 {
     private static DropdownFacetWidgetViewComponent Component(XpSearchEditorMode mode) =>
-        new(new XpSearchMountRenderer(), new FakeEditorContext(mode), new FakeIndexCatalog("site-content"));
+        new(
+            new DropdownFacetTagHelper(new XpSearchMountRenderer(), new FakeIndexCatalog("site-content")),
+            new FakeEditorContext(mode));
 
     [Test]
     public void A_third_party_widget_gets_the_mount_contract_from_the_base_class_alone()
@@ -128,9 +181,8 @@ internal sealed class ThirdPartyWidgetTests
     public void A_third_party_widget_can_own_what_the_Page_Builder_shows()
     {
         var component = new PreviewingDropdownFacetWidgetViewComponent(
-            new XpSearchMountRenderer(),
-            new FakeEditorContext(XpSearchEditorMode.Edit),
-            new FakeIndexCatalog("site-content"));
+            new DropdownFacetTagHelper(new XpSearchMountRenderer(), new FakeIndexCatalog("site-content")),
+            new FakeEditorContext(XpSearchEditorMode.Edit));
 
         string markup = Rendered.Html(component
             .BuildModel(new DropdownFacetWidgetProperties { Attribute = "brand", Label = "<b>Brand</b>", AllLabel = "Any brand" })

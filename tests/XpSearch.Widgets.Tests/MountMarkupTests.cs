@@ -31,8 +31,10 @@ internal sealed class MountMarkupTests
         return new StaticOptionsMonitor<XpSearchOptions>(options);
     }
 
-    private string Render<TProperties>(XpSearchMountWidgetViewComponent<TProperties> component, TProperties properties)
+    private static string Render<TProperties, TOptions>(
+        XpSearchMountWidgetViewComponent<TProperties, TOptions> component, TProperties properties)
         where TProperties : XpSearchMountWidgetProperties, new()
+        where TOptions : XpSearchMountOptions, new()
     {
         var model = component.BuildModel(properties);
         Assert.That(model.Mount, Is.Not.Null, "the widget rendered no mount");
@@ -40,7 +42,7 @@ internal sealed class MountMarkupTests
         return Rendered.Html(model.Mount!);
     }
 
-    private SearchBoxWidgetViewComponent SearchBox() => new(renderer, editor, catalog);
+    private SearchBoxWidgetViewComponent SearchBox() => Widgets.SearchBox(renderer, editor, catalog);
 
     [Test]
     public void SearchBox_emits_the_mount_contract()
@@ -150,7 +152,7 @@ internal sealed class MountMarkupTests
     [Test]
     public void The_only_index_of_a_project_is_used_when_the_editor_picked_none()
     {
-        var single = new SearchBoxWidgetViewComponent(renderer, editor, new FakeIndexCatalog("only-index"));
+        var single = Widgets.SearchBox(renderer, editor, new FakeIndexCatalog("only-index"));
 
         string markup = Render(single, new SearchBoxWidgetProperties());
 
@@ -179,7 +181,7 @@ internal sealed class MountMarkupTests
     [Test]
     public void Results_maps_results_per_page_and_fields_to_instance_options()
     {
-        var component = new ResultsWidgetViewComponent(renderer, editor, catalog);
+        var component = Widgets.Results(renderer, editor, catalog);
 
         string markup = Render(component, new ResultsWidgetProperties
         {
@@ -206,7 +208,7 @@ internal sealed class MountMarkupTests
     [Test]
     public void Results_still_reads_the_fields_a_widget_saved_before_the_selector_existed()
     {
-        var component = new ResultsWidgetViewComponent(renderer, editor, catalog);
+        var component = Widgets.Results(renderer, editor, catalog);
 
         // The stored shape of the retired text area: one field name per line.
         string markup = Render(component, new ResultsWidgetProperties
@@ -224,7 +226,7 @@ internal sealed class MountMarkupTests
     [Test]
     public void Results_prefers_the_selected_fields_over_the_old_stored_ones()
     {
-        var component = new ResultsWidgetViewComponent(renderer, editor, catalog);
+        var component = Widgets.Results(renderer, editor, catalog);
 
         string markup = Render(component, new ResultsWidgetProperties
         {
@@ -242,7 +244,7 @@ internal sealed class MountMarkupTests
     [Test]
     public void Results_maps_the_title_link_and_snippet_attribute_overrides_to_display_options()
     {
-        var component = new ResultsWidgetViewComponent(renderer, editor, catalog);
+        var component = Widgets.Results(renderer, editor, catalog);
 
         string markup = Render(component, new ResultsWidgetProperties
         {
@@ -268,7 +270,7 @@ internal sealed class MountMarkupTests
     [Test]
     public void Results_leaves_the_display_options_alone_but_always_carries_its_page_size()
     {
-        var component = new ResultsWidgetViewComponent(renderer, editor, catalog);
+        var component = Widgets.Results(renderer, editor, catalog);
 
         string markup = Render(component, new ResultsWidgetProperties { Index = Index });
 
@@ -285,7 +287,7 @@ internal sealed class MountMarkupTests
     [Test]
     public void Results_saved_before_the_size_was_required_falls_back_to_twenty()
     {
-        var component = new ResultsWidgetViewComponent(renderer, editor, catalog);
+        var component = Widgets.Results(renderer, editor, catalog);
 
         // A widget stored while 0 meant "use the index's default" still holds 0; 0 is a validation
         // error on the wire, so the mount must not hand it to the client.
@@ -298,7 +300,7 @@ internal sealed class MountMarkupTests
     [Test]
     public void FacetList_emits_every_option_the_JavaScript_widget_takes()
     {
-        var component = new FacetListWidgetViewComponent(renderer, editor, catalog);
+        var component = Widgets.FacetList(renderer, editor, catalog);
 
         string markup = Render(component, new FacetListWidgetProperties
         {
@@ -337,7 +339,7 @@ internal sealed class MountMarkupTests
     [Test]
     public void ActiveFilters_emits_its_heading_and_the_scrolling_row_option()
     {
-        var component = new ActiveFiltersWidgetViewComponent(renderer, editor, catalog);
+        var component = Widgets.ActiveFilters(renderer, editor, catalog);
 
         string markup = Render(component, new ActiveFiltersWidgetProperties
         {
@@ -369,7 +371,7 @@ internal sealed class MountMarkupTests
     [Test]
     public void ClearFilters_emits_its_label_only_when_the_editor_typed_one()
     {
-        var component = new ClearFiltersWidgetViewComponent(renderer, editor, catalog);
+        var component = Widgets.ClearFilters(renderer, editor, catalog);
 
         string labelled = Render(component, new ClearFiltersWidgetProperties { Index = Index, Label = "Start over" });
         string plain = Render(component, new ClearFiltersWidgetProperties { Index = Index });
@@ -387,7 +389,7 @@ internal sealed class MountMarkupTests
     [Test]
     public void RangeFilter_emits_its_bounds_as_JSON_numbers_and_nests_the_input_labels()
     {
-        var component = new RangeFilterWidgetViewComponent(renderer, editor, catalog);
+        var component = Widgets.RangeFilter(renderer, editor, catalog);
 
         string markup = Render(component, new RangeFilterWidgetProperties
         {
@@ -423,7 +425,7 @@ internal sealed class MountMarkupTests
     [Test]
     public void RangeFilter_leaves_out_what_the_editor_did_not_set_so_the_JavaScript_defaults_apply()
     {
-        var component = new RangeFilterWidgetViewComponent(renderer, editor, catalog);
+        var component = Widgets.RangeFilter(renderer, editor, catalog);
 
         string markup = Render(component, new RangeFilterWidgetProperties
         {
@@ -459,7 +461,7 @@ internal sealed class MountMarkupTests
     [Test]
     public void CategoryTree_emits_every_option_the_JavaScript_widget_takes()
     {
-        var component = new CategoryTreeWidgetViewComponent(renderer, editor, catalog);
+        var component = Widgets.CategoryTree(renderer, editor, catalog);
 
         string markup = Render(component, new CategoryTreeWidgetProperties
         {
@@ -483,7 +485,7 @@ internal sealed class MountMarkupTests
     [Test]
     public void CategoryTree_tells_the_editor_to_pick_an_attribute()
     {
-        var component = new CategoryTreeWidgetViewComponent(renderer, new FakeEditorContext(XpSearchEditorMode.Edit), catalog);
+        var component = Widgets.CategoryTree(renderer, new FakeEditorContext(XpSearchEditorMode.Edit), catalog);
 
         var model = component.BuildModel(new CategoryTreeWidgetProperties { Index = Index });
 
@@ -497,7 +499,7 @@ internal sealed class MountMarkupTests
     [Test]
     public void Pagination_style_picks_the_JavaScript_widget_rather_than_becoming_an_option()
     {
-        var component = new PaginationWidgetViewComponent(renderer, editor, catalog);
+        var component = Widgets.Pagination(renderer, editor, catalog);
 
         string numbered = Render(component, new PaginationWidgetProperties { Index = Index });
         string loadMore = Render(component, new PaginationWidgetProperties
@@ -517,7 +519,7 @@ internal sealed class MountMarkupTests
     [Test]
     public void ResultStats_emits_its_text_template_and_empty_state_text()
     {
-        var component = new ResultStatsWidgetViewComponent(renderer, editor, catalog);
+        var component = Widgets.ResultStats(renderer, editor, catalog);
 
         string markup = Render(component, new ResultStatsWidgetProperties
         {
@@ -544,7 +546,7 @@ internal sealed class MountMarkupTests
     [Test]
     public void SortSelect_emits_the_valid_options_only()
     {
-        var component = new SortSelectWidgetViewComponent(renderer, editor, catalog, SearchOptions());
+        var component = Widgets.SortSelect(renderer, editor, catalog, SearchOptions());
 
         string markup = Render(component, new SortSelectWidgetProperties
         {
@@ -571,7 +573,7 @@ internal sealed class MountMarkupTests
     [Test]
     public void FilterSort_emits_its_facet_groups_and_the_valid_sort_options()
     {
-        var component = new FilterSortWidgetViewComponent(renderer, editor, catalog, SearchOptions());
+        var component = Widgets.FilterSort(renderer, editor, catalog, SearchOptions());
 
         string markup = Render(component, new FilterSortWidgetProperties
         {
@@ -606,7 +608,7 @@ internal sealed class MountMarkupTests
     [Test]
     public void FilterSort_without_facet_groups_tells_the_editor_and_renders_no_mount()
     {
-        var component = new FilterSortWidgetViewComponent(
+        var component = Widgets.FilterSort(
             renderer, new FakeEditorContext(XpSearchEditorMode.Edit), catalog, SearchOptions());
 
         var model = component.BuildModel(new FilterSortWidgetProperties { Index = Index });
@@ -621,7 +623,7 @@ internal sealed class MountMarkupTests
     [Test]
     public void FilterSort_omits_the_sort_section_when_no_option_is_valid()
     {
-        var component = new FilterSortWidgetViewComponent(renderer, editor, catalog, SearchOptions());
+        var component = Widgets.FilterSort(renderer, editor, catalog, SearchOptions());
 
         string markup = Render(component, new FilterSortWidgetProperties
         {
@@ -635,7 +637,7 @@ internal sealed class MountMarkupTests
     [Test]
     public void Suggestions_emits_the_reserved_widget_name_with_the_contract_option_names()
     {
-        var component = new SuggestionsWidgetViewComponent(renderer, editor, catalog);
+        var component = Widgets.Suggestions(renderer, editor, catalog);
 
         string markup = Render(component, new SuggestionsWidgetProperties { Index = Index, MaxItems = 8 });
 
@@ -660,7 +662,7 @@ internal sealed class MountMarkupTests
     [Test]
     public void Suggestions_saved_before_the_count_was_required_falls_back_to_five()
     {
-        var component = new SuggestionsWidgetViewComponent(renderer, editor, catalog);
+        var component = Widgets.Suggestions(renderer, editor, catalog);
 
         // Like the Results widget: 0 is a validation error on the wire, so it must not be sent.
         string markup = Render(component, new SuggestionsWidgetProperties { Index = Index, MaxItems = 0 });
@@ -681,8 +683,8 @@ internal sealed class MountMarkupTests
         var markup = new List<string>
         {
             Render(SearchBox(), (SearchBoxWidgetProperties)properties[0]),
-            Render(new ResultsWidgetViewComponent(renderer, editor, catalog), (ResultsWidgetProperties)properties[1]),
-            Render(new FacetListWidgetViewComponent(renderer, editor, catalog), (FacetListWidgetProperties)properties[2])
+            Render(Widgets.Results(renderer, editor, catalog), (ResultsWidgetProperties)properties[1]),
+            Render(Widgets.FacetList(renderer, editor, catalog), (FacetListWidgetProperties)properties[2])
         };
 
         Expect.Multiple(() =>

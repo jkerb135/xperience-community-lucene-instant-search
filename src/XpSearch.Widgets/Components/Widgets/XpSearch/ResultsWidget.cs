@@ -11,6 +11,7 @@ using XpSearch.Widgets.Components.Widgets.XpSearch;
 using XpSearch.Widgets.Mounting;
 using XpSearch.Widgets.Options;
 using XpSearch.Widgets.Resources;
+using XpSearch.Widgets.TagHelpers;
 
 [assembly: RegisterWidget(
     identifier: XpSearchWidgetConstants.ResultsIdentifier,
@@ -98,136 +99,39 @@ public sealed class ResultsWidgetProperties : XpSearchMountWidgetProperties
 }
 
 /// <summary>Renders the <c>results</c> mount.</summary>
-public sealed class ResultsWidgetViewComponent : XpSearchMountWidgetViewComponent<ResultsWidgetProperties>
+public sealed class ResultsWidgetViewComponent : XpSearchMountWidgetViewComponent<ResultsWidgetProperties, ResultsOptions>
 {
     /// <summary>What a widget saved before AR-3 - when 0 meant "use the index's default" - is read as.</summary>
-    private const int FallbackResultsPerPage = 20;
+    private const int FallbackResultsPerPage = ResultsOptions.DefaultResultsPerPage;
 
     private static readonly char[] LineSeparators = ['\r', '\n'];
 
-    private readonly ServerRenderedResults? serverResults;
-
-    /// <summary>
-    /// The server-rendered first paint of this render, once it has run. The base class rebuilds the
-    /// model after the content, so the instance config can hand the client what the server did.
-    /// </summary>
-    private ServerResultsRender? firstPaint;
-
     /// <summary>Initializes a new instance of the <see cref="ResultsWidgetViewComponent"/> class.</summary>
-    /// <param name="renderer">Renders the mount element.</param>
+    /// <param name="tagHelper">The widget's tag helper.</param>
     /// <param name="editorContext">The current editing mode.</param>
-    /// <param name="indexCatalog">The registered indexes.</param>
-    /// <param name="serverResults">
-    /// Renders the first page of results server-side (spec §5.8). Optional: without it - a host that
-    /// registered the widgets but not <c>AddXpSearch()</c> - the mount is left empty for the client.
-    /// </param>
     public ResultsWidgetViewComponent(
-        IXpSearchMountRenderer renderer,
-        IXpSearchEditorContext editorContext,
-        IXpSearchIndexCatalog indexCatalog,
-        ServerRenderedResults? serverResults = null)
-        : base(renderer, editorContext, indexCatalog) => this.serverResults = serverResults;
-
-    /// <inheritdoc />
-    protected override string WidgetType => "results";
-
-    /// <inheritdoc />
-    protected override void BuildConfig(ResultsWidgetProperties properties, IDictionary<string, object?> config)
+        XpSearchMountTagHelper<ResultsOptions> tagHelper,
+        IXpSearchEditorContext editorContext)
+        : base(tagHelper, editorContext)
     {
-        ArgumentNullException.ThrowIfNull(properties);
-        ArgumentNullException.ThrowIfNull(config);
-
-        if (!string.IsNullOrWhiteSpace(properties.ResultTemplate))
-        {
-            config["template"] = properties.ResultTemplate.Trim();
-        }
-
-        // Which attribute a card shows is a display option of this list, not of the search.
-        if (!string.IsNullOrWhiteSpace(properties.TitleAttribute))
-        {
-            config["titleAttribute"] = properties.TitleAttribute.Trim();
-        }
-
-        if (!string.IsNullOrWhiteSpace(properties.UrlAttribute))
-        {
-            config["urlAttribute"] = properties.UrlAttribute.Trim();
-        }
-
-        var snippets = ParseLines(properties.SnippetAttributes);
-        if (snippets.Count > 0)
-        {
-            config["snippetAttributes"] = snippets;
-        }
     }
 
     /// <inheritdoc />
-    /// <remarks>
-    /// Page size and retrieved fields are properties of the search, not of the list that displays it,
-    /// so they belong in the instance options the bootstrap passes to <c>createSearch()</c>.
-    /// </remarks>
-    protected override void BuildInstanceConfig(ResultsWidgetProperties properties, IDictionary<string, object?> instanceConfig)
+    public override ResultsOptions ToOptions(ResultsWidgetProperties properties)
     {
         ArgumentNullException.ThrowIfNull(properties);
-        ArgumentNullException.ThrowIfNull(instanceConfig);
 
-        // The page size the server actually applied, not the one the widget asked for: the index's
-        // maximum may have clamped it, and the hydration query must ask for the same page the visitor
-        // is already looking at.
-        instanceConfig["initialState"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+        return new ResultsOptions
         {
-            ["pageSize"] = firstPaint?.PageSize ?? PageSize(properties)
+            Index = properties.Index,
+            InstanceId = properties.InstanceId,
+            ResultsPerPage = PageSize(properties),
+            Template = properties.ResultTemplate,
+            Fields = EffectiveFields(properties),
+            TitleAttribute = properties.TitleAttribute,
+            UrlAttribute = properties.UrlAttribute,
+            SnippetAttributes = ParseLines(properties.SnippetAttributes)
         };
-
-        // Only when the server really answered a search: the client then reuses the id instead of
-        // journaling the same page load twice.
-        if (!string.IsNullOrWhiteSpace(firstPaint?.QueryId))
-        {
-            instanceConfig["initialQueryId"] = firstPaint.QueryId;
-        }
-
-        var fields = EffectiveFields(properties);
-        if (fields.Count > 0)
-        {
-            instanceConfig["fields"] = fields;
-        }
-    }
-
-    /// <inheritdoc />
-    /// <remarks>
-    /// The first paint of a shared result URL is rendered server-side, so results are there before
-    /// the bundle runs and a visitor without JavaScript still sees them (spec §5.8).
-    /// </remarks>
-    protected override async Task<IHtmlContent?> BuildMountContentAsync(
-        ResultsWidgetProperties properties,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(properties);
-
-        var viewContext = ViewComponentContext.ViewContext;
-
-        if (serverResults is null || viewContext?.HttpContext is null)
-        {
-            return null;
-        }
-
-        firstPaint = await serverResults.RenderAsync(
-            viewContext,
-            new ServerResultsOptions(
-                CurrentIndex,
-                PageSize(properties),
-                EffectiveFields(properties),
-                properties.ResultTemplate,
-                properties.TitleAttribute,
-                properties.UrlAttribute,
-                ParseLines(properties.SnippetAttributes),
-                XpSearchWidgetConstants.DefaultResultViewPath),
-            cancellationToken).ConfigureAwait(false);
-
-        // What the visitor's own refinements are called, so the client can name them before its
-        // first response arrives (FC-1).
-        MountLabels = firstPaint?.Labels;
-
-        return firstPaint?.Content;
     }
 
     /// <inheritdoc />

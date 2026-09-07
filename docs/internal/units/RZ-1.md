@@ -163,3 +163,12 @@ JS changes of any kind; Core; language/channel properties on mounts (separate un
 - **A** — §1.1–1.5 tag helpers + §2 base refactor + sample + tests §4 (all 12 existing widgets).
 - **B** — §1.6 the two widgets across all three layers + their tests and guide sections.
 - **C** — §3 docs + ADR + CHANGELOG (docs agent may take this after A+B are approved).
+## 8. Amendment 2026-09-06 — SK-1 compatibility (peer unit: skeleton first paint)
+SK-1 layers on this unit after merge. Two shape constraints, binding for slice A:
+1. `XpSearchMountTagHelper<TOptions>.BuildContentAsync` stays `protected virtual` with a
+   `null` default (SK-1 replaces the default with a skeleton), and the element rendered INSIDE a
+   mount by server-side content keeps the `data-xps-server-rendered` marker exactly as
+   `ServerRenderedResults` emits it today.
+2. The results tag helper keeps its `ServerRenderedResults` dependency reachable — a
+   `protected` property (e.g. `ServerResults`) rather than a private field — so SK-1 can stash it
+   in a per-request store for pagination/resultStats/activeFilters first paint.

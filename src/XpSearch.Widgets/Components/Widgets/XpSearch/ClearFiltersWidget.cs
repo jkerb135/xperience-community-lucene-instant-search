@@ -8,6 +8,7 @@ using XpSearch.Widgets.Components.Widgets.XpSearch;
 using XpSearch.Widgets.Mounting;
 using XpSearch.Widgets.Options;
 using XpSearch.Widgets.Resources;
+using XpSearch.Widgets.TagHelpers;
 
 [assembly: RegisterWidget(
     identifier: XpSearchWidgetConstants.ClearFiltersIdentifier,
@@ -33,22 +34,30 @@ public sealed class ClearFiltersWidgetProperties : XpSearchMountWidgetProperties
 }
 
 /// <summary>Renders the <c>clearFilters</c> mount.</summary>
-public sealed class ClearFiltersWidgetViewComponent : XpSearchMountWidgetViewComponent<ClearFiltersWidgetProperties>
+public sealed class ClearFiltersWidgetViewComponent : XpSearchMountWidgetViewComponent<ClearFiltersWidgetProperties, ClearFiltersOptions>
 {
     /// <summary>Initializes a new instance of the <see cref="ClearFiltersWidgetViewComponent"/> class.</summary>
-    /// <param name="renderer">Renders the mount element.</param>
+    /// <param name="tagHelper">The widget's tag helper.</param>
     /// <param name="editorContext">The current editing mode.</param>
-    /// <param name="indexCatalog">The registered indexes.</param>
     public ClearFiltersWidgetViewComponent(
-        IXpSearchMountRenderer renderer,
-        IXpSearchEditorContext editorContext,
-        IXpSearchIndexCatalog indexCatalog)
-        : base(renderer, editorContext, indexCatalog)
+        XpSearchMountTagHelper<ClearFiltersOptions> tagHelper,
+        IXpSearchEditorContext editorContext)
+        : base(tagHelper, editorContext)
     {
     }
 
     /// <inheritdoc />
-    protected override string WidgetType => "clearFilters";
+    public override ClearFiltersOptions ToOptions(ClearFiltersWidgetProperties properties)
+    {
+        ArgumentNullException.ThrowIfNull(properties);
+
+        return new ClearFiltersOptions
+        {
+            Index = properties.Index,
+            InstanceId = properties.InstanceId,
+            Label = properties.Label
+        };
+    }
 
     /// <inheritdoc />
     protected override IHtmlContent BuildEditorPreview(ClearFiltersWidgetProperties properties)

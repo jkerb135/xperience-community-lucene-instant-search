@@ -11,6 +11,7 @@ using XpSearch.Widgets.Mounting;
 using XpSearch.Widgets.Options;
 using XpSearch.Widgets.Resources;
 using XpSearch.Widgets.Sorting;
+using XpSearch.Widgets.TagHelpers;
 
 [assembly: RegisterWidget(
     identifier: XpSearchWidgetConstants.SortSelectIdentifier,
@@ -56,56 +57,37 @@ public sealed class SortSelectWidgetProperties : XpSearchMountWidgetProperties
 }
 
 /// <summary>Renders the <c>sortSelect</c> mount.</summary>
-public sealed class SortSelectWidgetViewComponent : XpSearchMountWidgetViewComponent<SortSelectWidgetProperties>
+public sealed class SortSelectWidgetViewComponent : XpSearchMountWidgetViewComponent<SortSelectWidgetProperties, SortSelectOptions>
 {
     private readonly IOptionsMonitor<XpSearchOptions> searchOptions;
 
     /// <summary>Initializes a new instance of the <see cref="SortSelectWidgetViewComponent"/> class.</summary>
-    /// <param name="renderer">Renders the mount element.</param>
+    /// <param name="tagHelper">The widget's tag helper.</param>
     /// <param name="editorContext">The current editing mode.</param>
-    /// <param name="indexCatalog">The registered indexes.</param>
-    /// <param name="searchOptions">Supplies the sort keys configured per index.</param>
+    /// <param name="searchOptions">Supplies the sort keys configured per index, for the preview.</param>
     public SortSelectWidgetViewComponent(
-        IXpSearchMountRenderer renderer,
+        XpSearchMountTagHelper<SortSelectOptions> tagHelper,
         IXpSearchEditorContext editorContext,
-        IXpSearchIndexCatalog indexCatalog,
         IOptionsMonitor<XpSearchOptions> searchOptions)
-        : base(renderer, editorContext, indexCatalog)
+        : base(tagHelper, editorContext)
     {
         ArgumentNullException.ThrowIfNull(searchOptions);
         this.searchOptions = searchOptions;
     }
 
     /// <inheritdoc />
-    protected override string WidgetType => "sortSelect";
-
-    /// <inheritdoc />
-    /// <remarks>A selector whose every key would be rejected by the API is a misconfiguration, not an empty list.</remarks>
-    protected override string? ConfigurationHint(SortSelectWidgetProperties properties) =>
-        SortOptionsValidation.ParseValid(properties?.SortOptions, IndexOptions()).Count == 0
-            ? WidgetResources.Hint_SortOptions
-            : null;
-
-    /// <inheritdoc />
-    protected override void BuildConfig(SortSelectWidgetProperties properties, IDictionary<string, object?> config)
+    public override SortSelectOptions ToOptions(SortSelectWidgetProperties properties)
     {
         ArgumentNullException.ThrowIfNull(properties);
-        ArgumentNullException.ThrowIfNull(config);
 
-        config["items"] = SortOptionsValidation.ParseValid(properties.SortOptions, IndexOptions())
-            .Select(option => new Dictionary<string, object?>(StringComparer.Ordinal)
-            {
-                ["value"] = option.Value,
-                ["label"] = option.Label
-            })
-            .ToList();
-
-        if (!string.IsNullOrWhiteSpace(properties.Label))
+        return new SortSelectOptions
         {
-            config["label"] = properties.Label;
-        }
-
-        config["hideLabel"] = properties.HideLabel;
+            Index = properties.Index,
+            InstanceId = properties.InstanceId,
+            SortOptions = properties.SortOptions,
+            Label = properties.Label,
+            HideLabel = properties.HideLabel
+        };
     }
 
     /// <inheritdoc />
@@ -132,6 +114,7 @@ public sealed class SortSelectWidgetViewComponent : XpSearchMountWidgetViewCompo
         return box.Add(select);
     }
 
+    // The tag helper resolved the index while validating, which is what runs before the preview.
     private XpSearchIndexOptions? IndexOptions() =>
-        searchOptions.CurrentValue.Indexes.TryGetValue(CurrentIndex, out var options) ? options : null;
+        searchOptions.CurrentValue.Indexes.TryGetValue(TagHelper.CurrentIndex, out var options) ? options : null;
 }

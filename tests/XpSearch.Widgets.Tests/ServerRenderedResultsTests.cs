@@ -199,7 +199,7 @@ internal sealed class ServerRenderedResultsTests
         ISearchPipeline pipeline,
         IXpSearchEditorContext? editor = null,
         string queryString = "?q=espresso") =>
-        new(
+        Widgets.Results(
             new XpSearchMountRenderer(),
             editor ?? new FakeEditorContext(XpSearchEditorMode.Live),
             new FakeIndexCatalog("site-content"),
@@ -208,9 +208,7 @@ internal sealed class ServerRenderedResultsTests
                 provider.GetRequiredService<ICompositeViewEngine>(),
                 new FakeTemplateRegistry(),
                 new CapturingLogger()))
-        {
-            ViewComponentContext = new ViewComponentContext { ViewContext = ViewContext(queryString) }
-        };
+            .WithViewContext(ViewContext(queryString));
 
     private static SearchResponse TwoResults() => new()
     {
