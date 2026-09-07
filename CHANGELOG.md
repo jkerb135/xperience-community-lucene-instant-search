@@ -12,6 +12,18 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Changed (widgets):** hydration is a handover, not a repaint (SK-1). A mount holding what the
+  server rendered — the results list, or a widget's skeleton — is now **adopted** by the client
+  (`createRoot` keeps the element carrying `data-xps-server-rendered` when its tag name matches) and
+  its content is left on screen until that widget has a response, instead of the container being
+  emptied and a client skeleton painted over it. The search box replaces the server form on its
+  first render and carries over a value typed into it before the bundle ran, focus included.
+- **Added (widgets):** the previous and next pagination links carry `rel="prev"` / `rel="next"`.
+- **Added (themes):** the skeleton vocabulary the pre-JavaScript page is drawn with —
+  `xps-skeleton--heading`, `--box`, `--count`, `--control`, `--track` and `--line` beside the
+  existing `--title`, `--text` and `--block`, with `--xps-skeleton-width` to vary one bar's width.
+  `themes/fixtures/skeleton.html` is the block each widget's server skeleton is built from.
+
 - **Changed (admin):** rule builder panels rebuilt to the approved boards
   (`docs/internal/design/rule-builder-panels/`). Both side panels are `Stackable` and open with a
   one-line description of what they are for — the condition panel's three switch sections are
