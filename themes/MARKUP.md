@@ -132,7 +132,7 @@ to know to inherit accessible defaults.
 | `xps-sidebar` | Fixture: `fixtures/sidebar.html`. The filter column: a vertical stack of the heading row and every refinement widget the host put in it. Unlike the two above it this one is **painted** — the theme gives it the design's card (surface, 1px border, radius, `1.25rem` padding, soft shadow) — so the element carries `xps` as well and the theme's rule for it is compound (`.xps.xps-sidebar.xps-sidebar`), not a descendant rule. Put both classes on the one element that holds the mounts; wrapping the mounts in a second element breaks a host rule that keys on them being direct children. |
 | `xps-sidebar__header` | The filter column's heading row: `xps-sidebar__title` (any heading element) and a trailing "Clear all". Carries the same rule under it as a facet-group title. |
 | `xps-chip` | Removable-token box. Children: `xps-chip__label`, holding an optional `xps-chip__attribute` (the filter's name, with its colon, muted) followed by `xps-chip__value` (what the visitor picked, in the heavier weight) — the attribute span is left out entirely when no widget names the attribute, never filled with a field code; and `xps-chip__remove` (a `<button>` with an `aria-label` naming what is removed). |
-| `xps-skeleton` | Loading placeholder: `currentColor` at low opacity with a pulse animation, suppressed under `prefers-reduced-motion`. Modifiers `--title`, `--text`, `--block`. |
+| `xps-skeleton` | Loading placeholder: `currentColor` at low opacity with a pulse animation, suppressed under `prefers-reduced-motion`. One modifier per part it stands in for — `--title` (a result title), `--text` (a body line), `--block` (a media square), `--heading` (a facet/tree/range heading), `--box` (a checkbox square), `--count` (a facet count, pushed to the end of its row), `--control` (the text inside a select or number input; the box around it is the widget's own control element), `--track` (the range rail) and `--line` (a whole sentence or a control label). Each modifier carries the design's size; set `--xps-skeleton-width` on the element to vary one bar's width. |
 | `xps-highlight` | The class on the `<mark>` element produced by the `highlight` template helper. |
 
 The focus ring (`.xps :focus-visible`) and the scoped reset apply to anything inside an element
@@ -150,6 +150,28 @@ Fixture: `fixtures/mount.html`. Spec §7.1.
 `xps-mount` is deliberately **unstyled** — no display, no spacing — so an empty mount (before
 hydration, or when a widget fails to construct) cannot disturb the page layout. The widget root
 the bootstrap renders inside it carries `xps` itself.
+
+### Server-rendered first paint (`data-xps-server-rendered`)
+
+Fixture: `fixtures/skeleton.html`.
+
+A mount may already hold what the server rendered: the results list, a real GET form, or the
+widget's skeleton. That element carries `data-xps-server-rendered` and has the tag name the client
+builds the root with (`nav` for pagination and the category tree, `form` for the search box, `div`
+for the rest). The client then **adopts** it — same element, same children, its class replaced with
+the widget's own — and leaves the children alone until that widget has a response; the first real
+paint removes the attribute. So the pre-JavaScript page is never replaced by a skeleton, and a
+widget never paints twice.
+
+A skeleton block is decoration: `aria-hidden="true"` on the root, no text and no focusable element
+inside it, and the widget's own structure classes holding `xps-skeleton` bars. The root also
+carries a `--skeleton` modifier — `xps-facet-list--skeleton`, `xps-category-tree--skeleton`,
+`xps-range-filter--skeleton`, `xps-toggle-filter--skeleton`, `xps-result-stats--skeleton`,
+`xps-sort-select--skeleton`, `xps-filter-sort--skeleton`, `xps-pagination--skeleton`,
+`xps-active-filters--skeleton`, `xps-clear-filters--skeleton`, `xps-load-more--skeleton`,
+`xps-suggestions--skeleton` — which nothing styles; it names the state for a site that wants to.
+The results widget has no block here: it paints its own skeleton into an empty mount
+(`fixtures/results.html`, `xps-result--skeleton`).
 
 ## Page Builder editor preview
 
@@ -303,7 +325,7 @@ Fixture: `fixtures/pagination.html`. Root `<nav class="xps xps-pagination" aria-
 | `xps-pagination__item--current` | modifier | Sits alongside `--page`; the link gets `aria-current="page"`. |
 | `xps-pagination__item--ellipsis` | modifier | Gap in the number run. |
 | `xps-pagination__item--disabled` | modifier | Only on the end controls at the range boundary. |
-| `xps-pagination__link` | `<a href>` — or `<span aria-disabled="true">` when disabled | A disabled control is a `<span>`: no href, not focusable, nothing for a keyboard user to land on that does nothing. |
+| `xps-pagination__link` | `<a href>` — or `<span aria-disabled="true">` when disabled | A disabled control is a `<span>`: no href, not focusable, nothing for a keyboard user to land on that does nothing. The enabled previous and next links carry `rel="prev"` / `rel="next"`; no other link does. |
 | `xps-pagination__ellipsis` | `<span aria-hidden="true">` | |
 
 Every control's visible content is a glyph marked `aria-hidden="true"` plus an `xps-sr-only`
