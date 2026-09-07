@@ -639,3 +639,21 @@ Open **Lucene Search → DancingGoatSample → Edit index → Query tester** and
      (its target is pinned to #1 and the rule appears in that row's panel), and the applied choice
      renders as a sky-blue tag next to the button reading the group. Clearing the group and
      re-running drops that rule.
+
+## §AB — RZ-1 bottom-up layering: tag helpers + the Razor search page (2026-09-06)
+
+141. `/search-razor?q=grinder` on the host renders the mockup skeleton with zero overrides: search box
+     with autocomplete, Filters card (Category / Products / Taste facet groups, Price slider), toolbar
+     (stats left, sort right), chips row, product cards with thumbnails, numbered pagination. Lead
+     verified 2026-09-06 (7 results, no console errors) — owner eyeballs it beside `/search`.
+142. View-source of `/search-razor` shows the same `data-xps-*` mount elements `/search` emits and a
+     `data-xps-server-rendered` results block (first paint through `<xps-results>`).
+143. Ticking a facet on `/search-razor` updates the URL (`ProductFieldCategory=…`), the chips row and
+     the count; Back restores. Same behaviour as `/search` (routing comes from `<xps-search routing>`).
+144. `/search` (Page Builder) is pixel-identical to before the merge — the Page Builder widgets now
+     render through the tag helpers and the parity test pins the bytes; nothing should have moved.
+145. Page Builder: **Search - Toggle filter** and **Search - Load more** are offered in the widget
+     list; Load more's explanation says it replaces Results + Pagination. Place a Toggle filter on
+     `ProductFieldTags` = `HotTips` in the sidebar and confirm it filters.
+146. Below 1024px on `/search-razor` the Filter & sort sheet opens with Category / Products / Taste and
+     the sort pills; Apply runs one search.
