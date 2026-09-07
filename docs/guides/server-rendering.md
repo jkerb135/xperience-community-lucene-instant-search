@@ -14,6 +14,13 @@ Two ways to get it:
 
 ### The widgets path
 
+The first paint lives in the **tag helper**, not in the Page Builder widget: `<xps-results />` in a
+plain Razor view runs the search and writes the cards exactly as the **Search - Results** widget does,
+because the widget renders through that same tag helper (`BuildContentAsync` on
+`XpSearchMountTagHelper<TOptions>`, which any widget may override to put server-rendered markup inside
+its mount). A Razor page therefore gets the shared-URL first paint with no extra code, and the two
+paths cannot drift — see [Razor tag helpers](razor-tag-helpers.md).
+
 On a live or previewed page the Results widget runs the first search itself and writes the cards
 inside its mount element, wrapped in `<div data-xps-server-rendered>`; it hands the client the
 `queryId` and the page size the server used so the page load is journaled once. See
@@ -160,6 +167,8 @@ From this release on, a change to the mount markup or to any `data-xps-config` /
 
 ### Related pages
 
+- [Razor tag helpers](razor-tag-helpers.md) — `<xps-results />` and the rest of the tag elements
+- [Building a search page](building-a-search-page.md) — the same page in plain HTML, Razor and Page Builder
 - [Page Builder widgets](page-builder-widgets.md) — the widgets, their properties and result templates
 - [JavaScript client](js-client.md) — `createSearch` and its options
 - [Custom widgets](custom-widgets.md) — writing widgets against a mount element

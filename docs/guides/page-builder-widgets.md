@@ -1,8 +1,17 @@
 ## Page Builder widgets
 
-Xperience Search ships nine Page Builder widgets. An editor drags them onto a page in any section, in
-any order; each one renders a single configured mount element, and the JavaScript bundle assembles them
-into one working search. Nothing about the page layout has to be decided by a developer.
+Xperience Search ships fourteen Page Builder widgets. An editor drags them onto a page in any section,
+in any order; each one renders a single configured mount element, and the JavaScript bundle assembles
+them into one working search. Nothing about the page layout has to be decided by a developer.
+
+These widgets are the top of three layers, not a separate implementation. The bottom layer is the
+JavaScript library and its mount contract; above it sits one Razor tag helper per widget, which is the
+single implementation of "options in, mount out"; a Page Builder widget is that tag helper plus editor
+properties, and its `ToOptions` is usually the only code in it. So everything on this page has a Razor
+twin — `<xps-facet-list attribute="contentType" />` for **Search - Facet list** — that renders the
+same bytes, test-pinned for all fourteen widgets. See
+[Razor tag helpers](razor-tag-helpers.md) and, for the three side by side,
+[Building a search page](building-a-search-page.md).
 
 ### Install
 
@@ -472,12 +481,16 @@ widgets depends on where the files are served from.
 
 ### Custom widgets in the Page Builder
 
-A control you wrote yourself can be placed by editors too — subclass
-`XpSearchMountWidgetViewComponent<T>` and you get property serialization, instance grouping and the
-unconfigured state for free. See [Custom widgets](custom-widgets.md).
+A control you wrote yourself can be placed by editors too: write its tag helper over
+`XpSearchMountTagHelper<TOptions>`, then a widget over
+`XpSearchMountWidgetViewComponent<TProperties, TOptions>` whose `ToOptions` maps the editor properties
+onto the options record. Index resolution, the config JSON, instance grouping and the unconfigured
+state all come from the tag helper. See [Custom widgets](custom-widgets.md).
 
 ### Related pages
 
+- [Building a search page](building-a-search-page.md) — the same results page in plain HTML, in Razor and here.
+- [Razor tag helpers](razor-tag-helpers.md) — the tag element behind every widget on this page.
 - [Quick start](quick-start.md) — indexing, `AddXpSearch`, the first search.
 - [Custom widgets](custom-widgets.md) — build your own control and make it placeable.
 - [Widget reference](widget-reference.md) — every option of every JavaScript widget.

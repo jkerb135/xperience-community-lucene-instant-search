@@ -103,7 +103,9 @@ reference the project). It registers itself through `[assembly: RegisterWidget]`
 loaded. The host application needs the standard Xperience Search setup —
 `services.AddXpSearch()`, `services.AddXpSearchWidgets()`, `app.UseXpSearch()`,
 `<xps-search-assets />` — plus a reference to `XperienceCommunity.Search.Admin` in the administration
-project, without which the **Attribute** drop-down stays hidden.
+project, without which the **Attribute** drop-down stays hidden. Add one line for this widget:
+`services.AddXpSearchWidget<DropdownFacetTagHelper, DropdownFacetOptions>()`, which is how the Page
+Builder widget resolves its tag helper from the container.
 
 Editor properties: **Search index** and **Instance ID** (from the base class), then **Attribute**
 (a drop-down of the selected index's facetable fields), **Label** and **"All" option text**.

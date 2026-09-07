@@ -406,19 +406,87 @@ builds one `createSearch()` instance per group and starts it:
 - **The behaviour API is semver-major.** `RenderOptions`, `SearchActions` and the widget lifecycle only
   break on a major version.
 
-### Page Builder widgets in C#
+### The three avenues in C#
 
-Make the same control placeable by editors. Subclass `XpSearchMountWidgetViewComponent<T>`: it
-serializes your properties into `data-xps-config`, emits the instance grouping and the instance options,
-and renders the editor-only unconfigured block. You never hand-write a mount div or JSON-encode anything.
+The widget above is JavaScript, and it already works on any page that carries a mount for it. Three
+avenues make it reachable from an Xperience application — the same three the shipped widgets use, and
+each one built on the one below it (see [Building a search page](building-a-search-page.md) for the
+layering):
+
+1. **JavaScript** — `registerWidgetType('myCompany.dropdownFacet', …)`, above. Everything else needs it.
+2. **Razor** — the generic `<xps-widget>` with no C# at all, or a tag element of your own.
+3. **Page Builder** — a widget over that tag helper, so editors can place it.
+
+#### `<xps-widget>`: Razor with no C# at all
+
+```cshtml
+<xps-search index="site-content">
+    <xps-widget type="myCompany.dropdownFacet"
+                config='@(new { attribute = "brand", label = "Brand", allLabel = "All" })' />
+</xps-search>
+```
+
+renders
+
+```html
+<div class="xps-mount"
+     data-xps-config="{&quot;attribute&quot;:&quot;brand&quot;,&quot;label&quot;:&quot;Brand&quot;,&quot;allLabel&quot;:&quot;All&quot;}"
+     data-xps-instance="default"
+     data-xps-instance-config="{&quot;index&quot;:&quot;site-content&quot;}"
+     data-xps-widget="myCompany.dropdownFacet"></div>
+```
+
+`config` takes an anonymous object or a POCO (serialized property by property, camel-cased) or a
+dictionary (copied key for key); `instance-config` does the same for options of the search itself.
+That is the whole Razor story if you never need a first-class tag or an editor-facing widget.
+
+#### A tag helper of your own
+
+Derive `XpSearchMountTagHelper<TOptions>` and you get `<my-dropdown-facet attribute="brand" />`, with
+the attributes bound and validated, the index resolved and the JSON written for you. Two types:
+
+- a **sealed options record** deriving `XpSearchMountOptions` — what the widget needs to render,
+  Kentico-free, the thing a unit test and `Html.XpSearchAsync` speak;
+- the **tag helper**, which names the JavaScript widget in `WidgetType`, binds each attribute with
+  `[HtmlAttributeName]`, folds the attributes onto the record in `Merge`, and says what is still
+  missing in `Validate`.
+
+Register the pair once, next to `AddXpSearchWidgets()`:
 
 ```csharp
+builder.Services.AddXpSearchWidget<DropdownFacetTagHelper, DropdownFacetOptions>();
+```
+
+That registration is what lets the Page Builder layer and `Html.XpSearchAsync` resolve your widget by
+its options type; without it the tag element still works, but the Page Builder widget below cannot be
+constructed. Both registrations are transient, because a tag helper holds the state of one render.
+
+#### The Page Builder widget
+
+`XpSearchMountWidgetViewComponent<TProperties, TOptions>` adds the editor concerns and nothing else:
+the properties class with its form annotations, `ToOptions(properties)` mapping them onto the options
+record, and optionally `BuildEditorPreview`. It renders through your tag helper, so a page an editor
+assembled and a page a developer wrote produce the same bytes.
+
+All of it — options record, tag helper, editor properties, Page Builder widget — is one file, and
+this is that file
+(`samples/CustomWidget.Dropdown/dotnet/CustomWidget.Dropdown.Widget/DropdownFacetWidget.cs`, built and
+tested against the packed packages in CI, reproduced here in full):
+
+```csharp
+using System;
+
 using Kentico.PageBuilder.Web.Mvc;
 using Kentico.Xperience.Admin.Base.FormAnnotations;
+
+using Microsoft.AspNetCore.Razor.TagHelpers;
+
+using MyCompany.Search.Widgets;
 
 using XpSearch.Core;
 using XpSearch.Widgets.Mounting;
 using XpSearch.Widgets.Options;
+using XpSearch.Widgets.TagHelpers;
 
 [assembly: RegisterWidget(
     identifier: "MyCompany.DropdownFacet",
@@ -429,55 +497,139 @@ using XpSearch.Widgets.Options;
     IconClass = "icon-chevron-down",
     AllowCache = false)]
 
-// `Index` (order 10) and `InstanceId` (order 20) come from the base class; start your own at 30.
+namespace MyCompany.Search.Widgets;
+
+/// <summary>
+/// What the widget needs to render, whichever way it is placed. Kentico-free: this is what a Razor
+/// view, a unit test and the Page Builder widget all speak.
+/// </summary>
+public sealed record DropdownFacetOptions : XpSearchMountOptions
+{
+    /// <summary>Gets the facet attribute to filter on.</summary>
+    public string? Attribute { get; init; }
+
+    /// <summary>Gets the visible label of the drop-down.</summary>
+    public string Label { get; init; } = "Filter";
+
+    /// <summary>Gets the text of the option that applies no filter.</summary>
+    public string AllLabel { get; init; } = "All";
+}
+
+/// <summary>
+/// <c>&lt;my-dropdown-facet attribute="brand" /&gt;</c> - the Razor surface, and the single
+/// implementation of the mount: the Page Builder widget below scaffolds on it.
+/// </summary>
+[HtmlTargetElement("my-dropdown-facet")]
+public sealed class DropdownFacetTagHelper : XpSearchMountTagHelper<DropdownFacetOptions>
+{
+    /// <summary>Initializes a new instance of the <see cref="DropdownFacetTagHelper"/> class.</summary>
+    /// <param name="renderer">Renders the mount element.</param>
+    /// <param name="indexCatalog">Supplies the sole index when none was named.</param>
+    public DropdownFacetTagHelper(IXpSearchMountRenderer renderer, IXpSearchIndexCatalog indexCatalog)
+        : base(renderer, indexCatalog)
+    {
+    }
+
+    /// <summary>Gets or sets <see cref="DropdownFacetOptions.Attribute"/>.</summary>
+    [HtmlAttributeName("attribute")]
+    public string? Attribute { get; set; }
+
+    /// <summary>Gets or sets <see cref="DropdownFacetOptions.Label"/>.</summary>
+    [HtmlAttributeName("label")]
+    public string? Label { get; set; }
+
+    /// <summary>Gets or sets <see cref="DropdownFacetOptions.AllLabel"/>.</summary>
+    [HtmlAttributeName("all-label")]
+    public string? AllLabel { get; set; }
+
+    /// <inheritdoc />
+    protected override string WidgetType => "myCompany.dropdownFacet";
+
+    /// <inheritdoc />
+    public override string? Validate(DropdownFacetOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        return base.Validate(options)
+            ?? (string.IsNullOrWhiteSpace(options.Attribute) ? "Select the attribute to filter on." : null);
+    }
+
+    /// <inheritdoc />
+    protected override DropdownFacetOptions Merge(DropdownFacetOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        return options with
+        {
+            Attribute = Attribute ?? options.Attribute,
+            Label = Label ?? options.Label,
+            AllLabel = AllLabel ?? options.AllLabel
+        };
+    }
+}
+
+/// <summary>
+/// Editor properties of the dropdown facet widget. <c>Index</c> (order 10) and <c>InstanceId</c>
+/// (order 20) come from the base class.
+/// </summary>
 public sealed class DropdownFacetWidgetProperties : XpSearchMountWidgetProperties
 {
-    // The attribute drop-down is filled from the selected index's facetable fields, and hidden
-    // until an index is chosen. `Index` must be ordered before it, which the base class guarantees.
+    /// <summary>
+    /// Gets or sets the facet attribute to filter on. Filled from the selected index's facetable
+    /// fields and hidden until an index is chosen.
+    /// </summary>
     [DropDownComponent(Label = "Attribute", Order = OrderFirstWidgetProperty)]
     [FormComponentConfiguration(XpSearchConstants.FacetAttributeConfiguratorIdentifier, nameof(Index))]
     public string Attribute { get; set; } = string.Empty;
 
+    /// <summary>Gets or sets the visible label of the drop-down.</summary>
     [TextInputComponent(Label = "Label", Order = OrderFirstWidgetProperty + 10)]
     public string Label { get; set; } = "Filter";
 
+    /// <summary>Gets or sets the text of the option that applies no filter.</summary>
     [TextInputComponent(Label = "\"All\" option text", Order = OrderFirstWidgetProperty + 20)]
     public string AllLabel { get; set; } = "All";
 }
 
+/// <summary>Places the <c>myCompany.dropdownFacet</c> mount in the Page Builder.</summary>
 public sealed class DropdownFacetWidgetViewComponent
-    : XpSearchMountWidgetViewComponent<DropdownFacetWidgetProperties>
+    : XpSearchMountWidgetViewComponent<DropdownFacetWidgetProperties, DropdownFacetOptions>
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DropdownFacetWidgetViewComponent"/> class.
+    /// </summary>
+    /// <param name="tagHelper">The widget's tag helper - where the mount is actually built.</param>
+    /// <param name="editorContext">The current editing mode.</param>
     public DropdownFacetWidgetViewComponent(
-        IXpSearchMountRenderer renderer,
-        IXpSearchEditorContext editorContext,
-        IXpSearchIndexCatalog indexCatalog)
-        : base(renderer, editorContext, indexCatalog)
+        XpSearchMountTagHelper<DropdownFacetOptions> tagHelper,
+        IXpSearchEditorContext editorContext)
+        : base(tagHelper, editorContext)
     {
     }
 
-    protected override string WidgetType => "myCompany.dropdownFacet";
+    /// <inheritdoc />
+    public override DropdownFacetOptions ToOptions(DropdownFacetWidgetProperties properties)
+    {
+        ArgumentNullException.ThrowIfNull(properties);
 
-    // Without an attribute there is nothing to filter on: instruct the editor instead of rendering.
-    protected override string? ConfigurationHint(DropdownFacetWidgetProperties properties) =>
-        string.IsNullOrWhiteSpace(properties.Attribute) ? "Select the attribute to filter on." : null;
+        return new DropdownFacetOptions
+        {
+            Index = properties.Index,
+            InstanceId = properties.InstanceId,
+            Attribute = properties.Attribute,
+            Label = properties.Label,
+            AllLabel = properties.AllLabel
+        };
+    }
 }
 ```
 
-That is the whole C# side. The editor drags "Search - Dropdown filter" onto the page, picks an index and
-an attribute, and the widget renders:
-
-```html
-<div class="xps-mount"
-     data-xps-widget="myCompany.dropdownFacet"
-     data-xps-instance="default"
-     data-xps-config="{&quot;attribute&quot;:&quot;brand&quot;,&quot;label&quot;:&quot;Brand&quot;,&quot;allLabel&quot;:&quot;All&quot;}"
-     data-xps-instance-config="{&quot;index&quot;:&quot;site-content&quot;}"></div>
-```
+The editor drags "Search - Dropdown filter" onto the page, picks an index and an attribute, and the
+widget renders exactly the mount the `<xps-widget>` example above renders.
 
 Two registrations make it work end to end: `registerWidgetType('myCompany.dropdownFacet', ...)` on the
-JavaScript side (above) and `[RegisterWidget]` on the C# side. Three identifier strings are in play
-and the casing differs on purpose:
+JavaScript side and `[RegisterWidget]` on the C# side. Three identifier strings are in play and the
+casing differs on purpose:
 
 | String | Convention | Must equal |
 |---|---|---|
@@ -486,27 +638,46 @@ and the casing differs on purpose:
 | `[RegisterWidget(identifier: "MyCompany.DropdownFacet")]` | `Company.Object`, Pascal-cased — Xperience's own convention for a widget identifier | nothing on the JavaScript side |
 
 Nothing checks the first pair at build time, so keep each in one constant (`export const WIDGET_TYPE`
-in the module, a `const string` on the view component) rather than typing the string twice.
+in the module, a `const string` on the tag helper) rather than typing the string twice.
 
-#### What the base class gives you
+#### What the tag helper base class gives you
+
+`XpSearchMountTagHelper<TOptions>` is the single implementation of "options in, mount out". Everything
+in the table is inherited; the only member you must supply is `WidgetType`.
 
 | Member | Default | Override when |
 |---|---|---|
 | `WidgetType` | abstract | always — it is the `data-xps-widget` value |
-| `BuildConfig(properties, config)` | every public property except `Index` and `InstanceId`, camel-cased, skipping nulls and empty strings | a config key is not simply the camel-cased property name |
-| `BuildInstanceConfig(properties, instanceConfig)` | nothing beyond `index` | a property really is instance-wide (page size, retrieved fields) |
-| `ConfigurationHint(properties)` | `null` (configured) | the widget needs more than an index before it can render |
-| `GetWidgetType(properties)` | `WidgetType` | a property decides *which* JavaScript widget to mount |
-| `CurrentIndex` | the editor's index, or the project's only index | you need the resolved index inside the three methods above |
+| `Validate(options)` | resolves the index into `CurrentIndex`, then `null`, or *Select a search index.* | the widget needs more than an index before it can render; chain through `base.Validate(options)` first |
+| `Merge(options)` | the record as given | always, for a tag with attributes: `options with { Limit = Limit ?? options.Limit, … }` |
+| `BuildConfig(options, config)` | every public option except `Index` and `InstanceId`, camel-cased, skipping nulls and empty strings | a config key is not simply the camel-cased property name, or the JavaScript wants a nested group |
+| `BuildInstanceConfig(options, instanceConfig)` | nothing beyond `index`, which the base class always writes | an option really is instance-wide (routing, page size, retrieved fields) |
+| `GetWidgetType(options)` | `WidgetType` | an option decides *which* JavaScript widget to mount, as `<xps-pagination style="loadMore">` does |
+| `BuildContentAsync(options, token)` | `null` — an empty mount | you render something server-side inside the mount, as `<xps-results>` does for the first paint |
+| `CurrentIndex` | the named index, the enclosing `<xps-search>`'s, or the project's only one | read it inside the members above; it is resolved by the time they run |
+
+Two public members are the seam every other layer uses: `BuildAsync(options, token)` returns the
+`XpSearchMount`, and `RenderAsync(options, token)` renders it. Both throw `InvalidOperationException`
+with `Validate`'s message when the options are not renderable.
+
+#### What the Page Builder base class gives you
+
+| Member | Default | Override when |
+|---|---|---|
+| `ToOptions(properties)` | abstract | always — it is the editor properties mapped onto the options record |
 | `BuildEditorPreview(properties)` | one `xps-editor-preview__note` paragraph saying the widget is configured | you want editors to see a picture of *your* widget in the Page Builder |
+
+Everything else — index resolution, validation, the config JSON, the instance options, the unconfigured
+instruction block — comes from the tag helper underneath. A widget with a one-line `ToOptions` is a
+complete widget.
 
 #### What editors see in the Page Builder
 
-Inside the Page Builder a configured widget renders no mount: `BuildModel` returns a static preview in
-`model.Preview` (edit and read-only mode), because the builder re-renders widget markup over AJAX on
+Inside the Page Builder a configured widget renders no mount: `BuildModelAsync` returns a static preview
+in `model.Preview` (edit and read-only mode), because the builder re-renders widget markup over AJAX on
 every add, move and configure and no search should run from the editor. The base class supplies the
 preview root, its `data-xps-widget` attribute and the badge; `BuildEditorPreview` supplies the body,
-and the nine first-party widgets override it exactly as your widget would:
+and the fourteen first-party widgets override it exactly as your widget would:
 
 ```csharp
 protected override IHtmlContent BuildEditorPreview(DropdownFacetWidgetProperties properties)
@@ -545,52 +716,70 @@ The base class wraps that in
 `<div class="xps xps-editor-preview xps-editor-preview--my-company-dropdown-facet"
 data-xps-widget="myCompany.dropdownFacet">` with the badge, and marks the body `aria-hidden="true"`.
 
-(The worked example in `samples/CustomWidget.Dropdown` builds against the published package, so it
-picks this override up from the release that carries it.)
-
 Rules the first-party previews follow, and yours should: mirror the live markup with the widget's own
 classes, `disabled` on every control, a `<span>` instead of every `<a href>`, `xps-skeleton` bars where
 result data would be, and an `xps-editor-preview__note` paragraph for configuration the markup cannot
 show. Build the markup with `TagBuilder` (or any `IHtmlContent`) so property values are HTML-encoded —
 never string-concatenate an editor's text into markup.
 
-Preview mode and the live site are unaffected: there `model.Mount` carries the mount element as before.
+Preview mode and the live site are unaffected: there `model.Mount` carries the mount element.
 
-`BuildModel(properties)` is public, so a widget's markup can be asserted in a unit test without an
-Xperience application: substitute `IXpSearchEditorContext` and `IXpSearchIndexCatalog`, use the real
-`XpSearchMountRenderer`, and read `model.Mount`. Three details the compiler will otherwise teach you:
+#### Testing it without an Xperience application
+
+`BuildModelAsync(properties, cancellationToken)` is public, so a widget's markup can be asserted in a
+plain NUnit test: construct the tag helper with the real `XpSearchMountRenderer` and a stub catalog,
+hand it to the view component with a stub editor context, and read `model.Mount`. This is the sample's
+own fixture,
+`samples/CustomWidget.Dropdown/dotnet/CustomWidget.Dropdown.Tests/DropdownFacetWidgetTests.cs`:
 
 ```csharp
-// 1. IXpSearchIndexCatalog.GetIndexNames() returns IReadOnlyList<string>, not IEnumerable<string>.
+private static DropdownFacetWidgetViewComponent CreateComponent(XpSearchEditorMode mode = XpSearchEditorMode.Live) =>
+    new(
+        new DropdownFacetTagHelper(new XpSearchMountRenderer(), new StubIndexCatalog()),
+        new StubEditorContext(mode));
+
+[Test]
+public async Task BuildModel_ConfiguredWidget_EmitsMountForTheJavaScriptWidget()
+{
+    var model = await CreateComponent().BuildModelAsync(
+        new DropdownFacetWidgetProperties
+        {
+            Index = "site-content",
+            Attribute = "brand",
+            Label = "Brand",
+            AllLabel = "Any brand",
+        },
+        CancellationToken.None);
+
+    // XpSearchMountViewModel.Mount is IHtmlContent — write it out to get a string, and decode it:
+    // data-xps-config is HTML-attribute-encoded.
+    using var writer = new StringWriter();
+    model.Mount!.WriteTo(writer, HtmlEncoder.Default);
+    string mount = writer.ToString();
+
+    Assert.That(mount, Does.Contain("data-xps-widget=\"myCompany.dropdownFacet\""));
+    Assert.That(WebUtility.HtmlDecode(mount), Does.Contain("\"attribute\":\"brand\""));
+}
+
+// IXpSearchIndexCatalog.GetIndexNames() returns IReadOnlyList<string>, not IEnumerable<string>.
 private sealed class StubIndexCatalog : IXpSearchIndexCatalog
 {
     public IReadOnlyList<string> GetIndexNames() => ["site-content"];
 }
-
-var model = new DropdownFacetWidgetViewComponent(
-    new XpSearchMountRenderer(), new StubEditorContext(XpSearchEditorMode.Live), new StubIndexCatalog())
-    .BuildModel(new DropdownFacetWidgetProperties { Index = "site-content", Attribute = "brand" });
-
-// 2. XpSearchMountViewModel.Mount is IHtmlContent — write it out to get a string.
-using var writer = new StringWriter();
-model.Mount!.WriteTo(writer, HtmlEncoder.Default);
-var markup = writer.ToString();
-
-// 3. data-xps-config is HTML-attribute-encoded, so decode before asserting on the JSON.
-Assert.That(markup, Does.Contain("data-xps-widget=\"myCompany.dropdownFacet\""));
-Assert.That(WebUtility.HtmlDecode(markup), Does.Contain("\"attribute\":\"brand\""));
 ```
 
-`model.Mount` is `null` when `ConfigurationHint` returned a message; `model.EditorMessage` carries it
-in `XpSearchEditorMode.Edit` and is `null` on the live site. The full fixture is
-`samples/CustomWidget.Dropdown/dotnet/CustomWidget.Dropdown.Tests/DropdownFacetWidgetTests.cs`.
+`model.Mount` is `null` when `Validate` returned a message; `model.EditorMessage` carries it in
+`XpSearchEditorMode.Edit` and is `null` on the live site. The tag element is asserted the same way
+through `RenderAsync(options)`, which is the call the view component itself makes.
 
 #### Registration and services
 
 `services.AddXpSearchWidgets()` registers `IXpSearchMountRenderer`, `IXpSearchEditorContext`,
-`IXpSearchIndexCatalog` and `ISearchResultTemplateRegistry`; your view component's constructor takes
-whichever of them it needs. See [Page Builder widgets](page-builder-widgets.md) for the host setup and
-the asset tag helper.
+`IXpSearchIndexCatalog` and the tag helper of every shipped widget;
+`services.AddXpSearchWidget<TTagHelper, TOptions>()` adds yours. Your tag helper's constructor takes
+whichever services it needs — they are injected by the container, for the tag element and for the
+Page Builder widget alike. See [Page Builder widgets](page-builder-widgets.md) for the host setup and
+[Razor tag helpers](razor-tag-helpers.md) for `@addTagHelper *, XpSearch.Widgets` and the asset tags.
 
 ### Related pages
 
