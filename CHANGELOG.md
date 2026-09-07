@@ -31,6 +31,12 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
   widget registered with `registerWidgetType()`, and `@await Html.XpSearchAsync(options)`. An
   unrenderable tag throws at render time instead of emitting an empty div. A custom widget registers
   its own pair with `services.AddXpSearchWidget<TTagHelper, TOptions>()`.
+- **Added (widgets):** the last two JavaScript widgets get their tag helper and their Page Builder
+  widget, which closes 14/14 across all three layers (RZ-1 §1.6). `<xps-toggle-filter>` /
+  **Search - Toggle filter** (`XpSearch.ToggleFilter`) is one checkbox for a single value of a facet
+  attribute; `<xps-load-more>` / **Search - Load more** (`XpSearch.LoadMore`) is the endless result
+  list, which **replaces the Results and Pagination widgets** and cannot sit beside them - it renders
+  the cards itself and owns the page (MB-1). Both take the JavaScript widget's own options, kebab-cased.
 - **Added (widgets):** `<xps-search-styles />` and `<xps-search-scripts />` (and
   `Html.XpSearchStyles()` / `Html.XpSearchScripts()`), so the stylesheets can sit in `<head>` and the
   bundle at the end of the body. `<xps-search-assets />` stays as the shorthand for both.
