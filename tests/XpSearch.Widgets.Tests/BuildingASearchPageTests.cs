@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -31,17 +31,14 @@ internal sealed class BuildingASearchPageTests
     private const string Index = "site-content";
 
     /// <summary>
-    /// Config keys the plain-HTML recipe sets that no C# option can express today. Listed per widget
-    /// so adding the option to a tag helper makes this test demand the list be shortened.
+    /// Config keys the plain-HTML recipe sets that no C# option can express, per widget. Empty since
+    /// RZ-2: every key of the canonical recipe is now a tag attribute. A key added to the recipe
+    /// without a C# option has to be listed here, which is the point.
     /// </summary>
-    private static readonly Dictionary<string, string[]> JavaScriptOnlyConfig = new(StringComparer.Ordinal)
-    {
-        ["pagination"] = ["padding", "showFirst", "showLast"],
-        ["activeFilters"] = ["attributeLabels"]
-    };
+    private static readonly Dictionary<string, string[]> JavaScriptOnlyConfig = new(StringComparer.Ordinal);
 
     /// <summary>The same, for the merged instance options of the page.</summary>
-    private static readonly string[] JavaScriptOnlyInstanceConfig = ["searchOnInitialLoad"];
+    private static readonly string[] JavaScriptOnlyInstanceConfig = [];
 
     private readonly XpSearchMountRenderer renderer = new();
     private readonly FakeIndexCatalog catalog = new(Index);
@@ -224,6 +221,8 @@ internal sealed class BuildingASearchPageTests
 
         return target switch
         {
+            // <xps-active-filters attribute-labels> takes a dictionary or attribute;Label lines.
+            _ when target == typeof(object) => value,
             _ when target == typeof(string) => value,
             _ when target == typeof(bool) => bool.Parse(value),
             _ when target == typeof(int) => int.Parse(value, CultureInfo.InvariantCulture),

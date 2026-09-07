@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 
 using Microsoft.AspNetCore.Razor.TagHelpers;
 using Microsoft.Extensions.DependencyInjection;
@@ -61,7 +61,8 @@ internal sealed class PageBuilderParityTests
                     EnableSuggestions = true,
                     SuggestionLimit = 8,
                     RecentSearches = false,
-                    SyncStateToUrl = false
+                    SyncStateToUrl = false,
+                    SearchOnInitialLoad = false
                 },
                 "xps-search-box")),
             Pair("results", BothWays(
@@ -127,7 +128,7 @@ internal sealed class PageBuilderParityTests
             Pair("pagination", BothWays(
                 Widgets.Pagination(renderer, editor, catalog),
                 new PaginationTagHelper(renderer, catalog),
-                new PaginationWidgetProperties { Index = Index },
+                new PaginationWidgetProperties { Index = Index, Padding = 2, ShowFirst = false, ShowLast = true },
                 "xps-pagination")),
             Pair("pagination:loadMore", BothWays(
                 Widgets.Pagination(renderer, editor, catalog),
@@ -168,7 +169,13 @@ internal sealed class PageBuilderParityTests
             Pair("activeFilters", BothWays(
                 Widgets.ActiveFilters(renderer, editor, catalog),
                 new ActiveFiltersTagHelper(renderer, catalog),
-                new ActiveFiltersWidgetProperties { Index = Index, Title = "Your filters", Scroll = true },
+                new ActiveFiltersWidgetProperties
+                {
+                    Index = Index,
+                    Title = "Your filters",
+                    Scroll = true,
+                    AttributeLabels = "contentType;Content type\r\ntags"
+                },
                 "xps-active-filters")),
             Pair("clearFilters", BothWays(
                 Widgets.ClearFilters(renderer, editor, catalog),
