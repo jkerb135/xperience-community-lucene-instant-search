@@ -19,7 +19,7 @@ import {
 } from '../behaviors/loadMore';
 import { helpers, html, render, toHtml, type Renderable, type TemplateHelpers } from '../templates/html';
 import type { RenderOptions, Result, Widget } from '../types';
-import { createRoot, isServerRendered, resolveContainer, takeOver } from './dom';
+import { createRoot, holdsServerPaint, resolveContainer } from './dom';
 import {
   CLEAR_CLASS,
   RECOVER_ATTRIBUTE,
@@ -90,8 +90,7 @@ export function loadMore<TAttributes extends Record<string, unknown> = Record<st
     if (isFirstRender) root = createRoot(container, 'div', 'xps xps-load-more');
     if (!root) return;
     // Nothing has answered yet: whatever the server painted stays on screen (SK-1).
-    if (options.results === null && isServerRendered(root)) return;
-    takeOver(root);
+    if (holdsServerPaint(root, options)) return;
     // Built once, on the render this widget first paints — `render` also clears anything the
     // server left in the root.
     if (!list) {

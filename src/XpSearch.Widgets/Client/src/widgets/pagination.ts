@@ -10,7 +10,7 @@
 import { withPagination } from '../behaviors/pagination';
 import { html, type Renderable } from '../templates/html';
 import type { Widget } from '../types';
-import { createRoot, isServerRendered, renderKeepingFocus, resolveContainer, takeOver } from './dom';
+import { createRoot, holdsServerPaint, renderKeepingFocus, resolveContainer } from './dom';
 
 export type PaginationWidgetParams = {
   container: string | HTMLElement;
@@ -94,8 +94,7 @@ export function pagination(params: PaginationWidgetParams): Widget {
       }
       if (!root) return;
       // Nothing has answered yet: whatever the server painted stays on screen (SK-1).
-      if (options.results === null && isServerRendered(root)) return;
-      takeOver(root);
+      if (holdsServerPaint(root, options)) return;
 
       const { pages, current, totalPages, urlFor } = options;
       const first = pages[0] ?? 0;

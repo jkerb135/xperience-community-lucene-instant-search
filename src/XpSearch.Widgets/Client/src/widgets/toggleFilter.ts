@@ -10,7 +10,7 @@ import { withFacetList } from '../behaviors/facetList';
 import { valueLabel } from '../labels';
 import { html, render } from '../templates/html';
 import type { Widget } from '../types';
-import { createRoot, isServerRendered, resolveContainer, takeOver } from './dom';
+import { createRoot, holdsServerPaint, resolveContainer } from './dom';
 
 export type ToggleFilterWidgetParams = {
   container: string | HTMLElement;
@@ -49,8 +49,7 @@ export function toggleFilter(params: ToggleFilterWidgetParams): Widget {
       if (isFirstRender) root = createRoot(container, 'div', 'xps xps-toggle-filter');
       if (!root) return;
       // Nothing has answered yet: whatever the server painted stays on screen (SK-1).
-      if (options.results === null && isServerRendered(root)) return;
-      takeOver(root);
+      if (holdsServerPaint(root, options)) return;
       // Built once, on the render this widget first paints (SK-1).
       if (!checkbox) {
         render(

@@ -1402,15 +1402,3 @@ and how to lift it.
   height); until then the recapture in `docs/internal/screenshot-manifest.md` after a package bump is
   the check.
 
-## Adopted server content is only replaced by a response, never by an error (`isServerRendered` guard in every `src/XpSearch.Widgets/Client/src/widgets/*.ts` renderer, SK-1)
-
-- **Simplified:** the handover rule is one condition — `results === null && isServerRendered(root)`
-  leaves what the server rendered alone. `results` stays `null` when the first search fails, so a
-  failed hydration leaves the server's skeleton (or its live cards) on screen indefinitely instead
-  of falling back to the widget's own empty shell.
-- **Ceiling:** on a page whose first query errors, every skeleton pulses forever and the search box
-  is the only working control. Nothing tells the visitor the client gave up.
-- **Upgrade path:** widen the guard to `results === null && search.status !== 'error'`, and give the
-  widgets an error state to paint (the instance already emits the `error` event and carries
-  `status === 'error'`).
-

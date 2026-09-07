@@ -86,6 +86,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   for (const instance of started.splice(0)) instance.dispose();
+  vi.restoreAllMocks();
 });
 
 describe('server-rendered first paint', () => {
@@ -121,6 +122,22 @@ describe('server-rendered first paint', () => {
     expect(host.querySelector('.xps-skeleton')).toBeNull();
     expect(host.querySelector('[data-xps-server-rendered]')).toBeNull();
     expect(host.querySelectorAll('.xps-facet-list__item').length).toBe(2);
+  });
+
+  it('releases the server skeleton when the first search fails', async () => {
+    const host = served(SERVER_FACETS);
+    const fetchFn = (() => Promise.reject(new Error('offline'))) as unknown as typeof fetch;
+    const search = createSearch({ index: 'site-content', fetchFn, debounceMs: 0 });
+    started.push(search);
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    search.addWidgets([facetList({ container: host, attribute: 'contentType' })]).start();
+
+    await vi.waitFor(() => expect(search.status).toBe('error'));
+    // A failed request ends the handover: skeletons must not pulse forever.
+    await vi.waitFor(() => expect(host.querySelector('.xps-skeleton')).toBeNull());
+    expect(host.querySelector('[data-xps-server-rendered]')).toBeNull();
+    expect(host.querySelector('.xps-facet-list__title')).not.toBeNull();
+    expect(host.querySelector('.xps-facet-list__list')).not.toBeNull();
   });
 
   it('still paints its own skeleton into an empty mount', async () => {

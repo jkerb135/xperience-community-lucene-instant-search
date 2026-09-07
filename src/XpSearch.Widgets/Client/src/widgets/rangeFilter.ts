@@ -16,9 +16,8 @@ import { formatNumber, html, render } from '../templates/html';
 import type { Widget } from '../types';
 import {
   createRoot,
-  isServerRendered,
+  holdsServerPaint,
   resolveContainer,
-  takeOver,
   widgetId,
 } from './dom';
 
@@ -71,8 +70,7 @@ export function rangeFilter(params: RangeFilterWidgetParams): Widget {
       if (isFirstRender) root = createRoot(container, 'div', 'xps xps-range-filter');
       if (!root) return;
       // Nothing has answered yet: whatever the server painted stays on screen (SK-1).
-      if (options.results === null && isServerRendered(root)) return;
-      takeOver(root);
+      if (holdsServerPaint(root, options)) return;
       // Built once, on the render this widget first paints (SK-1).
       if (controls.length < 4) {
         const id = (part: string): string => widgetId(container, attribute, part);

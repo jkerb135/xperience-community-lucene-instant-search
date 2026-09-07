@@ -16,9 +16,8 @@ import type { Widget } from '../types';
 import {
   chevron,
   createRoot,
-  isServerRendered,
+  holdsServerPaint,
   resolveContainer,
-  takeOver,
   widgetId,
 } from './dom';
 
@@ -123,8 +122,7 @@ export function facetList(params: FacetListWidgetParams): Widget {
       }
       if (!root) return;
       // Nothing has answered yet: whatever the server painted stays on screen (SK-1).
-      if (options.results === null && isServerRendered(root)) return;
-      takeOver(root);
+      if (holdsServerPaint(root, options)) return;
       // Built once, on the render this widget first paints — not on the first render, which may
       // still be showing what the server put in the root.
       if (!listEl) {

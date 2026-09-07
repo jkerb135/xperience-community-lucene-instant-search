@@ -17,7 +17,7 @@ import {
   type TemplateHelpers,
 } from '../templates/html';
 import type { RenderOptions, Result, Widget } from '../types';
-import { createRoot, isServerRendered, resolveContainer, setAttr, takeOver } from './dom';
+import { createRoot, holdsServerPaint, resolveContainer, setAttr } from './dom';
 
 /** What `templates.empty` receives: the query, and whether filters are narrowing it. */
 export interface EmptyTemplateData {
@@ -330,8 +330,7 @@ export function results<TAttributes extends Record<string, unknown> = Record<str
     }
     if (!root || !status) return;
     // Nothing has answered yet: whatever the server painted stays on screen (SK-1).
-    if (options.results === null && isServerRendered(root)) return;
-    takeOver(root);
+    if (holdsServerPaint(root, options)) return;
 
     const query = options.state.query;
     const busy = options.search.status === 'loading' || options.search.status === 'stalled';

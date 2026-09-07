@@ -11,9 +11,8 @@ import type { Widget } from '../types';
 import {
   chevron,
   createRoot,
-  isServerRendered,
+  holdsServerPaint,
   resolveContainer,
-  takeOver,
   widgetId,
 } from './dom';
 
@@ -40,8 +39,7 @@ export function sortSelect(params: SortSelectWidgetParams): Widget {
       if (isFirstRender) root = createRoot(container, 'div', 'xps xps-sort-select xps-select');
       if (!root) return;
       // Nothing has answered yet: whatever the server painted stays on screen (SK-1).
-      if (options.results === null && isServerRendered(root)) return;
-      takeOver(root);
+      if (holdsServerPaint(root, options)) return;
       // Built once, on the render this widget first paints (SK-1).
       if (!select) {
         const id = widgetId(container, 'sort-select', 'select');

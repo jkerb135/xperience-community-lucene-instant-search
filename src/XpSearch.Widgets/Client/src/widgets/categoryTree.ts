@@ -14,10 +14,9 @@ import type { Widget } from '../types';
 import {
   chevron,
   createRoot,
-  isServerRendered,
+  holdsServerPaint,
   renderKeepingFocus,
   resolveContainer,
-  takeOver,
   widgetId,
 } from './dom';
 
@@ -102,8 +101,7 @@ export function categoryTree(params: CategoryTreeWidgetParams): Widget {
       }
       if (!root) return;
       // Nothing has answered yet: whatever the server painted stays on screen (SK-1).
-      if (options.results === null && isServerRendered(root)) return;
-      takeOver(root);
+      if (holdsServerPaint(root, options)) return;
 
       root.setAttribute('aria-label', label);
       // Nothing to navigate is nothing to render: hide the control rather than leave a bare

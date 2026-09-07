@@ -15,10 +15,9 @@ import { html, type Renderable } from '../templates/html';
 import type { Widget } from '../types';
 import {
   createRoot,
-  isServerRendered,
+  holdsServerPaint,
   renderKeepingFocus,
   resolveContainer,
-  takeOver,
   widgetId,
 } from './dom';
 
@@ -79,8 +78,7 @@ export function activeFilters(params: ActiveFiltersWidgetParams): Widget {
       }
       if (!root) return;
       // Nothing has answered yet: whatever the server painted stays on screen (SK-1).
-      if (options.results === null && isServerRendered(root)) return;
-      takeOver(root);
+      if (holdsServerPaint(root, options)) return;
 
       root.classList.toggle('xps-active-filters--empty', !options.canApply);
       renderKeepingFocus(
@@ -123,8 +121,7 @@ export function clearFilters(params: ClearFiltersWidgetParams): Widget {
       if (isFirstRender) root = createRoot(container, 'div', 'xps xps-clear-filters');
       if (!root) return;
       // Nothing has answered yet: whatever the server painted stays on screen (SK-1).
-      if (options.results === null && isServerRendered(root)) return;
-      takeOver(root);
+      if (holdsServerPaint(root, options)) return;
       if (!button) {
         // The button is never removed from the DOM, so pressing it does not destroy focus.
         button = container.ownerDocument.createElement('button');

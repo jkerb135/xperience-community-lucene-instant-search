@@ -17,7 +17,9 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
   (`createRoot` keeps the element carrying `data-xps-server-rendered` when its tag name matches) and
   its content is left on screen until that widget has a response, instead of the container being
   emptied and a client skeleton painted over it. The search box replaces the server form on its
-  first render and carries over a value typed into it before the bundle ran, focus included.
+  first render and carries over a value typed into it before the bundle ran, focus included. A
+  failed first search ends the handover, so each widget paints its own shell instead of leaving the
+  server's skeletons pulsing forever.
 - **Added (widgets):** the previous and next pagination links carry `rel="prev"` / `rel="next"`.
 - **Added (themes):** the skeleton vocabulary the pre-JavaScript page is drawn with —
   `xps-skeleton--heading`, `--box`, `--count`, `--control`, `--track` and `--line` beside the

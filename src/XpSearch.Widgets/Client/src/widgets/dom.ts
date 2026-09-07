@@ -3,6 +3,7 @@
  * The markup rules referenced below live in `themes/MARKUP.md`.
  */
 import { html, render, type Renderable } from '../templates/html';
+import type { SearchStatus } from '../types';
 
 /** `container` accepts a CSS selector or an element (spec 5.2). */
 export function resolveContainer(
@@ -77,11 +78,7 @@ export function createRoot(container: HTMLElement, tagName: string, className: s
   return root;
 }
 
-/**
- * Whether `root` still holds what the server rendered. True until the widget's first real paint,
- * which removes the attribute: a renderer with nothing to show yet (`results === null`) leaves an
- * adopted root alone rather than painting a skeleton over it.
- */
+/** Whether `root` still holds what the server rendered — false once a widget has taken over. */
 export function isServerRendered(root: HTMLElement): boolean {
   return root.hasAttribute(SERVER_RENDERED);
 }
@@ -89,6 +86,25 @@ export function isServerRendered(root: HTMLElement): boolean {
 /** Ends the handover: the widget owns `root` from here on. */
 export function takeOver(root: HTMLElement): void {
   root.removeAttribute(SERVER_RENDERED);
+}
+
+/**
+ * The results-driven renderers' one-line guard: `if (holdsServerPaint(root, options)) return;`.
+ *
+ * True while the server's paint must stay on screen — nothing has answered yet (`results === null`)
+ * and the root is still the adopted one. A failed request ends that: `status === 'error'` hands the
+ * root over so the widget paints its own shell (and its error state) instead of leaving skeletons
+ * pulsing forever. Returning false performs the take-over, so the guard is also the handover.
+ */
+export function holdsServerPaint(
+  root: HTMLElement,
+  options: { results: unknown; search: { status: SearchStatus } }
+): boolean {
+  if (options.results === null && options.search.status !== 'error' && isServerRendered(root)) {
+    return true;
+  }
+  takeOver(root);
+  return false;
 }
 
 /**

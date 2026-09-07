@@ -19,7 +19,7 @@ import type {
   SearchState,
   Widget,
 } from '../types';
-import { createRoot, isServerRendered, resolveContainer, takeOver, widgetId } from './dom';
+import { createRoot, holdsServerPaint, isServerRendered, resolveContainer, widgetId } from './dom';
 
 /** One facet group in the sheet, in the order it is listed. */
 export interface FilterSortFacet {
@@ -393,10 +393,9 @@ export function filterSort(params: FilterSortWidgetParams): Widget {
     },
 
     render(options: RenderArgs) {
-      if (root && trigger && options.results !== null && isServerRendered(root)) {
+      if (root && trigger && isServerRendered(root) && !holdsServerPaint(root, options)) {
         root.textContent = '';
         root.appendChild(trigger);
-        takeOver(root);
       }
       state = options.state;
       actions = options.actions;
