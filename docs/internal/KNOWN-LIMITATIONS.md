@@ -3,6 +3,31 @@
 Intentional simplifications, one entry each: where it lives, what was simplified, the ceiling it hits,
 and how to lift it.
 
+## A tag helper carries the state of one render (`XpSearchMountTagHelper<TOptions>` in `XpSearch.Widgets/TagHelpers/`)
+
+- **Simplified:** `Validate(options)` writes the resolved index into `CurrentIndex`, `ProcessAsync`
+  writes the enclosing `<xps-search>` scope into a field, and the results widget keeps the first paint
+  of the current render in one. The alternative - threading a per-render context object through
+  `Validate`, `BuildConfig`, `BuildInstanceConfig` and `BuildContentAsync` - is a parameter on every
+  override a widget author writes, for state that is only ever read within one `BuildAsync` call.
+- **Ceiling:** an instance may render only one mount at a time. `AddXpSearchWidget` registers tag
+  helpers as transient for that reason (Razor activates one per element anyway, and the Page Builder
+  base resolves one per widget); registering one as a singleton would interleave two renders' state.
+- **Upgrade path:** if a caller ever needs to render two mounts from one tag helper instance, pass a
+  `MountContext` record (index, scope, labels, first paint) as the first argument of the four virtuals.
+
+## The sort options of `sortSelect` and `filterSort` are a text block, not a list (`SortSelectOptions`, `FilterSortOptions` in `XpSearch.Widgets/TagHelpers/`)
+
+- **Simplified:** both options records keep the Page Builder's `key;Label` lines
+  (`sort-options="relevance;Most relevant"`), because that is the shape `SortOptionsValidation` parses
+  and validates against the index's configured sort keys - one parser, one validation message,
+  wherever the widget is placed.
+- **Ceiling:** a Razor developer writes a mini-format inside an attribute instead of handing over a
+  typed list, and a malformed line is dropped silently (an all-invalid list throws with the editor's
+  own hint).
+- **Upgrade path:** add `IReadOnlyList<SortOption> Items` to the records, have the tag helper prefer it
+  when set, and leave the text block as what `ToOptions` produces for saved widgets.
+
 ## Integrated suggestions search twice per keystroke (`searchBox` in `Client/src/widgets/searchBox.ts`)
 
 - **Simplified:** with `params.suggestions` set, the input handler calls both
