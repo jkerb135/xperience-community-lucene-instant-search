@@ -40,6 +40,8 @@ public static class XpSearchWidgetsServiceCollectionExtensions
             .AddXpSearchWidget<ResultStatsTagHelper, ResultStatsOptions>()
             .AddXpSearchWidget<ActiveFiltersTagHelper, ActiveFiltersOptions>()
             .AddXpSearchWidget<ClearFiltersTagHelper, ClearFiltersOptions>()
+            .AddXpSearchWidget<ToggleFilterTagHelper, ToggleFilterOptions>()
+            .AddXpSearchWidget<LoadMoreTagHelper, LoadMoreOptions>()
             .AddXpSearchWidget<FilterSortTagHelper, FilterSortOptions>()
             .AddXpSearchWidget<SuggestionsTagHelper, SuggestionsOptions>()
             .AddXpSearchWidget<XpSearchWidgetTagHelper, WidgetOptions>();

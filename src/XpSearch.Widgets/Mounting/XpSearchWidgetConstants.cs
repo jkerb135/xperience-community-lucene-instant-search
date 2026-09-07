@@ -52,4 +52,10 @@ public static class XpSearchWidgetConstants
 
     /// <summary>Widget identifier of the clear filters widget.</summary>
     public const string ClearFiltersIdentifier = "XpSearch.ClearFilters";
+
+    /// <summary>Widget identifier of the toggle filter widget.</summary>
+    public const string ToggleFilterIdentifier = "XpSearch.ToggleFilter";
+
+    /// <summary>Widget identifier of the load more widget.</summary>
+    public const string LoadMoreIdentifier = "XpSearch.LoadMore";
 }

@@ -40,6 +40,8 @@ internal static class WidgetResources
 
     internal static string Preview_Note_Attribute => Get(nameof(Preview_Note_Attribute));
 
+    internal static string Preview_Note_ToggleFilter => Get(nameof(Preview_Note_ToggleFilter));
+
     internal static string Preview_Note_Results => Get(nameof(Preview_Note_Results));
 
     internal static string Preview_Note_Suggestions => Get(nameof(Preview_Note_Suggestions));
