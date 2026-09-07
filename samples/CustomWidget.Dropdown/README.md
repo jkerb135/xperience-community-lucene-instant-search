@@ -15,7 +15,7 @@ imports, no `any`, TypeScript strict.
 ```
 src/dropdownFacet.ts                          the JavaScript widget + registerWidgetType
 test/dropdownFacet.test.ts                    jsdom tests (vitest)
-dotnet/CustomWidget.Dropdown.Widget/          the Page Builder widget (net8.0)
+dotnet/CustomWidget.Dropdown.Widget/          the Page Builder widget (net8.0), plus AddDropdownFacetWidget()
 dotnet/CustomWidget.Dropdown.Tests/           NUnit tests over the emitted mount
 nuget.config                                  points at ../.feed, the local package feed
 ```
@@ -104,8 +104,14 @@ loaded. The host application needs the standard Xperience Search setup —
 `services.AddXpSearch()`, `services.AddXpSearchWidgets()`, `app.UseXpSearch()`,
 `<xps-search-assets />` — plus a reference to `XperienceCommunity.Search.Admin` in the administration
 project, without which the **Attribute** drop-down stays hidden. Add one line for this widget:
-`services.AddXpSearchWidget<DropdownFacetTagHelper, DropdownFacetOptions>()`, which is how the Page
-Builder widget resolves its tag helper from the container.
+
+```csharp
+builder.Services.AddDropdownFacetWidget();
+```
+
+That is `ServiceCollectionExtensions.cs` in this project, and it is how the Page Builder widget
+resolves its tag helper from the container. Without it the `<my-dropdown-facet />` tag still renders,
+but placing the widget on a page fails.
 
 Editor properties: **Search index** and **Instance ID** (from the base class), then **Attribute**
 (a drop-down of the selected index's facetable fields), **Label** and **"All" option text**.

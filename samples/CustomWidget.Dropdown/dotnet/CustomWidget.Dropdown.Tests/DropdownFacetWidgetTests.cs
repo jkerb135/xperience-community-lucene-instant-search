@@ -1,4 +1,6 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+
+using Microsoft.Extensions.DependencyInjection;
 
 using MyCompany.Search.Widgets;
 
@@ -6,6 +8,7 @@ using NUnit.Framework;
 
 using XpSearch.Widgets.Mounting;
 using XpSearch.Widgets.Options;
+using XpSearch.Widgets.TagHelpers;
 
 namespace MyCompany.Search.Widgets.Tests;
 
@@ -71,6 +74,20 @@ public sealed class DropdownFacetWidgetTests
             Assert.That(model.Mount, Is.Null);
             Assert.That(model.EditorMessage, Does.Contain("Select the attribute to filter on."));
         });
+    }
+
+    [Test]
+    public void AddDropdownFacetWidget_RegistersTheTagHelperThePageBuilderWidgetResolves()
+    {
+        var provider = new ServiceCollection()
+            .AddSingleton<IXpSearchIndexCatalog, StubIndexCatalog>()
+            .AddSingleton<IXpSearchMountRenderer, XpSearchMountRenderer>()
+            .AddDropdownFacetWidget()
+            .BuildServiceProvider();
+
+        Assert.That(
+            provider.GetService<XpSearchMountTagHelper<DropdownFacetOptions>>(),
+            Is.InstanceOf<DropdownFacetTagHelper>());
     }
 
     private static string Render(XpSearchMountViewModel model)
