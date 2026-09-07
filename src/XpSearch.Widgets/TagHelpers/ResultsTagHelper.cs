@@ -33,17 +33,10 @@ public sealed record ResultsOptions : XpSearchMountOptions
 }
 
 /// <summary><c>&lt;xps-results /&gt;</c> - mounts the <c>results</c> widget, first paint included.</summary>
+/// <remarks>Not sealed: SK-1 replaces the first paint with a skeleton by deriving from it (RZ-1 §8).</remarks>
 [HtmlTargetElement("xps-results")]
-public sealed class ResultsTagHelper : XpSearchMountTagHelper<ResultsOptions>
+public class ResultsTagHelper : XpSearchMountTagHelper<ResultsOptions>
 {
-    private readonly ServerRenderedResults? serverResults;
-
-    /// <summary>
-    /// The server-rendered first paint of this render, once it has run: the instance config hands the
-    /// client what the server actually did.
-    /// </summary>
-    private ServerResultsRender? firstPaint;
-
     /// <summary>Initializes a new instance of the <see cref="ResultsTagHelper"/> class.</summary>
     /// <param name="renderer">Renders the mount element.</param>
     /// <param name="indexCatalog">The registered indexes.</param>
@@ -55,7 +48,22 @@ public sealed class ResultsTagHelper : XpSearchMountTagHelper<ResultsOptions>
         IXpSearchMountRenderer renderer,
         IXpSearchIndexCatalog indexCatalog,
         ServerRenderedResults? serverResults = null)
-        : base(renderer, indexCatalog) => this.serverResults = serverResults;
+        : base(renderer, indexCatalog) => ServerResults = serverResults;
+
+    /// <summary>
+    /// Gets the server-side renderer of the first page of results, or <see langword="null"/> when the
+    /// host did not register it. A subclass that replaces <see cref="BuildContentAsync"/> - the
+    /// skeleton first paint of SK-1 - needs it to decide what it may render.
+    /// </summary>
+    protected ServerRenderedResults? ServerResults { get; }
+
+    /// <summary>
+    /// Gets what the server actually painted in this render, or <see langword="null"/> when it painted
+    /// nothing: the instance config hands the client the page size and the query id the server used.
+    /// A subclass may read it after <see cref="BuildContentAsync"/> has run, for the widgets that
+    /// share this first paint (pagination, result stats, active filters).
+    /// </summary>
+    protected ServerResultsRender? FirstPaint { get; private set; }
 
     /// <summary>Gets or sets <see cref="ResultsOptions.ResultsPerPage"/>.</summary>
     [HtmlAttributeName("results-per-page")]
@@ -143,14 +151,14 @@ public sealed class ResultsTagHelper : XpSearchMountTagHelper<ResultsOptions>
         // is already looking at.
         instanceConfig["initialState"] = new Dictionary<string, object?>(StringComparer.Ordinal)
         {
-            ["pageSize"] = firstPaint?.PageSize ?? PageSize(options)
+            ["pageSize"] = FirstPaint?.PageSize ?? PageSize(options)
         };
 
         // Only when the server really answered a search: the client then reuses the id instead of
         // journaling the same page load twice.
-        if (!string.IsNullOrWhiteSpace(firstPaint?.QueryId))
+        if (!string.IsNullOrWhiteSpace(FirstPaint?.QueryId))
         {
-            instanceConfig["initialQueryId"] = firstPaint.QueryId;
+            instanceConfig["initialQueryId"] = FirstPaint.QueryId;
         }
 
         if (options.Fields.Count > 0)
@@ -170,14 +178,14 @@ public sealed class ResultsTagHelper : XpSearchMountTagHelper<ResultsOptions>
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        firstPaint = null;
+        FirstPaint = null;
 
-        if (serverResults is null || ViewContext?.HttpContext is null)
+        if (ServerResults is null || ViewContext?.HttpContext is null)
         {
             return null;
         }
 
-        firstPaint = await serverResults.RenderAsync(
+        FirstPaint = await ServerResults.RenderAsync(
             ViewContext,
             new ServerResultsOptions(
                 CurrentIndex,
@@ -192,9 +200,9 @@ public sealed class ResultsTagHelper : XpSearchMountTagHelper<ResultsOptions>
 
         // What the visitor's own refinements are called, so the client can name them before its first
         // response arrives (FC-1).
-        MountLabels = firstPaint?.Labels;
+        MountLabels = FirstPaint?.Labels;
 
-        return firstPaint?.Content;
+        return FirstPaint?.Content;
     }
 
     // A page size of 0 is a validation error on the wire, so it never reaches the client.
