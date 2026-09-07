@@ -250,8 +250,9 @@ See [Relevance tuning](relevance-tuning.md) and [Analytics](analytics.md).
 
 ### 9. The UI
 
-The JavaScript widgets that bind to these endpoints ship separately — see the
-[JS client guide](js-client.md) for the API and
-[JavaScript bundler setup](javascript-bundler-setup.md) for the recommended npm install. Nothing on
-this page depends on them: the endpoints are a plain JSON API and are equally usable from your own
-front end.
+[Building a search page](building-a-search-page.md) builds the same results page three ways — plain
+HTML with the bundle, a Razor view with the [tag helpers](razor-tag-helpers.md), and
+[Page Builder widgets](page-builder-widgets.md) — and says which one to pick. For the API behind them
+see the [JS client guide](js-client.md), and for the npm install
+[JavaScript bundler setup](javascript-bundler-setup.md). Nothing on this page depends on any of it:
+the endpoints are a plain JSON API and are equally usable from your own front end.

@@ -13,8 +13,11 @@ public sealed record ResultsOptions : XpSearchMountOptions
     /// <summary>What a widget that asked for no page size is given (AR-3).</summary>
     public const int DefaultResultsPerPage = 20;
 
-    /// <summary>Gets how many results a page shows. An instance-wide option: pagination steps in it.</summary>
-    public int ResultsPerPage { get; init; } = DefaultResultsPerPage;
+    /// <summary>
+    /// Gets how many results a page shows - an instance-wide option, pagination steps in it. Unset
+    /// takes the enclosing <c>&lt;xps-search page-size&gt;</c>, then <see cref="DefaultResultsPerPage"/>.
+    /// </summary>
+    public int? ResultsPerPage { get; init; }
 
     /// <summary>Gets the identifier of a registered result template (spec §5.8). Empty renders the shipped card.</summary>
     public string? Template { get; init; }
@@ -212,7 +215,10 @@ public class ResultsTagHelper : XpSearchMountTagHelper<ResultsOptions>
         return FirstPaint?.Content;
     }
 
-    // A page size of 0 is a validation error on the wire, so it never reaches the client.
-    private static int PageSize(ResultsOptions options) =>
-        options.ResultsPerPage > 0 ? options.ResultsPerPage : ResultsOptions.DefaultResultsPerPage;
+    // The tag's own size, else the enclosing <xps-search page-size>, else the code default. A page
+    // size of 0 is a validation error on the wire, so it never reaches the client.
+    private int PageSize(ResultsOptions options) =>
+        options.ResultsPerPage is > 0 and var own ? own
+        : Scope?.PageSize is > 0 and var scoped ? scoped
+        : ResultsOptions.DefaultResultsPerPage;
 }

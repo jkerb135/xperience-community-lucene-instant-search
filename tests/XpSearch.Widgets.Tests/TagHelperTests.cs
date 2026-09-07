@@ -104,6 +104,26 @@ internal sealed class TagHelperTests
     }
 
     [Test]
+    public void A_results_tag_that_states_no_page_size_takes_the_scopes_and_its_own_still_wins()
+    {
+        var scope = Scope(new XpSearchTagHelper { Index = Index, PageSize = 24 });
+
+        string fromScope = Tag(new ResultsTagHelper(renderer, catalog), "xps-results", scope);
+        string own = Tag(new ResultsTagHelper(renderer, catalog) { ResultsPerPage = 6 }, "xps-results", scope);
+        string bare = Tag(new ResultsTagHelper(renderer, catalog) { Index = Index }, "xps-results");
+
+        static int PageSize(string markup) =>
+            Rendered.Json(markup, "data-xps-instance-config").GetProperty("initialState").GetProperty("pageSize").GetInt32();
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(PageSize(fromScope), Is.EqualTo(24), "the scope's page-size must reach a results tag that said nothing");
+            Assert.That(PageSize(own), Is.EqualTo(6), "the tag's own results-per-page must beat the scope");
+            Assert.That(PageSize(bare), Is.EqualTo(ResultsOptions.DefaultResultsPerPage), "no scope, no attribute: the code default");
+        });
+    }
+
+    [Test]
     public void An_options_record_can_be_handed_over_whole_and_an_attribute_still_wins()
     {
         var record = new FacetListOptions { Index = Index, Attribute = "tags", Label = "Tags", Limit = 3 };

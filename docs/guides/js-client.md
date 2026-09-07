@@ -77,7 +77,7 @@ search.start();
 `dist/xpsearch.umd.js` defines the global `xpsearch`: the factory function itself, with every named
 export, every widget and every behaviour hanging off it (`xpsearch.createSearch`, `xpsearch.searchBox`,
 `xpsearch.html`, `xpsearch.withResults`, `xpsearch.registerWidgetType`, `xpsearch.QUERY_ROUTE`, …). It is
-also the only build that registers all thirteen widgets for the `.xps-mount` bootstrap by itself; an ESM
+also the only build that registers all fourteen widgets for the `.xps-mount` bootstrap by itself; an ESM
 consumer passes the ones it bundled to `mountAll(root, { widgets })`.
 
 The ESM build is `dist/xpsearch.mjs`, `dist/behaviors.mjs` and one module per widget, reachable through

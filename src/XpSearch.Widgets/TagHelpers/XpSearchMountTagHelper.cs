@@ -83,6 +83,13 @@ public abstract class XpSearchMountTagHelper<TOptions> : TagHelper
     public string CurrentInstanceId { get; private set; } = XpSearchWidgetConstants.DefaultInstanceId;
 
     /// <summary>
+    /// Gets what the enclosing <c>&lt;xps-search&gt;</c> published, or <see langword="null"/> outside
+    /// one. Set for the duration of <see cref="ProcessAsync"/>; a widget whose own option is unset
+    /// reads its instance-wide fallback here (the results widget's page size).
+    /// </summary>
+    protected XpSearchScope? Scope => scope;
+
+    /// <summary>
     /// Gets the value of <c>data-xps-widget</c> - a first-party name such as <c>facetList</c>, or a
     /// dotted third-party identifier registered with <c>registerWidgetType()</c>.
     /// </summary>
