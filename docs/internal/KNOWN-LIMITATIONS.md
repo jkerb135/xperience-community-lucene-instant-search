@@ -27,10 +27,15 @@ and how to lift it.
   show. The pre-JavaScript page is then poorer, never wrong: the client fills those widgets on its
   first response either way. Filters the labels cannot name (numeric ranges) get no chip at all, and
   a custom `textTemplate` on the stats widget is left to the client, because the server has no
-  `tookMs` to substitute.
-- **Upgrade path:** the `<xps-search>` scope of RZ-1 declaring `results-per-page` (and, later, the
-  facets) and running the one search when the scope opens; every mount inside it then renders from a
-  result that exists before any of them, whatever the order.
+  `tookMs` to substitute; for the same reason "Clear all" drops only the facet parameters the labels
+  name (plus their `_op`) and `page`, so a numeric range survives it.
+- **Upgrade path:** `XpSearchMountTagHelper<TOptions>.Scope` (the `XpSearchScope` that `<xps-search>`
+  publishes on the tag helper context) already carries Index, Instance, Routing, PageSize and Fields -
+  everything the one search needs except the facets, which nothing declares yet. What is missing is
+  only `XpSearchTagHelper` running that search when the scope opens and publishing the render through
+  `ServerFirstPaint.Publish` before any child renders; every mount inside then reads a result that
+  exists before all of them, whatever the order, and the results widget takes it instead of searching
+  again.
 
 ## The sort options of `sortSelect` and `filterSort` are a text block, not a list (`SortSelectOptions`, `FilterSortOptions` in `XpSearch.Widgets/TagHelpers/`)
 
