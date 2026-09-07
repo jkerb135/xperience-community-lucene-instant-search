@@ -13,6 +13,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The normative skeleton markup (SK-1): SkeletonParityTests reads it beside the assembly. -->
+    <None Include="..\..\themes\fixtures\skeleton.html" Link="skeleton.html" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\XpSearch.Widgets\XpSearch.Widgets.csproj" />
   </ItemGroup>
 

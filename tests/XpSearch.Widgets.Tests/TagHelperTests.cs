@@ -88,7 +88,9 @@ internal sealed class TagHelperTests
         Expect.Multiple(() =>
         {
             Assert.That(markup, Does.StartWith("<div class=\"xps-mount\""));
-            Assert.That(markup, Does.Not.Contain("xps-facet-list"), "the placeholder tag must not survive");
+            // The <xps-facet-list> element itself is gone; the class inside is the skeleton first
+            // paint (SK-1), not the placeholder tag.
+            Assert.That(markup, Does.Not.Contain("<xps-facet-list"), "the placeholder tag must not survive");
             Assert.That(Rendered.Attribute(markup, "data-xps-widget"), Is.EqualTo("facetList"));
             Assert.That(Rendered.Attribute(markup, "data-xps-instance"), Is.EqualTo("search-1"));
             Assert.That(config.GetProperty("attribute").GetString(), Is.EqualTo("contentType"));

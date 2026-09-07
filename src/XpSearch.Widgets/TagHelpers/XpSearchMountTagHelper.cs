@@ -76,6 +76,13 @@ public abstract class XpSearchMountTagHelper<TOptions> : TagHelper
     public string CurrentIndex { get; private set; } = string.Empty;
 
     /// <summary>
+    /// Gets the search instance the last <see cref="BuildAsync"/> call resolved - the value of
+    /// <c>data-xps-instance</c>. Available to <see cref="BuildContentAsync"/>, which needs it for the
+    /// element ids the client's <c>widgetId</c> rule spells out and for the shared first paint (SK-1).
+    /// </summary>
+    public string CurrentInstanceId { get; private set; } = XpSearchWidgetConstants.DefaultInstanceId;
+
+    /// <summary>
     /// Gets the value of <c>data-xps-widget</c> - a first-party name such as <c>facetList</c>, or a
     /// dotted third-party identifier registered with <c>registerWidgetType()</c>.
     /// </summary>
@@ -133,9 +140,10 @@ public abstract class XpSearchMountTagHelper<TOptions> : TagHelper
         }
 
         MountLabels = null;
+        CurrentInstanceId = ResolveInstanceId(options);
         var content = await BuildContentAsync(options, cancellationToken).ConfigureAwait(false);
 
-        var mount = new XpSearchMount(GetWidgetType(options), ResolveInstanceId(options))
+        var mount = new XpSearchMount(GetWidgetType(options), CurrentInstanceId)
         {
             Content = content,
             Labels = MountLabels
@@ -201,16 +209,17 @@ public abstract class XpSearchMountTagHelper<TOptions> : TagHelper
     }
 
     /// <summary>
-    /// Builds markup rendered inside the mount element, or <see langword="null"/> - the default - for
-    /// nothing. The results widget uses this for the server-rendered first paint (spec §5.8); the
-    /// JavaScript widget replaces it on its first render, so it must never be the only way the widget
-    /// works.
+    /// Builds markup rendered inside the mount element. The default is the widget's skeleton
+    /// (SK-1 §2.2): the shape it will have, in <c>xps-skeleton</c> bars, which the client adopts and
+    /// paints over on its first response. An override that can say something truer - the results
+    /// widget's first paint (spec §5.8), the search box's real GET form - returns that instead, and
+    /// <see langword="null"/> leaves the mount empty.
     /// </summary>
     /// <param name="options">The options.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The markup, or <see langword="null"/>.</returns>
     protected virtual Task<IHtmlContent?> BuildContentAsync(TOptions options, CancellationToken cancellationToken) =>
-        Task.FromResult<IHtmlContent?>(null);
+        Task.FromResult<IHtmlContent?>(MountSkeleton.For(GetWidgetType(options)));
 
     /// <summary>
     /// Fills <paramref name="config"/> from an object's public properties, camel-cased, skipping
