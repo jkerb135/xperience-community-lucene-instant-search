@@ -7,7 +7,7 @@
 import { withSuggestions, type SuggestionsRenderState } from '../behaviors/suggestions';
 import { html, render } from '../templates/html';
 import type { RenderOptions, Widget } from '../types';
-import { createRoot, resolveContainer, widgetId } from './dom';
+import { createRoot, resolveContainer, takeOver, widgetId } from './dom';
 import { createRecents, recentsStorage, type Recents } from './recentSearches';
 import { bindCombobox, renderPanel } from './suggestionsPanel';
 
@@ -77,6 +77,8 @@ export function suggestions(params: SuggestionsWidgetParams): Widget {
 
     if (isFirstRender) {
       root = createRoot(container, 'div', 'xps xps-suggestions');
+      // A field is not driven by results, so it takes over any server skeleton at once (SK-1).
+      takeOver(root);
       render(
         html`<form class="xps-suggestions__form" role="search"${
           resultsUrl === undefined ? '' : html` action="${resultsUrl}" method="get"`

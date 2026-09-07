@@ -17,9 +17,9 @@ import {
   type LoadMoreBehaviorParams,
   type LoadMoreRenderState,
 } from '../behaviors/loadMore';
-import { helpers, html, toHtml, type Renderable, type TemplateHelpers } from '../templates/html';
+import { helpers, html, render, toHtml, type Renderable, type TemplateHelpers } from '../templates/html';
 import type { RenderOptions, Result, Widget } from '../types';
-import { createRoot, resolveContainer } from './dom';
+import { createRoot, holdsServerPaint, resolveContainer } from './dom';
 import {
   CLEAR_CLASS,
   RECOVER_ATTRIBUTE,
@@ -87,14 +87,19 @@ export function loadMore<TAttributes extends Record<string, unknown> = Record<st
       options.actions.setQuery(query).search();
     };
 
-    if (isFirstRender) {
-      root = createRoot(container, 'div', 'xps xps-load-more');
-      root.insertAdjacentHTML(
-        'beforeend',
-        toHtml(html`<p class="xps-load-more__status xps-sr-only" role="status"></p>
+    if (isFirstRender) root = createRoot(container, 'div', 'xps xps-load-more');
+    if (!root) return;
+    // Nothing has answered yet: whatever the server painted stays on screen (SK-1).
+    if (holdsServerPaint(root, options)) return;
+    // Built once, on the render this widget first paints — `render` also clears anything the
+    // server left in the root.
+    if (!list) {
+      render(
+        html`<p class="xps-load-more__status xps-sr-only" role="status"></p>
   <ol class="xps-load-more__list"></ol>
   <div class="xps-load-more__sentinel" aria-hidden="true"></div>
-  <button class="xps-button xps-load-more__load-more" type="button"></button>`)
+  <button class="xps-button xps-load-more__load-more" type="button"></button>`,
+        root
       );
       status = root.querySelector<HTMLElement>('.xps-load-more__status') ?? undefined;
       list = root.querySelector<HTMLElement>('.xps-load-more__list') ?? undefined;
@@ -127,7 +132,7 @@ export function loadMore<TAttributes extends Record<string, unknown> = Record<st
         observer.observe(sentinel);
       }
     }
-    if (!root || !status || !list || !button) return;
+    if (!status || !list || !button) return;
 
     if (painted.generation !== options.generation) {
       list.textContent = '';

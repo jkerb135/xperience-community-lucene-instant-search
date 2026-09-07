@@ -3,6 +3,7 @@
  * The markup rules referenced below live in `themes/MARKUP.md`.
  */
 import { html, render, type Renderable } from '../templates/html';
+import type { SearchStatus } from '../types';
 
 /** `container` accepts a CSS selector or an element (spec 5.2). */
 export function resolveContainer(
@@ -53,16 +54,57 @@ export function widgetId(container: HTMLElement, widget: string, part: string): 
   return `${base}-${part}`;
 }
 
+/** Marks the element the server rendered inside a mount, until the widget has painted over it. */
+const SERVER_RENDERED = 'data-xps-server-rendered';
+
 /**
  * Empties `container` and puts the widget root inside it — the mount element itself is never the
  * root, so an unhydrated `.xps-mount` stays unstyled (MARKUP.md, "Page Builder mount").
+ *
+ * Server-rendered content is adopted instead: an element carrying `data-xps-server-rendered` with
+ * the requested tag name becomes the root, children and all, so the pre-JavaScript page is handed
+ * over rather than replaced (SK-1). Anything else in the container is still discarded.
  */
 export function createRoot(container: HTMLElement, tagName: string, className: string): HTMLElement {
+  const first = container.firstElementChild;
+  if (first?.hasAttribute(SERVER_RENDERED) && first.localName === tagName.toLowerCase()) {
+    first.className = className;
+    return first as HTMLElement;
+  }
   container.textContent = '';
   const root = container.ownerDocument.createElement(tagName);
   root.className = className;
   container.appendChild(root);
   return root;
+}
+
+/** Whether `root` still holds what the server rendered — false once a widget has taken over. */
+export function isServerRendered(root: HTMLElement): boolean {
+  return root.hasAttribute(SERVER_RENDERED);
+}
+
+/** Ends the handover: the widget owns `root` from here on. */
+export function takeOver(root: HTMLElement): void {
+  root.removeAttribute(SERVER_RENDERED);
+}
+
+/**
+ * The results-driven renderers' one-line guard: `if (holdsServerPaint(root, options)) return;`.
+ *
+ * True while the server's paint must stay on screen — nothing has answered yet (`results === null`)
+ * and the root is still the adopted one. A failed request ends that: `status === 'error'` hands the
+ * root over so the widget paints its own shell (and its error state) instead of leaving skeletons
+ * pulsing forever. Returning false performs the take-over, so the guard is also the handover.
+ */
+export function holdsServerPaint(
+  root: HTMLElement,
+  options: { results: unknown; search: { status: SearchStatus } }
+): boolean {
+  if (options.results === null && options.search.status !== 'error' && isServerRendered(root)) {
+    return true;
+  }
+  takeOver(root);
+  return false;
 }
 
 /**

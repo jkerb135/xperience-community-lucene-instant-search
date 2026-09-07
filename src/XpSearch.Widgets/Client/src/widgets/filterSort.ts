@@ -19,7 +19,7 @@ import type {
   SearchState,
   Widget,
 } from '../types';
-import { createRoot, resolveContainer, widgetId } from './dom';
+import { createRoot, holdsServerPaint, isServerRendered, resolveContainer, widgetId } from './dom';
 
 /** One facet group in the sheet, in the order it is listed. */
 export interface FilterSortFacet {
@@ -82,6 +82,7 @@ export function filterSort(params: FilterSortWidgetParams): Widget {
   let previewTimer: ReturnType<typeof setTimeout> | undefined;
   let previewSeq = 0;
 
+  let root: HTMLElement | undefined;
   let trigger: HTMLButtonElement | undefined;
   let badge: HTMLElement | undefined;
   let sheet: HTMLElement | undefined;
@@ -383,13 +384,19 @@ export function filterSort(params: FilterSortWidgetParams): Widget {
       );
       badge = trigger.querySelector<HTMLElement>('.xps-filter-sort__badge') ?? undefined;
       trigger.addEventListener('click', () => (sheet ? close() : open()));
-      createRoot(container, 'div', 'xps xps-filter-sort').appendChild(trigger);
+      root = createRoot(container, 'div', 'xps xps-filter-sort');
+      // The trigger waits behind a server-rendered skeleton until the first response (SK-1).
+      if (!isServerRendered(root)) root.appendChild(trigger);
 
       for (const child of children) child.init?.(options);
       paintTrigger();
     },
 
     render(options: RenderArgs) {
+      if (root && trigger && isServerRendered(root) && !holdsServerPaint(root, options)) {
+        root.textContent = '';
+        root.appendChild(trigger);
+      }
       state = options.state;
       actions = options.actions;
       search = options.search;

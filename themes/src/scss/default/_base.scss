@@ -207,6 +207,11 @@
   animation: xps-skeleton-pulse 1.4s ease-in-out infinite;
 }
 
+/* The rail is a pill, not a rounded rectangle: at 4px high the shared radius reads as a square. */
+#{r.own('xps-skeleton--track')} {
+  border-radius: 999px;
+}
+
 @keyframes xps-skeleton-pulse {
   50% {
     opacity: 0.05;

@@ -13,7 +13,13 @@ import {
 import { attributeLabelOrWarn, declareAttribute, UNNAMED_GROUP } from '../labels';
 import { escapeHtml, html, render, type Renderable } from '../templates/html';
 import type { Widget } from '../types';
-import { chevron, createRoot, resolveContainer, widgetId } from './dom';
+import {
+  chevron,
+  createRoot,
+  holdsServerPaint,
+  resolveContainer,
+  widgetId,
+} from './dom';
 
 export type FacetListWidgetParams = {
   container: string | HTMLElement;
@@ -108,12 +114,19 @@ export function facetList(params: FacetListWidgetParams): Widget {
         UNNAMED_GROUP;
 
       if (isFirstRender) {
-        const id = (part: string): string => widgetId(container, attribute, part);
         root = createRoot(
           container,
           'div',
           `xps xps-facet-list${searchable ? ' xps-facet-list--searchable' : ''}`
         );
+      }
+      if (!root) return;
+      // Nothing has answered yet: whatever the server painted stays on screen (SK-1).
+      if (holdsServerPaint(root, options)) return;
+      // Built once, on the render this widget first paints — not on the first render, which may
+      // still be showing what the server put in the root.
+      if (!listEl) {
+        const id = (part: string): string => widgetId(container, attribute, part);
         render(
           html`<h3 class="xps-facet-list__title" id="${id('title')}">${
             collapsible

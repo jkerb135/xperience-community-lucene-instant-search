@@ -8,7 +8,13 @@
 import { withSortSelect, type SortSelectItem } from '../behaviors/sortSelect';
 import { html, render } from '../templates/html';
 import type { Widget } from '../types';
-import { chevron, createRoot, resolveContainer, widgetId } from './dom';
+import {
+  chevron,
+  createRoot,
+  holdsServerPaint,
+  resolveContainer,
+  widgetId,
+} from './dom';
 
 export type SortSelectWidgetParams = {
   container: string | HTMLElement;
@@ -21,6 +27,7 @@ export type SortSelectWidgetParams = {
 
 export function sortSelect(params: SortSelectWidgetParams): Widget {
   const container = resolveContainer(params.container, 'sortSelect');
+  let root: HTMLElement | undefined;
   let select: HTMLSelectElement | undefined;
   let apply: (value: string) => void = () => {};
 
@@ -29,9 +36,13 @@ export function sortSelect(params: SortSelectWidgetParams): Widget {
       const { label = 'Sort by', hideLabel = false } = options.params;
       apply = options.apply;
 
-      if (isFirstRender) {
+      if (isFirstRender) root = createRoot(container, 'div', 'xps xps-sort-select xps-select');
+      if (!root) return;
+      // Nothing has answered yet: whatever the server painted stays on screen (SK-1).
+      if (holdsServerPaint(root, options)) return;
+      // Built once, on the render this widget first paints (SK-1).
+      if (!select) {
         const id = widgetId(container, 'sort-select', 'select');
-        const root = createRoot(container, 'div', 'xps xps-sort-select xps-select');
         render(
           html`<label class="xps-select__label${hideLabel ? ' xps-sr-only' : ''}" for="${id}">${label}</label>
   <span class="xps-select__field"><select class="xps-select__control" id="${id}" name="sort">${options.options.map(
