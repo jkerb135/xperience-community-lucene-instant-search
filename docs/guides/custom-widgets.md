@@ -372,7 +372,7 @@ builds one `createSearch()` instance per group and starts it:
   wins; a mount that disagrees produces one `console.warn` naming the key. The group needs an `index`
   from at least one mount.
 - The UMD bundle runs `mountAll()` itself on `DOMContentLoaded`, and is the only build that registers
-  the thirteen first-party widgets for you. From a bundler, call `mountAll(root = document)` after your
+  the fourteen first-party widgets for you. From a bundler, call `mountAll(root = document)` after your
   `registerWidgetType` calls, and pass the first-party widgets you bundled:
   `mountAll(document, { widgets: { searchBox, results } })` — see
   [JavaScript bundler setup](javascript-bundler-setup.md#page-builder-mounts). A factory you registered

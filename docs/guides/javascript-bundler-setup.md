@@ -137,7 +137,7 @@ import { searchBox, results, facetList } from '@xperience-community/xperience-se
 mountAll(document, { widgets: { searchBox, results, facetList } });
 ```
 
-Only the UMD bundle registers all thirteen widgets by itself; an ESM consumer says what it wants, so
+Only the UMD bundle registers all fourteen widgets by itself; an ESM consumer says what it wants, so
 that a page with a search box does not download a category tree. A `data-xps-widget` you did not
 pass in is a console error and a skipped mount — the rest of the page keeps working.
 

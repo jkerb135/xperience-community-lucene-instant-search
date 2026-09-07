@@ -104,8 +104,9 @@ of on every widget.
 
 `routing`, `page-size` and `fields` are instance-wide: the bootstrap merges them across the mounts of
 the instance. The scope never overwrites what a widget itself said — `<xps-results results-per-page="6">`
-inside a scope with `page-size="24"` searches with 6 — and because `<xps-results>` always states a page
-size, `page-size` on the scope is for pages whose result list is `<xps-load-more>`.
+inside a scope with `page-size="24"` searches with 6 — and an `<xps-results>` that says nothing takes
+the scope's `page-size`, so one number on the scope sizes the page for `<xps-results>` and
+`<xps-load-more>` alike. Without either, the code default of 20 applies.
 
 **Precedence, for `index` and `instance`:** the tag's own attribute wins, then the options record
 handed to `options="@model"`, then the enclosing `<xps-search>`, and finally — for `index` only — the
@@ -184,7 +185,7 @@ The result list, and the page's server-rendered first paint.
 
 | Attribute | Type | Default | Notes |
 |---|---|---|---|
-| `results-per-page` | int | `20` | Instance-wide: pagination steps in it. The index's maximum page size may clamp it |
+| `results-per-page` | int | – | Instance-wide: pagination steps in it. Unset takes the scope's `page-size`, then 20. The index's maximum page size may clamp it |
 | `template` | string | – | Identifier of a registered server-side result template |
 | `fields` | string list | – | Instance-wide: the document fields retrieved. Empty retrieves the index defaults |
 | `title-attribute` | string | – | What the default card reads the title from. Empty keeps `title` |
