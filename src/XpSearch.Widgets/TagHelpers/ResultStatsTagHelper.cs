@@ -1,3 +1,6 @@
+using System.Globalization;
+
+using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 
 using XpSearch.Widgets.Mounting;
@@ -54,5 +57,39 @@ public sealed class ResultStatsTagHelper : XpSearchMountTagHelper<ResultStatsOpt
             TextTemplate = TextTemplate ?? options.TextTemplate,
             EmptyText = EmptyText ?? options.EmptyText
         };
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The count of the search the results widget of this instance already ran (SK-1 §2.3/§2.4), in
+    /// the client's own sentence; a skeleton when no search has run before this widget. The custom
+    /// text template is left to the client: the server has no <c>tookMs</c> to substitute
+    /// (docs/internal/KNOWN-LIMITATIONS.md).
+    /// </remarks>
+    protected override Task<IHtmlContent?> BuildContentAsync(
+        ResultStatsOptions options,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        var paint = ServerFirstPaint.Find(ViewContext?.HttpContext, CurrentInstanceId);
+
+        if (paint is null)
+        {
+            return base.BuildContentAsync(options, cancellationToken);
+        }
+
+        var stats = new HtmlContentBuilder()
+            .AppendHtml("<div data-xps-server-rendered class=\"xps xps-result-stats\">")
+            .AppendHtml("<span class=\"xps-result-stats__text\"><strong class=\"xps-result-stats__total\">")
+            .Append(paint.Total.ToString("N0", CultureInfo.CurrentCulture))
+            .AppendHtml("</strong> results");
+
+        if (paint.Query.Length > 0)
+        {
+            stats.AppendHtml(" for &ldquo;").Append(paint.Query).AppendHtml("&rdquo;");
+        }
+
+        return Task.FromResult<IHtmlContent?>(stats.AppendHtml("</span></div>"));
     }
 }

@@ -16,6 +16,22 @@ and how to lift it.
 - **Upgrade path:** if a caller ever needs to render two mounts from one tag helper instance, pass a
   `MountContext` record (index, scope, labels, first paint) as the first argument of the four virtuals.
 
+## The shared first paint is document-order dependent (`ServerFirstPaint` in `XpSearch.Widgets/TagHelpers/`, SK-1)
+
+- **Simplified:** the results widget stashes the search it ran on `HttpContext.Items`, keyed by
+  instance id, and pagination, result stats and active filters read it from there instead of running
+  a search of their own. Nothing declares a search before the page renders, so the store is filled by
+  whichever widget happens to run first.
+- **Ceiling:** a widget placed *before* the results in document order sees nothing and paints its
+  skeleton - a sidebar with the chips above a results column is a common enough layout for that to
+  show. The pre-JavaScript page is then poorer, never wrong: the client fills those widgets on its
+  first response either way. Filters the labels cannot name (numeric ranges) get no chip at all, and
+  a custom `textTemplate` on the stats widget is left to the client, because the server has no
+  `tookMs` to substitute.
+- **Upgrade path:** the `<xps-search>` scope of RZ-1 declaring `results-per-page` (and, later, the
+  facets) and running the one search when the scope opens; every mount inside it then renders from a
+  result that exists before any of them, whatever the order.
+
 ## The sort options of `sortSelect` and `filterSort` are a text block, not a list (`SortSelectOptions`, `FilterSortOptions` in `XpSearch.Widgets/TagHelpers/`)
 
 - **Simplified:** both options records keep the Page Builder's `key;Label` lines

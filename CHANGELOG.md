@@ -49,6 +49,20 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
   failed first search ends the handover, so each widget paints its own shell instead of leaving the
   server's skeletons pulsing forever.
 - **Added (widgets):** the previous and next pagination links carry `rel="prev"` / `rel="next"`.
+- **Changed (widgets):** every mount carries a server first paint (SK-1). A widget the server cannot
+  fill yet renders its skeleton — the block `themes/fixtures/skeleton.html` draws for it, marked
+  `data-xps-server-rendered aria-hidden="true"` so the client adopts it and assistive technology
+  ignores it — instead of leaving an empty `div`. Where the server knows enough it renders the real
+  thing: the search box is a working `method="get"` form, and once the Results widget of the same
+  search has rendered earlier on the page, pagination emits real `?…&page=N` links (`rel="prev"` /
+  `rel="next"`), result stats the count sentence, and active filters a removable chip per filtered
+  value, each linking to the URL without it. A page without JavaScript can therefore search, page and
+  unfilter. Widgets placed before the results still paint skeletons
+  (`docs/internal/KNOWN-LIMITATIONS.md`). Custom tag helpers inherit the skeleton default for free;
+  override `BuildContentAsync` to render something truer.
+- **Added (core):** `ServerResultsRender.Total`, `.Page` and `.Query` — what the server first paint
+  searched for, so the widgets that share it render from the same search — and
+  `SearchQueryState.WithPage(query, page)`, which writes the query string of a page link.
 - **Added (themes):** the skeleton vocabulary the pre-JavaScript page is drawn with —
   `xps-skeleton--heading`, `--box`, `--count`, `--control`, `--track` and `--line` beside the
   existing `--title`, `--text` and `--block`, with `--xps-skeleton-width` to vary one bar's width.

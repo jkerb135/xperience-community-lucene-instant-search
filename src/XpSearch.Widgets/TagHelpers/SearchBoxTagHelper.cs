@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Html;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 
 using XpSearch.Widgets.Mounting;
@@ -34,6 +35,12 @@ public sealed record SearchBoxOptions : XpSearchMountOptions
 [HtmlTargetElement("xps-search-box")]
 public sealed class SearchBoxTagHelper : XpSearchMountTagHelper<SearchBoxOptions>
 {
+    /// <summary>The magnifier inside the field, byte-identical to the client's <c>SEARCH_ICON</c>.</summary>
+    private const string SearchIcon = "<svg class=\"xps-search-box__icon\" viewBox=\"0 0 24 24\" fill=\"none\""
+        + " stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\""
+        + " aria-hidden=\"true\" focusable=\"false\"><circle cx=\"11\" cy=\"11\" r=\"7\"></circle>"
+        + "<path d=\"m20 20-3.6-3.6\"></path></svg>";
+
     /// <summary>Initializes a new instance of the <see cref="SearchBoxTagHelper"/> class.</summary>
     /// <param name="renderer">Renders the mount element.</param>
     /// <param name="indexCatalog">The registered indexes.</param>
@@ -135,5 +142,55 @@ public sealed class SearchBoxTagHelper : XpSearchMountTagHelper<SearchBoxOptions
         ArgumentNullException.ThrowIfNull(instanceConfig);
 
         instanceConfig["routing"] = options.SyncStateToUrl;
+    }
+
+    /// <inheritdoc />
+    /// <remarks>
+    /// The real form, not a skeleton (SK-1 §2.3): without JavaScript, submitting it reloads the page
+    /// with <c>?q=</c>, which <c>ServerRenderedResults</c> already honours. Same markup as the
+    /// client's first render - element ids follow its <c>widgetId</c> rule
+    /// (<c>xps-{instance}-search-box-{part}</c>) - so the handover moves nothing on screen; the two
+    /// deliberate additions are <c>method="get"</c> and the value the visitor arrived with.
+    /// </remarks>
+    protected override Task<IHtmlContent?> BuildContentAsync(
+        SearchBoxOptions options,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        string query = ViewContext?.HttpContext?.Request.Query["q"].ToString() ?? string.Empty;
+        string id = $"xps-{CurrentInstanceId}-search-box";
+        string placeholder = string.IsNullOrWhiteSpace(options.Placeholder) ? "Search…" : options.Placeholder;
+
+        var form = new HtmlContentBuilder()
+            .AppendHtml("<form data-xps-server-rendered class=\"xps xps-search-box\" role=\"search\" method=\"get\" novalidate>")
+            .AppendHtml("<label class=\"xps-search-box__label xps-sr-only\" for=\"").Append(id).AppendHtml("-input\">Search this site</label>")
+            .AppendHtml("<div class=\"xps-search-box__field\">")
+            .AppendHtml(SearchIcon)
+            .AppendHtml("<input class=\"xps-search-box__input\" id=\"").Append(id).AppendHtml("-input\" type=\"search\" name=\"q\" value=\"")
+            .Append(query)
+            .AppendHtml("\" placeholder=\"")
+            .Append(placeholder)
+            .AppendHtml("\" autocomplete=\"off\" autocapitalize=\"off\" autocorrect=\"off\" spellcheck=\"false\"");
+
+        if (options.EnableSuggestions)
+        {
+            form.AppendHtml(" role=\"combobox\" aria-expanded=\"false\" aria-controls=\"")
+                .Append(id)
+                .AppendHtml("-listbox\" aria-autocomplete=\"list\"");
+        }
+
+        form.AppendHtml("><span class=\"xps-search-box__loading xps-skeleton\" aria-hidden=\"true\"></span>")
+            .AppendHtml("<button class=\"xps-button xps-search-box__reset\" type=\"reset\" aria-label=\"Clear the search query\"")
+            // The client hides it while there is nothing to clear; hidden markup is not focusable.
+            .AppendHtml(options.ShowReset && query.Length > 0 ? ">" : " hidden>")
+            .AppendHtml("<span aria-hidden=\"true\">&times;</span></button></div>");
+
+        if (options.EnableSuggestions)
+        {
+            form.AppendHtml("<div class=\"xps-suggestions__panel\" hidden></div>");
+        }
+
+        return Task.FromResult<IHtmlContent?>(form.AppendHtml("</form>"));
     }
 }

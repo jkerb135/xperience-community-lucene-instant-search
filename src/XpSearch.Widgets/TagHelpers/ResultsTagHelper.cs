@@ -202,6 +202,13 @@ public class ResultsTagHelper : XpSearchMountTagHelper<ResultsOptions>
         // response arrives (FC-1).
         MountLabels = FirstPaint?.Labels;
 
+        if (FirstPaint is not null)
+        {
+            // The widgets after this one on the page render from this search rather than running
+            // their own (SK-1 §2.4).
+            ServerFirstPaint.Publish(ViewContext.HttpContext, CurrentInstanceId, FirstPaint);
+        }
+
         return FirstPaint?.Content;
     }
 

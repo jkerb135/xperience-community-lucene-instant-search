@@ -251,6 +251,124 @@ internal sealed class ServerRenderedResultsTests
         Assert.That(rendered, Is.EqualTo(tag));
     }
 
+    /// <summary>
+    /// SK-1 §2.3/§2.4: the widgets that follow the results share the search it already ran - through
+    /// the per-request store, so document order decides. Here the results come first.
+    /// </summary>
+    [Test]
+    public async Task The_widgets_after_the_results_render_from_the_search_it_already_ran()
+    {
+        var response = TwoResults();
+        response.Total = 46;
+        response.PageSize = 10;
+        response.Facets = new Dictionary<string, FacetValue[]>(StringComparer.Ordinal)
+        {
+            ["ProductFieldTags"] = [new FacetValue { Value = "HotTips", Label = "Hot tips", Count = 3 }]
+        };
+
+        const string queryString = "?q=espresso&ProductFieldTags=HotTips";
+        var viewContext = ViewContext(queryString);
+
+        await Widgets
+            .Results(new XpSearchMountRenderer(), new FakeEditorContext(XpSearchEditorMode.Live), new FakeIndexCatalog("site-content"), ServerResults(new FakePipeline(response)))
+            .WithViewContext(viewContext)
+            .BuildModelAsync(new ResultsWidgetProperties { Index = "site-content", ResultsPerPage = 10 }, CancellationToken.None)
+            .ConfigureAwait(false);
+
+        string pagination = TagHelperTests.Tag(
+            new PaginationTagHelper(new XpSearchMountRenderer(), new FakeIndexCatalog("site-content")) { ViewContext = viewContext },
+            "xps-pagination");
+        string stats = TagHelperTests.Tag(
+            new ResultStatsTagHelper(new XpSearchMountRenderer(), new FakeIndexCatalog("site-content")) { ViewContext = viewContext },
+            "xps-result-stats");
+        string chips = TagHelperTests.Tag(
+            new ActiveFiltersTagHelper(new XpSearchMountRenderer(), new FakeIndexCatalog("site-content")) { ViewContext = viewContext },
+            "xps-active-filters");
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(pagination, Does.Contain("<nav data-xps-server-rendered class=\"xps xps-pagination\" aria-label=\"Search results pages\">"));
+            Assert.That(pagination, Does.Contain("<a class=\"xps-pagination__link\" rel=\"next\" href=\"?q=espresso&amp;ProductFieldTags=HotTips&amp;page=2\" data-xps-page=\"2\">"));
+            Assert.That(pagination, Does.Contain("aria-current=\"page\""));
+            // Five pages of ten, so nothing is elided and the ends are enabled.
+            Assert.That(pagination, Does.Not.Contain("xps-pagination__item--ellipsis"));
+            Assert.That(pagination, Does.Not.Contain("--skeleton"));
+
+            Assert.That(stats, Does.Contain(
+                "<span class=\"xps-result-stats__text\"><strong class=\"xps-result-stats__total\">46</strong>"
+                + " results for &ldquo;espresso&rdquo;</span>"));
+
+            Assert.That(chips, Does.Contain("<span class=\"xps-chip__value\">Hot tips</span>"));
+            // Taking the only filter off leaves the query and drops the page.
+            Assert.That(chips, Does.Contain("<a class=\"xps-chip__remove\" href=\"?q=espresso\" aria-label=\"Remove filter Hot tips\">"));
+        });
+    }
+
+    /// <summary>The other order: nothing has run yet, so the same widgets paint their skeletons.</summary>
+    [Test]
+    public void A_widget_rendered_before_the_results_paints_its_skeleton()
+    {
+        var viewContext = ViewContext("?q=espresso");
+
+        string pagination = TagHelperTests.Tag(
+            new PaginationTagHelper(new XpSearchMountRenderer(), new FakeIndexCatalog("site-content")) { ViewContext = viewContext },
+            "xps-pagination");
+        string stats = TagHelperTests.Tag(
+            new ResultStatsTagHelper(new XpSearchMountRenderer(), new FakeIndexCatalog("site-content")) { ViewContext = viewContext },
+            "xps-result-stats");
+        string chips = TagHelperTests.Tag(
+            new ActiveFiltersTagHelper(new XpSearchMountRenderer(), new FakeIndexCatalog("site-content")) { ViewContext = viewContext },
+            "xps-active-filters");
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(pagination, Does.Contain("xps-pagination--skeleton").And.Not.Contain("<a "));
+            Assert.That(stats, Does.Contain("xps-result-stats--skeleton"));
+            Assert.That(chips, Does.Contain("xps-active-filters--skeleton"));
+        });
+    }
+
+    /// <summary>
+    /// SK-1 §2.3: the search box is the real GET form, ids per the client's <c>widgetId</c> rule, so
+    /// submitting it without JavaScript reloads the page with <c>?q=</c> - and the client's first
+    /// render replaces it with the same markup.
+    /// </summary>
+    [Test]
+    public void The_search_box_renders_the_form_the_client_renders()
+    {
+        string markup = TagHelperTests.Tag(
+            new SearchBoxTagHelper(new XpSearchMountRenderer(), new FakeIndexCatalog("site-content"))
+            {
+                InstanceId = "search-1",
+                ViewContext = ViewContext("?q=espresso")
+            },
+            "xps-search-box");
+
+        Assert.That(
+            markup[(markup.IndexOf('>', StringComparison.Ordinal) + 1)..markup.LastIndexOf("</div>", StringComparison.Ordinal)],
+            Is.EqualTo(SearchBoxForm));
+    }
+
+    /// <summary>
+    /// What <c>searchBox</c>'s first render produces for the same state (<c>widgets/searchBox.ts</c>,
+    /// <c>themes/fixtures/search-box.html</c>), with the three deliberate differences of a server
+    /// form: the handover marker, <c>method="get"</c>, and the value the visitor arrived with (which
+    /// the client assigns to the input rather than to the attribute).
+    /// </summary>
+    private const string SearchBoxForm =
+        "<form data-xps-server-rendered class=\"xps xps-search-box\" role=\"search\" method=\"get\" novalidate>"
+        + "<label class=\"xps-search-box__label xps-sr-only\" for=\"xps-search-1-search-box-input\">Search this site</label>"
+        + "<div class=\"xps-search-box__field\">"
+        + "<svg class=\"xps-search-box__icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\""
+        + " stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\""
+        + " focusable=\"false\"><circle cx=\"11\" cy=\"11\" r=\"7\"></circle><path d=\"m20 20-3.6-3.6\"></path></svg>"
+        + "<input class=\"xps-search-box__input\" id=\"xps-search-1-search-box-input\" type=\"search\" name=\"q\""
+        + " value=\"espresso\" placeholder=\"Search&#x2026;\" autocomplete=\"off\" autocapitalize=\"off\""
+        + " autocorrect=\"off\" spellcheck=\"false\">"
+        + "<span class=\"xps-search-box__loading xps-skeleton\" aria-hidden=\"true\"></span>"
+        + "<button class=\"xps-button xps-search-box__reset\" type=\"reset\" aria-label=\"Clear the search query\">"
+        + "<span aria-hidden=\"true\">&times;</span></button></div></form>";
+
     private ServerRenderedResults ServerResults(ISearchPipeline pipeline) =>
         new(
             pipeline,
