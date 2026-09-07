@@ -33,11 +33,11 @@
 
   <div style="display: flex; flex-direction: column; gap: 24px; padding: 32px 48px 40px 48px; flex-grow: 1;">
 
-    <!-- searchBox: a real GET form. The only control that works before JavaScript. -->
+    <!-- searchBox: a real GET form (Enter submits; no submit button, as in the Main board). The only control that works before JavaScript. -->
     <div class="live" style="display: flex; align-items: center; gap: 12px; max-width: 720px; width: 100%; height: 44px; padding: 0 14px; background: #ffffff; border: 1px solid #e3e5ea; border-radius: 6px; box-shadow: inset 0 1px 3px rgba(31, 36, 48, 0.06);">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5c6370" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4.2-4.2"></path></svg>
       <span style="flex-grow: 1; font-size: 15px;">coffee grinder</span>
-      <div style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 6px; background: #AF00FA; color: #ffffff; font-size: 16px;">&rarr;</div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5c6370" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg>
     </div>
 
     <div style="display: flex; gap: 40px; align-items: flex-start;">
@@ -177,7 +177,7 @@
         </div>
 
         <div style="font-size: 12px; color: #9aa0ab; padding-top: 8px; line-height: 1.5;">
-          Before JavaScript: the form submits with GET, the cards and page links are real anchors, the chips name the URL's filters.
+          Before JavaScript: the form submits with GET on Enter, the cards and page links are real anchors, the chips name the URL's filters.
           Everything else is a skeleton the client swaps out on its first response; the client never paints its own skeleton over server content.
           A widget placed above the results (stats, sort) cannot know the total yet and stays a skeleton; pagination below them gets real links.
         </div>
