@@ -347,6 +347,7 @@
 
 .xps-pagination--skeleton .xps-skeleton--box {
   --xps-skeleton-width: 36px;
+  height: 36px;
 }
 
 .xps-active-filters--skeleton .xps-skeleton--control {
