@@ -150,6 +150,28 @@ public static class SearchQueryState
         }
     }
 
+    /// <summary>
+    /// The current URL's query string with <paramref name="page"/> as its <c>page</c> parameter -
+    /// what a server-rendered page link points at. Every other parameter is carried over untouched,
+    /// including the ones that are not search state (<c>utm_*</c>, Kentico's <c>uh</c>), which is
+    /// what the client's own <c>urlFor</c> does.
+    /// </summary>
+    /// <param name="query">The request's query string.</param>
+    /// <param name="page">The one-based page to link to.</param>
+    /// <returns>The query string, leading <c>?</c> included.</returns>
+    public static string WithPage(IQueryCollection query, long page)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+
+        var pairs = query
+            .Where(parameter => !string.Equals(parameter.Key, PageParam, StringComparison.Ordinal))
+            .SelectMany(parameter => parameter.Value.Select(value => KeyValuePair.Create<string, string?>(parameter.Key, value)))
+            .Append(KeyValuePair.Create<string, string?>(PageParam, page.ToString(CultureInfo.InvariantCulture)))
+            .ToList();
+
+        return QueryString.Create(pairs).ToString();
+    }
+
     private static bool IsNumber(string? value) =>
         value is { Length: > 0 }
         && double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out _);

@@ -174,4 +174,25 @@ internal sealed class SearchQueryStateTests
                 NumericOperator.Gt
             }));
     }
+
+    /// <summary>
+    /// SK-1 §2.1: the server writes the same URL a page link needs - every foreign parameter kept,
+    /// only <c>page</c> replaced - and reading it back gives the page that was linked to.
+    /// </summary>
+    [Test]
+    public void A_page_link_keeps_every_other_parameter_and_round_trips()
+    {
+        var query = new QueryCollection(QueryHelpers.ParseQuery("?q=espresso&tags=a,b&utm_source=news&page=4"));
+
+        string written = SearchQueryState.WithPage(query, 2);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(written, Is.EqualTo("?q=espresso&tags=a,b&utm_source=news&page=2"));
+            Assert.That(Parse(written).Page, Is.EqualTo(2));
+            Assert.That(Parse(written).Filters!.Facets![0].Values, Is.EqualTo(new[] { "a", "b" }));
+            // The first page is spelled out, as the fixture's links are: an empty href is not a link.
+            Assert.That(SearchQueryState.WithPage(new QueryCollection(), 1), Is.EqualTo("?page=1"));
+        });
+    }
 }

@@ -419,6 +419,27 @@ internal sealed class ServerRenderedResultsTests
         });
     }
 
+    /// <summary>
+    /// SK-1 §2.1: the widgets that follow the results on the page render from this search rather
+    /// than running one of their own, so the render carries what they need.
+    /// </summary>
+    [Test]
+    public async Task The_render_carries_the_total_the_page_and_the_query_it_applied()
+    {
+        var response = TwoResults();
+        response.Total = 46;
+        response.Page = 3;
+
+        await RenderAsync(new FakePipeline(response), queryString: "?q=espresso&page=3");
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(lastRender!.Total, Is.EqualTo(46));
+            Assert.That(lastRender!.Page, Is.EqualTo(3));
+            Assert.That(lastRender!.Query, Is.EqualTo("espresso"));
+        });
+    }
+
     private static SearchResponse TwoResults() => new()
     {
         Total = 2,

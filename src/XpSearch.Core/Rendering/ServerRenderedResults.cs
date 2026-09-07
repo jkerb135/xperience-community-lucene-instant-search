@@ -47,11 +47,17 @@ public sealed record ServerResultsOptions(
 /// (FC-1). The widget hands it to the client as <c>data-xps-labels</c>, which seeds the label memory
 /// so a filtered cold load never paints a stored code. Empty when nothing is filtered.
 /// </param>
+/// <param name="Total">Total number of matching documents across all pages.</param>
+/// <param name="Page">The one-based page that was rendered.</param>
+/// <param name="Query">The query text the search ran with; empty when the visitor typed nothing.</param>
 public sealed record ServerResultsRender(
     IHtmlContent Content,
     string? QueryId,
     int PageSize,
-    IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> Labels);
+    IReadOnlyDictionary<string, IReadOnlyDictionary<string, string>> Labels,
+    long Total,
+    long Page,
+    string Query);
 
 /// <summary>
 /// Runs the visitor's initial search and renders the result cards on the server, so a shared result
@@ -152,7 +158,14 @@ public sealed class ServerRenderedResults
 
         var labels = SelectedLabels(request, response);
         var render = (IHtmlContent content) =>
-            new ServerResultsRender(content, response.QueryId, (int)response.PageSize, labels);
+            new ServerResultsRender(
+                content,
+                response.QueryId,
+                (int)response.PageSize,
+                labels,
+                response.Total,
+                response.Page,
+                request.Query ?? string.Empty);
 
         if (response.Results is not { Length: > 0 })
         {
