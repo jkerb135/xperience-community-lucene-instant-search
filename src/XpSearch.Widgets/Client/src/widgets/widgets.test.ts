@@ -347,7 +347,7 @@ describe('results', () => {
     expect(third.querySelector('.xps-result__link')?.textContent).toBe('Descaling <b>your</b> machine');
   });
 
-  it('takes over the server-rendered first paint on its first render', async () => {
+  it('adopts the server-rendered first paint and takes it over on the first response', async () => {
     const host = container('results');
     // What the Page Builder widget renders inside its mount element (spec 5.8).
     host.innerHTML =
@@ -355,12 +355,15 @@ describe('results', () => {
       '<li class="xps-results__item">server</li></ol></div>';
     search = start([results({ container: host })]);
 
-    // The first render empties the container, so the server block never coexists with the client's.
-    expect(host.querySelector('[data-xps-server-rendered]')).toBeNull();
-    expect(host.textContent).not.toContain('server');
+    // The first render adopts the server block instead of replacing it (SK-1): no flash, and no
+    // skeleton painted over content that is already there.
+    expect(host.textContent).toContain('server');
+    expect(host.querySelector('.xps-result--skeleton')).toBeNull();
     expect(classesOf(host.firstElementChild)).toEqual(['xps', 'xps-results']);
 
     await settled(search);
+    expect(host.querySelector('[data-xps-server-rendered]')).toBeNull();
+    expect(host.textContent).not.toContain('server');
     expect(host.querySelectorAll('.xps-results__item').length).toBe(3);
   });
 

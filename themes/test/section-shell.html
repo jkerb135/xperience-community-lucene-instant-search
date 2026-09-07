@@ -1344,6 +1344,184 @@
            data-xps-config='{"attribute":"contentType","limit":10,"showMore":true}'></div>
     </section>
 
+    <section class="fx fx--skeleton">
+      <h2>skeleton</h2>
+      <!-- skeleton — what the server renders inside a mount for a widget it cannot fill yet (SK-1,
+           docs/internal/design/Skeleton.dc.html). One block per widget, in the shape the widget has once
+           the client answers, drawn with the xps-skeleton modifiers.
+      
+           Every block is decoration: `aria-hidden="true"`, no text, no focusable element. The
+           `data-xps-server-rendered` attribute is the handshake — the client adopts the element and
+           leaves these children alone until its first response. The results skeleton is NOT here: the
+           client paints its own into an empty mount, and results.html stays the normative one. -->
+      
+      <div class="xps-mount">
+        <div data-xps-server-rendered aria-hidden="true" class="xps xps-facet-list xps-facet-list--skeleton">
+          <h3 class="xps-facet-list__title"><span class="xps-skeleton xps-skeleton--heading"></span></h3>
+          <div class="xps-facet-list__body">
+            <ul class="xps-facet-list__list">
+              <li class="xps-facet-list__item">
+                <span class="xps-facet-list__label">
+                  <span class="xps-skeleton xps-skeleton--box"></span>
+                  <span class="xps-skeleton xps-skeleton--text"></span>
+                  <span class="xps-skeleton xps-skeleton--count"></span>
+                </span>
+              </li>
+              <li class="xps-facet-list__item">
+                <span class="xps-facet-list__label">
+                  <span class="xps-skeleton xps-skeleton--box"></span>
+                  <span class="xps-skeleton xps-skeleton--text"></span>
+                  <span class="xps-skeleton xps-skeleton--count"></span>
+                </span>
+              </li>
+              <li class="xps-facet-list__item">
+                <span class="xps-facet-list__label">
+                  <span class="xps-skeleton xps-skeleton--box"></span>
+                  <span class="xps-skeleton xps-skeleton--text"></span>
+                  <span class="xps-skeleton xps-skeleton--count"></span>
+                </span>
+              </li>
+              <li class="xps-facet-list__item">
+                <span class="xps-facet-list__label">
+                  <span class="xps-skeleton xps-skeleton--box"></span>
+                  <span class="xps-skeleton xps-skeleton--text"></span>
+                  <span class="xps-skeleton xps-skeleton--count"></span>
+                </span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      
+      <!-- categoryTree: the root row plus one indented level -->
+      <div class="xps-mount">
+        <nav data-xps-server-rendered aria-hidden="true" class="xps xps-category-tree xps-category-tree--skeleton">
+          <h3 class="xps-category-tree__title"><span class="xps-skeleton xps-skeleton--heading"></span></h3>
+          <div class="xps-category-tree__body">
+            <ul class="xps-category-tree__list xps-category-tree__list--lvl0">
+              <li class="xps-category-tree__item xps-category-tree__item--parent">
+                <span class="xps-category-tree__link">
+                  <span class="xps-skeleton xps-skeleton--text"></span>
+                  <span class="xps-skeleton xps-skeleton--count"></span>
+                </span>
+                <ul class="xps-category-tree__list xps-category-tree__list--lvl1">
+                  <li class="xps-category-tree__item">
+                    <span class="xps-category-tree__link">
+                      <span class="xps-skeleton xps-skeleton--text"></span>
+                      <span class="xps-skeleton xps-skeleton--count"></span>
+                    </span>
+                  </li>
+                  <li class="xps-category-tree__item">
+                    <span class="xps-category-tree__link">
+                      <span class="xps-skeleton xps-skeleton--text"></span>
+                      <span class="xps-skeleton xps-skeleton--count"></span>
+                    </span>
+                  </li>
+                  <li class="xps-category-tree__item">
+                    <span class="xps-category-tree__link">
+                      <span class="xps-skeleton xps-skeleton--text"></span>
+                      <span class="xps-skeleton xps-skeleton--count"></span>
+                    </span>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+        </nav>
+      </div>
+      
+      <!-- rangeFilter: heading, rail, and the two number inputs as empty control boxes -->
+      <div class="xps-mount">
+        <div data-xps-server-rendered aria-hidden="true" class="xps xps-range-filter xps-range-filter--skeleton">
+          <h3 class="xps-range-filter__title"><span class="xps-skeleton xps-skeleton--heading"></span></h3>
+          <div class="xps-range-filter__track"><span class="xps-skeleton xps-skeleton--track"></span></div>
+          <div class="xps-range-filter__inputs">
+            <span class="xps-range-filter__input"><span class="xps-skeleton xps-skeleton--control"></span></span>
+            <span class="xps-range-filter__separator"><span class="xps-skeleton xps-skeleton--control"></span></span>
+            <span class="xps-range-filter__input"><span class="xps-skeleton xps-skeleton--control"></span></span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- toggleFilter: one row, the same shape as a facet row -->
+      <div class="xps-mount">
+        <div data-xps-server-rendered aria-hidden="true" class="xps xps-toggle-filter xps-toggle-filter--skeleton">
+          <span class="xps-toggle-filter__label">
+            <span class="xps-skeleton xps-skeleton--box"></span>
+            <span class="xps-skeleton xps-skeleton--text"></span>
+            <span class="xps-skeleton xps-skeleton--count"></span>
+          </span>
+        </div>
+      </div>
+      
+      <!-- resultStats: the sentence, 220px of it -->
+      <div class="xps-mount">
+        <div data-xps-server-rendered aria-hidden="true" class="xps xps-result-stats xps-result-stats--skeleton">
+          <span class="xps-result-stats__text"><span class="xps-skeleton xps-skeleton--line"></span></span>
+        </div>
+      </div>
+      
+      <!-- sortSelect: the label beside the select's own box, which holds the control bar -->
+      <div class="xps-mount">
+        <div data-xps-server-rendered aria-hidden="true" class="xps xps-sort-select xps-select xps-sort-select--skeleton">
+          <span class="xps-select__label"><span class="xps-skeleton xps-skeleton--line"></span></span>
+          <span class="xps-select__field"><span class="xps-skeleton xps-skeleton--control"></span></span>
+        </div>
+      </div>
+      
+      <!-- filterSort: the mobile trigger, as a button-sized box -->
+      <div class="xps-mount">
+        <div data-xps-server-rendered aria-hidden="true" class="xps xps-filter-sort xps-filter-sort--skeleton">
+          <span class="xps-filter-sort__trigger"><span class="xps-skeleton xps-skeleton--control"></span></span>
+        </div>
+      </div>
+      
+      <!-- pagination: five 36x36 pills -->
+      <div class="xps-mount">
+        <nav data-xps-server-rendered aria-hidden="true" class="xps xps-pagination xps-pagination--skeleton">
+          <ul class="xps-pagination__list">
+            <li class="xps-pagination__item"><span class="xps-pagination__link"><span class="xps-skeleton xps-skeleton--box"></span></span></li>
+            <li class="xps-pagination__item"><span class="xps-pagination__link"><span class="xps-skeleton xps-skeleton--box"></span></span></li>
+            <li class="xps-pagination__item"><span class="xps-pagination__link"><span class="xps-skeleton xps-skeleton--box"></span></span></li>
+            <li class="xps-pagination__item"><span class="xps-pagination__link"><span class="xps-skeleton xps-skeleton--box"></span></span></li>
+            <li class="xps-pagination__item"><span class="xps-pagination__link"><span class="xps-skeleton xps-skeleton--box"></span></span></li>
+          </ul>
+        </nav>
+      </div>
+      
+      <!-- activeFilters: one chip -->
+      <div class="xps-mount">
+        <div data-xps-server-rendered aria-hidden="true" class="xps xps-active-filters xps-active-filters--skeleton">
+          <ul class="xps-active-filters__list">
+            <li class="xps-active-filters__item">
+              <span class="xps-chip"><span class="xps-chip__label"><span class="xps-skeleton xps-skeleton--control"></span></span></span>
+            </li>
+          </ul>
+        </div>
+      </div>
+      
+      <!-- clearFilters: the link-sized label -->
+      <div class="xps-mount">
+        <div data-xps-server-rendered aria-hidden="true" class="xps xps-clear-filters xps-clear-filters--skeleton">
+          <span class="xps-clear-filters__button"><span class="xps-skeleton xps-skeleton--line"></span></span>
+        </div>
+      </div>
+      
+      <!-- loadMore: the button -->
+      <div class="xps-mount">
+        <div data-xps-server-rendered aria-hidden="true" class="xps xps-load-more xps-load-more--skeleton">
+          <span class="xps-load-more__load-more"><span class="xps-skeleton xps-skeleton--control"></span></span>
+        </div>
+      </div>
+      
+      <!-- suggestions: the field, empty -->
+      <div class="xps-mount">
+        <div data-xps-server-rendered aria-hidden="true" class="xps xps-suggestions xps-suggestions--skeleton">
+          <div class="xps-suggestions__field"><span class="xps-skeleton xps-skeleton--control"></span></div>
+        </div>
+      </div>
+    </section>
+
     <section class="fx fx--editor-preview">
       <h2>editor-preview</h2>
       <!-- editorPreview — what an editor sees in the Page Builder instead of a mount element (spec 7.5).      

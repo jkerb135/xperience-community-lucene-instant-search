@@ -11,6 +11,9 @@
  *   *page* rules, not widget rules; the run is restricted to the WCAG A/AA tags, which excludes
  *   them, because a widget fragment is not a page.
  */
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
 import axe from 'axe-core';
 import { API_VERSION_HEADER, SUGGEST_ROUTE } from '../contract/constants';
@@ -115,7 +118,28 @@ const violations = async (): Promise<string[]> => {
   );
 };
 
+/** The server's first paint for a widget it cannot fill yet (SK-1). */
+const skeletons = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), '../../../../../themes/fixtures/skeleton.html'),
+  'utf8'
+);
+
 describe('accessibility (axe-core)', () => {
+  it('reports no violations for the server skeleton blocks, which are pure decoration', async () => {
+    document.body.innerHTML = `<main><h1>Search</h1>${skeletons}</main>`;
+    const roots = [...document.querySelectorAll('[data-xps-server-rendered]')];
+    expect(roots.length).toBe(12);
+    for (const root of roots) {
+      expect(root.getAttribute('aria-hidden')).toBe('true');
+      // Nothing to tab to and nothing to read: a skeleton is not content.
+      expect(
+        root.querySelectorAll('a[href], button, input, select, textarea, [tabindex]').length
+      ).toBe(0);
+      expect(root.textContent?.trim()).toBe('');
+    }
+    expect(await violations()).toEqual([]);
+  }, 20_000);
+
   it('reports no violations with the filter & sort sheet open', async () => {
     const search = page();
     await vi.waitFor(() => expect(search.results).not.toBeNull(), { timeout: 3000 });

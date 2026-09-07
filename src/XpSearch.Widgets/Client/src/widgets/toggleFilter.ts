@@ -10,7 +10,7 @@ import { withFacetList } from '../behaviors/facetList';
 import { valueLabel } from '../labels';
 import { html, render } from '../templates/html';
 import type { Widget } from '../types';
-import { createRoot, resolveContainer } from './dom';
+import { createRoot, holdsServerPaint, resolveContainer } from './dom';
 
 export type ToggleFilterWidgetParams = {
   container: string | HTMLElement;
@@ -46,8 +46,12 @@ export function toggleFilter(params: ToggleFilterWidgetParams): Widget {
         valueLabel(options.search, attribute, value) ||
         value;
 
-      if (isFirstRender) {
-        root = createRoot(container, 'div', 'xps xps-toggle-filter');
+      if (isFirstRender) root = createRoot(container, 'div', 'xps xps-toggle-filter');
+      if (!root) return;
+      // Nothing has answered yet: whatever the server painted stays on screen (SK-1).
+      if (holdsServerPaint(root, options)) return;
+      // Built once, on the render this widget first paints (SK-1).
+      if (!checkbox) {
         render(
           html`<label class="xps-toggle-filter__label">
     <input class="xps-toggle-filter__checkbox" type="checkbox" name="${attribute}" value="${value}">
@@ -61,7 +65,7 @@ export function toggleFilter(params: ToggleFilterWidgetParams): Widget {
         text = root.querySelector<HTMLElement>('.xps-toggle-filter__value') ?? undefined;
         checkbox?.addEventListener('change', () => apply(value));
       }
-      if (!root || !checkbox || !count || !text) return;
+      if (!checkbox || !count || !text) return;
       // Patched, not baked in: the first render happens before the response that names the value.
       if (text.textContent !== label) text.textContent = label;
 

@@ -1401,3 +1401,4 @@ and how to lift it.
 - **Upgrade path:** ask Kentico for the props (`Card` padding, `Callout` spacing, `Table` row
   height); until then the recapture in `docs/internal/screenshot-manifest.md` after a package bump is
   the check.
+
