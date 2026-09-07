@@ -95,6 +95,19 @@ Row counts: facet list 4 rows, tree 1 + 3 indented, pagination 5 pills (36×36),
 
 ## 2. Slice S — tag helpers (after RZ-1 merge)
 
+### 2.0 RZ-1 as merged (main 92e0984) — the shapes to build on
+`src/XpSearch.Widgets/TagHelpers/*.cs`, one file per widget (options record + tag helper).
+`XpSearchMountTagHelper<TOptions>`: `protected virtual Task<IHtmlContent?> BuildContentAsync(options, ct)`
+returns null by default; `CurrentIndex`, `MountLabels`, `ViewContext` available; `BuildAsync` is the
+single path the Page Builder layer and `Html.XpSearchAsync` call. `ResultsTagHelper` is unsealed with
+`protected ServerRenderedResults? ServerResults` and `protected ServerResultsRender? FirstPaint`.
+Tag helpers are transient (per render), so the shared render (§2.4) lives on `HttpContext.Items`,
+not on the helper. `LoadMoreTagHelper` has no content override: the skeleton default covers it.
+`tests/XpSearch.Widgets.Tests/PageBuilderParityTests.cs` already pins PB output == tag output per
+widget; the skeleton default must therefore come out identical both ways (it will, if it depends on
+options only). The host has `/search-razor` built purely from tag helpers — a second surface to check
+the first paint on.
+
 ### 2.1 Core, additive only
 `ServerResultsRender` gains `Total`, `Page` (the applied page) and `Query` (the applied query text)
 so the widgets that follow the results on the page can render from the same search. No new search
