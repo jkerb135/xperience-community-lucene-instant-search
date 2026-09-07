@@ -33,15 +33,20 @@ const run = (command, args, cwd) => {
 // drifts from the file it says it shows is how the previous example came to ship four bugs.
 const read = (file) => readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
 const guide = read(join(repoRoot, 'docs/guides/custom-widgets.md'));
-const widget = read(join(sample, 'src/dropdownFacet.ts'));
-if (!guide.includes(`\`\`\`ts\n${widget.trimEnd()}\n\`\`\``)) {
-  console.error(
-    'docs/guides/custom-widgets.md no longer reproduces samples/CustomWidget.Dropdown/src/' +
-      'dropdownFacet.ts verbatim. Paste the file into the guide, or stop claiming it is the file.'
-  );
-  process.exit(1);
+for (const [language, file] of [
+  ['ts', 'src/dropdownFacet.ts'],
+  ['csharp', 'dotnet/CustomWidget.Dropdown.Widget/DropdownFacetWidget.cs'],
+]) {
+  const source = read(join(sample, file));
+  if (!guide.includes(`\`\`\`${language}\n${source.trimEnd()}\n\`\`\``)) {
+    console.error(
+      `docs/guides/custom-widgets.md no longer reproduces samples/CustomWidget.Dropdown/${file} ` +
+        'verbatim. Paste the file into the guide, or stop claiming it is the file.'
+    );
+    process.exit(1);
+  }
+  console.log(`ok: custom-widgets.md reproduces ${file} verbatim`);
 }
-console.log('ok: custom-widgets.md reproduces dropdownFacet.ts verbatim');
 
 // A stale feed is worse than no feed: NuGet would happily restore yesterday's package.
 rmSync(feed, { recursive: true, force: true });
