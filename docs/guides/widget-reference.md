@@ -997,7 +997,7 @@ the same `data-xps-widget` element from editor properties. Nothing in the page a
 
 ## Page Builder mounts
 
-All thirteen widgets resolve by name from a `.xps-mount` element, so the Page Builder widgets (spec §7.1)
+All fourteen widgets resolve by name from a `.xps-mount` element, so the Page Builder widgets (spec §7.1)
 need no JavaScript of their own:
 
 ```html

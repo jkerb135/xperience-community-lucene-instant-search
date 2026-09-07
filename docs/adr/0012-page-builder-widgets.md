@@ -102,3 +102,11 @@ one is chosen.
 - The mount markup is asserted through `IXpSearchMountRenderer` and `BuildModel()` without Razor, and the
   view itself is rendered once through a minimal MVC host, which is what proves it compiled into the RCL
   at the path the base class returns.
+
+**Superseded in part by [ADR-0029](0029-bottom-up-layering.md) (2026-09-06).** The asset distribution,
+the configurator placement and the merged-instance-config rule above all stand. What changed is where
+the mount is built: a Page Builder widget no longer owns `BuildConfig`, `BuildInstanceConfig`,
+`GetWidgetType`, `ConfigurationHint`, `ReflectConfig`, `CurrentIndex` or `MountLabels`, and
+`BuildModel(properties)` is now `BuildModelAsync(properties, cancellationToken)`. Those members moved
+to the widget's tag helper, `XpSearchMountTagHelper<TOptions>`, which the widget calls; the widget keeps
+`ToOptions(properties)` and `BuildEditorPreview(properties)`. The rendered markup is unchanged.

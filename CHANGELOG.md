@@ -37,6 +37,21 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
   attribute; `<xps-load-more>` / **Search - Load more** (`XpSearch.LoadMore`) is the endless result
   list, which **replaces the Results and Pagination widgets** and cannot sit beside them - it renders
   the cards itself and owns the page (MB-1). Both take the JavaScript widget's own options, kebab-cased.
+- **Docs:** two new guide pages for the layering (RZ-1, ADR-0029).
+  [Razor tag helpers](docs/guides/razor-tag-helpers.md) documents the asset tags, `<xps-search>` and its
+  precedence rule, all fourteen widget tags with their attributes, types and defaults, `<xps-widget>`,
+  `Html.XpSearchAsync`, the throw-on-unrenderable failure semantics and the first paint through
+  `<xps-results>` - its attribute tables are generated from the tag helper classes by
+  `TagHelperDocsTests`, so they cannot drift.
+  [Building a search page](docs/guides/building-a-search-page.md) builds the same results page three
+  ways, and `BuildingASearchPageTests` runs its Razor page and asserts it produces the plain-HTML
+  recipe's mounts. [Custom widgets](docs/guides/custom-widgets.md) is rewritten around the three
+  avenues (`registerWidgetType`, a tag helper of your own or `<xps-widget>`, a Page Builder widget over
+  `ToOptions`) with the sample's C# file embedded verbatim and drift-checked by
+  `samples/pack-and-build.mjs`. [Page Builder widgets](docs/guides/page-builder-widgets.md),
+  [Server rendering](docs/guides/server-rendering.md) and [Quick start](docs/guides/quick-start.md)
+  gained the layering paragraph and the pointers to the new pages. ADR-0029 records the decision;
+  ADR-0012 is marked superseded in part.
 - **Added (widgets):** `<xps-search-styles />` and `<xps-search-scripts />` (and
   `Html.XpSearchStyles()` / `Html.XpSearchScripts()`), so the stylesheets can sit in `<head>` and the
   bundle at the end of the body. `<xps-search-assets />` stays as the shorthand for both.
