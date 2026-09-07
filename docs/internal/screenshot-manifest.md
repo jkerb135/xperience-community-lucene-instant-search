@@ -50,7 +50,10 @@ deliberately): synonym group `espresso expresso`, stopword list `the a an of and
 No widget property dialog has a row here yet. UX-1 rewrote every widget property's tooltip and
 explanation, and AR-3 made the Results widget's *Results per page* and the two suggestion counts
 required (one or greater), so any Page Builder dialog shot added later must be taken after those
-changes.
+changes. RZ-2 added five properties to three dialogs — Pagination (**Pages either side of the current
+one**, **Show the "first page" control**, **Show the "last page" control**, the last three shown for
+numbered pages only), Active filters (**Attribute names**) and Search box (**Search as the page
+loads**) — so those three dialogs must be shot after RZ-2 as well.
 No row covers the front-end widgets, so TH-6 (autocomplete panel + empty states + the Load more
 empty state) and TH-7 (theme hardening: themed checkboxes, sheet heading, empty-state button, the
 did-you-mean link) and TH-9 (the sidebar card, the autocomplete "no suggestions" state) have

@@ -101,8 +101,9 @@ of on every widget.
 | `routing` | bool | – | Whether the search keeps its query, filters and page in the address bar |
 | `page-size` | int | – | How many results one page holds |
 | `fields` | string list | – | The index fields retrieved for each result |
+| `search-on-initial-load` | bool | – | Whether the search runs once as the page loads, before the visitor has typed |
 
-`routing`, `page-size` and `fields` are instance-wide: the bootstrap merges them across the mounts of
+`routing`, `page-size`, `fields` and `search-on-initial-load` are instance-wide: the bootstrap merges them across the mounts of
 the instance. The scope never overwrites what a widget itself said — `<xps-results results-per-page="6">`
 inside a scope with `page-size="24"` searches with 6 — and an `<xps-results>` that says nothing takes
 the scope's `page-size`, so one number on the scope sizes the page for `<xps-results>` and
@@ -174,6 +175,7 @@ The query input, with an optional suggestions combobox.
 | `suggestion-limit` | int | `5` | Only used when suggestions are on |
 | `recent-searches` | bool | `true` | Offers this visitor's own recent searches in the panel |
 | `sync-state-to-url` | bool | `true` | Instance-wide: writes `routing` for the whole search |
+| `search-on-initial-load` | bool | – | Instance-wide: whether the search runs once as the page loads. Unset leaves it to the scope, then the JavaScript default, on |
 
 `sync-state-to-url` is emitted whether on or off, so a second, deliberately non-syncing search on the
 page reads as configured rather than forgotten. `enable-suggestions`, `suggestion-limit` and
@@ -214,6 +216,9 @@ Moving between the pages of an `<xps-results>` list.
 | Attribute | Type | Default | Notes |
 |---|---|---|---|
 | `style` | string | `numbered` | `numbered` mounts the `pagination` widget; `loadMore` mounts the `loadMore` widget instead |
+| `padding` | int | – | Page links either side of the current one. Unset keeps the JavaScript default, 3 |
+| `show-first` | bool | – | The « control that jumps to page one. Unset keeps the JavaScript default, on |
+| `show-last` | bool | – | The » control that jumps to the final page. Unset keeps the JavaScript default, on |
 
 The style picks the JavaScript widget rather than becoming an option of one, so
 `<xps-pagination style="loadMore" />` emits `data-xps-widget="loadMore"`. Reach for `<xps-load-more>`
@@ -277,6 +282,12 @@ The visitor's refinements as removable chips.
 |---|---|---|---|
 | `title` | string | – | The heading screen readers announce for the chip list. Never shown on screen |
 | `scroll` | bool | `false` | Keeps the chips on one scrolling row instead of wrapping |
+| `attribute-labels` | object | – | What each attribute is called on its chips. A dictionary, or one `attribute;Label` per line |
+
+`attribute-labels` is only needed for an attribute whose own filtering widget is not on the page: a
+chip otherwise reads the label that widget declares. Both forms work —
+`attribute-labels="contentType;Content type"` in the markup, or `attribute-labels="@labels"` with an
+`IReadOnlyDictionary<string, string>`.
 
 ### `<xps-clear-filters>`
 

@@ -50,8 +50,8 @@ dotnet run --project tests/XpSearch.Bench/XpSearch.Bench.csproj -c Release -- --
 cd src/XpSearch.Widgets/Client && npm run contract:gen && npm run contract:check
 ```
 
-Suite sizes (2026-09-06, RZ-1 B): Core 385, Admin 275, Ingestion 47, Widgets 115, Client 16,
-JS 307 (the former `widgets.test.ts` facet-count flake is fixed — a disposed `SearchClient` no
+Suite sizes (2026-09-07, RZ-2): Core 385, Admin 275, Ingestion 47, Widgets 119, Client 16,
+JS 314 (the former `widgets.test.ts` facet-count flake is fixed — a disposed `SearchClient` no
 longer retries a failed probe into the next test's fetch log) — if
 your run shows fewer, you ran the wrong project. There is no solution file in the repo root; run each
 test project by path. The Admin C# suite needs `src/XpSearch.Admin/Client` built first, like the
