@@ -1,4 +1,4 @@
-using System.Text.Encodings.Web;
+﻿using System.Text.Encodings.Web;
 
 using Microsoft.AspNetCore.Razor.TagHelpers;
 using Microsoft.Extensions.Options;
@@ -332,6 +332,105 @@ internal sealed class TagHelperTests
         var unnamed = Assert.Throws<InvalidOperationException>(new Action(
             () => Tag(new XpSearchWidgetTagHelper(renderer, catalog) { Index = Index }, "xps-widget")));
         Assert.That(unnamed!.Message, Does.Contain("type"));
+    }
+
+    [Test]
+    public void The_pagination_tag_carries_the_page_links_it_offers_and_an_explicit_off()
+    {
+        var configured = Rendered.Json(
+            Tag(
+                new PaginationTagHelper(renderer, catalog)
+                {
+                    Index = Index,
+                    Padding = 2,
+                    ShowFirst = false,
+                    ShowLast = true
+                },
+                "xps-pagination"),
+            "data-xps-config");
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(configured.GetProperty("padding").GetInt32(), Is.EqualTo(2));
+            // false is a real departure from the JavaScript default, so it has to be emitted.
+            Assert.That(configured.GetProperty("showFirst").GetBoolean(), Is.False);
+            Assert.That(configured.GetProperty("showLast").GetBoolean(), Is.True);
+            Assert.That(configured.TryGetProperty("style", out _), Is.False, "the style is the widget type");
+        });
+
+        // Nothing said: the JavaScript defaults (3, on, on) stand untouched.
+        Assert.That(
+            Rendered.Attribute(Tag(new PaginationTagHelper(renderer, catalog) { Index = Index }, "xps-pagination"), "data-xps-config"),
+            Is.EqualTo("{}"));
+    }
+
+    [Test]
+    public void The_active_filters_tag_takes_its_attribute_labels_as_lines_or_as_a_dictionary()
+    {
+        string lines = Tag(
+            new ActiveFiltersTagHelper(renderer, catalog)
+            {
+                Index = Index,
+                AttributeLabels = "contentType;Content type\r\ntags;Topics"
+            },
+            "xps-active-filters");
+
+        string dictionary = Tag(
+            new ActiveFiltersTagHelper(renderer, catalog)
+            {
+                Index = Index,
+                AttributeLabels = new Dictionary<string, string>(StringComparer.Ordinal)
+                {
+                    ["contentType"] = "Content type",
+                    ["tags"] = "Topics"
+                }
+            },
+            "xps-active-filters");
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(
+                Rendered.Json(lines, "data-xps-config").GetProperty("attributeLabels").GetProperty("contentType").GetString(),
+                Is.EqualTo("Content type"));
+            // The two forms of the one attribute are the same option, so they render the same bytes.
+            Assert.That(dictionary, Is.EqualTo(lines));
+            Assert.That(
+                Rendered.Attribute(Tag(new ActiveFiltersTagHelper(renderer, catalog) { Index = Index }, "xps-active-filters"), "data-xps-config"),
+                Is.EqualTo("{\"scroll\":false}"),
+                "no labels named: the chips read the labels of the widgets that filter the attributes");
+        });
+    }
+
+    [Test]
+    public void Search_on_initial_load_reaches_the_instance_from_the_scope_or_from_the_search_box()
+    {
+        var items = Scope(new XpSearchTagHelper { Index = Index, SearchOnInitialLoad = false });
+
+        var fromScope = Rendered.Json(
+            Tag(new FacetListTagHelper(renderer, catalog) { Attribute = "tags" }, "xps-facet-list", items),
+            "data-xps-instance-config");
+        var fromBox = Rendered.Json(
+            Tag(new SearchBoxTagHelper(renderer, catalog) { Index = Index, SearchOnInitialLoad = false }, "xps-search-box"),
+            "data-xps-instance-config");
+        var boxInsideScope = Rendered.Json(
+            Tag(new SearchBoxTagHelper(renderer, catalog) { SearchOnInitialLoad = true }, "xps-search-box", items),
+            "data-xps-instance-config");
+        string plainBox = Tag(new SearchBoxTagHelper(renderer, catalog) { Index = Index }, "xps-search-box");
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(fromScope.GetProperty("searchOnInitialLoad").GetBoolean(), Is.False);
+            Assert.That(fromBox.GetProperty("searchOnInitialLoad").GetBoolean(), Is.False);
+            // The scope never overwrites what a widget itself said.
+            Assert.That(boxInsideScope.GetProperty("searchOnInitialLoad").GetBoolean(), Is.True);
+            // Unset stays out of both the config and the instance config: the JavaScript default stands.
+            Assert.That(
+                Rendered.Json(plainBox, "data-xps-instance-config").TryGetProperty("searchOnInitialLoad", out _),
+                Is.False);
+            Assert.That(
+                Rendered.Json(plainBox, "data-xps-config").TryGetProperty("searchOnInitialLoad", out _),
+                Is.False);
+        });
     }
 
     [Test]

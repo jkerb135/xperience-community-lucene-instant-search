@@ -12,6 +12,21 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Added (widgets):** the last three JavaScript-only options now have a C# surface, so the canonical
+  plain-HTML recipe copies into Razor and the Page Builder without losing anything (RZ-2).
+  `<xps-pagination>` takes `padding`, `show-first` and `show-last`; `<xps-active-filters>` takes
+  `attribute-labels`, as a dictionary or as the same `attribute;Label` lines an editor types; the
+  search instance takes `search-on-initial-load`, on `<xps-search>` and on `<xps-search-box>`. The
+  matching Page Builder properties are **Pages either side of the current one**, **Show the "first
+  page" control**, **Show the "last page" control**, **Attribute names** and **Search as the page
+  loads**. TH-4 left the active-filter labels out of the Page Builder because they were "JS-side";
+  RZ-1 changed that premise - the labels are one option and C# is one surface - so they are an editor
+  property now. Unset attributes are still absent from the config, so the JavaScript defaults stand.
+- **Added (widgets):** `samples/CustomWidget.Dropdown` registers itself:
+  `services.AddDropdownFacetWidget()` wraps
+  `AddXpSearchWidget<DropdownFacetTagHelper, DropdownFacetOptions>()`, without which the sample's Page
+  Builder widget could not resolve its tag helper from the container.
+
 - **Breaking (widgets):** a Page Builder widget now derives from
   `XpSearchMountWidgetViewComponent<TProperties, TOptions>` and maps its editor properties onto the
   widget's options record in `ToOptions(properties)`; everything else it used to own moved to the

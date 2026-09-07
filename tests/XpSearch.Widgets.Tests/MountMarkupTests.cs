@@ -511,7 +511,10 @@ internal sealed class MountMarkupTests
         Expect.Multiple(() =>
         {
             Assert.That(Rendered.Attribute(numbered, "data-xps-widget"), Is.EqualTo("pagination"));
-            Assert.That(Rendered.Attribute(numbered, "data-xps-config"), Is.EqualTo("{}"));
+            // The style is the widget type, never a config key; the rest of the editor's properties are.
+            Assert.That(
+                Rendered.Attribute(numbered, "data-xps-config"),
+                Is.EqualTo("{\"padding\":3,\"showFirst\":true,\"showLast\":true}"));
             Assert.That(Rendered.Attribute(loadMore, "data-xps-widget"), Is.EqualTo("loadMore"));
         });
     }

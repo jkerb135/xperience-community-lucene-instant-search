@@ -19,7 +19,7 @@ Everything is a tag element; `<xps-search>` names the index once for all of them
 @* Views/Search/Index.cshtml — needs @addTagHelper *, XpSearch.Widgets in _ViewImports.cshtml *@
 <xps-search-styles />
 
-<xps-search index="site-content">
+<xps-search index="site-content" search-on-initial-load="true">
 
     <xps-search-box placeholder="Search…" enable-suggestions="true" suggestion-limit="5" />
 
@@ -45,12 +45,12 @@ newest;Newest first" />
             </div>
 
             <div class="xps-toolbar">
-                <xps-active-filters scroll="true" />
+                <xps-active-filters scroll="true" attribute-labels="contentType;Content type" />
                 <xps-clear-filters />
             </div>
 
             <xps-results results-per-page="6" />
-            <xps-pagination />
+            <xps-pagination padding="2" show-first="true" show-last="true" />
         </main>
     </div>
 </xps-search>
@@ -90,10 +90,11 @@ front end, a static page, a bundler-driven SPA. From a bundler it is the same ma
 `mountAll(document, { widgets })` call; see
 [JavaScript bundler setup](javascript-bundler-setup.md).
 
-Three configuration keys of the recipe have no C# attribute today, and the parity test names them so
-they cannot be forgotten: `padding`, `showFirst` and `showLast` on `pagination`, `attributeLabels` on
-`activeFilters`, and `searchOnInitialLoad` on the search instance. Set them from JavaScript — through
-`createSearch`, or by registering your own widget — if you need them.
+Every configuration key of the recipe is a tag attribute; the parity test compares them key for key
+and would name any that stopped being one. `attribute-labels` takes either the `attribute;Label`
+lines above or a dictionary — `attribute-labels="@labels"` — and `search-on-initial-load` sits on the
+scope because it is an option of the search, not of one widget; `<xps-search-box>` carries it too, for
+a page written without a scope.
 
 ### The same page in the Page Builder
 

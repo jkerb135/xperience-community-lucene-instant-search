@@ -1,4 +1,4 @@
-using Kentico.PageBuilder.Web.Mvc;
+﻿using Kentico.PageBuilder.Web.Mvc;
 using Kentico.Xperience.Admin.Base.FormAnnotations;
 
 using Microsoft.AspNetCore.Html;
@@ -87,6 +87,15 @@ public sealed class SearchBoxWidgetProperties : XpSearchMountWidgetProperties
             + "Turn it off for a secondary search embedded on a content page: at most one search instance per page may sync, because all of them would write the same parameters.",
         Order = OrderFirstWidgetProperty + 30)]
     public bool SyncStateToUrl { get; set; } = true;
+
+    /// <summary>Gets or sets whether the search runs once as the page loads, before the visitor has typed.</summary>
+    [CheckBoxComponent(
+        Label = "Search as the page loads",
+        Tooltip = "Runs one search before the visitor has typed anything.",
+        ExplanationText = "On, the Results widget opens showing everything the index holds, filtered by whatever the URL carried. "
+            + "Clear it for a search that should start as an empty page and wait for a query - a landing page whose result list would otherwise list the whole site.",
+        Order = OrderFirstWidgetProperty + 40)]
+    public bool SearchOnInitialLoad { get; set; } = true;
 }
 
 /// <summary>Renders the <c>searchBox</c> mount.</summary>
@@ -117,7 +126,8 @@ public sealed class SearchBoxWidgetViewComponent : XpSearchMountWidgetViewCompon
             EnableSuggestions = properties.EnableSuggestions,
             SuggestionLimit = properties.SuggestionLimit,
             RecentSearches = properties.RecentSearches,
-            SyncStateToUrl = properties.SyncStateToUrl
+            SyncStateToUrl = properties.SyncStateToUrl,
+            SearchOnInitialLoad = properties.SearchOnInitialLoad
         };
     }
 

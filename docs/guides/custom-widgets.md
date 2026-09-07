@@ -461,6 +461,15 @@ That registration is what lets the Page Builder layer and `Html.XpSearchAsync` r
 its options type; without it the tag element still works, but the Page Builder widget below cannot be
 constructed. Both registrations are transient, because a tag helper holds the state of one render.
 
+Ship it as an extension method of your own, so a host application adds one named line rather than two
+type arguments — `samples/CustomWidget.Dropdown` does exactly this in
+`ServiceCollectionExtensions.cs`:
+
+```csharp
+public static IServiceCollection AddDropdownFacetWidget(this IServiceCollection services) =>
+    services.AddXpSearchWidget<DropdownFacetTagHelper, DropdownFacetOptions>();
+```
+
 #### The Page Builder widget
 
 `XpSearchMountWidgetViewComponent<TProperties, TOptions>` adds the editor concerns and nothing else:
