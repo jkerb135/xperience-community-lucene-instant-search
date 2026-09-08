@@ -418,6 +418,97 @@ The `queryId` from the search response is what correlates a click back to the se
 which is what makes click-through rate per query meaningful. A `202` means the event was accepted, not that
 an activity was written: activity logging is consent-gated and never blocks or throws.
 
+#### Events are validated
+
+Clicks feed the popularity signal and the query log, so an event that cannot have happened is dropped.
+The endpoint still answers `202` in every case — a caller cannot tell an accepted event from a dropped
+one, by design — and each drop is logged at `Debug`. An event is recorded only when all three hold:
+
+| Rule | Why |
+|---|---|
+| The `queryId` is one this application issued and has not expired (30 minutes) | A replayed or invented id has no search to attribute to |
+| At most `MaxEventsPerQuery` events (default 20) carry the same `queryId` | One search produces a handful of clicks; a script replaying an id runs out of budget |
+| `position` is within the results that search actually returned (`page × pageSize`, or the index's `MaxPageSize` when the page size is not known) | A click on a position that was never shown is fabricated |
+
+```csharp
+builder.Services.AddXpSearch(options =>
+{
+    options.MaxEventsPerQuery = 20;   // accepted events per queryId
+});
+```
+
+The `queryId` map is per application instance, so on a load-balanced site an event that lands on
+another instance than its search is dropped rather than attributed — the same instance affinity
+attribution has always had.
+
+### Rate limiting
+
+`/query`, `/suggest` and `/events` are public and unauthenticated. Anyone can call them without opening
+the site, and each query is real Lucene work, so a site with no edge protection (a WAF or a CDN rate
+rule) can opt into a sliding-window limit per remote address that `AddXpSearch()` registers: 120
+requests a minute by default, which is generous for a visitor typing (one debounced query per typing
+pause, plus its suggest request) and tight for a script. When it is on, `MapXpSearch()` puts the
+policy on all three routes; a caller past the limit gets `429 Too Many Requests` with a `Retry-After`
+header and never reaches the endpoint, so a rejected request is neither journaled nor cached.
+
+**It is off by default**, because an in-process limiter keyed on the client address is a blunt tool:
+an office behind one NAT address, or a CDN that is not forwarding client addresses, looks like a single
+heavy caller and gets throttled as one. Turn it on when nothing in front of the site does this job, and
+prefer the edge when something does. It takes effect once the host adds the middleware — one
+`UseRateLimiter()` covers this package and the [ingestion API](ingestion.md#limits):
+
+```csharp
+builder.Services.AddXpSearch(options =>
+{
+    options.PublicRateLimitEnabled = true;              // opt in; off by default
+    options.PublicRateLimitPermitsPerWindow = 120;      // per remote address, per window
+    options.PublicRateLimitWindow = TimeSpan.FromMinutes(1);
+});
+
+var app = builder.Build();
+app.UseKentico();
+app.UseRateLimiter();                                   // required for the limit to apply
+app.MapXpSearch();
+```
+
+The partition is `HttpContext.Connection.RemoteIpAddress` as ASP.NET Core resolved it. Behind a proxy
+or CDN that is the proxy's address for everyone, which would share one bucket across all visitors: use
+[`UseForwardedHeaders`](https://learn.microsoft.com/aspnet/core/host-and-deploy/proxy-load-balancer) so
+the framework resolves the real client address — this package never parses `X-Forwarded-For` itself.
+
+The counters are per application instance, like the ingestion API's: on a load-balanced site the
+effective limit is the configured one times the number of instances.
+
+### Cross-origin callers
+
+The endpoints send no CORS headers, so a browser on another origin cannot read their responses and a
+cross-site JSON `POST` stops at the preflight. For same-origin pages — Page Builder, the Razor tag
+helpers, the plain-HTML recipe served by the site — that is exactly right and nothing needs configuring.
+CORS is a browser rule, not a defence: scripts and server-side callers never send an `Origin` header,
+which is why it is not the answer to abuse either (see rate limiting above and event validation).
+
+A **legitimate** consumer on a different origin — a headless front end, a static site running the npm
+bundle against this API, a partner page embedding the search — needs the host to allow that origin.
+Register a policy naming the origins explicitly and tell the package its name; `MapXpSearch()` then
+applies it to the three routes and nothing else:
+
+```csharp
+builder.Services.AddCors(cors => cors.AddPolicy("xpsearch-consumers", policy => policy
+    .WithOrigins("https://www.example.com", "https://app.example.com")
+    .WithMethods("POST")
+    .WithHeaders("Content-Type")));
+
+builder.Services.AddXpSearch(options => options.CorsPolicyName = "xpsearch-consumers");
+
+var app = builder.Build();
+app.UseKentico();
+app.UseCors();                                          // before MapXpSearch
+app.MapXpSearch();
+```
+
+Do not use `AllowAnyOrigin()` for a search API that feeds analytics: it makes every site on the web a
+legitimate caller of `/events`.
+
 ### Errors
 
 Failures are [RFC 9457 Problem Details](https://learn.microsoft.com/aspnet/core/web-api/handle-errors),

@@ -12,6 +12,28 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Added (core):** an opt-in rate limit for `/query`, `/suggest` and `/events` per remote address - a
+  sliding window of 120 requests a minute, registered by `AddXpSearch()` and applied to all three
+  routes by `MapXpSearch()` when `PublicRateLimitEnabled` is set (SC-1). It is **off by default**: an
+  in-process limiter keyed on the client address throttles an office behind one NAT as one caller, so
+  a site turns it on only where nothing at the edge (WAF, CDN) does the job. A caller past the limit
+  gets `429` with `Retry-After` and never reaches the endpoint, so the request is neither journaled nor
+  cached. Tune it with `PublicRateLimitPermitsPerWindow` and `PublicRateLimitWindow`; as with the
+  ingestion API, it only applies once the host calls `app.UseRateLimiter()` - one call covers both.
+- **Added (core):** `XpSearchOptions.CorsPolicyName` - the name of a CORS policy the host registered
+  with `AddCors`, which `MapXpSearch()` applies to the three public routes so a legitimate consumer on
+  another origin (a headless front end, a static site on the npm bundle) can call them. Unset, the
+  endpoints send no CORS headers and stay same-origin for browsers, as before.
+- **Added (core):** `XpSearchOptions.MaxEventsPerQuery` (default 20) caps how many `/events` calls one
+  `queryId` may carry, so a replayed id cannot keep moving the popularity signal (SC-1).
+- **Changed (core):** `/events` now records only events it can vouch for: the `queryId` must be one
+  this application issued and still remembers, the event must be within that id's budget, and a
+  click's `position` must be one the search actually returned (SC-1). Anything else is dropped and
+  logged at `Debug`. The endpoint still answers `202` either way, so no caller changes; what changes is
+  that a click whose search was answered by another instance, or after the 30 minute context
+  retention, no longer reaches the query log or the activity - it used to be recorded with an empty
+  query text.
+
 - **Added (widgets):** the last three JavaScript-only options now have a C# surface, so the canonical
   plain-HTML recipe copies into Razor and the Page Builder without losing anything (RZ-2).
   `<xps-pagination>` takes `padding`, `show-first` and `show-last`; `<xps-active-filters>` takes

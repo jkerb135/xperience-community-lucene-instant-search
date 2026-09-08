@@ -5,7 +5,11 @@ namespace XpSearch.Core.Analytics;
 /// <summary>What a search with a given <c>queryId</c> was.</summary>
 /// <param name="Query">The normalized query text.</param>
 /// <param name="IndexName">Code name of the index that was searched.</param>
-public sealed record QueryContext(string Query, string IndexName);
+/// <param name="MaxPosition">
+/// The highest result position the search returned (<c>page * pageSize</c>), which bounds the
+/// <c>position</c> an event may claim. <c>0</c> when it is not known.
+/// </param>
+public sealed record QueryContext(string Query, string IndexName, int MaxPosition = 0);
 
 /// <summary>
 /// Remembers what each <c>queryId</c> searched for, so a later click or conversion event can be
@@ -22,6 +26,15 @@ public interface IQueryContextMap
     /// <param name="queryId">Correlation id received on an event.</param>
     /// <returns>What was searched, or <see langword="null"/> when the id is unknown or has expired.</returns>
     QueryContext? Get(string queryId);
+
+    /// <summary>Counts one event against a <c>queryId</c>'s budget (SC-1).</summary>
+    /// <param name="queryId">Correlation id received on an event.</param>
+    /// <returns>
+    /// How many events have been counted for this id, this one included; <c>0</c> when the id is
+    /// unknown or has expired. The caller decides the budget, so a shared implementation only has to
+    /// count.
+    /// </returns>
+    int CountEvent(string queryId);
 }
 
 /// <summary>
@@ -93,6 +106,12 @@ public sealed class QueryContextMap : IQueryContextMap
         return entry.Context;
     }
 
+    /// <inheritdoc />
+    public int CountEvent(string queryId) =>
+        Get(queryId) is null || !entries.TryGetValue(queryId, out var entry)
+            ? 0
+            : Interlocked.Increment(ref entry.Events);
+
     private void Trim(DateTime now)
     {
         foreach (var expired in entries.Where(entry => now - entry.Value.Added > Retention))
@@ -112,5 +131,13 @@ public sealed class QueryContextMap : IQueryContextMap
         }
     }
 
-    private sealed record Entry(QueryContext Context, DateTime Added);
+    private sealed class Entry(QueryContext context, DateTime added)
+    {
+        // A field rather than a property: Interlocked.Increment needs a ref.
+        internal int Events;
+
+        internal QueryContext Context { get; } = context;
+
+        internal DateTime Added { get; } = added;
+    }
 }
