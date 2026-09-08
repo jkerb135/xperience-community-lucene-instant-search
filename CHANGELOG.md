@@ -12,6 +12,70 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Added (core):** an opt-in rate limit for `/query`, `/suggest` and `/events` per remote address - a
+  sliding window of 120 requests a minute, registered by `AddXpSearch()` and applied to all three
+  routes by `MapXpSearch()` when `PublicRateLimitEnabled` is set (SC-1). It is **off by default**: an
+  in-process limiter keyed on the client address throttles an office behind one NAT as one caller, so
+  a site turns it on only where nothing at the edge (WAF, CDN) does the job. A caller past the limit
+  gets `429` with `Retry-After` and never reaches the endpoint, so the request is neither journaled nor
+  cached. Tune it with `PublicRateLimitPermitsPerWindow` and `PublicRateLimitWindow`; as with the
+  ingestion API, it only applies once the host calls `app.UseRateLimiter()` - one call covers both.
+- **Added (core):** `XpSearchOptions.CorsPolicyName` - the name of a CORS policy the host registered
+  with `AddCors`, which `MapXpSearch()` applies to the three public routes so a legitimate consumer on
+  another origin (a headless front end, a static site on the npm bundle) can call them. Unset, the
+  endpoints send no CORS headers and stay same-origin for browsers, as before.
+- **Added (core):** `XpSearchOptions.MaxEventsPerQuery` (default 20) caps how many `/events` calls one
+  `queryId` may carry, so a replayed id cannot keep moving the popularity signal (SC-1).
+- **Changed (core):** `/events` now records only events it can vouch for: the `queryId` must be one
+  this application issued and can still be resolved - from memory or from the query log (WF-1) - the
+  event must be within that id's budget, and a click's `position` must be one the search actually
+  returned (SC-1). Anything else is dropped and logged at `Debug`. The endpoint still answers `202`
+  either way, so no caller changes; what changes is that an event naming a `queryId` no instance ever
+  issued, or one older than the 30 minute context retention and the query log's retention, no longer
+  reaches the query log or the activity - it used to be recorded with an empty query text.
+- **Added (core):** quoted phrases. A balanced pair of double quotes in the visitor's text is now the
+  one piece of query syntax the endpoint honours: `"french press"` requires the words adjacent and in
+  order (a per-field `PhraseQuery`, over the same searchable fields and field weights as the loose
+  text), and `"french press" grinder` requires the phrase and the term. Smart quotes count as quotes;
+  an unbalanced quote and an empty `""` behave exactly as before, so no query that worked yesterday
+  changes its results unless it was quoted. A phrase is never fuzzed by
+  [typo tolerance](docs/guides/relevance-tuning.md#typo-tolerance), never synonym-expanded and never
+  stripped by a stopword list - the index analyzer alone decides what its words mean (PH-1).
+- **Added (core):** editing a linked reusable item now reindexes the pages that flatten it (IX-2).
+  `XpSearchIndexingStrategy` overrides `FindItemsToReindex(IndexEventReusableItemModel)`: a changed item
+  whose content type is named in a `FlattenLinkedItems` registration reindexes every page of that
+  registration's content type linking it through the registration's field, in every channel and language
+  the strategy's indexes cover, de-duplicated per (page, language). Anything else keeps the base
+  behaviour. A flattened relationship no longer needs a hand-written override - Dancing Goat's is now
+  redundant. For the events to arrive at all, the index definition must list every flattened linked type
+  under **Reusable content types**; when it does not, one warning per index and type is logged at startup
+  naming the registration to fix, and the index configuration is never edited for you. See
+  [Indexing strategy](docs/guides/indexing-strategy.md#linked-items).
+- **Breaking (core):** `ILuceneIndexAccessor` has a new member, `GetDefinitionAsync(indexName,
+  cancellationToken)`, returning an index's stored channels, languages, web page content types and
+  reusable content types - the channels and languages the reindex above needs, which
+  `LuceneIndex.ChannelConfigurations` keeps internal. Source-breaking for a custom implementation of the
+  seam only; nothing else changed on it. `XpSearchIndexingOptions` also gained `FlattenedLinksTo` and
+  `FlattenedLinks`, which read the flatten registrations from the linked type's side.
+
+- **Added (ingestion, admin):** a rebuild's state now outlives the browser tab that started it
+  (RB-1). The rebuild writes a *started* row to the ingestion log, and the replay of externally
+  pushed documents that runs behind it writes a *rebuild-finished* row with the document count the
+  index then held; the Status page derives **Rebuild in progress** / **finished** from those two rows
+  instead of from a page-session value, so a reload - or a colleague's browser - shows the same
+  rebuild, and the page re-reads itself every ten seconds while one runs. A rebuild that has not
+  reported finishing after `XpSearchIngestionOptions.RebuildStuckAfter` (new, 30 minutes) is tagged
+  **Rebuild may have failed** with a pointer to the event log, because the Lucene integration's queue
+  swallows a failure there. `GET …/status` carries the same answer in a new `rebuild` object
+  (`running`, `startedAt`, `finishedAt`, `documents`), absent when no rebuild was ever recorded. There
+  is still no progress percentage: the integration reports no target, so none is invented.
+- **Changed (ingestion):** `health` is `degraded` while a rebuild is running, so an external system
+  polling `GET …/status` waits instead of trusting counts taken mid-rebuild. It goes back to
+  `healthy` when the rebuild reports finishing.
+- **Added (ingestion):** `IIngestionLog.ReadLatestAsync(index, operation, cancellationToken)` - the
+  rebuild rows are asked for by operation, because a busy import buries them below the
+  `ReadRecentAsync` window. A custom `IIngestionLog` implementation has to add the member.
+
 - **Breaking (core):** `IQueryContextMap` gained `GetAsync` and `IQueryLogStore` gained
   `GetByQueryIdAsync`, so a custom implementation of either has to add one method; `AppendAsync` is now
   expected to ignore an entry whose `queryId` is already logged. `QuerySuggestionService`'s constructor
@@ -27,7 +91,11 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
   `IQueryLogStore.AppendAsync` refuses a second row for a `queryId` it already holds, which is what
   makes the server-rendered first paint's handoff to the client count once across instances. The
   remaining window is the ~10 s query log drain, documented in
-  `docs/guides/performance-and-sizing.md`. `QueryContext` carries `ResultCount`.
+  `docs/guides/performance-and-sizing.md`. `QueryContext` carries `ResultCount` beside SC-1's
+  `MaxPosition`: a context resolved from the log knows no page window, so the position bound of an
+  event falls back to the row's result count and then to the index's maximum page size. SC-1's
+  per-`queryId` event budget is counted on the instance that sees the event, so a caller spreading
+  replays across a farm gets the budget once per instance.
 - **Changed (ingestion):** an index's `health` is read from the ingestion log rather than from a
   static counter on the queue worker (WF-1). Background work that fails to reach Lucene is now
   recorded as an `index` operation, and `GET indexes/{index}/status` reports `degraded` while such a

@@ -38,6 +38,18 @@ public interface IIngestionLog
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The entries, newest first.</returns>
     Task<IReadOnlyList<IngestionLogEntry>> ReadRecentAsync(string indexName, int count, CancellationToken cancellationToken);
+
+    /// <summary>Reads the most recent entry recorded against one index for one operation.</summary>
+    /// <remarks>
+    /// A rebuild's two rows can sit arbitrarily far down the log - one busy import buries them - so
+    /// the state of a rebuild is asked for by operation rather than filtered out of
+    /// <see cref="ReadRecentAsync"/>'s window.
+    /// </remarks>
+    /// <param name="indexName">Code name of the index.</param>
+    /// <param name="operation">The operation, as written to <see cref="IngestionLogEntry.Operation"/>.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The entry, or <see langword="null"/> when the operation was never recorded for the index.</returns>
+    Task<IngestionLogEntry?> ReadLatestAsync(string indexName, string operation, CancellationToken cancellationToken);
 }
 
 /// <summary>

@@ -250,8 +250,8 @@ namespace XpSearch.Client.Contract
         /// <summary>
         /// "healthy" when the index is readable and no write has failed - including while queued
         /// writes are still waiting, which is the normal state of an asynchronous write, "degraded"
-        /// when queued work failed to reach the index and nothing has succeeded since, "unavailable"
-        /// when the index cannot be read.
+        /// when queued work failed to reach the index and nothing has succeeded since or a rebuild
+        /// is running (rebuild.running), "unavailable" when the index cannot be read.
         /// </summary>
         [JsonPropertyName("health")]
         public Health Health { get; set; }
@@ -268,6 +268,14 @@ namespace XpSearch.Client.Contract
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("lastWrite")]
         public DateTimeOffset? LastWrite { get; set; }
+
+        /// <summary>
+        /// What the ingestion log says about the rebuild of this index, absent when none was ever
+        /// recorded.
+        /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonPropertyName("rebuild")]
+        public RebuildStatus? Rebuild { get; set; }
     }
 
     /// <summary>
@@ -288,6 +296,48 @@ namespace XpSearch.Client.Contract
         /// </summary>
         [JsonPropertyName("total")]
         public long Total { get; set; }
+    }
+
+    /// <summary>
+    /// What the ingestion log says about the rebuild of this index, absent when none was ever
+    /// recorded.
+    ///
+    /// The last rebuild of an index, derived from the ingestion log: a "rebuild" entry with no
+    /// later "rebuild-finished" entry is a rebuild still running.
+    /// </summary>
+    public partial class RebuildStatus
+    {
+        /// <summary>
+        /// How many documents the index held when the last rebuild finished. Absent while a rebuild
+        /// is running: there is no total to count towards.
+        /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonPropertyName("documents")]
+        public long? Documents { get; set; }
+
+        /// <summary>
+        /// When the last rebuild finished, absent while one is running or when none ever finished.
+        /// Detected by watching the index stop changing, so it is a close estimate rather than an
+        /// event.
+        /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonPropertyName("finishedAt")]
+        public DateTimeOffset? FinishedAt { get; set; }
+
+        /// <summary>
+        /// Whether a rebuild is running now. Wait for it before trusting document counts; health is
+        /// "degraded" while it is true.
+        /// </summary>
+        [JsonPropertyName("running")]
+        public bool Running { get; set; }
+
+        /// <summary>
+        /// When the rebuild started, absent when the rebuild was started outside this library
+        /// (Kentico's own Search application records no start).
+        /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonPropertyName("startedAt")]
+        public DateTimeOffset? StartedAt { get; set; }
     }
 
     /// <summary>
@@ -449,8 +499,8 @@ namespace XpSearch.Client.Contract
     /// <summary>
     /// "healthy" when the index is readable and no write has failed - including while queued
     /// writes are still waiting, which is the normal state of an asynchronous write, "degraded"
-    /// when queued work failed to reach the index and nothing has succeeded since, "unavailable"
-    /// when the index cannot be read.
+    /// when queued work failed to reach the index and nothing has succeeded since or a rebuild
+    /// is running (rebuild.running), "unavailable" when the index cannot be read.
     /// </summary>
 #pragma warning disable CS1591 // no way to document an individual enum member from JSON Schema
     [JsonConverter(typeof(HealthConverter))]

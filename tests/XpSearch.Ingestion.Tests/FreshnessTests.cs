@@ -86,7 +86,7 @@ internal sealed class FreshnessTests
             XpSearchIngestionQueueWorker.FailureEntry(
                 IngestionWorkItem.New(TestHarness.IndexName, IngestionOperation.Upsert, ["pim-1"]),
                 new InvalidOperationException("Lucene is not writable."),
-                DateTime.UtcNow),
+                harness.Time.Now.UtcDateTime),
             CancellationToken.None);
 
         var failed = await harness.Indexer.GetStatusAsync(TestHarness.IndexName);
@@ -114,7 +114,7 @@ internal sealed class FreshnessTests
             XpSearchIngestionQueueWorker.FailureEntry(
                 IngestionWorkItem.New(TestHarness.IndexName, IngestionOperation.Upsert, ["pim-1"]),
                 new InvalidOperationException("Lucene was not writable."),
-                DateTime.UtcNow - XpSearchIndexer.FailureWindow.Add(TimeSpan.FromMinutes(1))),
+                harness.Time.Now.UtcDateTime - XpSearchIndexer.FailureWindow.Add(TimeSpan.FromMinutes(1))),
             CancellationToken.None);
 
         var status = await harness.Indexer.GetStatusAsync(TestHarness.IndexName);
@@ -132,7 +132,7 @@ internal sealed class FreshnessTests
         using var harness = new TestHarness();
 
         await harness.Log.WriteAsync(
-            new IngestionLogEntry("test1234", TestHarness.IndexName, "upsert", 1, false, "1 document(s) rejected", DateTime.UtcNow),
+            new IngestionLogEntry("test1234", TestHarness.IndexName, "upsert", 1, false, "1 document(s) rejected", harness.Time.Now.UtcDateTime),
             CancellationToken.None);
 
         var status = await harness.Indexer.GetStatusAsync(TestHarness.IndexName);

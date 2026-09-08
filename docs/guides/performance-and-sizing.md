@@ -276,9 +276,14 @@ they all read and write one database. That split decides what agrees across inst
 
 - **The query log drain window (~10 s).** Logged searches are queued in memory and written by a
   background worker every 10 seconds. A click that arrives on *another* instance within that window
-  finds neither the local map nor a row yet: the click is still recorded, and its position still
-  reaches the query log, but its activity carries no query text. A click that fast on a different
-  instance is rare; the trade is that logging never blocks a search response.
+  finds neither the local map nor a row yet, and an event whose `queryId` cannot be resolved is
+  dropped ([events are validated](search-api.md#events-are-validated)) - no activity, no clicked
+  position. A click that fast on a different instance is rare; the trade is that logging never blocks
+  a search response.
+- **The per-`queryId` event budget is per instance.** The count lives on the map entry, so a caller
+  spreading replays of one `queryId` across N instances can spend the budget N times. The other two
+  `/events` rules (a `queryId` this application issued, a plausible position) are shared, because both
+  read the query log row.
 - **The ingestion API's rate limit is per instance.** `AddXpSearchIngestion` registers ASP.NET's
   fixed-window limiter, which counts in the instance's own memory, so the effective ceiling is the
   configured limit times the number of instances. Put a shared limit in front of the application if

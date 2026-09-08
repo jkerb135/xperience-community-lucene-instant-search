@@ -50,7 +50,9 @@ public sealed class SynonymExpansionStage : ISearchStage
                 .ToDictionary(group => group.Key, group => group.Last().Weight, StringComparer.OrdinalIgnoreCase)
         };
 
-        context.QuerySlots = SynonymExpansion.Expand(context.QueryText, synonyms);
+        // Only the text outside the visitor's quotes: a phrase is exact by intent, so no synonym
+        // stands in for a word inside it (PH-1).
+        context.QuerySlots = SynonymExpansion.Expand(QueryPhrases.LooseText(context.QueryText), synonyms);
 
         if (context.Request.Explain ?? false)
         {

@@ -87,4 +87,33 @@ public interface ILuceneIndexAccessor
     /// <returns>Whatever the callback returned.</returns>
     /// <exception cref="InvalidOperationException">The index has no taxonomy sidecar.</exception>
     TResult UseSearcherWithDrillSideways<TResult>(string indexName, Func<IndexSearcher, DrillSideways, TResult> use);
+
+    /// <summary>Gets what the administration stored for an index: its channels, languages and content types.</summary>
+    /// <param name="indexName">Code name of the index.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The stored definition.</returns>
+    /// <exception cref="IndexNotFoundException">No index of that name is registered.</exception>
+    /// <remarks>
+    /// Reindexing a page because a linked item changed needs the channels and languages the index
+    /// covers, and <c>LuceneIndex.ChannelConfigurations</c> is internal in
+    /// <c>Kentico.Xperience.Lucene</c> 15.0.5, so the definition comes from the same stored rows the
+    /// admin Search application writes.
+    /// </remarks>
+    Task<IndexDefinition> GetDefinitionAsync(string indexName, CancellationToken cancellationToken);
 }
+
+/// <summary>What the administration stored for one index.</summary>
+/// <param name="IndexName">Code name of the index.</param>
+/// <param name="WebsiteChannelNames">Code names of the website channels the index covers.</param>
+/// <param name="LanguageNames">Code names of the languages the index covers; one document per language.</param>
+/// <param name="WebPageContentTypeNames">Class names of the web page content types on the index's included paths.</param>
+/// <param name="ReusableContentTypeNames">
+/// Class names of the index's reusable content types. Kentico only raises a reusable-item event for a
+/// content type on this list, so a type whose fields are flattened into a page has to be on it.
+/// </param>
+public sealed record IndexDefinition(
+    string IndexName,
+    IReadOnlyList<string> WebsiteChannelNames,
+    IReadOnlyList<string> LanguageNames,
+    IReadOnlyList<string> WebPageContentTypeNames,
+    IReadOnlyList<string> ReusableContentTypeNames);

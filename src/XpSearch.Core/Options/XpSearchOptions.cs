@@ -140,6 +140,55 @@ public sealed class XpSearchOptions
     /// <summary>Gets or sets the ceiling on <c>limit</c> for <c>/suggest</c>. Defaults to 20.</summary>
     public int MaxSuggestLimit { get; set; } = 20;
 
+    /// <summary>
+    /// Gets or sets whether <c>/query</c>, <c>/suggest</c> and <c>/events</c> are rate limited per
+    /// remote address. Defaults to <see langword="false"/>: opt in where nothing at the edge (a WAF or
+    /// a CDN rate rule) protects the site.
+    /// </summary>
+    /// <remarks>
+    /// Off by default because an in-process limiter keyed on the client address throttles an office
+    /// behind one NAT, or every visitor behind a CDN that does not forward client addresses, as a
+    /// single caller. The limit only takes effect once the host calls <c>app.UseRateLimiter()</c>,
+    /// exactly like the ingestion API's per-key limit.
+    /// </remarks>
+    public bool PublicRateLimitEnabled { get; set; }
+
+    /// <summary>
+    /// Gets or sets how many requests one remote address may make to the three public endpoints per
+    /// <see cref="PublicRateLimitWindow"/>. Defaults to 120.
+    /// </summary>
+    /// <remarks>
+    /// A visitor typing costs one debounced query per typing pause plus its suggest request, so 120 a
+    /// minute is generous for a human and tight for a script. Raise it for a site that fires a probe
+    /// per facet interaction; lower it only after watching real traffic.
+    /// </remarks>
+    public int PublicRateLimitPermitsPerWindow { get; set; } = 120;
+
+    /// <summary>Gets or sets the window <see cref="PublicRateLimitPermitsPerWindow"/> is counted over. Defaults to one minute.</summary>
+    public TimeSpan PublicRateLimitWindow { get; set; } = TimeSpan.FromMinutes(1);
+
+    /// <summary>
+    /// Gets or sets how many events <c>/events</c> accepts for one <c>queryId</c>. Defaults to 20.
+    /// </summary>
+    /// <remarks>
+    /// One search produces at most a handful of clicks and conversions; a caller that replays a
+    /// captured <c>queryId</c> to move the popularity signal runs out of budget instead. Events past
+    /// the budget are dropped silently - the endpoint still answers 202.
+    /// </remarks>
+    public int MaxEventsPerQuery { get; set; } = 20;
+
+    /// <summary>
+    /// Gets or sets the name of a CORS policy the host registered with <c>AddCors</c>, applied to
+    /// <c>/query</c>, <c>/suggest</c> and <c>/events</c> by <c>MapXpSearch()</c>. Unset - the default -
+    /// sends no CORS headers, so only same-origin pages can call the endpoints from a browser.
+    /// </summary>
+    /// <remarks>
+    /// Set it for a legitimate consumer on another origin (a headless front end, a static site running
+    /// the npm bundle) and name that origin in the policy; the host must also call <c>app.UseCors()</c>
+    /// before mapping. CORS is a browser rule, not a defence - it does nothing against scripts.
+    /// </remarks>
+    public string? CorsPolicyName { get; set; }
+
     /// <summary>Gets the analytics settings: query log retention and query suggestions (spec §9.2).</summary>
     public XpSearchAnalyticsOptions Analytics { get; } = new();
 

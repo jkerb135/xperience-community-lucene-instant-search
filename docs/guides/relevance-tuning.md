@@ -291,6 +291,11 @@ The query condition can be compared two ways.
   endings line up (*shoe* matches *shoes*), your synonyms count (*sofa* matches a search for *couch*),
   and *shoehorn* no longer matches *shoe*, because it is a different word.
 
+A condition compares against what the visitor typed **including any quotes they used**: a *contains*
+condition for `french press` still fires on a search for `"french press"`, while *is exactly* and
+*starts with* only do when you type the quotes into the pattern as well. The analyzed comparison never
+sees the quotes at all.
+
 **Neither one tolerates typos**, even with [typo tolerance](#typo-tolerance) turned on: that setting
 widens what a search *finds*, not what a rule *fires on*. *esspresso* matches no rule about
 *espresso*. If a misspelling matters to a rule, add it as a synonym or write a second rule for it.
@@ -478,7 +483,8 @@ words like *buy* on a shop.
 
 Two cautions. Removing a word makes searches *broader*, not better — if you make *free* a stopword,
 *free shipping* becomes *shipping*. And if a visitor searches for nothing but stopwords, the search
-is left alone rather than turned into "show me everything".
+is left alone rather than turned into "show me everything". Words a visitor put inside quotes are never
+removed: `"the press"` searches for exactly that.
 
 ### Field weights
 
@@ -645,10 +651,28 @@ marked with the invalid-row treatment **and** a **Failed** tag, so the state nev
 alone. The full history, across every index, is on the **Ingestion log** page.
 
 **Rebuild index** always asks for confirmation before it runs. Once triggered, the health tag is
-replaced by a **Rebuild in progress** tag and spinner with the start time. There is no progress
-percentage: the Lucene integration reports no rebuild progress, so the page does not invent one, and
-reloading the page returns it to the ordinary health view (see
-`docs/internal/KNOWN-LIMITATIONS.md`).
+replaced by a **Rebuild in progress** tag and spinner with the start time, and **Documents** counts
+what has been written so far.
+
+That state is read from the ingestion log — the rebuild writes a *started* row and, when the replay
+of externally pushed documents behind it completes, a *rebuild-finished* row — so it survives a
+reload, and every editor looking at the page sees the same rebuild. While it runs the page re-reads
+itself every ten seconds; when it finishes, the header line reports when, and how many documents the
+index then held.
+
+Three things it deliberately does not do:
+
+- **No progress percentage.** The Lucene integration reports no rebuild progress and no target count,
+  so a "44 of 152" would be invented. You get "started at …" and a live document count instead.
+- **The finish is observed, not announced.** Nothing raises a "rebuild finished" event; the library
+  watches the index stop changing, so the finish time is a close estimate.
+- **A rebuild started from Kentico's own *Search* application** never writes a started row — that
+  page shows the finish alone, with no elapsed time.
+
+A rebuild that has not reported finishing 30 minutes after it started (`RebuildStuckAfter`) is tagged
+**Rebuild may have failed**: the integration indexes content on its own queue and swallows a failure
+there, so look for it in **System → Event log** and rebuild again if it is there. See
+`docs/internal/KNOWN-LIMITATIONS.md`.
 
 ### And two pages that are not per-index
 

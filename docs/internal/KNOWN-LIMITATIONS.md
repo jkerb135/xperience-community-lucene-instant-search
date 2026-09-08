@@ -289,9 +289,9 @@ and how to lift it.
   every schema field again. A name defined by both a content type and one of its schemas is a configuration
   error: the content type's field is kept and the schema field dropped with an `ILogger` warning, rather
   than being merged or erroring out. The data type mapping is still fixed — a project that wants a boolean
-  indexed must override it by hand. Reusable items indexed through `FindItemsToReindex` need nothing extra:
-  `XpSearchIndexingStrategy` does not override it, and every item resolves its fields through the same
-  `IContentTypeFieldSource.GetFields(item.ContentTypeName)` call, so it takes exactly this path.
+  indexed must override it by hand. Items reached through `FindItemsToReindex` need nothing extra: every
+  item resolves its fields through the same `IContentTypeFieldSource.GetFields(item.ContentTypeName)` call,
+  so it takes exactly this path.
 - **Upgrade path:** drop the merge and call the platform helper if Kentico makes
   `ReusableFieldSchemasHelper` (or an equivalent) public. `IContentTypeFieldSource` remains the seam.
 
@@ -341,14 +341,30 @@ and how to lift it.
   reads only the first level of linked items, whatever `depth` the parent is loaded with.
 - **Ceiling:** a content type added to the field later is flattened into documents but invisible to
   `facets`, `fields`, sort validation and the §7.4 dropdown until it is added to the registration. A page
-  linking two products indexes the first one's values only. And `FindItemsToReindex` is untouched: nothing
-  reindexes the page when the product it links changes, so each flattened relationship still needs an
-  override of its own (the guide says so; Dancing Goat has one).
+  linking two products indexes the first one's values only.
 - **Upgrade path:** read the allowed content types off the field's settings if Kentico documents a public
-  way to; make the accumulation per-field-kind (append taxonomies from every linked item, keep first-wins
-  only for the sortable kinds) if a multi-item link ever needs it; and if `ContentRetriever`'s `Linking`
-  becomes expressible from a class name and a field name alone, generate the `FindItemsToReindex` query
-  from the same registration.
+  way to; and make the accumulation per-field-kind (append taxonomies from every linked item, keep
+  first-wins only for the sortable kinds) if a multi-item link ever needs it. (`FindItemsToReindex` is
+  now generated from the same registration - IX-2.)
+
+## `FindItemsToReindex` in `XpSearch.Core/Indexing/XpSearchIndexingStrategy.cs`
+
+- **Simplified:** a changed reusable item is mapped back to the pages that flatten it with one content
+  query per (index, registration, channel, language), and the result of each is turned into an
+  `IndexEventWebPageItemModel` by hand. Only the FIRST link level is followed: the registration says
+  "this page type links this reusable type in this field", so A links B is covered and A links B links C
+  is not. Every language the index covers is queried, not only the changed item's, because a page variant
+  can show the item through language fallback.
+- **Ceiling:** an edit to a linked item costs indexes x registrations x channels x languages queries on
+  the event thread (typically one or two), with no caching between events - the host's hand-written
+  override used `RetrievalCacheSettings`, this does not, because a cached "which pages link this item"
+  answer is exactly what goes stale when an editor changes the link. A two-level relationship still needs
+  an override of `FindItemsToReindex`. And because the linked type has to be listed as a reusable content
+  type for Kentico to raise the event at all, a REBUILD also indexes those items as documents of their
+  own; suppressing them is a two-line `MapToLuceneDocumentOrNull` override the guide shows.
+- **Upgrade path:** follow further levels by resolving each registration's linked types' own
+  registrations (a graph walk over `XpSearchIndexingOptions`), and batch the per-language queries into one
+  `ForContentTypes` subquery if the fan-out ever shows up in an event-thread profile.
 
 ## Field renaming is not supported, in `XpSearch.Core/Indexing/XpSearchIndexingOptions.cs`
 
@@ -459,12 +475,14 @@ and how to lift it.
 
 ## `health` in `XpSearchIndexer.GetStatusAsync` (`XpSearch.Ingestion`)
 
-- **Simplified:** `degraded` means "the ingestion log holds an `index` failure row for this index that
-  is less than `XpSearchIndexer.FailureWindow` (5 minutes) old". The row is written by
+- **Simplified:** `degraded` is two things or-ed together: the ingestion log holds an `index` failure
+  row for this index that is less than `XpSearchIndexer.FailureWindow` (5 minutes) old, or a rebuild is
+  running (`RebuildProgress.Running`, RB-1). The failure row is written by
   `XpSearchIngestionQueueWorker.ProcessItem` when a work item throws, and the check reads the 20 most
   recent log entries of the index. It used to be a static counter on the worker, which was only true on
   the instance that ran the work (WF-1), and before that the queue length, which made every
-  asynchronous write flip a healthy index to `degraded` until the queue drained (HW-3 §5.2).
+  asynchronous write flip a healthy index to `degraded` until the queue drained (HW-3 §5.2). Callers
+  cannot tell the two causes apart from `health` alone; the `rebuild` object says which it is.
 - **Ceiling:** nothing writes a "recovered" row, so a healed index keeps reading `degraded` until the
   last failure ages out of the window - and, symmetrically, a failure older than the window reads
   `healthy` even if nothing has succeeded since. Work that is *stuck* rather than failing - a queue
@@ -496,6 +514,20 @@ and how to lift it.
   and a restart resets every window. Fine for "stop a runaway import"; not a billing-grade quota.
 - **Upgrade path:** swap the partition's limiter for a distributed one backed by the cache the host
   already runs; the partition key is already the right shard key.
+
+## The public endpoints' limit and the per-`queryId` event budget are per process (`XpSearchServiceCollectionExtensions.PublicRateLimiterPolicy` in `XpSearch.Core/DependencyInjection/`, `QueryContextMap.CountEvent` in `XpSearch.Core/Analytics/`)
+
+- **Simplified:** the same in-memory limiter as the ingestion entry above, here a sliding window per
+  remote address; the event budget is a counter on the in-memory `QueryContextMap` entry. The "is this
+  a `queryId` we issued" check is no longer per instance - WF-1's second tier resolves it from the
+  query log - but counting is: an event resolved from the log seeds a local entry, and that entry is
+  what `CountEvent` increments. Sharing the count would need a table written on every event, which is
+  more writes than the abuse it prevents.
+- **Ceiling:** the ingestion entry's ceiling, plus: a replayer gets `MaxEventsPerQuery` events once per
+  instance, so a farm of N heads accepts up to N × 20 events for one `queryId`. Events landing on one
+  instance - the normal case, since a load balancer keeps a session on one head - are capped exactly.
+- **Upgrade path:** a counter column on the query log row (`UPDATE … SET Events = Events + 1 OUTPUT`)
+  makes the budget farm-wide at one write per event; the limiter follows the ingestion entry's path.
 
 ## `"private": true` in `src/XpSearch.Widgets/Client/package.json`
 
@@ -573,16 +605,18 @@ and how to lift it.
   activities their query is in process memory: 10 000 entries, 30 minutes, oldest dropped when full. It
   gets one entry per request from `ISearchRequestJournal` (cache hits included, each under its own
   re-issued `queryId`), so a popular query held in the response cache still consumes an entry per
-  caller. On a miss, `GetAsync` reads the query log row by `queryId` (WF-1); a row read that way is not
-  put into the local tier, so repeated events for one search answered elsewhere are repeated selects.
+  caller. On a miss, `GetAsync` reads the query log row by `queryId` (WF-1) and keeps the result in the
+  local tier, both to save the repeat select and to give SC-1's `CountEvent` an entry to count on. A
+  row cached that way ages from the moment it was read, not from the search, and carries `ResultCount`
+  instead of the journal's `MaxPosition`, so the position bound of an event resolved from the database
+  is the whole result count rather than the page window.
 - **Ceiling:** the second tier only sees rows the log queue has drained (up to 10 s). A
   cross-instance click inside that window, and any click after the retention task has pruned the row,
-  still logs its activity with an empty query part. The clicked position reaches the query log
-  regardless, because that lookup is by `LogQueryID` in the database, so click-through reports are
-  unaffected. `Get` (sync) is still local-only - `ISearchRequestJournal.Record` is a synchronous
+  resolves nothing and is therefore dropped by SC-1's unknown-`queryId` rule - no activity, no clicked
+  position. `Get` (sync) is still local-only - `ISearchRequestJournal.Record` is a synchronous
   interface, so its duplicate check does not reach the database.
-- **Upgrade path:** keep the second tier's hits in the local map, or make the journal asynchronous so
-  its duplicate check uses both tiers too.
+- **Upgrade path:** make the journal asynchronous so its duplicate check uses both tiers too, or write
+  the page window onto the log row so the database-resolved bound is as tight as the local one.
 
 ## Queued query log rows are not durable
 
@@ -645,24 +679,33 @@ and how to lift it.
   reusable component (rather than only `BaseIndexEditPage` plus a sealed registration), derive from it
   and delete the copy. Failing that, ask the integration to accept a `parentType` override.
 
-## Rebuild progress on `IndexStatusPage.Rebuild` in `XpSearch.Admin/UIPages/IndexStatus.cs`
+## Rebuild progress in `RebuildProgress` (`XpSearch.Ingestion/Indexing/RebuildProgress.cs`)
 
-- **Simplified:** the "Rebuild in progress" state carries the start time of the rebuild and no
-  numerator. `Kentico.Xperience.Lucene` 15.0.5 exposes no rebuild progress: `ILuceneClient` is
+- **Simplified:** "is a rebuild running" is derived from two ingestion-log rows — the *rebuild* row
+  the Status page (or the ingestion `rebuild` route) writes, and the *rebuild-finished* row
+  `ExternalDocumentWriter` writes when the replay behind the rebuild completes — and not from any API
+  that reports it. `Kentico.Xperience.Lucene` 15.0.5 exposes no rebuild progress: `ILuceneClient` is
   `Rebuild` / `UpsertRecords` / `DeleteRecords` / `DeleteIndex` / `GetStatistics`, and
   `LuceneIndexStatisticsModel` carries only `Name`, `Entries` and `UpdatedAt` — a live count, not a
   target — while `LuceneQueueWorker` is internal
   ([`ILuceneClient.cs`](https://github.com/Kentico/xperience-by-kentico-lucene/blob/v15.0.5/src/Kentico.Xperience.Lucene.Core/Indexing/ILuceneClient.cs),
   [`LuceneIndexStatisticsModel.cs`](https://github.com/Kentico/xperience-by-kentico-lucene/blob/v15.0.5/src/Kentico.Xperience.Lucene.Core/Indexing/LuceneIndexStatisticsModel.cs),
   [`LuceneQueueWorker.cs`](https://github.com/Kentico/xperience-by-kentico-lucene/blob/v15.0.5/src/Kentico.Xperience.Lucene.Core/LuceneQueueWorker.cs)).
-  A "44 of 152" would have to be invented, so it is not shown. The state also lives only in the page
-  session that triggered the rebuild: `Load` clears it, because nothing can be asked whether a
-  rebuild is still running.
-- **Ceiling:** an operator who reloads the page during a rebuild sees the ordinary health tag and
-  counts that are still climbing, with no sign a rebuild is in flight.
-- **Upgrade path:** count the documents the ingestion queue's `Replay` work item writes and record a
-  started/finished pair in the ingestion log, then derive both the numerator and "still running" from
-  the log rather than from the page session.
+- **Ceiling:** three of them.
+  - *No numerator.* A "44 of 152" would still be invented, so the page shows "started at …" and the
+    live document count as "written so far".
+  - *The finish is heuristic.* The finished row is written after `LuceneQuiescenceWaiter` sees the
+    index stop changing (two equal `UpdatedAt` polls, bounded by `ReplayTimeout`), not after an
+    event, so `finishedAt` is a close estimate and a rebuild whose queue threw never gets a finished
+    row at all — it reads as running until `RebuildStuckAfter` (default 30 minutes) turns it into
+    "may have failed", which is a threshold rather than a diagnosis.
+  - *A rebuild started from Kentico's own Search application has no started row*, so it reports
+    "finished at …" with no elapsed time, and the Status page's live view of it only begins when the
+    finished row lands.
+- **Upgrade path:** an integration that raised a rebuild event (or exposed `LuceneQueueWorker`'s
+  state) would replace both the quiescence wait and the stuck threshold with facts; failing that, the
+  library could count the rebuild's own re-index work through `XpSearchIndexInfo`-style bookkeeping
+  and turn the numerator into an honest one.
 
 ## Recent ingestion window on `IndexStatusPage` in `XpSearch.Admin/UIPages/IndexStatus.cs`
 
@@ -1457,3 +1500,19 @@ and how to lift it.
 - **Upgrade path:** npm 12.0.2 resolves the same manifests without the crash (verified 2026-09-06);
   once the machines that run `samples/pack-and-build.mjs` are on npm ≥ 12 the sample can pin whatever
   vitest the client pins. `legacy-peer-deps=true` in a sample `.npmrc` also sidesteps it.
+
+## Quoted phrases are adjacency only (`QueryPhrases` / `BuildQueryStage.Prepare`, `src/XpSearch.Core/Pipeline`)
+
+- **Simplified:** the phrase pre-parser scans for pairs of `"` in the normalized text and hands each
+  pair back to the same `MultiFieldQueryParser` re-quoted, so a phrase is always slop 0. There is no
+  proximity syntax (`"a b"~3`), no single-quote phrase, no `-"…"` exclusion and no nesting: an
+  unbalanced quote falls back to the pre-PH-1 escaped text. Everything the visitor types outside the
+  quotes is still escaped whole.
+- **Ceiling:** a visitor who wants "these words near each other" cannot ask for it, and a site whose
+  editors write `'french press'` gets two loose terms. The scan is a linear `IndexOf` walk over the
+  query text (capped by `MaxQueryLength`), so nothing here scales badly - it is expressiveness, not
+  performance, that is capped.
+- **Upgrade path:** `QuerySegment` already carries the phrase flag, so a slop would be one more field
+  on it plus a `~N` suffix on the re-quoted text; exclusion would be a `MUST_NOT` clause off the same
+  segment list. Both are contract-visible behaviour, so they want their own unit and a line in the
+  search API guide.

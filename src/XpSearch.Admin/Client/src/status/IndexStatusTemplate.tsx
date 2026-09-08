@@ -1,4 +1,4 @@
-import {ReactElement, useState} from 'react';
+import {ReactElement, useEffect, useState} from 'react';
 import {
     Button,
     ButtonColor,
@@ -62,7 +62,10 @@ interface Status {
     readonly lastWrite: string;
     readonly bySource: SourceCount[];
     readonly recentIngestion: IngestionEntry[];
+    readonly rebuildState: 'none' | 'running' | 'stuck' | 'finished';
     readonly rebuildStartedAt: string;
+    readonly rebuildFinishedAt: string;
+    readonly rebuildDocuments: number;
     readonly error: string;
 }
 
@@ -70,6 +73,13 @@ const Commands = {
     Load: 'Load',
     Rebuild: 'Rebuild',
 };
+
+/**
+ * How often the page asks the server again while a rebuild runs. The rebuild has no progress to
+ * report, so this only moves the document count and flips the state when it finishes; ten seconds
+ * is often enough to feel live and rare enough to be free.
+ */
+const pollIntervalMs = 10_000;
 
 /** Enough distinct tag backgrounds for the sources one index realistically has; wraps after that. */
 const sourceColors = [
@@ -147,7 +157,6 @@ export const IndexStatusTemplate = ({indexName}: IndexStatusProps) => {
     const [loading, setLoading] = useState(true);
     const [confirming, setConfirming] = useState(false);
     const [triggering, setTriggering] = useState(false);
-    const [rebuildStartedAt, setRebuildStartedAt] = useState('');
     const [copied, setCopied] = useState(false);
 
     const {execute: load} = usePageCommand<Status>(
@@ -157,7 +166,6 @@ export const IndexStatusTemplate = ({indexName}: IndexStatusProps) => {
             after: (response) => {
                 setLoading(false);
                 setStatus(response);
-                setRebuildStartedAt(response?.rebuildStartedAt ?? '');
             },
         },
         [],
@@ -170,7 +178,6 @@ export const IndexStatusTemplate = ({indexName}: IndexStatusProps) => {
 
             if (response) {
                 setStatus(response);
-                setRebuildStartedAt(response.rebuildStartedAt);
             }
         },
     });
@@ -181,7 +188,25 @@ export const IndexStatusTemplate = ({indexName}: IndexStatusProps) => {
     };
 
     const degraded = status?.health === 'Degraded';
-    const rebuilding = rebuildStartedAt !== '';
+    const rebuilding = status?.rebuildState === 'running' || status?.rebuildState === 'stuck';
+    const stuck = status?.rebuildState === 'stuck';
+
+    /*
+     * The rebuild state comes off the ingestion log, so a reload - or another editor's browser -
+     * sees the same thing; while it runs the page asks again by itself, without the spinner that
+     * would blank the numbers on every poll.
+     */
+    useEffect(() => {
+        if (!rebuilding) {
+            return undefined;
+        }
+
+        const handle = setInterval(() => void load(), pollIntervalMs);
+
+        return () => clearInterval(handle);
+        // The command object is rebuilt every render; re-running on it would poll in a loop.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [rebuilding]);
 
     const copyFailures = () => {
         if (!status) {
@@ -265,12 +290,15 @@ export const IndexStatusTemplate = ({indexName}: IndexStatusProps) => {
                                     <div>Status</div>
                                     <p style={muted}>
                                         Index <span className={styles.mono}>{indexName}</span> · Lucene
+                                        {status && status.rebuildState === 'finished'
+                                            ? ` · rebuilt ${status.rebuildFinishedAt}, ${status.rebuildDocuments.toLocaleString()} documents`
+                                            : ''}
                                     </p>
                                 </div>
                                 {rebuilding ? (
                                     <span className={styles.healthState}>
                                         <Spinner/>
-                                        <Tag label="Rebuilding" readOnly/>
+                                        <Tag label={stuck ? 'Rebuild may have failed' : 'Rebuilding'} readOnly/>
                                     </span>
                                 ) : (
                                     rebuildButton
@@ -308,7 +336,11 @@ export const IndexStatusTemplate = ({indexName}: IndexStatusProps) => {
                                                 {rebuilding ? (
                                                     <>
                                                         <Spinner/>
-                                                        <Tag label="Rebuild in progress" readOnly/>
+                                                        <Tag
+                                                            label={stuck ? 'Rebuild may have failed' : 'Rebuild in progress'}
+                                                            readOnly
+                                                            background={stuck ? {color: Colors.AlertBackgroundHighEmphasis} : undefined}
+                                                        />
                                                     </>
                                                 ) : (
                                                     <Tag
@@ -320,14 +352,40 @@ export const IndexStatusTemplate = ({indexName}: IndexStatusProps) => {
                                             </span>
                                         </Card>
                                     </div>
-                                    {figure('Documents', status.documents.toLocaleString(), 'In the index now')}
+                                    {figure(
+                                        'Documents',
+                                        status.documents.toLocaleString(),
+                                        rebuilding ? 'Written so far — the total is not known' : 'In the index now',
+                                    )}
                                     {degraded
                                         ? figure('Failed writes', status.failedWrites.toLocaleString(), 'Queued writes that never reached Lucene')
                                         : figure('Sources', status.sources.toLocaleString(), 'Content types and external systems')}
                                     {rebuilding
-                                        ? figure('Started', rebuildStartedAt, 'The rebuild running now')
+                                        ? figure(
+                                            'Rebuild started',
+                                            status.rebuildStartedAt === '' ? 'unknown' : status.rebuildStartedAt,
+                                            status.rebuildStartedAt === ''
+                                                ? 'Started outside this page'
+                                                : 'The rebuild running now',
+                                        )
                                         : figure('Last external write', status.lastWrite === '' ? 'never' : status.lastWrite, 'Through the ingestion API')}
                                 </div>
+
+                                {stuck ? (
+                                    <Callout
+                                        type={CalloutType.FriendlyWarning}
+                                        placement={CalloutPlacementType.OnDesk}
+                                        subheadline="Friendly warning"
+                                        headline="This rebuild may have failed"
+                                        maxWidth="100%"
+                                        actionButton={<Button label="Load again" onClick={reload}/>}
+                                    >
+                                        It started {status.rebuildStartedAt} and has not reported finishing. The Lucene
+                                        integration indexes content on its own queue and does not report a rebuild that
+                                        threw, so look for the failure in the event log
+                                        (<strong>System → Event log</strong>) and rebuild again if it is there.
+                                    </Callout>
+                                ) : null}
 
                                 {degraded && !rebuilding ? (
                                     <Callout

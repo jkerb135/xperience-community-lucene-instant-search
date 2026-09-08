@@ -72,9 +72,8 @@ tier is what makes attribution work behind a load balancer: a click that lands o
 never answered the search still names the query.
 
 The one gap is the drain window. Query log rows are queued in memory and written every 10 seconds
-(below), so a *cross-instance* click that arrives before the row is written finds neither tier. The
-event is still recorded, only with an empty query, and its clicked position still reaches the query
-log. See [Performance and sizing](performance-and-sizing.md#what-is-farm-safe-behind-a-load-balancer-and-what-is-not).
+(below), so a *cross-instance* click that arrives before the row is written finds neither tier - and
+an event whose `queryId` cannot be resolved is dropped, so nothing about it is recorded. See [Performance and sizing](performance-and-sizing.md#what-is-farm-safe-behind-a-load-balancer-and-what-is-not).
 
 ### Consent
 

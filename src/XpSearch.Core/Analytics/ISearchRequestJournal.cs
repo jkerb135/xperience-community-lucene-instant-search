@@ -33,6 +33,11 @@ public interface ISearchRequestJournal
     /// Stamping the query log splits every metric it already carries by variant; the activity is
     /// deliberately left alone.
     /// </param>
+    /// <param name="maxPosition">
+    /// The highest result position this search returned (<c>page * pageSize</c>), remembered with the
+    /// <paramref name="queryId"/> so a later event cannot claim a position the search never showed
+    /// (SC-1). <c>0</c> when it is not known.
+    /// </param>
     void Record(
         string queryId,
         string queryText,
@@ -40,7 +45,8 @@ public interface ISearchRequestJournal
         int total,
         TimeSpan elapsed,
         string language,
-        ExperimentAssignment? experiment = null);
+        ExperimentAssignment? experiment = null,
+        int maxPosition = 0);
 }
 
 /// <summary>
@@ -94,7 +100,8 @@ public sealed class SearchRequestJournal : ISearchRequestJournal
         int total,
         TimeSpan elapsed,
         string language,
-        ExperimentAssignment? experiment = null)
+        ExperimentAssignment? experiment = null,
+        int maxPosition = 0)
     {
         try
         {
@@ -111,7 +118,7 @@ public sealed class SearchRequestJournal : ISearchRequestJournal
 
             if (!string.IsNullOrEmpty(queryId))
             {
-                queryContexts.Set(queryId, new QueryContext(queryText, indexName));
+                queryContexts.Set(queryId, new QueryContext(queryText, indexName, maxPosition));
             }
 
             queue.Enqueue(QueryLogWorkItem.Append(new QueryLogEntry(

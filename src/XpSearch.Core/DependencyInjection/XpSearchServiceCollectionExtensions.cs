@@ -1,10 +1,17 @@
+using System.Globalization;
+using System.Threading.RateLimiting;
+
 using Kentico.Xperience.Lucene.Core.Indexing;
 
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 
+using XpSearch.Core;
 using XpSearch.Core.Abstractions;
 using XpSearch.Core.Analytics;
 using XpSearch.Core.Caching;
@@ -86,6 +93,10 @@ public static class XpSearchServiceCollectionExtensions
         services.TryAddSingleton<ISearchEventSink, ActivitySearchEventSink>();
         services.TryAddSingleton<XpSearchIndexingStrategy>();
 
+        // IX-2: a flattened linked type the index does not watch gets no event, so the pages that
+        // carry its fields would go stale silently. Checked once, at application start.
+        services.TryAddSingleton<FlattenedLinkRegistrationCheck>();
+
         // Core works without XpSearch.Admin (spec §2.2): the tuning stages run against an empty
         // source until AddXpSearchAdmin() replaces it with the cached, database-backed one.
         services.TryAddSingleton<IRelevanceTuningSource, EmptyRelevanceTuningSource>();
@@ -105,6 +116,7 @@ public static class XpSearchServiceCollectionExtensions
         services.TryAddSingleton<IVisitorBucketProvider, VisitorBucketProvider>();
         services.TryAddSingleton<IExperimentAssignmentResolver, ExperimentAssignmentResolver>();
         services.AddXpSearchBucketCookie();
+        services.AddPublicRateLimiter();
 
         // Analytics (spec §9). The activity logger is consent-gated; the query log is not.
         services.TryAddSingleton<ISearchActivityLogger, SearchActivityLogger>();
@@ -205,6 +217,76 @@ public static class XpSearchServiceCollectionExtensions
             cookies.CookieConfigurations[ExperimentBucketing.CookieName] = Kentico.Web.Mvc.CookieLevel.Essential);
 
         return services;
+    }
+
+    /// <summary>
+    /// Registers the rate limiting policy of the three public endpoints,
+    /// <see cref="XpSearchConstants.PublicRateLimitPolicy"/>: a sliding window of
+    /// <c>XpSearchOptions.PublicRateLimitPermitsPerWindow</c> requests per
+    /// <c>XpSearchOptions.PublicRateLimitWindow</c>, partitioned by remote address
+    /// (https://learn.microsoft.com/aspnet/core/performance/rate-limit).
+    /// </summary>
+    /// <remarks>
+    /// The address is <c>HttpContext.Connection.RemoteIpAddress</c> as ASP.NET Core resolved it:
+    /// behind a proxy that is the proxy unless the host configured <c>UseForwardedHeaders</c>, which
+    /// this package never second-guesses by reading <c>X-Forwarded-For</c> itself. A rejected request
+    /// is answered 429 with <c>Retry-After</c> and never reaches the endpoint, so it is neither
+    /// journaled nor cached. <c>AddRateLimiter</c> composes, so the host's own policies and the
+    /// ingestion API's per-key policy are untouched; the rejection is shaped by this policy alone,
+    /// not by the global <c>RateLimiterOptions</c>.
+    /// </remarks>
+    private static void AddPublicRateLimiter(this IServiceCollection services)
+    {
+        // A policy name can only be added once, so a host that calls AddXpSearch twice would otherwise
+        // crash the first time the limiter options are built.
+        if (services.Any(descriptor => descriptor.ServiceType == typeof(PublicRateLimiterPolicy)))
+        {
+            return;
+        }
+
+        services.AddSingleton<PublicRateLimiterPolicy>();
+        services.AddRateLimiter(limiter =>
+            limiter.AddPolicy(XpSearchConstants.PublicRateLimitPolicy, new PublicRateLimiterPolicy()));
+    }
+
+    /// <summary>Limits the three public endpoints per remote address, and answers 429 with <c>Retry-After</c>.</summary>
+    private sealed class PublicRateLimiterPolicy : IRateLimiterPolicy<string>
+    {
+        /// <inheritdoc />
+        public Func<OnRejectedContext, CancellationToken, ValueTask>? OnRejected => Reject;
+
+        /// <inheritdoc />
+        public RateLimitPartition<string> GetPartition(HttpContext httpContext)
+        {
+            var options = httpContext.RequestServices.GetRequiredService<IOptionsMonitor<XpSearchOptions>>().CurrentValue;
+
+            return RateLimitPartition.GetSlidingWindowLimiter(
+                httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+                _ => new SlidingWindowRateLimiterOptions
+                {
+                    PermitLimit = Math.Max(1, options.PublicRateLimitPermitsPerWindow),
+                    Window = options.PublicRateLimitWindow > TimeSpan.Zero ? options.PublicRateLimitWindow : TimeSpan.FromMinutes(1),
+                    SegmentsPerWindow = 6,
+                    QueueLimit = 0,
+                });
+        }
+
+        private static ValueTask Reject(OnRejectedContext context, CancellationToken cancellationToken)
+        {
+            var options = context.HttpContext.RequestServices.GetRequiredService<IOptionsMonitor<XpSearchOptions>>().CurrentValue;
+
+            // The middleware only sets the status code (503 by default) and leaves the hint to the
+            // policy; the limiter carries one when it can say how long the caller has to wait.
+            var retryAfter = context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var hint)
+                ? hint
+                : options.PublicRateLimitWindow;
+
+            context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+            context.HttpContext.Response.Headers.RetryAfter = ((int)Math.Ceiling(Math.Max(1, retryAfter.TotalSeconds)))
+                .ToString(CultureInfo.InvariantCulture);
+
+            return ValueTask.CompletedTask;
+        }
     }
 
     /// <summary>Adds a custom pipeline stage. Its own <see cref="ISearchStage.Order"/> decides where it runs.</summary>
@@ -324,6 +406,10 @@ public static class XpSearchApplicationBuilderExtensions
     /// <param name="app">The application builder, which must also be an <see cref="IEndpointRouteBuilder"/>.</param>
     /// <returns>The same builder, for chaining.</returns>
     /// <exception cref="InvalidOperationException">The builder cannot map endpoints.</exception>
+    /// <remarks>
+    /// For the public endpoints' rate limit to take effect the host must also call
+    /// <c>app.UseRateLimiter()</c>, exactly as the ingestion API asks - one call covers both.
+    /// </remarks>
     public static IApplicationBuilder UseXpSearch(this IApplicationBuilder app)
     {
         ArgumentNullException.ThrowIfNull(app);

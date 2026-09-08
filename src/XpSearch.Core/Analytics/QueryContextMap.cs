@@ -5,8 +5,16 @@ namespace XpSearch.Core.Analytics;
 /// <summary>What a search with a given <c>queryId</c> was.</summary>
 /// <param name="Query">The normalized query text.</param>
 /// <param name="IndexName">Code name of the index that was searched.</param>
-/// <param name="ResultCount">How many documents the search matched, or zero when it is not known.</param>
-public sealed record QueryContext(string Query, string IndexName, int ResultCount = 0);
+/// <param name="MaxPosition">
+/// The highest result position the search returned (<c>page * pageSize</c>), which bounds the
+/// <c>position</c> an event may claim (SC-1). <c>0</c> when it is not known, which is the case for
+/// every context resolved from the query log rather than set by the journal.
+/// </param>
+/// <param name="ResultCount">
+/// How many documents the search matched, or zero when it is not known. Only the query log carries
+/// it (WF-1), so it is the fallback bound when <paramref name="MaxPosition"/> is <c>0</c>.
+/// </param>
+public sealed record QueryContext(string Query, string IndexName, int MaxPosition = 0, int ResultCount = 0);
 
 /// <summary>
 /// Remembers what each <c>queryId</c> searched for, so a later click or conversion event can be
@@ -32,6 +40,15 @@ public interface IQueryContextMap
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>What was searched, or <see langword="null"/> when the id is unknown or has expired.</returns>
     Task<QueryContext?> GetAsync(string queryId, CancellationToken cancellationToken);
+
+    /// <summary>Counts one event against a <c>queryId</c>'s budget (SC-1).</summary>
+    /// <param name="queryId">Correlation id received on an event.</param>
+    /// <returns>
+    /// How many events have been counted for this id, this one included; <c>0</c> when the id is
+    /// unknown or has expired. The caller decides the budget, so a shared implementation only has to
+    /// count.
+    /// </returns>
+    int CountEvent(string queryId);
 }
 
 /// <summary>
@@ -50,6 +67,10 @@ public interface IQueryContextMap
 /// The fallback only sees rows the log queue has already drained (up to 10 s, see
 /// <see cref="XpSearchQueryLogQueueWorker"/>), so a cross-instance click within that window still
 /// resolves nothing: the event is recorded without the query.
+/// </para>
+/// <para>
+/// <see cref="CountEvent"/> counts on the local entry only, so the per-query event budget (SC-1) is
+/// enforced per instance: a caller spreading replays across a farm gets the budget once per node.
 /// </para>
 /// </remarks>
 public sealed class QueryContextMap : IQueryContextMap
@@ -135,8 +156,27 @@ public sealed class QueryContextMap : IQueryContextMap
 
         var row = await store.GetByQueryIdAsync(queryId, cancellationToken).ConfigureAwait(false);
 
-        return row is null ? null : new QueryContext(row.QueryText, row.IndexName, row.ResultCount);
+        if (row is null)
+        {
+            return null;
+        }
+
+        // The log row knows no page window, so MaxPosition stays 0 and ResultCount carries the bound.
+        var context = new QueryContext(row.QueryText, row.IndexName, 0, row.ResultCount);
+
+        // Kept locally so CountEvent has an entry to count on: without it every event resolved from
+        // the database would be outside any budget. The budget is therefore per instance (WF-1 entry
+        // in KNOWN-LIMITATIONS), and the entry ages from now rather than from the search.
+        Set(queryId, context);
+
+        return context;
     }
+
+    /// <inheritdoc />
+    public int CountEvent(string queryId) =>
+        Get(queryId) is null || !entries.TryGetValue(queryId, out var entry)
+            ? 0
+            : Interlocked.Increment(ref entry.Events);
 
     private void Trim(DateTime now)
     {
@@ -157,5 +197,13 @@ public sealed class QueryContextMap : IQueryContextMap
         }
     }
 
-    private sealed record Entry(QueryContext Context, DateTime Added);
+    private sealed class Entry(QueryContext context, DateTime added)
+    {
+        // A field rather than a property: Interlocked.Increment needs a ref.
+        internal int Events;
+
+        internal QueryContext Context { get; } = context;
+
+        internal DateTime Added { get; } = added;
+    }
 }

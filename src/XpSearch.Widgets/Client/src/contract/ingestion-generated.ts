@@ -187,8 +187,8 @@ export interface IndexStatus {
     /**
      * "healthy" when the index is readable and no write has failed - including while queued
      * writes are still waiting, which is the normal state of an asynchronous write, "degraded"
-     * when queued work failed to reach the index and nothing has succeeded since, "unavailable"
-     * when the index cannot be read.
+     * when queued work failed to reach the index and nothing has succeeded since or a rebuild
+     * is running (rebuild.running), "unavailable" when the index cannot be read.
      */
     health: Health;
     /**
@@ -199,6 +199,11 @@ export interface IndexStatus {
      * When an external document was last written to this index, absent when none ever was.
      */
     lastWrite?: Date;
+    /**
+     * What the ingestion log says about the rebuild of this index, absent when none was ever
+     * recorded.
+     */
+    rebuild?: RebuildStatus;
 }
 
 /**
@@ -220,10 +225,41 @@ export interface DocumentCounts {
 /**
  * "healthy" when the index is readable and no write has failed - including while queued
  * writes are still waiting, which is the normal state of an asynchronous write, "degraded"
- * when queued work failed to reach the index and nothing has succeeded since, "unavailable"
- * when the index cannot be read.
+ * when queued work failed to reach the index and nothing has succeeded since or a rebuild
+ * is running (rebuild.running), "unavailable" when the index cannot be read.
  */
 export type Health = "healthy" | "degraded" | "unavailable";
+
+/**
+ * What the ingestion log says about the rebuild of this index, absent when none was ever
+ * recorded.
+ *
+ * The last rebuild of an index, derived from the ingestion log: a "rebuild" entry with no
+ * later "rebuild-finished" entry is a rebuild still running.
+ */
+export interface RebuildStatus {
+    /**
+     * How many documents the index held when the last rebuild finished. Absent while a rebuild
+     * is running: there is no total to count towards.
+     */
+    documents?: number;
+    /**
+     * When the last rebuild finished, absent while one is running or when none ever finished.
+     * Detected by watching the index stop changing, so it is a close estimate rather than an
+     * event.
+     */
+    finishedAt?: Date;
+    /**
+     * Whether a rebuild is running now. Wait for it before trusting document counts; health is
+     * "degraded" while it is true.
+     */
+    running: boolean;
+    /**
+     * When the rebuild started, absent when the rebuild was started outside this library
+     * (Kentico's own Search application records no start).
+     */
+    startedAt?: Date;
+}
 
 /**
  * Placeholder property so the code generator emits PatchRequest. Never sent on the wire.

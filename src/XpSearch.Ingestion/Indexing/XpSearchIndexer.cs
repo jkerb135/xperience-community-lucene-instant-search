@@ -267,6 +267,9 @@ public sealed class XpSearchIndexer : IXpSearchIndexer
         var lastWrite = await store.GetLastWriteAsync(index, cancellationToken).ConfigureAwait(false);
         var counts = CountBySource(index);
         bool failed = await FailedRecentlyAsync(index, cancellationToken).ConfigureAwait(false);
+        var rebuild = await RebuildProgress
+            .ReadAsync(log, index, time.GetUtcNow(), options.RebuildStuckAfter, cancellationToken)
+            .ConfigureAwait(false);
 
         return new IndexStatus
         {
@@ -277,8 +280,21 @@ public sealed class XpSearchIndexer : IXpSearchIndexer
 
             // Queued work is the normal state of an asynchronous write, so it is not degraded
             // health - the counts are simply eventually consistent (documented in the ingestion
-            // guide). Only work that failed to reach Lucene is an incident worth reporting.
-            Health = failed ? Health.Degraded : Health.Healthy,
+            // guide). Only work that failed to reach Lucene inside the failure window is an
+            // incident worth reporting, and it is read from the log so every instance of a farm
+            // answers the same (WF-1). A running rebuild is degraded too: the index is half-written,
+            // and an external system polling this route should wait rather than trust the counts.
+            Health = failed || rebuild.Running ? Health.Degraded : Health.Healthy,
+
+            Rebuild = rebuild.Phase is RebuildPhase.None
+                ? null
+                : new RebuildStatus
+                {
+                    Running = rebuild.Running,
+                    StartedAt = rebuild.StartedAt,
+                    FinishedAt = rebuild.FinishedAt,
+                    Documents = rebuild.Documents,
+                },
         };
     }
 

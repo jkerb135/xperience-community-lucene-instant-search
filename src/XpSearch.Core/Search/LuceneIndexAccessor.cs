@@ -32,23 +32,28 @@ public sealed class LuceneIndexAccessor : ILuceneIndexAccessor
 
     private readonly ILuceneIndexManager indexManager;
     private readonly ILuceneSearchService searchService;
+    private readonly ILuceneConfigurationStorageService storage;
     private readonly IServiceProvider serviceProvider;
 
     /// <summary>Initializes a new instance of the <see cref="LuceneIndexAccessor"/> class.</summary>
     /// <param name="indexManager">The integration's index registry.</param>
     /// <param name="searchService">The integration's searcher lease provider.</param>
+    /// <param name="storage">The integration's index configuration store, which the stored definition comes from.</param>
     /// <param name="serviceProvider">Used to resolve the index's indexing strategy, whose type is only known at runtime.</param>
     public LuceneIndexAccessor(
         ILuceneIndexManager indexManager,
         ILuceneSearchService searchService,
+        ILuceneConfigurationStorageService storage,
         IServiceProvider serviceProvider)
     {
         ArgumentNullException.ThrowIfNull(indexManager);
         ArgumentNullException.ThrowIfNull(searchService);
+        ArgumentNullException.ThrowIfNull(storage);
         ArgumentNullException.ThrowIfNull(serviceProvider);
 
         this.indexManager = indexManager;
         this.searchService = searchService;
+        this.storage = storage;
         this.serviceProvider = serviceProvider;
     }
 
@@ -118,6 +123,30 @@ public sealed class LuceneIndexAccessor : ILuceneIndexAccessor
     /// <inheritdoc />
     public TResult UseSearcherWithDrillSideways<TResult>(string indexName, Func<IndexSearcher, DrillSideways, TResult> use) =>
         searchService.UseSearcherWithDrillSideways(Require(indexName), use);
+
+    /// <inheritdoc />
+    public async Task<IndexDefinition> GetDefinitionAsync(string indexName, CancellationToken cancellationToken)
+    {
+        string name = Require(indexName).IndexName;
+
+        var configuration = await storage.GetIndexDataOrNullAsync(name).ConfigureAwait(false)
+            ?? throw new IndexNotFoundException(name);
+
+        var channels = configuration.Channels ?? [];
+
+        return new IndexDefinition(
+            name,
+            [.. channels.Select(channel => channel.WebsiteChannelName).Distinct(StringComparer.OrdinalIgnoreCase)],
+            [.. configuration.LanguageNames ?? []],
+            [
+                .. channels
+                    .SelectMany(channel => channel.IncludedPaths ?? [])
+                    .SelectMany(path => path.ContentTypes ?? [])
+                    .Select(contentType => contentType.ContentTypeName)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+            ],
+            [.. configuration.ReusableContentTypeNames ?? []]);
+    }
 
     private LuceneIndex Require(string indexName)
     {

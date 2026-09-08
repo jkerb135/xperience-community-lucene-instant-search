@@ -1,11 +1,14 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 using XpSearch.Core.Abstractions;
 using XpSearch.Core.Contract;
+using XpSearch.Core.Options;
 using XpSearch.Core.Pipeline;
 
 namespace XpSearch.Core.Endpoints;
@@ -25,15 +28,41 @@ public static class XpSearchEndpoints
     /// <summary>Maps <c>/api/xpsearch/query</c>, <c>/suggest</c> and <c>/events</c>.</summary>
     /// <param name="endpoints">The route builder to map onto.</param>
     /// <returns>The same builder, for chaining.</returns>
+    /// <remarks>
+    /// All three routes carry the <see cref="XpSearchConstants.PublicRateLimitPolicy"/> rate limit
+    /// unless <c>XpSearchOptions.PublicRateLimitEnabled</c> is off; for it to take effect the host
+    /// must also call <c>app.UseRateLimiter()</c>, exactly as the ingestion API asks - one call covers
+    /// both.
+    /// </remarks>
     public static IEndpointRouteBuilder MapXpSearch(this IEndpointRouteBuilder endpoints)
     {
         ArgumentNullException.ThrowIfNull(endpoints);
 
-        endpoints.MapPost(ContractConstants.QueryRoute, Query).WithName("XpSearchQuery");
-        endpoints.MapPost(ContractConstants.SuggestRoute, Suggest).WithName("XpSearchSuggest");
-        endpoints.MapPost(ContractConstants.EventsRoute, Events).WithName("XpSearchEvents");
+        var options = endpoints.ServiceProvider.GetService<IOptionsMonitor<XpSearchOptions>>()?.CurrentValue;
+        bool limited = options?.PublicRateLimitEnabled ?? false;
+        string? cors = string.IsNullOrWhiteSpace(options?.CorsPolicyName) ? null : options.CorsPolicyName.Trim();
+
+        Map(endpoints.MapPost(ContractConstants.QueryRoute, Query), "XpSearchQuery", limited, cors);
+        Map(endpoints.MapPost(ContractConstants.SuggestRoute, Suggest), "XpSearchSuggest", limited, cors);
+        Map(endpoints.MapPost(ContractConstants.EventsRoute, Events), "XpSearchEvents", limited, cors);
 
         return endpoints;
+    }
+
+    private static void Map(RouteHandlerBuilder route, string name, bool limited, string? corsPolicy)
+    {
+        route.WithName(name);
+
+        if (limited)
+        {
+            route.RequireRateLimiting(XpSearchConstants.PublicRateLimitPolicy);
+        }
+
+        if (corsPolicy is not null)
+        {
+            // The host registers the policy with AddCors and its origins; the package only names it.
+            route.RequireCors(corsPolicy);
+        }
     }
 
     private static async Task<IResult> Query(SearchRequest? request, HttpContext context, CancellationToken cancellationToken)

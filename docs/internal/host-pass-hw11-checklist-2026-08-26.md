@@ -658,27 +658,82 @@ Open **Lucene Search → DancingGoatSample → Edit index → Query tester** and
 146. Below 1024px on `/search-razor` the Filter & sort sheet opens with Category / Products / Taste and
      the sort pills; Apply runs one search.
 
+## §AC — SC-1 public rate limiting + `/events` hardening (2026-09-08)
+
+> The host's `Program.cs` needs one line for this section: `app.UseRateLimiter();` before
+> `app.MapXpSearch();`. Without it both packages' limits are inert — the search guide and the
+> ingestion guide both say so.
+
+147. **The limit turns a script away.** With the host running, fire 130 quick requests at
+     `/api/xpsearch/query` from one machine (e.g.
+     `for i in $(seq 130); do curl -s -o /dev/null -w '%{http_code} ' -XPOST localhost:PORT/api/xpsearch/query -H 'Content-Type: application/json' -d '{"index":"site-content","query":"espresso"}'; done`):
+     the first ~120 answer `200`, the rest `429` with a `Retry-After` header. Browsing `/search` by
+     hand never hits it — type, facet and page as fast as a person can and every request is served.
+148. **A rejected request leaves no trace.** After the burst, **Search insights → Queries** shows the
+     served searches only: the `429`s are not journaled and the totals do not jump by 130.
+149. **A replayed `queryId` runs out of budget.** Capture one `queryId` from a search response and
+     POST 30 click events with it (`{"type":"click","queryId":"…","resultId":"…","position":1}`).
+     Every call answers `202`, but the popularity score of that result stops moving after 20: run the
+     popularity aggregation and compare the result's boost with the one from the first 20.
+150. **A fabricated event is dropped.** POST an event with a `queryId` the server never issued, and one
+     with a real `queryId` but `"position": 999`. Both answer `202`; neither appears in the query log's
+     click counts, and with `Debug` logging on, each writes one "was dropped" line.
+
+## §AE — RB-1 rebuild progress that survives a page reload (2026-09-07)
+
+152. **Rebuild survives a reload.** On **Lucene Search → indexes → *index* → Edit index → Status**,
+     click **Rebuild index** and confirm. The header shows a spinner and **Rebuilding**; the health
+     tile reads **Rebuild in progress**, the **Documents** tile's hint reads "Written so far — the
+     total is not known", and the fourth tile is **Rebuild started** with the time. Now press F5 (and
+     open the same page in a second browser): both still show the rebuild. Nothing shows a
+     percentage.
+153. **It finishes by itself.** Leave the page open. Within ~10 seconds of the replay completing the
+     page re-reads itself: the button comes back, the health tag reads **Healthy**, and the header
+     meta line reads `Index … · Lucene · rebuilt <time>, N documents`.
+154. **The wire says the same thing.** During the rebuild,
+     `GET /api/xpsearch/admin/indexes/<index>/status` with a read key answers `"health": "degraded"`
+     and `"rebuild": {"running": true, "startedAt": …}`; after it finishes, `"health": "healthy"` and
+     `"rebuild": {"running": false, "finishedAt": …, "documents": N}`.
+155. **A rebuild from Kentico's own Search application** (the integration's index listing, not our
+     page) leaves no started row: when its replay lands, the Status page shows the finish alone -
+     `rebuilt <time>, N documents` - and never showed "Rebuilding".
+156. **Stuck.** Optional, needs a wait or a shortened `RebuildStuckAfter`: with a started row older
+     than the threshold and no finished row, the page tags **Rebuild may have failed** and the
+     callout points at **System → Event log**.
+
+## §AD — IX-2 linked-item edits reindex the flattening pages (2026-09-08)
+
+157. **Edit a product, see it in search.** In Content hub, rename a product (e.g. append " X" to a
+     grinder's name) and publish. Within the Lucene queue interval (seconds), `/search?q=<new name>`
+     finds the Store page carrying it — no rebuild, no host override (the Dancing Goat
+     `FindItemsToReindex` override was deleted after IX-2).
+158. **The startup warning is silent when the index lists the four product types under Reusable
+     content types**, and fires once per missing type (event log, Warning) when one is removed from
+     the index definition — restore it afterwards.
+
 ## §AF — WF-1 web-farm-safe analytics state (2026-09-08)
 
 Needs **two host processes against the same database** (run a second instance on another port —
 `dotnet run --project … --urls http://localhost:5099`) and, ideally, a browser per instance.
 
-147. **Cross-instance click attribution.** Search on instance A (`/search?q=espresso`), wait ~15
+159. **Cross-instance click attribution.** Search on instance A (`/search?q=espresso`), wait ~15
      seconds so the query log queue drains, then post the click event to instance B with the same
      `queryId` (`POST http://localhost:5099/api/xpsearch/events`, `{"type":"click","queryId":"…",
      "resultId":"…","position":1}`). In the admin, the `xpsearch_click` activity logged by B carries
      **espresso** as its value, and the query log row for that `queryId` shows the clicked position.
-     Before WF-1 the activity's value was empty.
-148. **The drain window is the documented gap.** Repeat 147 but post the click to B *immediately*
-     (under 10 seconds). The click is still recorded and the position still lands on the row; the
-     activity value may be empty. That is the ~10 s window in `performance-and-sizing.md`, not a bug.
-149. **Suggestions invalidate farm-wide.** Type a prefix in the search box on B to warm its
+     Before WF-1 the activity's value was empty; after SC-1 the event would have been dropped
+     outright, so this row proves both units together.
+160. **The drain window is the documented gap.** Repeat 159 but post the click to B *immediately*
+     (under 10 seconds). B answers `202` and nothing is recorded — neither instance can resolve the
+     `queryId` yet, and SC-1 drops what it cannot vouch for. That is the ~10 s window in
+     `performance-and-sizing.md`, not a bug.
+161. **Suggestions invalidate farm-wide.** Type a prefix in the search box on B to warm its
      autocomplete, run a new search for a query with that prefix on A, then type the prefix on B
      again after the queue drains → the new query appears without waiting out B's cache TTL.
-150. **One search per page load, on either instance.** Load `/search?q=grinder` on A with the browser
+162. **One search per page load, on either instance.** Load `/search?q=grinder` on A with the browser
      pointed at the load balancer (or load it on A and let the hydration query hit B). The analytics
      dashboard counts **one** search for that page load, not two.
-151. **Health agrees across instances.** Break an index write on A (stop the Lucene directory from
+163. **Health agrees across instances.** Break an index write on A (stop the Lucene directory from
      being writable, or push to an index whose directory is locked) so a queued item fails, then read
      `GET indexes/{index}/status` on **B** → `degraded`, same as A. Five minutes after the last
      failure both report `healthy` again.
