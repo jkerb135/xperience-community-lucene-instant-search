@@ -150,7 +150,7 @@ internal sealed class RateLimitTests
     private static IEnumerable<string?> CorsPolicyNames(WebApplication app) =>
         ((IEndpointRouteBuilder)app).DataSources
             .SelectMany(source => source.Endpoints)
-            .Select(endpoint => endpoint.Metadata.GetMetadata<Microsoft.AspNetCore.Cors.Infrastructure.ICorsPolicyMetadata>()?.PolicyName);
+            .Select(endpoint => endpoint.Metadata.GetMetadata<Microsoft.AspNetCore.Cors.Infrastructure.IEnableCorsAttribute>()?.PolicyName);
 
     private static IEnumerable<string?> PolicyNames(WebApplication app) =>
         ((IEndpointRouteBuilder)app).DataSources
