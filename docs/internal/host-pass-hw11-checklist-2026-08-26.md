@@ -700,3 +700,13 @@ Open **Lucene Search → DancingGoatSample → Edit index → Query tester** and
 156. **Stuck.** Optional, needs a wait or a shortened `RebuildStuckAfter`: with a started row older
      than the threshold and no finished row, the page tags **Rebuild may have failed** and the
      callout points at **System → Event log**.
+
+## §AD — IX-2 linked-item edits reindex the flattening pages (2026-09-08)
+
+157. **Edit a product, see it in search.** In Content hub, rename a product (e.g. append " X" to a
+     grinder's name) and publish. Within the Lucene queue interval (seconds), `/search?q=<new name>`
+     finds the Store page carrying it — no rebuild, no host override (the Dancing Goat
+     `FindItemsToReindex` override was deleted after IX-2).
+158. **The startup warning is silent when the index lists the four product types under Reusable
+     content types**, and fires once per missing type (event log, Warning) when one is removed from
+     the index definition — restore it afterwards.
