@@ -492,6 +492,16 @@ and how to lift it.
 - **Upgrade path:** swap the partition's limiter for a distributed one backed by the cache the host
   already runs; the partition key is already the right shard key.
 
+## The public endpoints' limit and the per-`queryId` event budget are per process (`XpSearchServiceCollectionExtensions.PublicRateLimiterPolicy` in `XpSearch.Core/DependencyInjection/`, `QueryContextMap.CountEvent` in `XpSearch.Core/Analytics/`)
+
+- **Simplified:** the same in-memory limiter as the ingestion entry above, here a sliding window per
+  remote address; the event budget is a counter on the in-memory `QueryContextMap` entry, so both the
+  "is this a `queryId` we issued" check and the budget live in one instance's memory.
+- **Ceiling:** the ingestion entry's ceiling, plus: an event whose search was answered by another
+  instance is dropped instead of attributed, and a replayer gets the budget once per instance.
+- **Upgrade path:** the shared `IQueryContextMap` store (WF-1) lifts the budget and the issuance check
+  together, since both read one map entry; the limiter follows the ingestion entry's path.
+
 ## `"private": true` in `src/XpSearch.Widgets/Client/package.json`
 
 - **Simplified:** the npm package is complete — `dist/`, `themes/shell.css`, `themes/default.css`, a

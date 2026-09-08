@@ -657,3 +657,24 @@ Open **Lucene Search → DancingGoatSample → Edit index → Query tester** and
      `ProductFieldTags` = `HotTips` in the sidebar and confirm it filters.
 146. Below 1024px on `/search-razor` the Filter & sort sheet opens with Category / Products / Taste and
      the sort pills; Apply runs one search.
+
+## §AC — SC-1 public rate limiting + `/events` hardening (2026-09-08)
+
+> The host's `Program.cs` needs one line for this section: `app.UseRateLimiter();` before
+> `app.MapXpSearch();`. Without it both packages' limits are inert — the search guide and the
+> ingestion guide both say so.
+
+147. **The limit turns a script away.** With the host running, fire 130 quick requests at
+     `/api/xpsearch/query` from one machine (e.g.
+     `for i in $(seq 130); do curl -s -o /dev/null -w '%{http_code} ' -XPOST localhost:PORT/api/xpsearch/query -H 'Content-Type: application/json' -d '{"index":"site-content","query":"espresso"}'; done`):
+     the first ~120 answer `200`, the rest `429` with a `Retry-After` header. Browsing `/search` by
+     hand never hits it — type, facet and page as fast as a person can and every request is served.
+148. **A rejected request leaves no trace.** After the burst, **Search insights → Queries** shows the
+     served searches only: the `429`s are not journaled and the totals do not jump by 130.
+149. **A replayed `queryId` runs out of budget.** Capture one `queryId` from a search response and
+     POST 30 click events with it (`{"type":"click","queryId":"…","resultId":"…","position":1}`).
+     Every call answers `202`, but the popularity score of that result stops moving after 20: run the
+     popularity aggregation and compare the result's boost with the one from the first 20.
+150. **A fabricated event is dropped.** POST an event with a `queryId` the server never issued, and one
+     with a real `queryId` but `"position": 999`. Both answer `202`; neither appears in the query log's
+     click counts, and with `Debug` logging on, each writes one "was dropped" line.

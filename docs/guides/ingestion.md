@@ -355,6 +355,10 @@ in-place update, so there is no cheaper way — and the stored row is what makes
 
 Nothing is ever silently truncated.
 
+The one `app.UseRateLimiter()` this table asks for also switches on the public search endpoints'
+per-address limit — see [Rate limiting](search-api.md#rate-limiting) for its defaults; the two policies
+are separate and compose.
+
 ### What is not here yet
 
 - Admin UI for schemas; schemas are declared in code on the indexing strategy. Keys and the

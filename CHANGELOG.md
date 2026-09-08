@@ -12,6 +12,22 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Added (core):** `/query`, `/suggest` and `/events` are rate limited per remote address - a sliding
+  window of 120 requests a minute by default, registered by `AddXpSearch()` and applied to all three
+  routes by `MapXpSearch()` (SC-1). A caller past the limit gets `429` with `Retry-After` and never
+  reaches the endpoint, so the request is neither journaled nor cached. Tune it with
+  `PublicRateLimitPermitsPerWindow`, `PublicRateLimitWindow` and `PublicRateLimitEnabled`; as with the
+  ingestion API, it only applies once the host calls `app.UseRateLimiter()` - one call covers both.
+- **Added (core):** `XpSearchOptions.MaxEventsPerQuery` (default 20) caps how many `/events` calls one
+  `queryId` may carry, so a replayed id cannot keep moving the popularity signal (SC-1).
+- **Changed (core):** `/events` now records only events it can vouch for: the `queryId` must be one
+  this application issued and still remembers, the event must be within that id's budget, and a
+  click's `position` must be one the search actually returned (SC-1). Anything else is dropped and
+  logged at `Debug`. The endpoint still answers `202` either way, so no caller changes; what changes is
+  that a click whose search was answered by another instance, or after the 30 minute context
+  retention, no longer reaches the query log or the activity - it used to be recorded with an empty
+  query text.
+
 - **Added (widgets):** the last three JavaScript-only options now have a C# surface, so the canonical
   plain-HTML recipe copies into Razor and the Page Builder without losing anything (RZ-2).
   `<xps-pagination>` takes `padding`, `show-first` and `show-last`; `<xps-active-filters>` takes

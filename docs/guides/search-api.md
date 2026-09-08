@@ -418,6 +418,63 @@ The `queryId` from the search response is what correlates a click back to the se
 which is what makes click-through rate per query meaningful. A `202` means the event was accepted, not that
 an activity was written: activity logging is consent-gated and never blocks or throws.
 
+#### Events are validated
+
+Clicks feed the popularity signal and the query log, so an event that cannot have happened is dropped.
+The endpoint still answers `202` in every case — a caller cannot tell an accepted event from a dropped
+one, by design — and each drop is logged at `Debug`. An event is recorded only when all three hold:
+
+| Rule | Why |
+|---|---|
+| The `queryId` is one this application issued and has not expired (30 minutes) | A replayed or invented id has no search to attribute to |
+| At most `MaxEventsPerQuery` events (default 20) carry the same `queryId` | One search produces a handful of clicks; a script replaying an id runs out of budget |
+| `position` is within the results that search actually returned (`page × pageSize`, or the index's `MaxPageSize` when the page size is not known) | A click on a position that was never shown is fabricated |
+
+```csharp
+builder.Services.AddXpSearch(options =>
+{
+    options.MaxEventsPerQuery = 20;   // accepted events per queryId
+});
+```
+
+The `queryId` map is per application instance, so on a load-balanced site an event that lands on
+another instance than its search is dropped rather than attributed — the same instance affinity
+attribution has always had.
+
+### Rate limiting
+
+`/query`, `/suggest` and `/events` are public and unauthenticated, so `AddXpSearch()` registers a
+sliding-window rate limit per remote address — 120 requests a minute by default, which is generous for
+a visitor typing (one debounced query per typing pause, plus its suggest request) and tight for a
+script. `MapXpSearch()` puts the policy on all three routes; a caller past the limit gets `429 Too Many
+Requests` with a `Retry-After` header and never reaches the endpoint, so a rejected request is neither
+journaled nor cached.
+
+It only takes effect once the host adds the middleware — one `UseRateLimiter()` covers this package
+and the [ingestion API](ingestion.md#limits):
+
+```csharp
+builder.Services.AddXpSearch(options =>
+{
+    options.PublicRateLimitEnabled = true;              // false turns the limit off entirely
+    options.PublicRateLimitPermitsPerWindow = 120;      // per remote address, per window
+    options.PublicRateLimitWindow = TimeSpan.FromMinutes(1);
+});
+
+var app = builder.Build();
+app.UseKentico();
+app.UseRateLimiter();                                   // required for the limit to apply
+app.MapXpSearch();
+```
+
+The partition is `HttpContext.Connection.RemoteIpAddress` as ASP.NET Core resolved it. Behind a proxy
+or CDN that is the proxy's address for everyone, which would share one bucket across all visitors: use
+[`UseForwardedHeaders`](https://learn.microsoft.com/aspnet/core/host-and-deploy/proxy-load-balancer) so
+the framework resolves the real client address — this package never parses `X-Forwarded-For` itself.
+
+The counters are per application instance, like the ingestion API's: on a load-balanced site the
+effective limit is the configured one times the number of instances.
+
 ### Errors
 
 Failures are [RFC 9457 Problem Details](https://learn.microsoft.com/aspnet/core/web-api/handle-errors),
