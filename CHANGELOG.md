@@ -12,6 +12,9 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Fixed (ingestion):** a caller past the per-key rate limit is now answered `429 Too Many Requests` with a
+  `Retry-After` header, as the ingestion guide always said and as the typed clients back off on. The
+  policy previously set no rejection handler, so ASP.NET Core answered its default `503` with no hint.
 - **Added (core):** an opt-in rate limit for `/query`, `/suggest` and `/events` per remote address - a
   sliding window of 120 requests a minute, registered by `AddXpSearch()` and applied to all three
   routes by `MapXpSearch()` when `PublicRateLimitEnabled` is set (SC-1). It is **off by default**: an

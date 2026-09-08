@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Threading.RateLimiting;
 
 using Microsoft.AspNetCore.Builder;
@@ -70,7 +71,7 @@ public static class XpSearchIngestionServiceCollectionExtensions
                 provider.GetRequiredService<IIngestionQueue>(),
                 provider.GetRequiredService<Logging.ILogger<ExternalDocumentReplayLuceneClient>>()));
 
-        services.AddRateLimiter(limiter => limiter.AddPolicy(IngestionContractConstants.RateLimitPolicy, PartitionByKey(services)));
+        services.AddRateLimiter(limiter => limiter.AddPolicy<string, IngestionRateLimiterPolicy>(IngestionContractConstants.RateLimitPolicy));
 
         return services;
     }
@@ -79,16 +80,23 @@ public static class XpSearchIngestionServiceCollectionExtensions
     /// Rate-limits per API key (spec §10.4) with a fixed window, partitioned by the key prefix so one
     /// integration's bulk import cannot starve another's
     /// (https://learn.microsoft.com/aspnet/core/performance/rate-limit). A request with no key is
-    /// partitioned by remote address, which bounds the cost of rejecting it.
+    /// partitioned by remote address, which bounds the cost of rejecting it. A rejected request is
+    /// answered <c>429</c> with <c>Retry-After</c> - what the guide promises and what the typed clients
+    /// back off on - rather than the middleware's default <c>503</c>.
     /// </summary>
-    private static Func<HttpContext, RateLimitPartition<string>> PartitionByKey(IServiceCollection services) =>
-        context =>
+    private sealed class IngestionRateLimiterPolicy : IRateLimiterPolicy<string>
+    {
+        /// <inheritdoc />
+        public Func<OnRejectedContext, CancellationToken, ValueTask>? OnRejected => Reject;
+
+        /// <inheritdoc />
+        public RateLimitPartition<string> GetPartition(HttpContext httpContext)
         {
-            var options = context.RequestServices.GetRequiredService<IOptions<XpSearchIngestionOptions>>().Value;
-            string? key = ApiKeyEndpointFilter.BearerToken(context);
+            var options = httpContext.RequestServices.GetRequiredService<IOptions<XpSearchIngestionOptions>>().Value;
+            string? key = ApiKeyEndpointFilter.BearerToken(httpContext);
             string partition = key is { Length: >= ApiKeyService.PrefixLength }
                 ? key[..ApiKeyService.PrefixLength]
-                : context.Connection.RemoteIpAddress?.ToString() ?? "anonymous";
+                : httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous";
 
             return RateLimitPartition.GetFixedWindowLimiter(partition, _ => new FixedWindowRateLimiterOptions
             {
@@ -96,7 +104,23 @@ public static class XpSearchIngestionServiceCollectionExtensions
                 Window = options.RateLimitWindow,
                 QueueLimit = 0,
             });
-        };
+        }
+
+        private static ValueTask Reject(OnRejectedContext context, CancellationToken cancellationToken)
+        {
+            var options = context.HttpContext.RequestServices.GetRequiredService<IOptions<XpSearchIngestionOptions>>().Value;
+
+            // The middleware only sets the status code (503 by default) and leaves the hint to the
+            // policy; a fixed window always knows how long the caller has to wait.
+            var retryAfter = context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var hint) ? hint : options.RateLimitWindow;
+
+            context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+            context.HttpContext.Response.Headers.RetryAfter = ((int)Math.Ceiling(Math.Max(1, retryAfter.TotalSeconds)))
+                .ToString(CultureInfo.InvariantCulture);
+
+            return ValueTask.CompletedTask;
+        }
+    }
 }
 
 /// <summary>
