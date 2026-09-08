@@ -223,6 +223,7 @@ internal sealed class ActivityLoggingTests
             clicks,
             journaled.Contexts,
             journaled.Queue,
+            new StaticOptionsMonitor<XpSearchOptions>(new XpSearchOptions()),
             NullLogger<ActivitySearchEventSink>.Instance);
 
         await sink.HandleAsync(
@@ -382,7 +383,7 @@ internal sealed class ActivityLoggingTests
 
         contexts.Set("q-1", new QueryContext("mugs", TestCorpus.IndexName));
 
-        var sink = new ActivitySearchEventSink(activityLogger, contexts, queue, NullLogger<ActivitySearchEventSink>.Instance);
+        var sink = new ActivitySearchEventSink(activityLogger, contexts, queue, Settings(), NullLogger<ActivitySearchEventSink>.Instance);
 
         await sink.HandleAsync(
             new EventRequest { Type = EventType.Click, QueryId = "q-1", ResultId = "doc-1", Position = 2 },
@@ -400,19 +401,95 @@ internal sealed class ActivityLoggingTests
         Assert.That(click.ClickedPosition, Is.EqualTo(2));
     }
 
+    /// <summary>Builds the sink's options; SC-1 reads the event budget and the page size ceiling off them.</summary>
+    private static StaticOptionsMonitor<XpSearchOptions> Settings(XpSearchOptions? options = null) =>
+        new(options ?? new XpSearchOptions());
+
     [Test]
-    public async Task EventSink_WithAnUnknownQueryId_StillRecordsTheEvent()
+    public async Task EventSink_WithAnUnknownQueryId_DropsTheEvent()
     {
         var activityLogger = Substitute.For<ISearchActivityLogger>();
         var queue = new RecordingQueryLogQueue();
-        var sink = new ActivitySearchEventSink(activityLogger, new QueryContextMap(), queue, NullLogger<ActivitySearchEventSink>.Instance);
+        var sink = new ActivitySearchEventSink(activityLogger, new QueryContextMap(), queue, Settings(), NullLogger<ActivitySearchEventSink>.Instance);
 
         await sink.HandleAsync(
             new EventRequest { Type = EventType.Click, QueryId = "gone", ResultId = "doc-1", Position = 1 },
             CancellationToken.None);
 
-        activityLogger.Received(1).LogClick(string.Empty, "doc-1", 1);
+        Assert.That(activityLogger.ReceivedCalls(), Is.Empty);
+        Assert.That(queue.Items, Is.Empty);
+    }
+
+    [Test]
+    public async Task EventSink_BeyondTheQueryIdBudget_DropsTheEvent()
+    {
+        var activityLogger = Substitute.For<ISearchActivityLogger>();
+        var contexts = new QueryContextMap();
+        var queue = new RecordingQueryLogQueue();
+
+        contexts.Set("q-1", new QueryContext("mugs", TestCorpus.IndexName, 10));
+
+        var sink = new ActivitySearchEventSink(
+            activityLogger,
+            contexts,
+            queue,
+            Settings(new XpSearchOptions { MaxEventsPerQuery = 3 }),
+            NullLogger<ActivitySearchEventSink>.Instance);
+
+        for (int i = 0; i < 5; i++)
+        {
+            await sink.HandleAsync(
+                new EventRequest { Type = EventType.Click, QueryId = "q-1", ResultId = "doc-1", Position = 1 },
+                CancellationToken.None);
+        }
+
+        activityLogger.Received(3).LogClick("mugs", "doc-1", 1);
+        Assert.That(queue.Items, Has.Count.EqualTo(3), "the replayed clicks past the budget never reach the popularity signal");
+    }
+
+    [Test]
+    public async Task EventSink_WithAPositionTheSearchNeverShowed_DropsTheEvent()
+    {
+        var activityLogger = Substitute.For<ISearchActivityLogger>();
+        var contexts = new QueryContextMap();
+        var queue = new RecordingQueryLogQueue();
+
+        contexts.Set("q-1", new QueryContext("mugs", TestCorpus.IndexName, 20));
+
+        var sink = new ActivitySearchEventSink(activityLogger, contexts, queue, Settings(), NullLogger<ActivitySearchEventSink>.Instance);
+
+        await sink.HandleAsync(
+            new EventRequest { Type = EventType.Click, QueryId = "q-1", ResultId = "doc-1", Position = 21 },
+            CancellationToken.None);
+        await sink.HandleAsync(
+            new EventRequest { Type = EventType.Click, QueryId = "q-1", ResultId = "doc-1", Position = 20 },
+            CancellationToken.None);
+
+        activityLogger.Received(1).LogClick("mugs", "doc-1", 20);
         Assert.That(queue.Items, Has.Count.EqualTo(1));
+    }
+
+    [Test]
+    public async Task EventSink_WithAQueryOfUnknownPageSize_BoundsThePositionByTheIndexCeiling()
+    {
+        var activityLogger = Substitute.For<ISearchActivityLogger>();
+        var contexts = new QueryContextMap();
+        var queue = new RecordingQueryLogQueue();
+
+        contexts.Set("q-1", new QueryContext("mugs", TestCorpus.IndexName));
+
+        var sink = new ActivitySearchEventSink(
+            activityLogger,
+            contexts,
+            queue,
+            Settings(new XpSearchOptions { MaxPageSize = 25 }),
+            NullLogger<ActivitySearchEventSink>.Instance);
+
+        await sink.HandleAsync(
+            new EventRequest { Type = EventType.Click, QueryId = "q-1", ResultId = "doc-1", Position = 26 },
+            CancellationToken.None);
+
+        Assert.That(queue.Items, Is.Empty);
     }
 
     [Test]
