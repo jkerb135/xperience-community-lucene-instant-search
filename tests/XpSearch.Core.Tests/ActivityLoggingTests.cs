@@ -157,6 +157,20 @@ internal sealed class ActivityLoggingTests
     }
 
     /// <summary>
+    /// A quoted phrase (PH-1) reaches the journal verbatim: reports and the suggestion miner group by
+    /// what the visitor typed, and "french press" is not the same search as french press.
+    /// </summary>
+    [Test]
+    public async Task AQuotedQuery_IsJournaledWithItsQuotes()
+    {
+        var journaled = BuildJournaled();
+
+        await journaled.Pipeline.ExecuteAsync(TestHarness.Request("\"French Press\""), CancellationToken.None);
+
+        Assert.That(journaled.Queue.Items.Single().Entry!.QueryText, Is.EqualTo("\"french press\""));
+    }
+
+    /// <summary>
     /// The defect this seam exists for: a search answered from the cache never enters the pipeline, so
     /// while the logging lived in a stage it was invisible to the analytics and its clicks could not be
     /// attributed.

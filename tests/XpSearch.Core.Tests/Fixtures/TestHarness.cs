@@ -110,10 +110,11 @@ internal sealed class TestHarness : IDisposable
         IRelevanceTuningSource? tuning = null,
         TimeProvider? time = null,
         bool typoTolerance = false,
+        IEnumerable<TestDocument>? documents = null,
         params ISearchStage[] extraStages)
     {
         Options = options ?? new XpSearchOptions();
-        Index = new TestSearchIndex(TestCorpus.IndexName, TestCorpus.Documents, withTaxonomy);
+        Index = new TestSearchIndex(TestCorpus.IndexName, documents ?? TestCorpus.Documents, withTaxonomy);
 
         var wrapped = new StaticOptionsMonitor<XpSearchOptions>(Options);
         var perIndex = new PerIndexSettings(Options);
