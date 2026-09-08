@@ -459,17 +459,22 @@ and how to lift it.
 
 ## `health` in `XpSearchIndexer.GetStatusAsync` (`XpSearch.Ingestion`)
 
-- **Simplified:** `degraded` is derived from one number, `IIngestionQueue.FailedCount` - the count of
-  work items that threw in `XpSearchIngestionQueueWorker.ProcessItem` without one succeeding since. It
-  used to be derived from the queue length, which made every asynchronous write flip a healthy index to
-  `degraded` until the queue drained (HW-3 §5.2).
-- **Ceiling:** the counter is a static field of the worker, so it is per process and starts at zero
-  after a restart, and work that is *stuck* rather than failing - a queue that never drains because the
-  worker thread is wedged - still reads as `healthy`. A failure followed by an unrelated success also
-  clears it.
+- **Simplified:** `degraded` means "the ingestion log holds an `index` failure row for this index that
+  is less than `XpSearchIndexer.FailureWindow` (5 minutes) old". The row is written by
+  `XpSearchIngestionQueueWorker.ProcessItem` when a work item throws, and the check reads the 20 most
+  recent log entries of the index. It used to be a static counter on the worker, which was only true on
+  the instance that ran the work (WF-1), and before that the queue length, which made every
+  asynchronous write flip a healthy index to `degraded` until the queue drained (HW-3 §5.2).
+- **Ceiling:** nothing writes a "recovered" row, so a healed index keeps reading `degraded` until the
+  last failure ages out of the window - and, symmetrically, a failure older than the window reads
+  `healthy` even if nothing has succeeded since. Work that is *stuck* rather than failing - a queue
+  that never drains because the worker thread is wedged - still reads as `healthy`. The 20-entry
+  lookback can also hide a failure behind a burst of newer API rows on the same index. The *failed
+  writes* number the admin index status page shows is still `IIngestionQueue.FailedCount`, which stays
+  per instance.
 - **Upgrade path:** the real signal is already persisted: `XpSearch_ExternalDocument` rows keep
   `DocumentStatus` and `UpdatedAt`, so an oldest-pending-row query on the store (one extra method on
-  `IExternalDocumentStore`) would report both stuck and failed work across restarts.
+  `IExternalDocumentStore`) would report both stuck and failed work, with no window and no lookback.
 
 ## API key and schema administration in `XpSearch.Ingestion`
 
@@ -555,22 +560,29 @@ and how to lift it.
   `Analytics.QuerySuggestionDays` days of the log, cached per index/prefix/limit for
   `options.CacheTtl`. There is no suggestion index and no precomputed popularity table.
 - **Ceiling:** the first uncached suggestion of a keystroke reads the window's rows; on a busy site
-  with a long window that read is the cost of autocomplete, and the cache is per instance.
+  with a long window that read is the cost of autocomplete. The cache is Xperience's own
+  (`IProgressiveCache`, dependency `xpsearch.querylog|all`, WF-1), so it is farm-safe - but that
+  dependency also means *every* logged search drops every index's suggestion entries, so on a site
+  that logs constantly the cache mostly holds nothing.
 - **Upgrade path:** the same store-level `GROUP BY` as above, or a nightly materialized
   popular-queries table the service reads instead.
 
 ## `QueryContextMap` in `XpSearch.Core/Analytics/QueryContextMap.cs`
 
-- **Simplified:** the `queryId` → query text map that gives click and conversion activities their
-  query is in process memory: 10 000 entries, 30 minutes, oldest dropped when full. It gets one entry
-  per request from `ISearchRequestJournal` (cache hits included, each under its own re-issued
-  `queryId`), so a popular query held in the response cache still consumes an entry per caller.
-- **Ceiling:** behind a load balancer, or after an application restart, a click whose search was
-  answered elsewhere logs its activity with an empty query part. The clicked position still reaches
-  the query log, because that lookup is by `LogQueryID` in the database, so click-through reports are
-  unaffected.
-- **Upgrade path:** back the map with Xperience's cache (or a distributed cache) behind the same
-  `IQueryContextMap` interface.
+- **Simplified:** the first tier of the `queryId` → query text map that gives click and conversion
+  activities their query is in process memory: 10 000 entries, 30 minutes, oldest dropped when full. It
+  gets one entry per request from `ISearchRequestJournal` (cache hits included, each under its own
+  re-issued `queryId`), so a popular query held in the response cache still consumes an entry per
+  caller. On a miss, `GetAsync` reads the query log row by `queryId` (WF-1); a row read that way is not
+  put into the local tier, so repeated events for one search answered elsewhere are repeated selects.
+- **Ceiling:** the second tier only sees rows the log queue has drained (up to 10 s). A
+  cross-instance click inside that window, and any click after the retention task has pruned the row,
+  still logs its activity with an empty query part. The clicked position reaches the query log
+  regardless, because that lookup is by `LogQueryID` in the database, so click-through reports are
+  unaffected. `Get` (sync) is still local-only - `ISearchRequestJournal.Record` is a synchronous
+  interface, so its duplicate check does not reach the database.
+- **Upgrade path:** keep the second tier's hits in the local map, or make the journal asynchronous so
+  its duplicate check uses both tiers too.
 
 ## Queued query log rows are not durable
 
@@ -1000,19 +1012,21 @@ and how to lift it.
   arrives with routing enabled. Either is a contract change to shareable URLs, so it waits for a
   project that actually places two searches on a page.
 
-## The first-load journal handoff is per application instance, in `SearchRequestJournal.Record`
+## The first-load journal handoff dedupes the row, not the activity, in `SearchRequestJournal.Record`
 
 - **Simplified:** the results widget hands its server-rendered `queryId` to the client
-  (`initialQueryId`), the client sends it on its first query, and the journal drops a `queryId` it has
-  already recorded - the check is `IQueryContextMap.Get`, the same in-process map clicks resolve their
-  query text through (10 000 entries, 30 minutes).
-- **Ceiling:** behind a load balancer, or after an application restart between the two requests, the
-  hydration query lands where the id was never recorded and the page load produces its second query
-  log row again - the pre-PB-6 behaviour for that request. An id that has aged out of the map (a page
-  left open for over 30 minutes before the bundle ran) does the same.
-- **Upgrade path:** make the write idempotent in the database instead: have `InfoQueryLogStore.
-  AppendAsync` update the row with that `LogQueryID` when one exists rather than insert. It costs a
-  SELECT per logged search on the queue worker, which is why the in-memory check came first.
+  (`initialQueryId`), the client sends it on its first query, and the duplicate is dropped twice over:
+  the journal drops a `queryId` its in-process map already holds, and `InfoQueryLogStore.AppendAsync`
+  refuses to insert a row for a `LogQueryID` that already exists (WF-1). The second check is a SELECT
+  per logged search, on the queue worker's thread rather than on the search path.
+- **Ceiling:** the *query log row* is deduplicated across instances now, but the **search activity**
+  is not: behind a load balancer the hydration query lands where the id was never recorded, the
+  in-memory check misses, and `SearchActivityLogger.LogSearch` writes a second `xpsearch_search`
+  activity for that page load. Two instances draining their queues at the same instant can also both
+  see "no row" and insert one each. An id that has aged out of the map does the same as before.
+- **Upgrade path:** a unique index on `LogQueryID` would close the drain race - the second insert
+  would fail instead of duplicating; the activity needs the journal's duplicate check to reach the
+  database, which means making `ISearchRequestJournal.Record` asynchronous.
 
 ## The Results widget's field selectors list every index, in `IndexFieldSelectorDataProvider`
 

@@ -239,3 +239,50 @@ If you do move, the search contract this library exposes is deliberately its own
 [Migrating from Algolia](migrating-from-algolia.md) for how a contract-level migration reads): the
 widgets, the JSON API and the admin tuning are the parts your site is built on, and they are not
 Lucene-specific.
+
+### Supported hosting
+
+| Target | Supported | Notes |
+|---|---|---|
+| Self-hosted, single instance | Yes | The measured configuration. Everything on this page applies as written. |
+| Self-hosted web farm (several instances, one database) | Yes | With the storage caveat above and the notes below: analytics, caches and index health are farm-safe; two windows are not. |
+| Xperience by Kentico SaaS | **Unverified** | Not tested. See [ADR-0004](../adr/0004-saas-index-storage.md), which lists exactly what a verification would run. Nothing is designed to fail there; the claim is simply not made. |
+
+### What is farm-safe behind a load balancer, and what is not
+
+Every instance answers searches from its own copy of the index (or from shared storage, above), and
+they all read and write one database. That split decides what agrees across instances:
+
+**Farm-safe:**
+
+- **The response cache and every tuning cache.** They are Xperience's own `IProgressiveCache` with
+  dummy-key dependencies, so publishing a synonym, a rule, a stop-word list or an index setting drops
+  the affected entries on every instance, not just the one the editor happened to hit.
+- **Query suggestions.** The autocomplete popularity cache depends on the query log's dummy key, so a
+  newly logged search invalidates it farm-wide instead of leaving each instance stale until its own
+  TTL runs out.
+- **Click and conversion attribution.** The `queryId` → query mapping is looked up in the instance's
+  memory first and in the query log row second, so a click that lands on the instance which did not
+  answer the search still resolves its query text and still records its position.
+- **The first-load handoff.** The server-rendered first paint hands its `queryId` to the client and
+  the client repeats it; the query log refuses a second row for a `queryId` it already holds, so the
+  page load counts as one search wherever the hydration query lands.
+- **Index health.** `/status` derives `degraded` from failed background index work recorded in the
+  ingestion log, so every instance reports the same health.
+- **Scheduled work** (analytics retention, popularity aggregation, synonym mining). Xperience runs a
+  scheduled task on one instance; the tasks are idempotent if one runs twice.
+
+**Not farm-safe — know these two windows:**
+
+- **The query log drain window (~10 s).** Logged searches are queued in memory and written by a
+  background worker every 10 seconds. A click that arrives on *another* instance within that window
+  finds neither the local map nor a row yet: the click is still recorded, and its position still
+  reaches the query log, but its activity carries no query text. A click that fast on a different
+  instance is rare; the trade is that logging never blocks a search response.
+- **The ingestion API's rate limit is per instance.** `AddXpSearchIngestion` registers ASP.NET's
+  fixed-window limiter, which counts in the instance's own memory, so the effective ceiling is the
+  configured limit times the number of instances. Put a shared limit in front of the application if
+  the number has to be exact.
+
+One more per-instance number, in the admin UI rather than in the API: the *failed writes* figure on
+the index status page is that instance's counter. The health badge beside it is the shared one.

@@ -65,10 +65,16 @@ POST /api/xpsearch/events
 { "type": "click", "queryId": "1b2c…", "resultId": "abc-en", "position": 3 }
 ```
 
-`ActivitySearchEventSink` resolves the query text behind that `queryId` from `IQueryContextMap`, an
-in-memory map the journal fills. It holds at most 10 000 entries for 30 minutes, per application
-instance — an event whose id is unknown (expired, or answered by another instance behind a load
-balancer) is still recorded, only with an empty query.
+`ActivitySearchEventSink` resolves the query text behind that `queryId` from `IQueryContextMap`,
+which looks in two places: the instance's own in-memory map (at most 10 000 entries for 30 minutes),
+and then the query log row that search wrote — the row is keyed by the same `queryId`. That second
+tier is what makes attribution work behind a load balancer: a click that lands on an instance which
+never answered the search still names the query.
+
+The one gap is the drain window. Query log rows are queued in memory and written every 10 seconds
+(below), so a *cross-instance* click that arrives before the row is written finds neither tier. The
+event is still recorded, only with an empty query, and its clicked position still reaches the query
+log. See [Performance and sizing](performance-and-sizing.md#what-is-farm-safe-behind-a-load-balancer-and-what-is-not).
 
 ### Consent
 

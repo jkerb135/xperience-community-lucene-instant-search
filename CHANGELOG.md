@@ -12,6 +12,34 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Breaking (core):** `IQueryContextMap` gained `GetAsync` and `IQueryLogStore` gained
+  `GetByQueryIdAsync`, so a custom implementation of either has to add one method; `AppendAsync` is now
+  expected to ignore an entry whose `queryId` is already logged. `QuerySuggestionService`'s constructor
+  takes an `IProgressiveCache`. Registered implementations and every documented usage are unaffected
+  (WF-1).
+- **Changed (core):** analytics state that used to be per application instance is now shared, so a
+  web farm behaves like one site (WF-1). `IQueryContextMap` gained `GetAsync`, and the default
+  implementation is two-tier: the instance's own map first, then the query log row that search wrote
+  (`IQueryLogStore.GetByQueryIdAsync`, new) - a click that lands on the instance which did not answer
+  the search now resolves its query text. `QuerySuggestionService` caches in `IProgressiveCache` with a
+  dependency on `xpsearch.querylog|all` instead of a private dictionary, so a newly logged search
+  drops the autocomplete cache farm-wide; `XpSearchQueryLogInfo` sets `TouchCacheDependencies` for it.
+  `IQueryLogStore.AppendAsync` refuses a second row for a `queryId` it already holds, which is what
+  makes the server-rendered first paint's handoff to the client count once across instances. The
+  remaining window is the ~10 s query log drain, documented in
+  `docs/guides/performance-and-sizing.md`. `QueryContext` carries `ResultCount`.
+- **Changed (ingestion):** an index's `health` is read from the ingestion log rather than from a
+  static counter on the queue worker (WF-1). Background work that fails to reach Lucene is now
+  recorded as an `index` operation, and `GET indexes/{index}/status` reports `degraded` while such a
+  row is less than five minutes old - the same answer on every instance, where the counter was only
+  true on the one that ran the work. An index that has recovered reads `degraded` until the window
+  passes.
+- **Docs:** ADR-0004 (SaaS index storage) is decided: **Xperience by Kentico SaaS is not a verified
+  target**, the supported targets are self-hosted single instance and self-hosted web farms, and the
+  ADR lists exactly what a SaaS verification would test. `performance-and-sizing.md` gained a
+  **Supported hosting** table and a section on what is farm-safe behind a load balancer and what is
+  not; the analytics and ingestion guides say what changed under them.
+
 - **Added (widgets):** the last three JavaScript-only options now have a C# surface, so the canonical
   plain-HTML recipe copies into Razor and the Page Builder without losing anything (RZ-2).
   `<xps-pagination>` takes `padding`, `show-first` and `show-last`; `<xps-active-filters>` takes
