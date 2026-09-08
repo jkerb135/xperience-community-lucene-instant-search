@@ -1,4 +1,4 @@
-using Kentico.Xperience.Lucene.Core;
+﻿using Kentico.Xperience.Lucene.Core;
 using Kentico.Xperience.Lucene.Core.Indexing;
 
 using Lucene.Net.Analysis;
@@ -76,6 +76,9 @@ internal sealed class TestLuceneIndex : ILuceneIndexAccessor, ILuceneClient, IDi
     public Analyzer GetAnalyzer(string indexName) => analyzer;
 
     public IReadOnlyList<string> IndexNamesForStrategy(Type strategyType) => [IndexName];
+
+    public Task<IndexDefinition> GetDefinitionAsync(string indexName, CancellationToken cancellationToken) =>
+        Task.FromResult(new IndexDefinition(IndexName, [], [], [], []));
 
     public FacetsConfig? GetFacetsConfig(string indexName) => config;
 

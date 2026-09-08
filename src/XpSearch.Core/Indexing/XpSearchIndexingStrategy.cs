@@ -155,6 +155,68 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
         return facetsConfig;
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// When the changed item's content type is flattened into a page by an
+    /// <see cref="XpSearchIndexingOptions.FlattenLinkedItems"/> registration, the pages that carry its
+    /// fields are reindexed: every web page item of the registration's content type that links the
+    /// changed item through the registration's field, in every channel and language the indexes this
+    /// strategy serves cover. Anything else keeps the base behaviour, which reindexes the changed item
+    /// itself.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="changedItem"/> is <see langword="null"/>.</exception>
+    public override async Task<IEnumerable<IIndexEventItemModel>> FindItemsToReindex(IndexEventReusableItemModel changedItem)
+    {
+        ArgumentNullException.ThrowIfNull(changedItem);
+
+        var links = options.FlattenedLinksTo(changedItem.ContentTypeName);
+
+        if (links.Count == 0)
+        {
+            return await base.FindItemsToReindex(changedItem).ConfigureAwait(false);
+        }
+
+        // The same page can be reached from two indexes, two registrations or two channels; the pair
+        // (page, language) is one document, so it is what de-duplicates.
+        var pages = new Dictionary<(Guid ItemGuid, string LanguageName), IIndexEventItemModel>();
+
+        foreach (string indexName in accessor.IndexNamesForStrategy(GetType()))
+        {
+            IndexDefinition definition;
+
+            try
+            {
+                definition = await accessor.GetDefinitionAsync(indexName, CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (Exception exception)
+            {
+                logger.LogError(
+                    exception,
+                    "The definition of index {Index} could not be read, so the pages flattening {ContentType} {ItemGuid} are not reindexed.",
+                    indexName,
+                    changedItem.ContentTypeName,
+                    changedItem.ItemGuid);
+
+                continue;
+            }
+
+            foreach (var link in links)
+            {
+                foreach (string channelName in definition.WebsiteChannelNames)
+                {
+                    // Every language variant, not just the changed item's: a page variant may show
+                    // this item through language fallback, and each variant is its own document.
+                    foreach (string languageName in definition.LanguageNames)
+                    {
+                        await CollectLinkingPages(pages, link, changedItem, channelName, languageName).ConfigureAwait(false);
+                    }
+                }
+            }
+        }
+
+        return pages.Values;
+    }
+
     /// <summary>
     /// Adds anything the auto-detected mapping cannot know about to the document of one item. The base
     /// implementation does nothing.
@@ -603,6 +665,77 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
             // document; FacetsConfig.Build throws otherwise. Single-valued dimensions lose nothing by
             // being declared multi-valued - counting reads the taxonomy either way.
             facetsConfig.SetMultiValued(dimension, true);
+        }
+    }
+
+    /// <summary>
+    /// Adds every page of one registration that links the changed item, in one channel and language.
+    /// </summary>
+    /// <remarks>
+    /// <c>Linking(referenceFieldName, items)</c> is the documented lookup from a linked item back to
+    /// the items that reference it -
+    /// https://docs.kentico.com/documentation/developers-and-admins/api/content-item-api/reference-content-item-query -
+    /// and takes content item identifiers, which is what a reusable-item event carries. <c>ForWebsite</c>
+    /// is what makes the web page columns the event model is built from available at all.
+    /// A query that fails is logged and skipped: this runs on the event thread, and one unreachable
+    /// channel must not cost the other pages their update.
+    /// </remarks>
+    private async Task CollectLinkingPages(
+        Dictionary<(Guid ItemGuid, string LanguageName), IIndexEventItemModel> pages,
+        FlattenedLink link,
+        IndexEventReusableItemModel changedItem,
+        string channelName,
+        string languageName)
+    {
+        var builder = new ContentItemQueryBuilder();
+
+        builder.ForContentType(
+            link.ContentTypeName,
+            config => config
+                .ForWebsite(channelName)
+                .Linking(link.LinkedFieldName, [changedItem.ItemID]));
+
+        builder.InLanguage(languageName);
+
+        IEnumerable<IWebPageContentQueryDataContainer> found;
+
+        try
+        {
+            found = await executor
+                .GetWebPageResult(builder, container => container, cancellationToken: CancellationToken.None)
+                .ConfigureAwait(false);
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(
+                exception,
+                "The pages of {ContentType} linking {LinkedContentType} {ItemGuid} through {FieldName} could not be loaded "
+                + "for channel {Channel} in {Language}; they are not reindexed.",
+                link.ContentTypeName,
+                changedItem.ContentTypeName,
+                changedItem.ItemGuid,
+                link.LinkedFieldName,
+                channelName,
+                languageName);
+
+            return;
+        }
+
+        foreach (var page in found)
+        {
+            pages[(page.WebPageItemGUID, languageName)] = new IndexEventWebPageItemModel(
+                page.WebPageItemID,
+                page.WebPageItemGUID,
+                languageName,
+                link.ContentTypeName,
+                page.WebPageItemName,
+                page.ContentItemIsSecured,
+                page.ContentItemContentTypeID,
+                page.ContentItemCommonDataContentLanguageID,
+                channelName,
+                page.WebPageItemTreePath,
+                page.WebPageItemOrder,
+                page.WebPageItemParentID);
         }
     }
 

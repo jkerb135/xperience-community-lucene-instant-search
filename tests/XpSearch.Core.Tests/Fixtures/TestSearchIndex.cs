@@ -57,6 +57,9 @@ internal sealed class TestSearchIndex : ILuceneIndexAccessor, IDisposable
 
     public IReadOnlyList<string> IndexNamesForStrategy(Type strategyType) => [indexName];
 
+    public Task<IndexDefinition> GetDefinitionAsync(string name, CancellationToken cancellationToken) =>
+        Task.FromResult(new IndexDefinition(indexName, [], [], [], []));
+
     public FacetsConfig? GetFacetsConfig(string name) => withTaxonomy ? config : null;
 
     public void Invalidate(string name)
