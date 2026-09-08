@@ -69,6 +69,25 @@ public sealed class XpSearchIndexingOptions
     public IReadOnlyList<FlattenedLink> FlattenedLinksOf(string contentTypeName) =>
         [.. flattened.Where(link => string.Equals(link.ContentTypeName, contentTypeName, StringComparison.OrdinalIgnoreCase))];
 
+    /// <summary>Gets the registrations that flatten a linked content type, in registration order.</summary>
+    /// <param name="linkedContentTypeName">Class name of the linked content type, as named in a <see cref="FlattenLinkedItems"/> call.</param>
+    /// <returns>The registrations, empty when no registration lists that type.</returns>
+    /// <remarks>
+    /// This is the reverse of <see cref="FlattenedLinksOf"/>: it answers "an item of this type changed -
+    /// which pages carry its fields", which is what
+    /// <see cref="XpSearchIndexingStrategy.FindItemsToReindex(Kentico.Xperience.Lucene.Core.Indexing.IndexEventReusableItemModel)"/>
+    /// needs.
+    /// </remarks>
+    public IReadOnlyList<FlattenedLink> FlattenedLinksTo(string linkedContentTypeName) =>
+    [
+        .. flattened.Where(link => link.LinkedContentTypeNames
+            .Any(name => string.Equals(name, linkedContentTypeName, StringComparison.OrdinalIgnoreCase)))
+    ];
+
+    /// <summary>Gets every flatten registration, in registration order.</summary>
+    /// <returns>The registrations.</returns>
+    public IReadOnlyList<FlattenedLink> FlattenedLinks() => [.. flattened];
+
     /// <summary>
     /// Declares a field auto-detection cannot know about, so that a value written for it from
     /// <see cref="XpSearchIndexingStrategy.ContributeAsync"/> is part of the index schema - and

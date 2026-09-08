@@ -41,6 +41,22 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
   changes its results unless it was quoted. A phrase is never fuzzed by
   [typo tolerance](docs/guides/relevance-tuning.md#typo-tolerance), never synonym-expanded and never
   stripped by a stopword list - the index analyzer alone decides what its words mean (PH-1).
+- **Added (core):** editing a linked reusable item now reindexes the pages that flatten it (IX-2).
+  `XpSearchIndexingStrategy` overrides `FindItemsToReindex(IndexEventReusableItemModel)`: a changed item
+  whose content type is named in a `FlattenLinkedItems` registration reindexes every page of that
+  registration's content type linking it through the registration's field, in every channel and language
+  the strategy's indexes cover, de-duplicated per (page, language). Anything else keeps the base
+  behaviour. A flattened relationship no longer needs a hand-written override - Dancing Goat's is now
+  redundant. For the events to arrive at all, the index definition must list every flattened linked type
+  under **Reusable content types**; when it does not, one warning per index and type is logged at startup
+  naming the registration to fix, and the index configuration is never edited for you. See
+  [Indexing strategy](docs/guides/indexing-strategy.md#linked-items).
+- **Breaking (core):** `ILuceneIndexAccessor` has a new member, `GetDefinitionAsync(indexName,
+  cancellationToken)`, returning an index's stored channels, languages, web page content types and
+  reusable content types - the channels and languages the reindex above needs, which
+  `LuceneIndex.ChannelConfigurations` keeps internal. Source-breaking for a custom implementation of the
+  seam only; nothing else changed on it. `XpSearchIndexingOptions` also gained `FlattenedLinksTo` and
+  `FlattenedLinks`, which read the flatten registrations from the linked type's side.
 
 - **Added (widgets):** the last three JavaScript-only options now have a C# surface, so the canonical
   plain-HTML recipe copies into Razor and the Page Builder without losing anything (RZ-2).

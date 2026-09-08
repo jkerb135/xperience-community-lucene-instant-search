@@ -93,6 +93,10 @@ public static class XpSearchServiceCollectionExtensions
         services.TryAddSingleton<ISearchEventSink, ActivitySearchEventSink>();
         services.TryAddSingleton<XpSearchIndexingStrategy>();
 
+        // IX-2: a flattened linked type the index does not watch gets no event, so the pages that
+        // carry its fields would go stale silently. Checked once, at application start.
+        services.TryAddSingleton<FlattenedLinkRegistrationCheck>();
+
         // Core works without XpSearch.Admin (spec §2.2): the tuning stages run against an empty
         // source until AddXpSearchAdmin() replaces it with the cached, database-backed one.
         services.TryAddSingleton<IRelevanceTuningSource, EmptyRelevanceTuningSource>();

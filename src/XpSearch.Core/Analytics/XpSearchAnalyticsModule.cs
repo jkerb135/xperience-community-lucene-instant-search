@@ -53,5 +53,10 @@ public class XpSearchAnalyticsModule : Module
 
         // AR-2: from here on, saving an index's settings row drops that index's cached options instance.
         services!.GetService<Options.XpSearchIndexSettingsInvalidator>()?.Start();
+
+        // IX-2: warns about a flattened linked content type no index watches. Blocking here is the
+        // same trade the installers above make - startup is the only moment the check is worth
+        // anything, and there is no synchronization context to deadlock against.
+        services!.GetService<Indexing.FlattenedLinkRegistrationCheck>()?.RunAsync(CancellationToken.None).GetAwaiter().GetResult();
     }
 }

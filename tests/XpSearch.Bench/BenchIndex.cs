@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 
 using Kentico.Xperience.Lucene.Core;
 
@@ -85,6 +85,9 @@ internal sealed class BenchIndex : ILuceneIndexAccessor, IDisposable
     public Analyzer GetAnalyzer(string name) => analyzer;
 
     public IReadOnlyList<string> IndexNamesForStrategy(Type strategyType) => [IndexName];
+
+    public Task<IndexDefinition> GetDefinitionAsync(string name, CancellationToken cancellationToken) =>
+        Task.FromResult(new IndexDefinition(IndexName, [], [], [], []));
 
     public FacetsConfig? GetFacetsConfig(string name) => config;
 
