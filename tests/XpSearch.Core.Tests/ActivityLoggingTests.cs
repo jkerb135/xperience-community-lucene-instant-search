@@ -419,7 +419,7 @@ internal sealed class ActivityLoggingTests
     public void QueryContextMap_ForgetsAnEntryOnceItIsOlderThanItsRetention()
     {
         var now = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc);
-        var map = new QueryContextMap(() => now);
+        var map = new QueryContextMap(null, () => now);
 
         map.Set("q-1", new QueryContext("mugs", "TestIndex"));
 
@@ -428,5 +428,102 @@ internal sealed class ActivityLoggingTests
         now = now.Add(QueryContextMap.Retention).AddMinutes(1);
 
         Assert.That(map.Get("q-1"), Is.Null);
+    }
+
+    /// <summary>
+    /// The second tier (WF-1): what the local map has never seen - because another instance of the web
+    /// farm answered the search - is resolved from the query log row that search wrote.
+    /// </summary>
+    [Test]
+    public async Task QueryContextMap_ResolvesAQueryIdItNeverSaw_FromTheQueryLog()
+    {
+        var store = new InMemoryQueryLogStore();
+        var map = new QueryContextMap(store);
+
+        await store.AppendAsync(
+            new QueryLogEntry("elsewhere", TestCorpus.IndexName, "mugs", 7, DateTime.UtcNow, "Store", "en", 3),
+            CancellationToken.None);
+
+        map.Set("here", new QueryContext("kettle", TestCorpus.IndexName));
+
+        var local = await map.GetAsync("here", CancellationToken.None);
+        var remote = await map.GetAsync("elsewhere", CancellationToken.None);
+        var unknown = await map.GetAsync("neither", CancellationToken.None);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(local?.Query, Is.EqualTo("kettle"), "the local tier answers first");
+            Assert.That(remote?.Query, Is.EqualTo("mugs"));
+            Assert.That(remote?.IndexName, Is.EqualTo(TestCorpus.IndexName));
+            Assert.That(remote?.ResultCount, Is.EqualTo(7), "the row carries what the search found (SC-1)");
+            Assert.That(unknown, Is.Null, "a miss in both tiers is still a miss");
+        });
+    }
+
+    /// <summary>
+    /// The sink goes through the two-tier lookup, so a click that lands on the instance which did not
+    /// answer the search still names the query on its activity (WF-1).
+    /// </summary>
+    [Test]
+    public async Task EventSink_ResolvesTheQueryOfASearchAnsweredByAnotherInstance()
+    {
+        var activityLogger = Substitute.For<ISearchActivityLogger>();
+        var store = new InMemoryQueryLogStore();
+        var queue = new RecordingQueryLogQueue();
+
+        await store.AppendAsync(
+            new QueryLogEntry("q-2", TestCorpus.IndexName, "mugs", 7, DateTime.UtcNow, "Store", "en", 3),
+            CancellationToken.None);
+
+        var sink = new ActivitySearchEventSink(
+            activityLogger,
+            new QueryContextMap(store),
+            queue,
+            NullLogger<ActivitySearchEventSink>.Instance);
+
+        await sink.HandleAsync(
+            new EventRequest { Type = EventType.Click, QueryId = "q-2", ResultId = "doc-1", Position = 2 },
+            CancellationToken.None);
+
+        activityLogger.Received(1).LogClick("mugs", "doc-1", 2);
+    }
+
+    /// <summary>
+    /// The lookup now reaches the database, so its failure must cost the event nothing but the query
+    /// text.
+    /// </summary>
+    [Test]
+    public async Task EventSink_WhenTheQueryLogLookupThrows_StillRecordsTheEvent()
+    {
+        var activityLogger = Substitute.For<ISearchActivityLogger>();
+        var queue = new RecordingQueryLogQueue();
+        var contexts = Substitute.For<IQueryContextMap>();
+        contexts.GetAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns<Task<QueryContext?>>(_ => throw new InvalidOperationException("the database is down"));
+
+        var sink = new ActivitySearchEventSink(activityLogger, contexts, queue, NullLogger<ActivitySearchEventSink>.Instance);
+
+        await sink.HandleAsync(
+            new EventRequest { Type = EventType.Click, QueryId = "q-3", ResultId = "doc-1", Position = 1 },
+            CancellationToken.None);
+
+        activityLogger.Received(1).LogClick(string.Empty, "doc-1", 1);
+        Assert.That(queue.Items, Has.Count.EqualTo(1));
+    }
+
+    /// <summary>
+    /// The cross-instance half of the first-load handoff (WF-1): the journal's in-memory check only
+    /// covers the instance that rendered, so the store refuses the duplicate row itself.
+    /// </summary>
+    [Test]
+    public async Task QueryLog_RefusesASecondRowForAQueryIdItAlreadyHolds()
+    {
+        var store = new InMemoryQueryLogStore();
+        var row = new QueryLogEntry("q-4", TestCorpus.IndexName, "mugs", 7, DateTime.UtcNow, "Store", "en", 3);
+
+        await store.AppendAsync(row, CancellationToken.None);
+        await store.AppendAsync(row with { ProcessingTimeMs = 9 }, CancellationToken.None);
+
+        Assert.That(store.Rows, Has.Count.EqualTo(1));
     }
 }

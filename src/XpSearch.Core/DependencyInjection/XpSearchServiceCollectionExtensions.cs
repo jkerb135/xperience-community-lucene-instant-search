@@ -108,7 +108,10 @@ public static class XpSearchServiceCollectionExtensions
 
         // Analytics (spec §9). The activity logger is consent-gated; the query log is not.
         services.TryAddSingleton<ISearchActivityLogger, SearchActivityLogger>();
-        services.TryAddSingleton<IQueryContextMap, QueryContextMap>();
+        // Two tiers behind one seam: the instance's own memory, then the query log row the search
+        // wrote, so an event that lands on another instance of a web farm still resolves (WF-1).
+        services.TryAddSingleton<IQueryContextMap>(provider =>
+            new QueryContextMap(provider.GetRequiredService<IQueryLogStore>()));
         services.TryAddSingleton<IQueryLogStore, InfoQueryLogStore>();
         services.TryAddSingleton<IQueryLogQueue, ThreadQueueQueryLogQueue>();
         services.TryAddSingleton<ISearchRequestJournal, SearchRequestJournal>();

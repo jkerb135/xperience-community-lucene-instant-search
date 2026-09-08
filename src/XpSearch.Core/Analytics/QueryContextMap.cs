@@ -5,7 +5,8 @@ namespace XpSearch.Core.Analytics;
 /// <summary>What a search with a given <c>queryId</c> was.</summary>
 /// <param name="Query">The normalized query text.</param>
 /// <param name="IndexName">Code name of the index that was searched.</param>
-public sealed record QueryContext(string Query, string IndexName);
+/// <param name="ResultCount">How many documents the search matched, or zero when it is not known.</param>
+public sealed record QueryContext(string Query, string IndexName, int ResultCount = 0);
 
 /// <summary>
 /// Remembers what each <c>queryId</c> searched for, so a later click or conversion event can be
@@ -18,20 +19,38 @@ public interface IQueryContextMap
     /// <param name="context">What was searched.</param>
     void Set(string queryId, QueryContext context);
 
-    /// <summary>Looks a <c>queryId</c> up.</summary>
+    /// <summary>Looks a <c>queryId</c> up in this instance's own memory.</summary>
     /// <param name="queryId">Correlation id received on an event.</param>
     /// <returns>What was searched, or <see langword="null"/> when the id is unknown or has expired.</returns>
     QueryContext? Get(string queryId);
+
+    /// <summary>
+    /// Looks a <c>queryId</c> up in this instance's memory and, on a miss, in the query log - which is
+    /// what makes an event that lands on another instance of a web farm resolvable (WF-1).
+    /// </summary>
+    /// <param name="queryId">Correlation id received on an event.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>What was searched, or <see langword="null"/> when the id is unknown or has expired.</returns>
+    Task<QueryContext?> GetAsync(string queryId, CancellationToken cancellationToken);
 }
 
 /// <summary>
 /// The default <see cref="IQueryContextMap"/>: an in-memory map bounded by both age and size.
 /// </summary>
 /// <remarks>
-/// Entries live for <see cref="Retention"/> (30 minutes) and the map holds at most
-/// <see cref="Capacity"/> (10 000) of them; when it is full the oldest entries are dropped. The map is
-/// per application instance, so on a load-balanced site an event that lands on another instance
-/// resolves no query text - the event is still recorded, only without the query (ADR-0015).
+/// <para>
+/// Two tiers. Entries live in memory for <see cref="Retention"/> (30 minutes) and the map holds at most
+/// <see cref="Capacity"/> (10 000) of them; when it is full the oldest entries are dropped. That tier
+/// is per application instance, so <see cref="GetAsync"/> falls back to the query log row the search
+/// wrote - it is keyed by the same <c>queryId</c> and carries the query text, the index and the result
+/// count - which is how an event that lands on another instance of a web farm still resolves its query
+/// (WF-1, ADR-0015).
+/// </para>
+/// <para>
+/// The fallback only sees rows the log queue has already drained (up to 10 s, see
+/// <see cref="XpSearchQueryLogQueueWorker"/>), so a cross-instance click within that window still
+/// resolves nothing: the event is recorded without the query.
+/// </para>
 /// </remarks>
 public sealed class QueryContextMap : IQueryContextMap
 {
@@ -42,20 +61,28 @@ public sealed class QueryContextMap : IQueryContextMap
     public const int Capacity = 10_000;
 
     private readonly ConcurrentDictionary<string, Entry> entries = new(StringComparer.Ordinal);
+    private readonly IQueryLogStore? store;
     private readonly Func<DateTime> clock;
 
     /// <summary>Initializes a new instance of the <see cref="QueryContextMap"/> class.</summary>
-    public QueryContextMap()
-        : this(() => DateTime.UtcNow)
+    /// <param name="store">
+    /// The query log the second tier reads, or <see langword="null"/> for a memory-only map.
+    /// </param>
+    public QueryContextMap(IQueryLogStore? store = null)
+        : this(store, () => DateTime.UtcNow)
     {
     }
 
     /// <summary>Initializes a new instance of the <see cref="QueryContextMap"/> class with a clock.</summary>
+    /// <param name="store">
+    /// The query log the second tier reads, or <see langword="null"/> for a memory-only map.
+    /// </param>
     /// <param name="clock">Supplies the current UTC time; tests use it to age entries.</param>
-    public QueryContextMap(Func<DateTime> clock)
+    public QueryContextMap(IQueryLogStore? store, Func<DateTime> clock)
     {
         ArgumentNullException.ThrowIfNull(clock);
 
+        this.store = store;
         this.clock = clock;
     }
 
@@ -91,6 +118,24 @@ public sealed class QueryContextMap : IQueryContextMap
         }
 
         return entry.Context;
+    }
+
+    /// <inheritdoc />
+    public async Task<QueryContext?> GetAsync(string queryId, CancellationToken cancellationToken)
+    {
+        if (Get(queryId) is { } local)
+        {
+            return local;
+        }
+
+        if (store is null || string.IsNullOrWhiteSpace(queryId))
+        {
+            return null;
+        }
+
+        var row = await store.GetByQueryIdAsync(queryId, cancellationToken).ConfigureAwait(false);
+
+        return row is null ? null : new QueryContext(row.QueryText, row.IndexName, row.ResultCount);
     }
 
     private void Trim(DateTime now)

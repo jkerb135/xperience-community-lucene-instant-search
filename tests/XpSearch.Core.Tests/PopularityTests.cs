@@ -380,7 +380,7 @@ internal sealed class PopularityTests
             CancellationToken.None);
 
     private static QueryLogEntry Search(string query) =>
-        new("q", TestCorpus.IndexName, query, 3, DateTime.UtcNow, "Store", "en", 12);
+        new(Guid.NewGuid().ToString("N"), TestCorpus.IndexName, query, 3, DateTime.UtcNow, "Store", "en", 12);
 
     private static QueryLogEntry Click(string query, string documentId, int position) =>
         Search(query) with { ClickedPosition = position, ClickedResultId = documentId };

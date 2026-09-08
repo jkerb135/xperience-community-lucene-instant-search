@@ -117,7 +117,8 @@ internal sealed class SearchAnalyticsTests
     {
         var now = Day.AddDays(3);
         var options = new XpSearchOptions();
-        var service = new QuerySuggestionService(store, new PerIndexSettings(options), () => now);
+        var cache = new FakeProgressiveCache(() => now);
+        var service = new QuerySuggestionService(store, new PerIndexSettings(options), cache, () => now, FakeProgressiveCache.Dependency);
 
         var before = await service.SuggestAsync(TestCorpus.IndexName, "k", 10, CancellationToken.None);
 
@@ -132,6 +133,33 @@ internal sealed class SearchAnalyticsTests
 
         Assert.That(cached, Is.EqualTo(before).AsCollection);
         Assert.That(fresh, Is.EqualTo(new[] { "kettle", "kite" }).AsCollection);
+    }
+
+    /// <summary>
+    /// The cache entry depends on the query log's dummy key, so a newly logged search drops it on every
+    /// instance of a web farm rather than leaving each one stale until its own TTL (WF-1).
+    /// </summary>
+    [Test]
+    public async Task Suggestions_AreDroppedWhenTheQueryLogTouchKeyIsTouched()
+    {
+        var now = Day.AddDays(3);
+        var cache = new FakeProgressiveCache(() => now);
+        var service = new QuerySuggestionService(store, new PerIndexSettings(new XpSearchOptions()), cache, () => now, FakeProgressiveCache.Dependency);
+
+        await service.SuggestAsync(TestCorpus.IndexName, "k", 10, CancellationToken.None);
+
+        Add("kite", now, results: 2, ms: 5);
+
+        cache.TouchKey(QuerySuggestionService.DependencyKey());
+
+        var fresh = await service.SuggestAsync(TestCorpus.IndexName, "k", 10, CancellationToken.None);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(QuerySuggestionService.DependencyKey(), Is.EqualTo("xpsearch.querylog|all"));
+            Assert.That(cache.Loads, Is.EqualTo(2), "the entry was dropped, not served");
+            Assert.That(fresh, Is.EqualTo(new[] { "kettle", "kite" }).AsCollection);
+        });
     }
 
     [Test]
@@ -196,7 +224,7 @@ internal sealed class SearchAnalyticsTests
             CancellationToken.None);
 
     private Task<IReadOnlyList<string>> Suggestions(string prefix, int limit) =>
-        new QuerySuggestionService(store, new PerIndexSettings(new XpSearchOptions()), () => Day.AddDays(3))
+        new QuerySuggestionService(store, new PerIndexSettings(new XpSearchOptions()), new FakeProgressiveCache(), () => Day.AddDays(3), FakeProgressiveCache.Dependency)
             .SuggestAsync(TestCorpus.IndexName, prefix, limit, CancellationToken.None);
 
     private void Add(string query, DateTime timestamp, int results, int ms, int? clicked = null, int? experimentId = null, string? variant = null) =>

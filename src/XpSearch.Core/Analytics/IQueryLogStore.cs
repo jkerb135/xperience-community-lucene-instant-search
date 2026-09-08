@@ -37,11 +37,20 @@ public sealed record QueryLogEntry(
 /// </summary>
 public interface IQueryLogStore
 {
-    /// <summary>Appends one logged search.</summary>
+    /// <summary>
+    /// Appends one logged search. A row that already carries the entry's <c>queryId</c> is the same
+    /// search reaching the log twice and is not written again (WF-1).
+    /// </summary>
     /// <param name="entry">The row to write.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>A task that completes when the row is written.</returns>
     Task AppendAsync(QueryLogEntry entry, CancellationToken cancellationToken);
+
+    /// <summary>Reads the logged search with a <c>queryId</c>, which is what that search was (WF-1).</summary>
+    /// <param name="queryId">Correlation id of the search.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The row, or <see langword="null"/> when no row carries the id.</returns>
+    Task<QueryLogEntry?> GetByQueryIdAsync(string queryId, CancellationToken cancellationToken);
 
     /// <summary>Records which result was clicked on an already logged search.</summary>
     /// <param name="queryId">Correlation id of the search.</param>

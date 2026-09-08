@@ -12,9 +12,11 @@ namespace XpSearch.Core.Analytics;
 /// </summary>
 /// <remarks>
 /// The query text of both activities is resolved from the <c>queryId</c> through
-/// <see cref="IQueryContextMap"/> and becomes the activity's value, which is what a contact group
-/// condition can be built on. An event whose id is unknown - because it expired, or because the
-/// search was answered by another application instance - is still recorded, only with an empty value.
+/// <see cref="IQueryContextMap.GetAsync"/> - memory first, the query log second, so an event that
+/// lands on another instance of a web farm still resolves (WF-1) - and becomes the activity's value,
+/// which is what a contact group condition can be built on. An event whose id is unknown, because it
+/// expired or because the search it belongs to has not reached the log yet, is still recorded, only
+/// with an empty value.
 /// The sink never throws: <c>/events</c> answers 202 Accepted, which means accepted, not recorded.
 /// </remarks>
 public sealed class ActivitySearchEventSink : ISearchEventSink
@@ -47,14 +49,14 @@ public sealed class ActivitySearchEventSink : ISearchEventSink
     }
 
     /// <inheritdoc />
-    public Task HandleAsync(EventRequest request, CancellationToken cancellationToken)
+    public async Task HandleAsync(EventRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
+        string query = await QueryOfAsync(request.QueryId, cancellationToken).ConfigureAwait(false);
+
         try
         {
-            string query = queryContexts.Get(request.QueryId)?.Query ?? string.Empty;
-
             if (request.Type == EventType.Click)
             {
                 int position = (int)Math.Clamp(request.Position ?? 1, 1, int.MaxValue);
@@ -71,7 +73,25 @@ public sealed class ActivitySearchEventSink : ISearchEventSink
         {
             logger.LogDebug(exception, "The {EventType} search event could not be recorded.", request.Type);
         }
+    }
 
-        return Task.CompletedTask;
+    /// <summary>
+    /// Resolves the query text of an event. Its own try/catch: the lookup now reaches the database, and
+    /// a database that is down must not cost the click its activity and its query log update.
+    /// </summary>
+    private async Task<string> QueryOfAsync(string queryId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var context = await queryContexts.GetAsync(queryId, cancellationToken).ConfigureAwait(false);
+
+            return context?.Query ?? string.Empty;
+        }
+        catch (Exception exception)
+        {
+            logger.LogDebug(exception, "The query behind the search event could not be resolved.");
+
+            return string.Empty;
+        }
     }
 }
