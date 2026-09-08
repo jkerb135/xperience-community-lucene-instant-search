@@ -17,6 +17,10 @@ namespace XpSearch.Core.Pipeline.Stages;
 /// Turns the normalized free text into a Lucene query over every searchable field of the schema,
 /// and adds the language filter when the request asked for one.
 /// </summary>
+/// <remarks>
+/// Text the visitor quoted becomes a phrase (PH-1, <see cref="QueryPhrases"/>); everything else is
+/// escaped, so the endpoint exposes relevance rather than the Lucene query syntax.
+/// </remarks>
 public sealed class BuildQueryStage : ISearchStage
 {
     private static readonly IReadOnlyDictionary<string, double> NoWeights =
@@ -109,7 +113,9 @@ public sealed class BuildQueryStage : ISearchStage
             .Where(field => field.Searchable)
             .Select(LuceneFieldNames.SearchFieldName)];
 
-        if ((context.QueryText.Length == 0 && context.QuerySlots.Count == 0) || fields.Length == 0)
+        var segments = QueryPhrases.Split(context.QueryText);
+
+        if ((segments.Count == 0 && context.QuerySlots.Count == 0) || fields.Length == 0)
         {
             return new MatchAllDocsQuery();
         }
@@ -123,8 +129,9 @@ public sealed class BuildQueryStage : ISearchStage
         if (context.QuerySlots.Count == 0)
         {
             // The query is user input, so every operator character is escaped before parsing: the
-            // endpoint exposes relevance, not the Lucene query syntax.
-            return parser.Parse(Prepare(context.QueryText, fuzzy));
+            // endpoint exposes relevance, not the Lucene query syntax. A balanced pair of quotes is
+            // the one exception - the parser keeps those, and builds a phrase query per field (PH-1).
+            return parser.Parse(Prepare(segments, fuzzy));
         }
 
         // Synonyms were applied (spec §8.3): each slot is one position of the query, its alternatives
@@ -143,8 +150,28 @@ public sealed class BuildQueryStage : ISearchStage
             expanded.Add(alternatives, Occur.MUST);
         }
 
-        return expanded;
+        // Only the loose text has slots - a phrase is exact by intent, so it is never expanded
+        // (PH-1) and is ANDed onto the expansion, exactly where the default operator would put it.
+        var phrases = segments.Where(segment => segment.IsPhrase).ToList();
+
+        return phrases.Count == 0
+            ? expanded
+            : new BooleanQuery
+            {
+                { expanded, Occur.MUST },
+                { parser.Parse(Prepare(phrases, fuzzy)), Occur.MUST }
+            };
     }
+
+    /// <summary>
+    /// Renders the segments of the visitor's query as one parser input: every loose segment escaped
+    /// (and fuzzed, when the index asked for it), every phrase escaped inside a pair of raw quotes so
+    /// the parser builds the positional query for it (PH-1).
+    /// </summary>
+    private static string Prepare(IReadOnlyList<QuerySegment> segments, bool fuzzy) =>
+        string.Join(' ', segments.Select(segment => segment.IsPhrase
+            ? '"' + QueryParserBase.Escape(segment.Text) + '"'
+            : Prepare(segment.Text, fuzzy)));
 
     /// <summary>
     /// Escapes user text for the parser and, with typo tolerance on, appends each token's <c>~N</c>
