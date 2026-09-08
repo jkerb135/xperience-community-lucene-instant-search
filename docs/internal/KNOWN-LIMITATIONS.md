@@ -289,9 +289,9 @@ and how to lift it.
   every schema field again. A name defined by both a content type and one of its schemas is a configuration
   error: the content type's field is kept and the schema field dropped with an `ILogger` warning, rather
   than being merged or erroring out. The data type mapping is still fixed — a project that wants a boolean
-  indexed must override it by hand. Reusable items indexed through `FindItemsToReindex` need nothing extra:
-  `XpSearchIndexingStrategy` does not override it, and every item resolves its fields through the same
-  `IContentTypeFieldSource.GetFields(item.ContentTypeName)` call, so it takes exactly this path.
+  indexed must override it by hand. Items reached through `FindItemsToReindex` need nothing extra: every
+  item resolves its fields through the same `IContentTypeFieldSource.GetFields(item.ContentTypeName)` call,
+  so it takes exactly this path.
 - **Upgrade path:** drop the merge and call the platform helper if Kentico makes
   `ReusableFieldSchemasHelper` (or an equivalent) public. `IContentTypeFieldSource` remains the seam.
 
@@ -341,14 +341,30 @@ and how to lift it.
   reads only the first level of linked items, whatever `depth` the parent is loaded with.
 - **Ceiling:** a content type added to the field later is flattened into documents but invisible to
   `facets`, `fields`, sort validation and the §7.4 dropdown until it is added to the registration. A page
-  linking two products indexes the first one's values only. And `FindItemsToReindex` is untouched: nothing
-  reindexes the page when the product it links changes, so each flattened relationship still needs an
-  override of its own (the guide says so; Dancing Goat has one).
+  linking two products indexes the first one's values only.
 - **Upgrade path:** read the allowed content types off the field's settings if Kentico documents a public
-  way to; make the accumulation per-field-kind (append taxonomies from every linked item, keep first-wins
-  only for the sortable kinds) if a multi-item link ever needs it; and if `ContentRetriever`'s `Linking`
-  becomes expressible from a class name and a field name alone, generate the `FindItemsToReindex` query
-  from the same registration.
+  way to; and make the accumulation per-field-kind (append taxonomies from every linked item, keep
+  first-wins only for the sortable kinds) if a multi-item link ever needs it. (`FindItemsToReindex` is
+  now generated from the same registration - IX-2.)
+
+## `FindItemsToReindex` in `XpSearch.Core/Indexing/XpSearchIndexingStrategy.cs`
+
+- **Simplified:** a changed reusable item is mapped back to the pages that flatten it with one content
+  query per (index, registration, channel, language), and the result of each is turned into an
+  `IndexEventWebPageItemModel` by hand. Only the FIRST link level is followed: the registration says
+  "this page type links this reusable type in this field", so A links B is covered and A links B links C
+  is not. Every language the index covers is queried, not only the changed item's, because a page variant
+  can show the item through language fallback.
+- **Ceiling:** an edit to a linked item costs indexes x registrations x channels x languages queries on
+  the event thread (typically one or two), with no caching between events - the host's hand-written
+  override used `RetrievalCacheSettings`, this does not, because a cached "which pages link this item"
+  answer is exactly what goes stale when an editor changes the link. A two-level relationship still needs
+  an override of `FindItemsToReindex`. And because the linked type has to be listed as a reusable content
+  type for Kentico to raise the event at all, a REBUILD also indexes those items as documents of their
+  own; suppressing them is a two-line `MapToLuceneDocumentOrNull` override the guide shows.
+- **Upgrade path:** follow further levels by resolving each registration's linked types' own
+  registrations (a graph walk over `XpSearchIndexingOptions`), and batch the per-language queries into one
+  `ForContentTypes` subquery if the fan-out ever shows up in an event-thread profile.
 
 ## Field renaming is not supported, in `XpSearch.Core/Indexing/XpSearchIndexingOptions.cs`
 

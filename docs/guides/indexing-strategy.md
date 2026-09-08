@@ -322,15 +322,45 @@ a name is the one that contributes it.
 The `depth` argument (1 by default) is the depth the parent is loaded with, so raise it only when a
 `ContributeAsync` override needs the linked item's *own* linked items.
 
-**Reindexing is still yours.** Flattening changes what a page's document contains, not when it is
-rebuilt: if the linked product changes, nothing tells the integration that the page has to be reindexed.
-That is what `DefaultLuceneIndexingStrategy.FindItemsToReindex` is for, and the flatten option does not
-infer it — the mapping from a changed reusable item back to the pages that link it needs a query the
-option has no way to guess. Dancing Goat's sample strategy overrides it; do the same for each flattened
-relationship.
+**Editing the product reindexes the page.** Flattening also decides when the page is rebuilt: when a
+reusable item of a type named in a registration is published, the strategy reindexes every page of that
+registration's content type that links it through the registration's field — in every channel and
+language your indexes cover, in the next queue run, with no rebuild. You do not override
+`FindItemsToReindex` for a flattened relationship any more; the registration above is the whole
+configuration.
 
-Once the page carries the product's fields, drop the reusable content types from the index
-configuration, or the same product is in the index twice — once with a URL, once without.
+**What the index definition must include.** Kentico only raises a reusable-item event for a content
+type the index watches: `Kentico.Xperience.Lucene` checks the changed item's type against the index's
+*reusable content types* before it asks any strategy what to reindex
+([`IndexedItemModelExtensions.IsIndexedByIndex`](https://github.com/Kentico/xperience-by-kentico-lucene/blob/v15.0.5/src/Kentico.Xperience.Lucene.Core/Indexing/IndexedItemModelExtensions.cs)).
+So in the admin **Search** application, on the index that holds the pages:
+
+- keep the page content type (`DancingGoat.ProductPage`) on an included path, as before;
+- **add every flattened linked type** (`ProductCoffee`, `ProductBrewer`, `ProductGrinder`,
+  `ProductAccessory`) to **Reusable content types**, and add the languages the pages are indexed in.
+
+Miss one and nothing breaks loudly — the pages that flatten it simply go stale until the next rebuild.
+The library therefore logs one warning per index and missing type at application start, naming the
+index, the page type, the field and the type to add. It never edits the index configuration for you.
+
+The cost of listing the linked types: a **rebuild** indexes them as documents of their own, so the same
+product is in the index twice — once as a page with a URL, once as a reusable item without. Incremental
+updates do not, because the strategy answers a product event with the pages only. If the extra documents
+are unwanted, drop them in your strategy:
+
+```csharp
+public override Task<Document?> MapToLuceneDocumentOrNull(IIndexEventItemModel item) =>
+    item is IndexEventReusableItemModel { ContentTypeName: ProductCoffee.CONTENT_TYPE_NAME }
+        ? Task.FromResult<Document?>(null)
+        : base.MapToLuceneDocumentOrNull(item);
+```
+
+**When you still override `FindItemsToReindex`.** Only for relationships the registrations do not
+describe: a page that reads a linked item from an override of `ContributeAsync` rather than through
+`FlattenLinkedItems`, a second link level (A links B, B links C — editing C reindexes nothing), or a
+linked item that changes documents other than pages. Overriding is still normal: call
+`base.FindItemsToReindex(changedItem)` and add your own items to the result, or return yours alone.
+The design is [ADR-0030](../adr/0030-linked-item-reindexing.md).
 
 ### Worked example: a computed relevance field
 
