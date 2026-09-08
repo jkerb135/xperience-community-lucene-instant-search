@@ -454,9 +454,9 @@ one, by design — and each drop is logged at `Debug`. An event is recorded only
 
 | Rule | Why |
 |---|---|
-| The `queryId` is one this application issued and has not expired (30 minutes) | A replayed or invented id has no search to attribute to |
+| The `queryId` is one this application issued and can still be resolved - from the instance's own map (30 minutes) or from the query log row that search wrote | A replayed or invented id has no search to attribute to |
 | At most `MaxEventsPerQuery` events (default 20) carry the same `queryId` | One search produces a handful of clicks; a script replaying an id runs out of budget |
-| `position` is within the results that search actually returned (`page × pageSize`, or the index's `MaxPageSize` when the page size is not known) | A click on a position that was never shown is fabricated |
+| `position` is within the results that search actually returned (`page × pageSize`; for an event resolved from the query log, which records no page window, the row's result count; and the index's `MaxPageSize` when neither is known) | A click on a position that was never shown is fabricated |
 
 ```csharp
 builder.Services.AddXpSearch(options =>
@@ -465,9 +465,11 @@ builder.Services.AddXpSearch(options =>
 });
 ```
 
-The `queryId` map is per application instance, so on a load-balanced site an event that lands on
-another instance than its search is dropped rather than attributed — the same instance affinity
-attribution has always had.
+On a load-balanced site an event that lands on an instance other than the one that answered the
+search is resolved from the query log row instead of that instance's memory, so it is accepted and
+attributed — except inside the ~10 second window before the row is written, where it is dropped like
+any unresolvable id. The event budget is counted per instance; see
+[Performance and sizing](performance-and-sizing.md#what-is-farm-safe-behind-a-load-balancer-and-what-is-not).
 
 ### Rate limiting
 

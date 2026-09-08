@@ -210,8 +210,10 @@ Like `rebuild`, **`clear` and `delete` are asynchronous unless you send `waitFor
 response carries a `taskId` and reports how many *stored* documents were removed, while the Lucene
 half runs on the ingestion queue. `GET …/status` is therefore eventually consistent - a status read
 straight after a `clear` can still report the pre-clear counts. That lag is not an incident, and
-`health` stays `healthy` through it; `degraded` means queued work failed to reach the index and
-nothing has succeeded since, **or** that a rebuild is running.
+`health` stays `healthy` through it; `degraded` means queued work failed to reach the index within
+the last five minutes, **or** that a rebuild is running. That failure is recorded in the ingestion
+log (as an `index` operation), which is why every instance of a web farm reports the same health —
+and why an index that has recovered reads `degraded` until the last failure falls out of the window.
 
 ### Waiting for a rebuild
 

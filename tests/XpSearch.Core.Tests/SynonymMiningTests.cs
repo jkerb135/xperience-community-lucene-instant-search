@@ -198,7 +198,7 @@ internal sealed class SynonymMiningTests
         [Miss(failed, offsetSeconds), Click(succeeded, offsetSeconds + 10)];
 
     private static QueryLogEntry Miss(string query, int offsetSeconds) =>
-        new("q", TestCorpus.IndexName, query, 0, Start.AddSeconds(offsetSeconds), "Store", "en", 12);
+        new(Guid.NewGuid().ToString("N"), TestCorpus.IndexName, query, 0, Start.AddSeconds(offsetSeconds), "Store", "en", 12);
 
     private static QueryLogEntry Click(string query, int offsetSeconds) =>
         Miss(query, offsetSeconds) with { ResultCount = 5, ClickedPosition = 1, ClickedResultId = "doc-1:en" };

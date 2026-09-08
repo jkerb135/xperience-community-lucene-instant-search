@@ -39,7 +39,13 @@ public class XpSearchQueryLogInfo : AbstractInfo<XpSearchQueryLogInfo, IInfoProv
             null,
             null,
             null,
-            null);
+            null)
+        {
+            // Touching the object type's dummy cache keys on every write is what lets the suggestion
+            // cache depend on `xpsearch.querylog|all` and drop farm-wide when a new search is logged
+            // (WF-1).
+            TouchCacheDependencies = true,
+        };
 
     /// <summary>Creates an empty instance of the <see cref="XpSearchQueryLogInfo"/> class.</summary>
     public XpSearchQueryLogInfo()

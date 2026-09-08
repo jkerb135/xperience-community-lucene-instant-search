@@ -12,6 +12,7 @@ using XpSearch.Core.Indexing;
 using XpSearch.Ingestion.Abstractions;
 using XpSearch.Ingestion.Contract;
 using XpSearch.Ingestion.Options;
+using XpSearch.Ingestion.Queue;
 using XpSearch.Ingestion.Schema;
 
 namespace XpSearch.Ingestion.Indexing;
@@ -26,6 +27,12 @@ namespace XpSearch.Ingestion.Indexing;
 /// </remarks>
 public sealed class XpSearchIndexer : IXpSearchIndexer
 {
+    /// <summary>How recently background index work must have failed for the index to read as degraded.</summary>
+    public static readonly TimeSpan FailureWindow = TimeSpan.FromMinutes(5);
+
+    /// <summary>How many recent log entries the health check reads.</summary>
+    private const int FailureLookback = 20;
+
     private readonly IExternalDocumentStore store;
     private readonly IIngestionSchemaProvider schemas;
     private readonly IIngestionQueue queue;
@@ -259,6 +266,7 @@ public sealed class XpSearchIndexer : IXpSearchIndexer
 
         var lastWrite = await store.GetLastWriteAsync(index, cancellationToken).ConfigureAwait(false);
         var counts = CountBySource(index);
+        bool failed = await FailedRecentlyAsync(index, cancellationToken).ConfigureAwait(false);
         var rebuild = await RebuildProgress
             .ReadAsync(log, index, time.GetUtcNow(), options.RebuildStuckAfter, cancellationToken)
             .ConfigureAwait(false);
@@ -272,11 +280,11 @@ public sealed class XpSearchIndexer : IXpSearchIndexer
 
             // Queued work is the normal state of an asynchronous write, so it is not degraded
             // health - the counts are simply eventually consistent (documented in the ingestion
-            // guide). Only work that failed to reach Lucene, and has not been followed by a
-            // successful item, is an incident worth reporting. A running rebuild is degraded too:
-            // the index is half-written, and an external system polling this route should wait
-            // rather than trust the counts.
-            Health = queue.FailedCount > 0 || rebuild.Running ? Health.Degraded : Health.Healthy,
+            // guide). Only work that failed to reach Lucene inside the failure window is an
+            // incident worth reporting, and it is read from the log so every instance of a farm
+            // answers the same (WF-1). A running rebuild is degraded too: the index is half-written,
+            // and an external system polling this route should wait rather than trust the counts.
+            Health = failed || rebuild.Running ? Health.Degraded : Health.Healthy,
 
             Rebuild = rebuild.Phase is RebuildPhase.None
                 ? null
@@ -288,6 +296,30 @@ public sealed class XpSearchIndexer : IXpSearchIndexer
                     Documents = rebuild.Documents,
                 },
         };
+    }
+
+    /// <summary>
+    /// Whether background index work for this index failed inside <see cref="FailureWindow"/>.
+    /// </summary>
+    /// <remarks>
+    /// Read from the ingestion log rather than from <c>IIngestionQueue.FailedCount</c>, which is a
+    /// static of the queue worker and therefore only true on the instance that ran the work: behind a
+    /// load balancer the two instances answered <c>/status</c> differently (WF-1). The log row is
+    /// written by <c>XpSearchIngestionQueueWorker</c> and is visible to every instance, so health now
+    /// agrees. It is a window rather than a counter: nothing writes a "recovered" row, so an index
+    /// reads degraded until the last failure falls out of the window
+    /// (<c>docs/internal/KNOWN-LIMITATIONS.md</c>).
+    /// </remarks>
+    private async Task<bool> FailedRecentlyAsync(string index, CancellationToken cancellationToken)
+    {
+        var since = time.GetUtcNow().UtcDateTime - FailureWindow;
+
+        var recent = await log.ReadRecentAsync(index, FailureLookback, cancellationToken).ConfigureAwait(false);
+
+        return recent.Any(entry =>
+            !entry.Succeeded
+            && string.Equals(entry.Operation, XpSearchIngestionQueueWorker.FailureOperation, StringComparison.Ordinal)
+            && entry.At >= since);
     }
 
     private static IEnumerable<string> AttributeNames(string json)

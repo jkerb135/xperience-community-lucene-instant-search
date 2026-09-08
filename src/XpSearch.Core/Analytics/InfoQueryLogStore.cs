@@ -25,9 +25,22 @@ public sealed class InfoQueryLogStore : IQueryLogStore
     }
 
     /// <inheritdoc />
-    public Task AppendAsync(QueryLogEntry entry, CancellationToken cancellationToken)
+    /// <remarks>
+    /// The duplicate check is a select on <c>LogQueryID</c>, which is what makes the first-load handoff
+    /// of the server-rendered paint (the client repeats the server's <c>queryId</c>) idempotent across
+    /// a web farm, where the journal's in-memory check only covers the instance that rendered
+    /// (WF-1). It costs one select per logged search, on the queue worker's thread rather than on the
+    /// search path.
+    /// </remarks>
+    public async Task AppendAsync(QueryLogEntry entry, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(entry);
+
+        if (!string.IsNullOrEmpty(entry.QueryId)
+            && await GetByQueryIdAsync(entry.QueryId, cancellationToken).ConfigureAwait(false) is not null)
+        {
+            return;
+        }
 
         provider.Set(new XpSearchQueryLogInfo
         {
@@ -45,8 +58,25 @@ public sealed class InfoQueryLogStore : IQueryLogStore
             LogExperimentID = entry.ExperimentId,
             LogVariant = entry.Variant ?? string.Empty
         });
+    }
 
-        return Task.CompletedTask;
+    /// <inheritdoc />
+    public async Task<QueryLogEntry?> GetByQueryIdAsync(string queryId, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(queryId))
+        {
+            return null;
+        }
+
+        var rows = await provider.Get()
+            .WhereEquals(nameof(XpSearchQueryLogInfo.LogQueryID), queryId)
+            .TopN(1)
+            .GetEnumerableTypedResultAsync(cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+
+        var row = rows.FirstOrDefault();
+
+        return row is null ? null : ToEntry(row);
     }
 
     /// <inheritdoc />

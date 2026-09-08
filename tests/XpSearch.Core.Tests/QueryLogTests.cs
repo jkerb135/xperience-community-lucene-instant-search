@@ -256,8 +256,9 @@ internal sealed class QueryLogTests
         Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Accepted));
     }
 
-    private static QueryLogEntry Entry(string query, DateTime timestamp, int results = 0, string queryId = "q-1", string? index = null) =>
-        new(queryId, index ?? TestCorpus.IndexName, query, results, timestamp, "Store", "en", 12);
+    // Distinct ids by default: the store refuses a second row for a queryId it already holds (WF-1).
+    private static QueryLogEntry Entry(string query, DateTime timestamp, int results = 0, string? queryId = null, string? index = null) =>
+        new(queryId ?? $"q-{query}", index ?? TestCorpus.IndexName, query, results, timestamp, "Store", "en", 12);
 
     /// <summary>A sink that fails the way a database outage would.</summary>
     private sealed class ThrowingSearchEventSink : ISearchEventSink

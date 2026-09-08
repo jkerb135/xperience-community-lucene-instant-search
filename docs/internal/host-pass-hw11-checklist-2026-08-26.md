@@ -710,3 +710,30 @@ Open **Lucene Search → DancingGoatSample → Edit index → Query tester** and
 158. **The startup warning is silent when the index lists the four product types under Reusable
      content types**, and fires once per missing type (event log, Warning) when one is removed from
      the index definition — restore it afterwards.
+
+## §AF — WF-1 web-farm-safe analytics state (2026-09-08)
+
+Needs **two host processes against the same database** (run a second instance on another port —
+`dotnet run --project … --urls http://localhost:5099`) and, ideally, a browser per instance.
+
+159. **Cross-instance click attribution.** Search on instance A (`/search?q=espresso`), wait ~15
+     seconds so the query log queue drains, then post the click event to instance B with the same
+     `queryId` (`POST http://localhost:5099/api/xpsearch/events`, `{"type":"click","queryId":"…",
+     "resultId":"…","position":1}`). In the admin, the `xpsearch_click` activity logged by B carries
+     **espresso** as its value, and the query log row for that `queryId` shows the clicked position.
+     Before WF-1 the activity's value was empty; after SC-1 the event would have been dropped
+     outright, so this row proves both units together.
+160. **The drain window is the documented gap.** Repeat 159 but post the click to B *immediately*
+     (under 10 seconds). B answers `202` and nothing is recorded — neither instance can resolve the
+     `queryId` yet, and SC-1 drops what it cannot vouch for. That is the ~10 s window in
+     `performance-and-sizing.md`, not a bug.
+161. **Suggestions invalidate farm-wide.** Type a prefix in the search box on B to warm its
+     autocomplete, run a new search for a query with that prefix on A, then type the prefix on B
+     again after the queue drains → the new query appears without waiting out B's cache TTL.
+162. **One search per page load, on either instance.** Load `/search?q=grinder` on A with the browser
+     pointed at the load balancer (or load it on A and let the hydration query hit B). The analytics
+     dashboard counts **one** search for that page load, not two.
+163. **Health agrees across instances.** Break an index write on A (stop the Lucene directory from
+     being writable, or push to an index whose directory is locked) so a queued item fails, then read
+     `GET indexes/{index}/status` on **B** → `degraded`, same as A. Five minutes after the last
+     failure both report `healthy` again.

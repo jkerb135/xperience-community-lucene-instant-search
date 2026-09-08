@@ -19,6 +19,12 @@ namespace XpSearch.Ingestion.Queue;
 /// </remarks>
 public class XpSearchIngestionQueueWorker : ThreadQueueWorker<IngestionWorkItem, XpSearchIngestionQueueWorker>
 {
+    /// <summary>
+    /// The <c>operation</c> ingestion log entries carry when background index work fails. The index
+    /// status reads them, which is what makes its health agree across a web farm (WF-1).
+    /// </summary>
+    public const string FailureOperation = "index";
+
     private static int failures;
 
     /// <summary>Initializes a new instance of the <see cref="XpSearchIngestionQueueWorker"/> class.</summary>
@@ -43,6 +49,26 @@ public class XpSearchIngestionQueueWorker : ThreadQueueWorker<IngestionWorkItem,
     /// <returns>The consecutive failure count.</returns>
     public static int Failures() => Volatile.Read(ref failures);
 
+    /// <summary>Builds the ingestion log row that stands for one failed work item.</summary>
+    /// <param name="item">The work that failed.</param>
+    /// <param name="failure">Why it failed.</param>
+    /// <param name="at">When it failed, in UTC.</param>
+    /// <returns>The row.</returns>
+    public static IngestionLogEntry FailureEntry(IngestionWorkItem item, Exception failure, DateTime at)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+        ArgumentNullException.ThrowIfNull(failure);
+
+        return new IngestionLogEntry(
+            "background",
+            item.IndexName,
+            FailureOperation,
+            item.Ids.Count,
+            false,
+            $"{item.Operation} failed: {failure.Message}",
+            at);
+    }
+
     /// <inheritdoc />
     protected override void Finish() => RunProcess();
 
@@ -62,13 +88,34 @@ public class XpSearchIngestionQueueWorker : ThreadQueueWorker<IngestionWorkItem,
 
             Interlocked.Exchange(ref failures, 0);
         }
-        catch
+        catch (Exception exception)
         {
-            // Counted, then rethrown so ThreadQueueWorker logs it as it always has. The row stays
-            // Pending and is re-queued on the next application start, so the failure is recoverable -
-            // but until something succeeds the index status reports it as degraded.
+            // Counted and recorded, then rethrown so ThreadQueueWorker logs it as it always has. The
+            // row stays Pending and is re-queued on the next application start, so the failure is
+            // recoverable - but until the window passes the index status reports it as degraded.
             Interlocked.Increment(ref failures);
+            Record(item, exception);
+
             throw;
+        }
+    }
+
+    /// <summary>
+    /// Writes the failure to the ingestion log, which is where the index status reads health from: a
+    /// static counter would only be true on the instance that happened to run the work (WF-1).
+    /// </summary>
+    private static void Record(IngestionWorkItem item, Exception failure)
+    {
+        try
+        {
+            Service.ResolveOptional<IIngestionLog>()?
+                .WriteAsync(FailureEntry(item, failure, DateTime.UtcNow), CancellationToken.None)
+                .GetAwaiter()
+                .GetResult();
+        }
+        catch (Exception)
+        {
+            // The audit row is best effort; the failure it describes is about to be rethrown anyway.
         }
     }
 }

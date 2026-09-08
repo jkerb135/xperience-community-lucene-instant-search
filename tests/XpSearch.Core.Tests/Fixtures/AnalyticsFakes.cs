@@ -9,10 +9,20 @@ internal sealed class InMemoryQueryLogStore : IQueryLogStore
 
     public Task AppendAsync(QueryLogEntry entry, CancellationToken cancellationToken)
     {
-        Rows.Add(entry);
+        // The contract: a row that already carries the queryId is the same search logged twice (WF-1).
+        if (string.IsNullOrEmpty(entry.QueryId) || Find(entry.QueryId) is null)
+        {
+            Rows.Add(entry);
+        }
 
         return Task.CompletedTask;
     }
+
+    public Task<QueryLogEntry?> GetByQueryIdAsync(string queryId, CancellationToken cancellationToken) =>
+        Task.FromResult(string.IsNullOrWhiteSpace(queryId) ? null : Find(queryId));
+
+    private QueryLogEntry? Find(string queryId) =>
+        Rows.Find(row => string.Equals(row.QueryId, queryId, StringComparison.Ordinal));
 
     public Task<bool> SetClickAsync(string queryId, int position, string resultId, CancellationToken cancellationToken)
     {
