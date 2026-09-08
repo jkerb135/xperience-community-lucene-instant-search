@@ -240,7 +240,40 @@
             "degraded",
             "unavailable"
           ],
-          "description": "\"healthy\" when the index is readable and no write has failed - including while queued writes are still waiting, which is the normal state of an asynchronous write, \"degraded\" when queued work failed to reach the index and nothing has succeeded since, \"unavailable\" when the index cannot be read."
+          "description": "\"healthy\" when the index is readable and no write has failed - including while queued writes are still waiting, which is the normal state of an asynchronous write, \"degraded\" when queued work failed to reach the index and nothing has succeeded since or a rebuild is running (rebuild.running), \"unavailable\" when the index cannot be read."
+        },
+        "rebuild": {
+          "$ref": "#/$defs/RebuildStatus",
+          "description": "What the ingestion log says about the rebuild of this index, absent when none was ever recorded."
+        }
+      }
+    },
+    "RebuildStatus": {
+      "type": "object",
+      "title": "RebuildStatus",
+      "description": "The last rebuild of an index, derived from the ingestion log: a \"rebuild\" entry with no later \"rebuild-finished\" entry is a rebuild still running.",
+      "required": [
+        "running"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "running": {
+          "type": "boolean",
+          "description": "Whether a rebuild is running now. Wait for it before trusting document counts; health is \"degraded\" while it is true."
+        },
+        "startedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the rebuild started, absent when the rebuild was started outside this library (Kentico's own Search application records no start)."
+        },
+        "finishedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the last rebuild finished, absent while one is running or when none ever finished. Detected by watching the index stop changing, so it is a close estimate rather than an event."
+        },
+        "documents": {
+          "type": "integer",
+          "description": "How many documents the index held when the last rebuild finished. Absent while a rebuild is running: there is no total to count towards."
         }
       }
     },
