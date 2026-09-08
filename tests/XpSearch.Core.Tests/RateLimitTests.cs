@@ -29,7 +29,7 @@ internal sealed class RateLimitTests
     [Test]
     public void MapXpSearch_RateLimitsAllThreeRoutes()
     {
-        using var app = Map(_ => { });
+        using var app = Map(options => options.PublicRateLimitEnabled = true);
 
         Assert.That(
             PolicyNames(app),
@@ -42,11 +42,26 @@ internal sealed class RateLimitTests
     }
 
     [Test]
-    public void MapXpSearch_WithTheLimitSwitchedOff_LeavesTheRoutesUnlimited()
+    public void MapXpSearch_ByDefault_LeavesTheRoutesUnlimited()
     {
-        using var app = Map(options => options.PublicRateLimitEnabled = false);
+        // Opt-in: an in-process limiter keyed on the client address throttles an office behind one NAT
+        // as one caller, so the host turns it on only where nothing at the edge does the job.
+        using var app = Map(_ => { });
 
         Assert.That(PolicyNames(app), Is.EqualTo(new string?[] { null, null, null }));
+    }
+
+    [Test]
+    public void MapXpSearch_WithACorsPolicyNamed_AppliesItToAllThreeRoutes()
+    {
+        using var named = Map(options => options.CorsPolicyName = "xpsearch-consumers");
+        using var unnamed = Map(_ => { });
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(CorsPolicyNames(named), Is.EqualTo(new[] { "xpsearch-consumers", "xpsearch-consumers", "xpsearch-consumers" }));
+            Assert.That(CorsPolicyNames(unnamed), Is.EqualTo(new string?[] { null, null, null }), "no CORS metadata unless the host named a policy");
+        });
     }
 
     [Test]
@@ -57,6 +72,7 @@ internal sealed class RateLimitTests
         builder.WebHost.UseUrls("http://127.0.0.1:0");
         builder.Services.AddXpSearch(options =>
         {
+            options.PublicRateLimitEnabled = true;
             options.PublicRateLimitPermitsPerWindow = 2;
             options.PublicRateLimitWindow = TimeSpan.FromMinutes(5);
         });
@@ -130,6 +146,11 @@ internal sealed class RateLimitTests
 
         return app;
     }
+
+    private static IEnumerable<string?> CorsPolicyNames(WebApplication app) =>
+        ((IEndpointRouteBuilder)app).DataSources
+            .SelectMany(source => source.Endpoints)
+            .Select(endpoint => endpoint.Metadata.GetMetadata<Microsoft.AspNetCore.Cors.Infrastructure.ICorsPolicyMetadata>()?.PolicyName);
 
     private static IEnumerable<string?> PolicyNames(WebApplication app) =>
         ((IEndpointRouteBuilder)app).DataSources

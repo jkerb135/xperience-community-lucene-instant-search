@@ -38,22 +38,30 @@ public static class XpSearchEndpoints
     {
         ArgumentNullException.ThrowIfNull(endpoints);
 
-        bool limited = endpoints.ServiceProvider.GetService<IOptionsMonitor<XpSearchOptions>>()?.CurrentValue.PublicRateLimitEnabled ?? true;
+        var options = endpoints.ServiceProvider.GetService<IOptionsMonitor<XpSearchOptions>>()?.CurrentValue;
+        bool limited = options?.PublicRateLimitEnabled ?? false;
+        string? cors = string.IsNullOrWhiteSpace(options?.CorsPolicyName) ? null : options.CorsPolicyName.Trim();
 
-        Map(endpoints.MapPost(ContractConstants.QueryRoute, Query), "XpSearchQuery", limited);
-        Map(endpoints.MapPost(ContractConstants.SuggestRoute, Suggest), "XpSearchSuggest", limited);
-        Map(endpoints.MapPost(ContractConstants.EventsRoute, Events), "XpSearchEvents", limited);
+        Map(endpoints.MapPost(ContractConstants.QueryRoute, Query), "XpSearchQuery", limited, cors);
+        Map(endpoints.MapPost(ContractConstants.SuggestRoute, Suggest), "XpSearchSuggest", limited, cors);
+        Map(endpoints.MapPost(ContractConstants.EventsRoute, Events), "XpSearchEvents", limited, cors);
 
         return endpoints;
     }
 
-    private static void Map(RouteHandlerBuilder route, string name, bool limited)
+    private static void Map(RouteHandlerBuilder route, string name, bool limited, string? corsPolicy)
     {
         route.WithName(name);
 
         if (limited)
         {
             route.RequireRateLimiting(XpSearchConstants.PublicRateLimitPolicy);
+        }
+
+        if (corsPolicy is not null)
+        {
+            // The host registers the policy with AddCors and its origins; the package only names it.
+            route.RequireCors(corsPolicy);
         }
     }
 

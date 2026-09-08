@@ -443,20 +443,24 @@ attribution has always had.
 
 ### Rate limiting
 
-`/query`, `/suggest` and `/events` are public and unauthenticated, so `AddXpSearch()` registers a
-sliding-window rate limit per remote address — 120 requests a minute by default, which is generous for
-a visitor typing (one debounced query per typing pause, plus its suggest request) and tight for a
-script. `MapXpSearch()` puts the policy on all three routes; a caller past the limit gets `429 Too Many
-Requests` with a `Retry-After` header and never reaches the endpoint, so a rejected request is neither
-journaled nor cached.
+`/query`, `/suggest` and `/events` are public and unauthenticated. Anyone can call them without opening
+the site, and each query is real Lucene work, so a site with no edge protection (a WAF or a CDN rate
+rule) can opt into a sliding-window limit per remote address that `AddXpSearch()` registers: 120
+requests a minute by default, which is generous for a visitor typing (one debounced query per typing
+pause, plus its suggest request) and tight for a script. When it is on, `MapXpSearch()` puts the
+policy on all three routes; a caller past the limit gets `429 Too Many Requests` with a `Retry-After`
+header and never reaches the endpoint, so a rejected request is neither journaled nor cached.
 
-It only takes effect once the host adds the middleware — one `UseRateLimiter()` covers this package
-and the [ingestion API](ingestion.md#limits):
+**It is off by default**, because an in-process limiter keyed on the client address is a blunt tool:
+an office behind one NAT address, or a CDN that is not forwarding client addresses, looks like a single
+heavy caller and gets throttled as one. Turn it on when nothing in front of the site does this job, and
+prefer the edge when something does. It takes effect once the host adds the middleware — one
+`UseRateLimiter()` covers this package and the [ingestion API](ingestion.md#limits):
 
 ```csharp
 builder.Services.AddXpSearch(options =>
 {
-    options.PublicRateLimitEnabled = true;              // false turns the limit off entirely
+    options.PublicRateLimitEnabled = true;              // opt in; off by default
     options.PublicRateLimitPermitsPerWindow = 120;      // per remote address, per window
     options.PublicRateLimitWindow = TimeSpan.FromMinutes(1);
 });
@@ -474,6 +478,36 @@ the framework resolves the real client address — this package never parses `X-
 
 The counters are per application instance, like the ingestion API's: on a load-balanced site the
 effective limit is the configured one times the number of instances.
+
+### Cross-origin callers
+
+The endpoints send no CORS headers, so a browser on another origin cannot read their responses and a
+cross-site JSON `POST` stops at the preflight. For same-origin pages — Page Builder, the Razor tag
+helpers, the plain-HTML recipe served by the site — that is exactly right and nothing needs configuring.
+CORS is a browser rule, not a defence: scripts and server-side callers never send an `Origin` header,
+which is why it is not the answer to abuse either (see rate limiting above and event validation).
+
+A **legitimate** consumer on a different origin — a headless front end, a static site running the npm
+bundle against this API, a partner page embedding the search — needs the host to allow that origin.
+Register a policy naming the origins explicitly and tell the package its name; `MapXpSearch()` then
+applies it to the three routes and nothing else:
+
+```csharp
+builder.Services.AddCors(cors => cors.AddPolicy("xpsearch-consumers", policy => policy
+    .WithOrigins("https://www.example.com", "https://app.example.com")
+    .WithMethods("POST")
+    .WithHeaders("Content-Type")));
+
+builder.Services.AddXpSearch(options => options.CorsPolicyName = "xpsearch-consumers");
+
+var app = builder.Build();
+app.UseKentico();
+app.UseCors();                                          // before MapXpSearch
+app.MapXpSearch();
+```
+
+Do not use `AllowAnyOrigin()` for a search API that feeds analytics: it makes every site on the web a
+legitimate caller of `/events`.
 
 ### Errors
 
