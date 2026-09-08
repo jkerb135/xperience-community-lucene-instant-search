@@ -11,6 +11,8 @@ using NUnit.Framework;
 using XpSearch.Admin.UIPages;
 using XpSearch.Ingestion.Abstractions;
 using XpSearch.Ingestion.Contract;
+using XpSearch.Ingestion.Indexing;
+using XpSearch.Ingestion.Options;
 
 namespace XpSearch.Admin.Tests;
 
@@ -147,8 +149,87 @@ internal sealed class IndexStatusPageTests
             Assert.That(log.Entries[0].Operation, Is.EqualTo("rebuild"));
             Assert.That(log.Entries[0].Succeeded, Is.True);
             Assert.That(log.Entries[0].At, Is.EqualTo(Now));
+            Assert.That(response.Result.RebuildState, Is.EqualTo("running"));
             Assert.That(response.Result.RebuildStartedAt, Is.EqualTo("2026-08-23 09:31 UTC"));
             Assert.That(response.Result.Error, Is.Empty);
+        });
+    }
+
+    [Test]
+    public async Task Load_ReportsNoRebuildWhenTheLogHasNone()
+    {
+        var status = (await page.Load(CancellationToken.None)).Result;
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(status.RebuildState, Is.EqualTo("none"));
+            Assert.That(status.RebuildStartedAt, Is.Empty);
+            Assert.That(status.RebuildFinishedAt, Is.Empty);
+            Assert.That(status.RebuildDocuments, Is.Zero);
+        });
+    }
+
+    /// <summary>The state lives in the log, so a reload - or another editor's browser - sees the same rebuild.</summary>
+    [Test]
+    public async Task Load_KeepsReportingARunningRebuildAcrossReloads()
+    {
+        await page.Rebuild(CancellationToken.None);
+
+        var first = (await page.Load(CancellationToken.None)).Result;
+        var second = (await Build().Load(CancellationToken.None)).Result;
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(first.RebuildState, Is.EqualTo("running"));
+            Assert.That(second.RebuildState, Is.EqualTo("running"), "a fresh page instance is a reloaded page");
+            Assert.That(second.RebuildStartedAt, Is.EqualTo("2026-08-23 09:31 UTC"));
+        });
+    }
+
+    /// <summary>A running rebuild is Degraded on the wire; on the page it is the rebuild's own state.</summary>
+    [Test]
+    public async Task Load_DoesNotShowARunningRebuildAsDegraded()
+    {
+        indexer.GetStatusAsync(IndexName, Arg.Any<CancellationToken>()).Returns(Task.FromResult(Status(Health.Degraded)));
+        log.Entries.Add(Started(Now.AddMinutes(-2)));
+
+        var status = (await page.Load(CancellationToken.None)).Result;
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(status.RebuildState, Is.EqualTo("running"));
+            Assert.That(status.Health, Is.EqualTo("Healthy"));
+        });
+    }
+
+    [Test]
+    public async Task Load_CallsARebuildThatNeverFinishedStuck()
+    {
+        log.Entries.Add(Started(Now - new XpSearchIngestionOptions().RebuildStuckAfter - TimeSpan.FromMinutes(1)));
+
+        Assert.That((await page.Load(CancellationToken.None)).Result.RebuildState, Is.EqualTo("stuck"));
+    }
+
+    [Test]
+    public async Task Load_ReportsTheLastFinishedRebuildWithItsCount()
+    {
+        log.Entries.Add(Started(Now.AddMinutes(-20)));
+        log.Entries.Add(new IngestionLogEntry(
+            "in-process",
+            IndexName,
+            RebuildProgress.FinishedOperation,
+            152,
+            true,
+            "Rebuild finished.",
+            Now.AddMinutes(-8)));
+
+        var status = (await page.Load(CancellationToken.None)).Result;
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(status.RebuildState, Is.EqualTo("finished"));
+            Assert.That(status.RebuildFinishedAt, Is.EqualTo("2026-08-23 09:23 UTC"));
+            Assert.That(status.RebuildDocuments, Is.EqualTo(152));
         });
     }
 
@@ -209,6 +290,9 @@ internal sealed class IndexStatusPageTests
             LastWrite = new DateTimeOffset(2026, 8, 23, 9, 14, 0, TimeSpan.Zero),
         };
 
+    private static IngestionLogEntry Started(DateTime at) =>
+        new("admin-ui", IndexName, RebuildProgress.StartedOperation, 0, true, "Rebuild triggered.", at);
+
     private static IEnumerable<IngestionLogEntry> Entries() =>
     [
         new("pim", IndexName, "upsert", 12, false, "older failed", new DateTime(2026, 8, 23, 8, 2, 0, DateTimeKind.Utc)),
@@ -217,7 +301,14 @@ internal sealed class IndexStatusPageTests
     ];
 
     private IndexStatusPage Build(int indexIdentifier = IndexIdentifier) =>
-        new(Storage.Holding(IndexIdentifier, IndexName), indexer, queue, client, log, new FakeTime(Now))
+        new(
+            Storage.Holding(IndexIdentifier, IndexName),
+            indexer,
+            queue,
+            client,
+            log,
+            Microsoft.Extensions.Options.Options.Create(new XpSearchIngestionOptions()),
+            new FakeTime(Now))
         {
             IndexIdentifier = indexIdentifier
         };
@@ -243,6 +334,12 @@ internal sealed class IndexStatusPageTests
             return Task.FromResult<IReadOnlyList<IngestionLogEntry>>(
                 Entries.OrderByDescending(entry => entry.At).Take(count).ToList());
         }
+
+        public Task<IngestionLogEntry?> ReadLatestAsync(string indexName, string operation, CancellationToken cancellationToken) =>
+            Task.FromResult(
+                Entries.Where(entry => entry.IndexName == indexName && entry.Operation == operation)
+                    .OrderByDescending(entry => entry.At)
+                    .FirstOrDefault());
     }
 
     private sealed class FakeTime(DateTime utcNow) : TimeProvider

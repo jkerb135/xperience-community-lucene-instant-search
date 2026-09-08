@@ -7,8 +7,12 @@ using Kentico.Xperience.Admin.Base;
 using Kentico.Xperience.Lucene.Core.Indexing;
 
 using XpSearch.Admin.UIPages;
+using Microsoft.Extensions.Options;
+
 using XpSearch.Ingestion.Abstractions;
 using XpSearch.Ingestion.Contract;
+using XpSearch.Ingestion.Indexing;
+using XpSearch.Ingestion.Options;
 
 [assembly: UIPage(
     parentType: typeof(IndexTuningSection),
@@ -99,10 +103,20 @@ public class IndexStatusDto
     public IReadOnlyList<IngestionEntryDto> RecentIngestion { get; set; } = [];
 
     /// <summary>
-    /// Gets or sets when the rebuild this response triggered started, or an empty string. Only the
-    /// <c>Rebuild</c> command sets it: there is no API that reports a rebuild still running.
+    /// Gets or sets where the last rebuild of this index is: <c>none</c>, <c>running</c>,
+    /// <c>stuck</c> or <c>finished</c>. Derived from the ingestion log, so it survives a reload and
+    /// is the same answer for every editor looking at the page.
     /// </summary>
+    public string RebuildState { get; set; } = nameof(RebuildPhase.None).ToLowerInvariant();
+
+    /// <summary>Gets or sets when the rebuild started, or an empty string when no start was recorded.</summary>
     public string RebuildStartedAt { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets when the last rebuild finished, or an empty string while one runs.</summary>
+    public string RebuildFinishedAt { get; set; } = string.Empty;
+
+    /// <summary>Gets or sets how many documents the index held when the last rebuild finished.</summary>
+    public int RebuildDocuments { get; set; }
 
     /// <summary>Gets or sets why no status could be read, or an empty string when it could.</summary>
     public string Error { get; set; } = string.Empty;
@@ -152,6 +166,7 @@ public class IndexStatusPage : Page<IndexStatusClientProperties>
     private readonly IIngestionQueue queue;
     private readonly ILuceneClient client;
     private readonly IIngestionLog log;
+    private readonly XpSearchIngestionOptions options;
     private readonly TimeProvider time;
 
     /// <summary>Initializes a new instance of the <see cref="IndexStatusPage"/> class.</summary>
@@ -159,7 +174,8 @@ public class IndexStatusPage : Page<IndexStatusClientProperties>
     /// <param name="indexer">Reads document counts and health per index.</param>
     /// <param name="queue">The ingestion queue, for the number of writes that failed to reach Lucene.</param>
     /// <param name="client">The integration's index writer, decorated so a rebuild replays external documents.</param>
-    /// <param name="log">Reads the recent ingestion entries and records the rebuild.</param>
+    /// <param name="log">Reads the recent ingestion entries and the rebuild rows, and records the rebuild.</param>
+    /// <param name="options">Ingestion configuration, for how long a rebuild may run before it is suspect.</param>
     /// <param name="time">Clock, so the rebuild's start time is the server's.</param>
     public IndexStatusPage(
         ILuceneConfigurationStorageService storageService,
@@ -167,6 +183,7 @@ public class IndexStatusPage : Page<IndexStatusClientProperties>
         IIngestionQueue queue,
         ILuceneClient client,
         IIngestionLog log,
+        IOptions<XpSearchIngestionOptions> options,
         TimeProvider time)
     {
         ArgumentNullException.ThrowIfNull(storageService);
@@ -174,6 +191,7 @@ public class IndexStatusPage : Page<IndexStatusClientProperties>
         ArgumentNullException.ThrowIfNull(queue);
         ArgumentNullException.ThrowIfNull(client);
         ArgumentNullException.ThrowIfNull(log);
+        ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(time);
 
         this.storageService = storageService;
@@ -181,6 +199,7 @@ public class IndexStatusPage : Page<IndexStatusClientProperties>
         this.queue = queue;
         this.client = client;
         this.log = log;
+        this.options = options.Value;
         this.time = time;
     }
 
@@ -227,13 +246,21 @@ public class IndexStatusPage : Page<IndexStatusClientProperties>
         // documents are replayed after the integration wipes the index (spec §10.2).
         await client.Rebuild(indexName, cancellationToken).ConfigureAwait(false);
 
+        // The started row is the only durable record that a rebuild is going on: the page reads it
+        // back on every load, so the state outlives this response and this browser tab.
         await log.WriteAsync(
-            new IngestionLogEntry("admin-ui", indexName, "rebuild", 0, true, "Rebuild triggered from the index tuning pages.", startedAt.UtcDateTime),
+            new IngestionLogEntry(
+                "admin-ui",
+                indexName,
+                RebuildProgress.StartedOperation,
+                0,
+                true,
+                "Rebuild triggered from the index tuning pages.",
+                startedAt.UtcDateTime),
             cancellationToken)
             .ConfigureAwait(false);
 
         var status = await BuildAsync(cancellationToken).ConfigureAwait(false);
-        status.RebuildStartedAt = IndexStatusDto.Format(startedAt);
 
         return ResponseFrom(status).AddSuccessMessage($"Rebuild of '{indexName}' triggered.");
     }
@@ -276,13 +303,24 @@ public class IndexStatusPage : Page<IndexStatusClientProperties>
             })
             .ToList();
 
-        bool degraded = status.Health == Health.Degraded;
+        var rebuild = await RebuildProgress
+            .ReadAsync(log, indexName, time.GetUtcNow(), options.RebuildStuckAfter, cancellationToken)
+            .ConfigureAwait(false);
+
+        // A running rebuild makes the indexer report Degraded on the wire, which is the answer an
+        // external poller needs. On this page the rebuild has its own state, so the failed-writes
+        // warning stays about failed writes.
+        bool degraded = status.Health == Health.Degraded && !rebuild.Running;
         var recent = await log.ReadRecentAsync(indexName, RecentEntryCount, cancellationToken).ConfigureAwait(false);
 
         return new IndexStatusDto
         {
             IndexName = indexName,
-            Health = status.Health.ToString(),
+            Health = degraded ? nameof(Ingestion.Contract.Health.Degraded) : nameof(Ingestion.Contract.Health.Healthy),
+            RebuildState = rebuild.Phase.ToString().ToLowerInvariant(),
+            RebuildStartedAt = IndexStatusDto.Format(rebuild.StartedAt),
+            RebuildFinishedAt = IndexStatusDto.Format(rebuild.FinishedAt),
+            RebuildDocuments = (int)(rebuild.Documents ?? 0),
             Documents = total,
             Sources = bySource.Count,
             FailedWrites = queue.FailedCount,
