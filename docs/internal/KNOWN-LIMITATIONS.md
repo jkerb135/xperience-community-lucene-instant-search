@@ -1443,3 +1443,19 @@ and how to lift it.
 - **Upgrade path:** npm 12.0.2 resolves the same manifests without the crash (verified 2026-09-06);
   once the machines that run `samples/pack-and-build.mjs` are on npm ≥ 12 the sample can pin whatever
   vitest the client pins. `legacy-peer-deps=true` in a sample `.npmrc` also sidesteps it.
+
+## Quoted phrases are adjacency only (`QueryPhrases` / `BuildQueryStage.Prepare`, `src/XpSearch.Core/Pipeline`)
+
+- **Simplified:** the phrase pre-parser scans for pairs of `"` in the normalized text and hands each
+  pair back to the same `MultiFieldQueryParser` re-quoted, so a phrase is always slop 0. There is no
+  proximity syntax (`"a b"~3`), no single-quote phrase, no `-"…"` exclusion and no nesting: an
+  unbalanced quote falls back to the pre-PH-1 escaped text. Everything the visitor types outside the
+  quotes is still escaped whole.
+- **Ceiling:** a visitor who wants "these words near each other" cannot ask for it, and a site whose
+  editors write `'french press'` gets two loose terms. The scan is a linear `IndexOf` walk over the
+  query text (capped by `MaxQueryLength`), so nothing here scales badly - it is expressiveness, not
+  performance, that is capped.
+- **Upgrade path:** `QuerySegment` already carries the phrase flag, so a slop would be one more field
+  on it plus a `~N` suffix on the re-quoted text; exclusion would be a `MUST_NOT` clause off the same
+  segment list. Both are contract-visible behaviour, so they want their own unit and a line in the
+  search API guide.

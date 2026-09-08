@@ -81,7 +81,7 @@ change is a new major of `XperienceCommunity.Search.Core` and of `@xperience-com
 | Field | Default | Notes |
 |---|---|---|
 | `index` | — | Required. Code name of the Lucene index. |
-| `query` | `""` | Empty string matches all documents. |
+| `query` | `""` | Empty string matches all documents. Quotes make a phrase — see [what the visitor can type](#what-the-visitor-can-type). |
 | `page` | `1` | One-based. `0` is a `400`. |
 | `pageSize` | `20` | Contract ceiling 1000; the effective maximum is enforced server-side and may be lower. |
 | `facets` | — | Attributes to count. Values come back in `facets`. |
@@ -142,6 +142,34 @@ And the response:
 
 `total` is the number of matching documents across all pages, `totalPages` the page count, `tookMs` the
 server-side time excluding the network.
+
+#### What the visitor can type
+
+Query text is treated as words, not as query syntax: `+`, `-`, `:`, `*`, `AND` and the rest are escaped
+and matched literally. **A balanced pair of double quotes is the one exception** — the words inside it
+have to appear next to each other, in that order, in one of the index's searchable fields (the same
+fields, with the same field weights, the loose words are searched over):
+
+| Typed | Matches |
+|---|---|
+| `french press` | documents that contain both words, anywhere |
+| `"french press"` | documents where the two words are adjacent, in that order |
+| `"french press" grinder` | the phrase **and** the loose word — both are required |
+| `"french press` | nothing special: an unbalanced quote is a literal character, as before |
+| `""` | nothing at all: an empty phrase is dropped |
+
+Smart quotes (`“ ”`, as pasted from a word processor) count as quotes.
+
+Two things are deliberately **not** applied inside quotes:
+
+- **[Typo tolerance](relevance-tuning.md#typo-tolerance)** — with the per-index toggle on, loose words
+  match near-spellings, but a phrase stays exact. `"french press" grindr` still finds the page.
+- **[Synonyms](relevance-tuning.md#synonyms)** — `press = machine` widens a loose `press`, never the
+  `press` inside `"french press"`.
+
+[Stopwords](relevance-tuning.md#stopwords) are dropped from the loose text only: a phrase keeps every
+word the visitor typed and the index's analyzer decides what to do with it. There is no proximity
+syntax (`"a b"~3`) and no single-quote phrase.
 
 #### No-results recovery
 

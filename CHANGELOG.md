@@ -12,6 +12,15 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Added (core):** quoted phrases. A balanced pair of double quotes in the visitor's text is now the
+  one piece of query syntax the endpoint honours: `"french press"` requires the words adjacent and in
+  order (a per-field `PhraseQuery`, over the same searchable fields and field weights as the loose
+  text), and `"french press" grinder` requires the phrase and the term. Smart quotes count as quotes;
+  an unbalanced quote and an empty `""` behave exactly as before, so no query that worked yesterday
+  changes its results unless it was quoted. A phrase is never fuzzed by
+  [typo tolerance](docs/guides/relevance-tuning.md#typo-tolerance), never synonym-expanded and never
+  stripped by a stopword list - the index analyzer alone decides what its words mean (PH-1).
+
 - **Added (widgets):** the last three JavaScript-only options now have a C# surface, so the canonical
   plain-HTML recipe copies into Razor and the Page Builder without losing anything (RZ-2).
   `<xps-pagination>` takes `padding`, `show-first` and `show-last`; `<xps-active-filters>` takes
