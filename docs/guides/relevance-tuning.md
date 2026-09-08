@@ -291,6 +291,11 @@ The query condition can be compared two ways.
   endings line up (*shoe* matches *shoes*), your synonyms count (*sofa* matches a search for *couch*),
   and *shoehorn* no longer matches *shoe*, because it is a different word.
 
+A condition compares against what the visitor typed **including any quotes they used**: a *contains*
+condition for `french press` still fires on a search for `"french press"`, while *is exactly* and
+*starts with* only do when you type the quotes into the pattern as well. The analyzed comparison never
+sees the quotes at all.
+
 **Neither one tolerates typos**, even with [typo tolerance](#typo-tolerance) turned on: that setting
 widens what a search *finds*, not what a rule *fires on*. *esspresso* matches no rule about
 *espresso*. If a misspelling matters to a rule, add it as a synonym or write a second rule for it.
@@ -478,7 +483,8 @@ words like *buy* on a shop.
 
 Two cautions. Removing a word makes searches *broader*, not better — if you make *free* a stopword,
 *free shipping* becomes *shipping*. And if a visitor searches for nothing but stopwords, the search
-is left alone rather than turned into "show me everything".
+is left alone rather than turned into "show me everything". Words a visitor put inside quotes are never
+removed: `"the press"` searches for exactly that.
 
 ### Field weights
 
