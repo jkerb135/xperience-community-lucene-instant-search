@@ -177,7 +177,7 @@ const queryTypes = [
 const ingestionTypes = [
   'BatchDeleteRequest', 'DeleteFilter', 'DeleteResponse', 'DocumentCounts', 'Health',
   'IndexListResponse', 'IndexStatus', 'IndexSummary', 'IngestionError', 'PatchRequest',
-  'PushDocument', 'SchemaField', 'UpsertRequest', 'UpsertResponse',
+  'PushDocument', 'RebuildStatus', 'SchemaField', 'UpsertRequest', 'UpsertResponse',
 ];
 
 const bundles = [

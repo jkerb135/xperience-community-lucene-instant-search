@@ -51,6 +51,14 @@ public sealed class XpSearchIngestionOptions
     /// </summary>
     public TimeSpan ReplayTimeout { get; set; } = TimeSpan.FromMinutes(2);
 
+    /// <summary>
+    /// Gets or sets how long a started rebuild may stay unfinished before the status page calls it
+    /// suspect. Defaults to thirty minutes, which is longer than a rebuild of a large index takes and
+    /// short enough that a rebuild the integration's queue swallowed does not read as "running"
+    /// forever.
+    /// </summary>
+    public TimeSpan RebuildStuckAfter { get; set; } = TimeSpan.FromMinutes(30);
+
     /// <summary>Gets the per-index settings, keyed by index code name (case-insensitive).</summary>
     public IDictionary<string, XpSearchIngestionIndexOptions> Indexes { get; } =
         new Dictionary<string, XpSearchIngestionIndexOptions>(StringComparer.OrdinalIgnoreCase);

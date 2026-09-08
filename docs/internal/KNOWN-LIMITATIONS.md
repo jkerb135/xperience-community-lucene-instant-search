@@ -475,10 +475,12 @@ and how to lift it.
 
 ## `health` in `XpSearchIndexer.GetStatusAsync` (`XpSearch.Ingestion`)
 
-- **Simplified:** `degraded` is derived from one number, `IIngestionQueue.FailedCount` - the count of
-  work items that threw in `XpSearchIngestionQueueWorker.ProcessItem` without one succeeding since. It
+- **Simplified:** `degraded` is derived from one number and one flag: `IIngestionQueue.FailedCount` -
+  the count of work items that threw in `XpSearchIngestionQueueWorker.ProcessItem` without one
+  succeeding since - and, since RB-1, whether a rebuild is running (`RebuildProgress.Running`). It
   used to be derived from the queue length, which made every asynchronous write flip a healthy index to
-  `degraded` until the queue drained (HW-3 §5.2).
+  `degraded` until the queue drained (HW-3 §5.2). Callers cannot tell the two causes apart from
+  `health` alone; the `rebuild` object says which it is.
 - **Ceiling:** the counter is a static field of the worker, so it is per process and starts at zero
   after a restart, and work that is *stuck* rather than failing - a queue that never drains because the
   worker thread is wedged - still reads as `healthy`. A failure followed by an unrelated success also
@@ -659,24 +661,33 @@ and how to lift it.
   reusable component (rather than only `BaseIndexEditPage` plus a sealed registration), derive from it
   and delete the copy. Failing that, ask the integration to accept a `parentType` override.
 
-## Rebuild progress on `IndexStatusPage.Rebuild` in `XpSearch.Admin/UIPages/IndexStatus.cs`
+## Rebuild progress in `RebuildProgress` (`XpSearch.Ingestion/Indexing/RebuildProgress.cs`)
 
-- **Simplified:** the "Rebuild in progress" state carries the start time of the rebuild and no
-  numerator. `Kentico.Xperience.Lucene` 15.0.5 exposes no rebuild progress: `ILuceneClient` is
+- **Simplified:** "is a rebuild running" is derived from two ingestion-log rows — the *rebuild* row
+  the Status page (or the ingestion `rebuild` route) writes, and the *rebuild-finished* row
+  `ExternalDocumentWriter` writes when the replay behind the rebuild completes — and not from any API
+  that reports it. `Kentico.Xperience.Lucene` 15.0.5 exposes no rebuild progress: `ILuceneClient` is
   `Rebuild` / `UpsertRecords` / `DeleteRecords` / `DeleteIndex` / `GetStatistics`, and
   `LuceneIndexStatisticsModel` carries only `Name`, `Entries` and `UpdatedAt` — a live count, not a
   target — while `LuceneQueueWorker` is internal
   ([`ILuceneClient.cs`](https://github.com/Kentico/xperience-by-kentico-lucene/blob/v15.0.5/src/Kentico.Xperience.Lucene.Core/Indexing/ILuceneClient.cs),
   [`LuceneIndexStatisticsModel.cs`](https://github.com/Kentico/xperience-by-kentico-lucene/blob/v15.0.5/src/Kentico.Xperience.Lucene.Core/Indexing/LuceneIndexStatisticsModel.cs),
   [`LuceneQueueWorker.cs`](https://github.com/Kentico/xperience-by-kentico-lucene/blob/v15.0.5/src/Kentico.Xperience.Lucene.Core/LuceneQueueWorker.cs)).
-  A "44 of 152" would have to be invented, so it is not shown. The state also lives only in the page
-  session that triggered the rebuild: `Load` clears it, because nothing can be asked whether a
-  rebuild is still running.
-- **Ceiling:** an operator who reloads the page during a rebuild sees the ordinary health tag and
-  counts that are still climbing, with no sign a rebuild is in flight.
-- **Upgrade path:** count the documents the ingestion queue's `Replay` work item writes and record a
-  started/finished pair in the ingestion log, then derive both the numerator and "still running" from
-  the log rather than from the page session.
+- **Ceiling:** three of them.
+  - *No numerator.* A "44 of 152" would still be invented, so the page shows "started at …" and the
+    live document count as "written so far".
+  - *The finish is heuristic.* The finished row is written after `LuceneQuiescenceWaiter` sees the
+    index stop changing (two equal `UpdatedAt` polls, bounded by `ReplayTimeout`), not after an
+    event, so `finishedAt` is a close estimate and a rebuild whose queue threw never gets a finished
+    row at all — it reads as running until `RebuildStuckAfter` (default 30 minutes) turns it into
+    "may have failed", which is a threshold rather than a diagnosis.
+  - *A rebuild started from Kentico's own Search application has no started row*, so it reports
+    "finished at …" with no elapsed time, and the Status page's live view of it only begins when the
+    finished row lands.
+- **Upgrade path:** an integration that raised a rebuild event (or exposed `LuceneQueueWorker`'s
+  state) would replace both the quiescence wait and the stuck threshold with facts; failing that, the
+  library could count the rebuild's own re-index work through `XpSearchIndexInfo`-style bookkeeping
+  and turn the numerator into an honest one.
 
 ## Recent ingestion window on `IndexStatusPage` in `XpSearch.Admin/UIPages/IndexStatus.cs`
 

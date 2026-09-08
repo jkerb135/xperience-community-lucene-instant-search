@@ -133,6 +133,12 @@ internal sealed class RecordingIngestionLog : IIngestionLog
                 .OrderByDescending(entry => entry.At)
                 .Take(count)
                 .ToList());
+
+    public Task<IngestionLogEntry?> ReadLatestAsync(string indexName, string operation, CancellationToken cancellationToken) =>
+        Task.FromResult(
+            Entries.Where(entry => entry.IndexName == indexName && entry.Operation == operation)
+                .OrderByDescending(entry => entry.At)
+                .FirstOrDefault());
 }
 
 /// <summary>
@@ -201,6 +207,14 @@ internal sealed class FixedSchemaProvider(IndexSchema schema) : IIndexSchemaProv
     public Task<IndexSchema> GetSchemaAsync(string indexName, CancellationToken cancellationToken) => Task.FromResult(schema);
 }
 
+/// <summary>A clock the test moves, so an elapsed threshold can be crossed without waiting.</summary>
+internal sealed class MovableClock : TimeProvider
+{
+    internal DateTimeOffset Now { get; set; } = new(2026, 9, 7, 12, 0, 0, TimeSpan.Zero);
+
+    public override DateTimeOffset GetUtcNow() => Now;
+}
+
 /// <summary>Names the caller in the ingestion log.</summary>
 internal sealed class FixedCaller(string prefix) : IIngestionCaller
 {
@@ -234,6 +248,8 @@ internal sealed class TestHarness : IDisposable
             evicting,
             new StaticSchemaProvider(Schema),
             new ImmediateRebuildWaiter(),
+            Log,
+            Time,
             NullLogger<ExternalDocumentWriter>.Instance);
 
         Queue = new ManualIngestionQueue(Writer);
@@ -249,10 +265,13 @@ internal sealed class TestHarness : IDisposable
             Log,
             new FixedCaller("test1234"),
             Microsoft.Extensions.Options.Options.Create(Options),
-            TimeProvider.System);
+            Time);
     }
 
     internal XpSearchIngestionOptions Options { get; }
+
+    /// <summary>The clock the writer and the indexer read, movable so a stuck rebuild can be staged.</summary>
+    internal MovableClock Time { get; } = new();
 
     internal TestLuceneIndex Index { get; }
 

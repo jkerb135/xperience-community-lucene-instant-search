@@ -58,6 +58,23 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
   seam only; nothing else changed on it. `XpSearchIndexingOptions` also gained `FlattenedLinksTo` and
   `FlattenedLinks`, which read the flatten registrations from the linked type's side.
 
+- **Added (ingestion, admin):** a rebuild's state now outlives the browser tab that started it
+  (RB-1). The rebuild writes a *started* row to the ingestion log, and the replay of externally
+  pushed documents that runs behind it writes a *rebuild-finished* row with the document count the
+  index then held; the Status page derives **Rebuild in progress** / **finished** from those two rows
+  instead of from a page-session value, so a reload - or a colleague's browser - shows the same
+  rebuild, and the page re-reads itself every ten seconds while one runs. A rebuild that has not
+  reported finishing after `XpSearchIngestionOptions.RebuildStuckAfter` (new, 30 minutes) is tagged
+  **Rebuild may have failed** with a pointer to the event log, because the Lucene integration's queue
+  swallows a failure there. `GET …/status` carries the same answer in a new `rebuild` object
+  (`running`, `startedAt`, `finishedAt`, `documents`), absent when no rebuild was ever recorded. There
+  is still no progress percentage: the integration reports no target, so none is invented.
+- **Changed (ingestion):** `health` is `degraded` while a rebuild is running, so an external system
+  polling `GET …/status` waits instead of trusting counts taken mid-rebuild. It goes back to
+  `healthy` when the rebuild reports finishing.
+- **Added (ingestion):** `IIngestionLog.ReadLatestAsync(index, operation, cancellationToken)` - the
+  rebuild rows are asked for by operation, because a busy import buries them below the
+  `ReadRecentAsync` window. A custom `IIngestionLog` implementation has to add the member.
 - **Added (widgets):** the last three JavaScript-only options now have a C# surface, so the canonical
   plain-HTML recipe copies into Razor and the Page Builder without losing anything (RZ-2).
   `<xps-pagination>` takes `padding`, `show-first` and `show-last`; `<xps-active-filters>` takes

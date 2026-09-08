@@ -130,15 +130,33 @@ public sealed class InfoIngestionLog : IIngestionLog
             .GetEnumerableTypedResultAsync(cancellationToken: cancellationToken)
             .ConfigureAwait(false);
 
-        return rows.Select(row => new IngestionLogEntry(
-                row.LogKeyPrefix,
-                row.LogIndexName,
-                row.LogOperation,
-                row.LogDocumentCount,
-                row.LogSucceeded,
-                row.LogMessage,
-                // Stored as UTC in a column without an offset, so the kind is stated rather than assumed.
-                DateTime.SpecifyKind(row.LogCreatedAt, DateTimeKind.Utc)))
-            .ToList();
+        return rows.Select(ToEntry).ToList();
     }
+
+    /// <inheritdoc />
+    public async Task<IngestionLogEntry?> ReadLatestAsync(string indexName, string operation, CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(indexName);
+        ArgumentException.ThrowIfNullOrEmpty(operation);
+
+        var rows = await provider.Get()
+            .WhereEquals(nameof(XpSearchIngestionLogInfo.LogIndexName), indexName)
+            .WhereEquals(nameof(XpSearchIngestionLogInfo.LogOperation), operation)
+            .OrderByDescending(nameof(XpSearchIngestionLogInfo.LogCreatedAt))
+            .TopN(1)
+            .GetEnumerableTypedResultAsync(cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+
+        return rows.Select(ToEntry).FirstOrDefault();
+    }
+
+    private static IngestionLogEntry ToEntry(XpSearchIngestionLogInfo row) =>
+        new(row.LogKeyPrefix,
+            row.LogIndexName,
+            row.LogOperation,
+            row.LogDocumentCount,
+            row.LogSucceeded,
+            row.LogMessage,
+            // Stored as UTC in a column without an offset, so the kind is stated rather than assumed.
+            DateTime.SpecifyKind(row.LogCreatedAt, DateTimeKind.Utc));
 }

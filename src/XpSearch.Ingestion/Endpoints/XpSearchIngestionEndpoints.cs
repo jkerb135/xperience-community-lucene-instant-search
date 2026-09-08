@@ -14,6 +14,7 @@ using XpSearch.Core.Abstractions;
 using XpSearch.Core.Contract;
 using XpSearch.Ingestion.Abstractions;
 using XpSearch.Ingestion.Contract;
+using XpSearch.Ingestion.Indexing;
 using XpSearch.Ingestion.Options;
 using XpSearch.Ingestion.Schema;
 
@@ -241,7 +242,7 @@ public static class XpSearchIngestionEndpoints
                 new IngestionLogEntry(
                     context.RequestServices.GetRequiredService<IIngestionCaller>().KeyPrefix,
                     index,
-                    "rebuild",
+                    RebuildProgress.StartedOperation,
                     0,
                     Succeeded: true,
                     "Rebuild triggered; external documents replay afterwards.",
