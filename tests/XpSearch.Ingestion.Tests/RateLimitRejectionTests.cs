@@ -15,8 +15,10 @@ using XpSearch.Core.Abstractions;
 using XpSearch.Core.Caching;
 using XpSearch.Ingestion.Abstractions;
 using XpSearch.Ingestion.Contract;
+using XpSearch.Ingestion.Endpoints;
 using XpSearch.Ingestion.Indexing;
 using XpSearch.Ingestion.Schema;
+using XpSearch.Ingestion.Security;
 using XpSearch.Ingestion.Tests.Fixtures;
 
 namespace XpSearch.Ingestion.Tests;
@@ -48,7 +50,8 @@ internal sealed class RateLimitRejectionTests
         builder.Services.AddSingleton<IIngestionSchemaProvider>(new StaticSchemaProvider(TestSchema.Products()));
         builder.Services.AddSingleton(strategies);
         builder.Services.AddSingleton<IRebuildCompletionWaiter, ImmediateRebuildWaiter>();
-        builder.Services.AddSingleton<IIngestionQueue, ImmediateQueue>();
+        // Nothing is ever queued: the limiter answers before any route runs.
+        builder.Services.AddSingleton(Substitute.For<IIngestionQueue>());
         builder.Services.AddXpSearchIngestion(options =>
         {
             options.RateLimitPermitsPerWindow = 1;
