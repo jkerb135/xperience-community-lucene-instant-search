@@ -37,4 +37,11 @@ public static class XpSearchConstants
     /// index property exactly this.
     /// </summary>
     public const string IndexPropertyName = "Index";
+
+    /// <summary>
+    /// Name of the rate limiting policy applied to <c>/api/xpsearch/query</c>, <c>/suggest</c> and
+    /// <c>/events</c>, partitioned per remote address. Registered by <c>AddXpSearch()</c>; it only
+    /// takes effect once the host calls <c>app.UseRateLimiter()</c>.
+    /// </summary>
+    public const string PublicRateLimitPolicy = "xpsearch-public";
 }

@@ -140,6 +140,40 @@ public sealed class XpSearchOptions
     /// <summary>Gets or sets the ceiling on <c>limit</c> for <c>/suggest</c>. Defaults to 20.</summary>
     public int MaxSuggestLimit { get; set; } = 20;
 
+    /// <summary>
+    /// Gets or sets whether <c>/query</c>, <c>/suggest</c> and <c>/events</c> are rate limited per
+    /// remote address. Defaults to <see langword="true"/>.
+    /// </summary>
+    /// <remarks>
+    /// The limit only takes effect once the host calls <c>app.UseRateLimiter()</c>, exactly like the
+    /// ingestion API's per-key limit.
+    /// </remarks>
+    public bool PublicRateLimitEnabled { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets how many requests one remote address may make to the three public endpoints per
+    /// <see cref="PublicRateLimitWindow"/>. Defaults to 120.
+    /// </summary>
+    /// <remarks>
+    /// A visitor typing costs one debounced query per typing pause plus its suggest request, so 120 a
+    /// minute is generous for a human and tight for a script. Raise it for a site that fires a probe
+    /// per facet interaction; lower it only after watching real traffic.
+    /// </remarks>
+    public int PublicRateLimitPermitsPerWindow { get; set; } = 120;
+
+    /// <summary>Gets or sets the window <see cref="PublicRateLimitPermitsPerWindow"/> is counted over. Defaults to one minute.</summary>
+    public TimeSpan PublicRateLimitWindow { get; set; } = TimeSpan.FromMinutes(1);
+
+    /// <summary>
+    /// Gets or sets how many events <c>/events</c> accepts for one <c>queryId</c>. Defaults to 20.
+    /// </summary>
+    /// <remarks>
+    /// One search produces at most a handful of clicks and conversions; a caller that replays a
+    /// captured <c>queryId</c> to move the popularity signal runs out of budget instead. Events past
+    /// the budget are dropped silently - the endpoint still answers 202.
+    /// </remarks>
+    public int MaxEventsPerQuery { get; set; } = 20;
+
     /// <summary>Gets the analytics settings: query log retention and query suggestions (spec §9.2).</summary>
     public XpSearchAnalyticsOptions Analytics { get; } = new();
 
