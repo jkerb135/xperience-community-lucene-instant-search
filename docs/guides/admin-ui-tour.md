@@ -299,7 +299,10 @@ entries for this index).
 
 **Rebuild index** sits in the header, asks for confirmation, and evaluates the *Rebuild* permission
 rather than *Update*. A rebuild empties the index and writes it again, so search results are
-incomplete while it runs.
+incomplete while it runs. The **Rebuild in progress** state comes from the ingestion log rather than
+from your browser, so it survives a reload and a colleague sees the same thing; the page re-reads
+itself every ten seconds until the rebuild reports finishing, and then shows when it finished and how
+many documents it left behind.
 
 Depth: [Relevance tuning → Reading the Status page](relevance-tuning.md#reading-the-status-page).
 

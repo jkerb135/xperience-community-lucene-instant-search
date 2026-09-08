@@ -47,7 +47,7 @@ All under `/api/xpsearch/admin/`, all authenticated with a bearer API key. The q
 | `POST indexes/{index}/documents/delete` | Delete by `ids` or by `filter.source` | `200` `DeleteResponse` |
 | `POST indexes/{index}/clear?source=pim` | Delete a whole source, or every external source | `200` `DeleteResponse` |
 | `POST indexes/{index}/rebuild` | Rebuild Xperience content, then replay external documents | `202` `UpsertResponse` |
-| `GET indexes/{index}/status` | Counts by source, last write, health | `200` `IndexStatus` |
+| `GET indexes/{index}/status` | Counts by source, last write, health, rebuild | `200` `IndexStatus` |
 | `GET indexes` | Every index and its schema | `200` `IndexListResponse` |
 
 Every response carries `X-XpSearch-Api-Version: 1`. Failures are RFC 9457 Problem Details; a document
@@ -211,7 +211,35 @@ response carries a `taskId` and reports how many *stored* documents were removed
 half runs on the ingestion queue. `GET …/status` is therefore eventually consistent - a status read
 straight after a `clear` can still report the pre-clear counts. That lag is not an incident, and
 `health` stays `healthy` through it; `degraded` means queued work failed to reach the index and
-nothing has succeeded since.
+nothing has succeeded since, **or** that a rebuild is running.
+
+### Waiting for a rebuild
+
+`GET …/status` carries a `rebuild` object whenever this library has ever recorded a rebuild of the
+index, so a sync job can wait instead of pushing into a half-written index:
+
+```json
+{
+  "index": "products",
+  "documents": { "total": 152, "bySource": { "xperience": 32, "pim": 120 } },
+  "health": "degraded",
+  "rebuild": { "running": true, "startedAt": "2026-09-07T09:31:00Z" }
+}
+```
+
+- `running` is `true` from the moment a rebuild is triggered until the replay of externally pushed
+  documents behind it completes. `health` is `degraded` for exactly as long, which is the signal to
+  wait: the counts are mid-rebuild, not final.
+- `finishedAt` and `documents` describe the last rebuild that finished — `documents` is how many
+  documents the index held at that moment, not a target.
+- `startedAt` is absent when the rebuild was started from Kentico's own **Search** application, which
+  records no start; `finishedAt` is absent while one runs, and the whole object is absent when no
+  rebuild of the index was ever recorded.
+
+The finish is detected by watching the index stop changing (there is no rebuild-finished event to
+subscribe to), so `finishedAt` is a close estimate. A rebuild that never reports finishing leaves
+`running: true` — the admin Status page calls that out after `RebuildStuckAfter` (30 minutes by
+default).
 
 ### Typed clients
 

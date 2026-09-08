@@ -657,3 +657,25 @@ Open **Lucene Search → DancingGoatSample → Edit index → Query tester** and
      `ProductFieldTags` = `HotTips` in the sidebar and confirm it filters.
 146. Below 1024px on `/search-razor` the Filter & sort sheet opens with Category / Products / Taste and
      the sort pills; Apply runs one search.
+
+## §AE — RB-1 rebuild progress that survives a page reload (2026-09-07)
+
+147. **Rebuild survives a reload.** On **Lucene Search → indexes → *index* → Edit index → Status**,
+     click **Rebuild index** and confirm. The header shows a spinner and **Rebuilding**; the health
+     tile reads **Rebuild in progress**, the **Documents** tile's hint reads "Written so far — the
+     total is not known", and the fourth tile is **Rebuild started** with the time. Now press F5 (and
+     open the same page in a second browser): both still show the rebuild. Nothing shows a
+     percentage.
+148. **It finishes by itself.** Leave the page open. Within ~10 seconds of the replay completing the
+     page re-reads itself: the button comes back, the health tag reads **Healthy**, and the header
+     meta line reads `Index … · Lucene · rebuilt <time>, N documents`.
+149. **The wire says the same thing.** During the rebuild,
+     `GET /api/xpsearch/admin/indexes/<index>/status` with a read key answers `"health": "degraded"`
+     and `"rebuild": {"running": true, "startedAt": …}`; after it finishes, `"health": "healthy"` and
+     `"rebuild": {"running": false, "finishedAt": …, "documents": N}`.
+150. **A rebuild from Kentico's own Search application** (the integration's index listing, not our
+     page) leaves no started row: when its replay lands, the Status page shows the finish alone -
+     `rebuilt <time>, N documents` - and never showed "Rebuilding".
+151. **Stuck.** Optional, needs a wait or a shortened `RebuildStuckAfter`: with a started row older
+     than the threshold and no finished row, the page tags **Rebuild may have failed** and the
+     callout points at **System → Event log**.
