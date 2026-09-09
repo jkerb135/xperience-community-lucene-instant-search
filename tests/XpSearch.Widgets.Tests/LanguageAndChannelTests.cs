@@ -7,6 +7,9 @@ using Microsoft.Extensions.Logging;
 
 using NSubstitute;
 
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
 
 using XpSearch.Core.Abstractions;
@@ -214,6 +217,32 @@ internal sealed class LanguageAndChannelTests
         {
             Assert.That(context.GetLanguage(), Is.Null);
             Assert.That(context.GetChannel(), Is.Null);
+        });
+    }
+
+    [Test]
+    public void A_tag_element_asks_the_request_for_the_page_when_nothing_assigned_one()
+    {
+        // Razor activates a tag element's helper from its type, so PageContext is never assigned by
+        // AddXpSearchWidget's factory there; the helper must ask the request itself.
+        var services = new ServiceCollection();
+        services.AddSingleton<IXpSearchPageContext>(new FakePageContext("es", "DancingGoat"));
+        using var provider = services.BuildServiceProvider();
+
+        var helper = new SearchBoxTagHelper(new XpSearchMountRenderer(), new FakeIndexCatalog("site-content"))
+        {
+            Index = "site-content",
+            ViewContext = new ViewContext { HttpContext = new DefaultHttpContext { RequestServices = provider } }
+        };
+
+        Assert.That(helper.PageContext, Is.Null, "precondition: Razor's activator leaves the property unset");
+
+        var config = InstanceConfig(helper);
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(config.GetProperty("language").GetString(), Is.EqualTo("es"));
+            Assert.That(config.GetProperty("channel").GetString(), Is.EqualTo("DancingGoat"));
         });
     }
 

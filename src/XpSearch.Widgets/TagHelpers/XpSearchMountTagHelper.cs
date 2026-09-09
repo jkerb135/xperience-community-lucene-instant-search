@@ -232,6 +232,11 @@ public abstract class XpSearchMountTagHelper<TOptions> : TagHelper
         scope = XpSearchScope.From(context);
         var options = Merge(Options ?? new TOptions());
 
+        // Razor activates a tag element's helper from its type, not from the registration that assigns
+        // PageContext (LC-1), so a tag element asks the request for it; the Page Builder path and
+        // Html.XpSearchAsync arrive with it already set.
+        PageContext ??= ViewContext?.HttpContext?.RequestServices?.GetService(typeof(IXpSearchPageContext)) as IXpSearchPageContext;
+
         output.TagName = null;
         output.Content.SetHtmlContent(
             await RenderAsync(options, ViewContext?.HttpContext?.RequestAborted ?? CancellationToken.None)
