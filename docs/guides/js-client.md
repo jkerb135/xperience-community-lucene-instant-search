@@ -102,7 +102,8 @@ declarations for every entry — see [JavaScript bundler setup](javascript-bundl
 | `facets` | — | Facet attributes to always count, on top of those the widgets ask for. |
 | `highlight` | — | `{ fields, preTag, postTag, snippetLength }`, passed straight through to the contract. |
 | `fields` | — | Document fields to project into `result.attributes`. |
-| `language` | — | Language code to search in. |
+| `language` | — | Language code to search in. Omit to search every language the index covers. |
+| `channel` | — | Website channel code name to search in. Omit to search every channel the index covers. The mounts a Razor or Page Builder page renders carry the page's own language and channel here (see [Razor tag helpers](razor-tag-helpers.md)). |
 | `headers` | `{}` | Extra request headers, e.g. an API key. |
 | `fetchFn` | `globalThis.fetch` | Injectable `fetch`, for tests and SSR. |
 | `retries` | `2` | Retries after a network error, `429` or `5xx`. Never after another `4xx`. |
@@ -111,7 +112,7 @@ declarations for every entry — see [JavaScript bundler setup](javascript-bundl
 
 The instance exposes `addWidgets(widgets)`, `removeWidgets(widgets)`, `start()`, `dispose()`,
 `on(event, handler)`, `off(event, handler)`, `urlFor(state?)`, `sendEvent(type, resultId, position?)`,
-`suggest({ query, limit?, language? })`, `probe(overrides?)`, and the read-only `state`, `results`,
+`suggest({ query, limit?, language?, channel? })`, `probe(overrides?)`, and the read-only `state`, `results`,
 `status`, `actions` and `index`.
 
 `suggest()` is autocomplete over the instance's own index and transport — the endpoint, headers,

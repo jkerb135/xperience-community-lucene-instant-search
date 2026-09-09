@@ -12,6 +12,30 @@ Anything source- or behaviour-breaking leads with `**Breaking (scope):**` — th
 
 ## [Unreleased]
 
+- **Added (core, widgets):** website channel scoping. `XpSearchIndexingStrategy` writes the page's
+  website channel to every web page document as the `channel` keyword field (facetable and
+  retrievable, like `language`); `SearchRequest.channel` and `SuggestRequest.channel` filter on it,
+  facet counts respect it, it is part of the response cache key, and the query log's channel column
+  comes from the request when it names one. One index may therefore serve several website channels -
+  one index per channel is no longer required. A reusable content item belongs to no channel and
+  writes no field; a pushed document may still carry `channel` as an ordinary attribute. **Rebuild
+  your indexes**: documents indexed before the upgrade have no `channel` and are skipped by a
+  channel-scoped search.
+- **Changed (widgets):** every mount now carries the language and the website channel of the page it
+  sits on, resolved once by the tag helper base (tag attribute, options record, enclosing
+  `<xps-search>`, then `IPreferredLanguageRetriever` / `IWebsiteChannelContext`) and written into
+  `data-xps-instance-config`. On a multilingual or multichannel site this narrows what the widgets
+  find: a Spanish page of one channel now searches Spanish content of that channel, on the
+  server-rendered first paint and after hydration, where it used to search everything the index held.
+  Widen it per widget or per scope with `language="*"` / `channel="*"`, or name another value with the
+  new `language` and `channel` attributes. Outside a website channel request (a plain Razor page, a
+  test host) nothing changes. There are no new Page Builder properties; the index drop-down now lists
+  the indexes covering the page's channel first and suffixes the rest with *(other channel)*, and a
+  widget pointed at an index that does not cover its page's language or channel logs one warning per
+  index and value.
+- **Added (js):** `createSearch({ channel })` - a website channel forwarded on every query, suggest and
+  probe request, exactly like `language`.
+
 - **Fixed (ingestion):** a caller past the per-key rate limit is now answered `429 Too Many Requests` with a
   `Retry-After` header, as the ingestion guide always said and as the typed clients back off on. The
   policy previously set no rejection handler, so ASP.NET Core answered its default `503` with no hint.

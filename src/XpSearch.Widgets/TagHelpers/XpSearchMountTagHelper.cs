@@ -61,6 +61,29 @@ public abstract class XpSearchMountTagHelper<TOptions> : TagHelper
     public string? InstanceId { get; set; }
 
     /// <summary>
+    /// Gets or sets the language to search. Empty uses the enclosing <c>&lt;xps-search&gt;</c> and then
+    /// the language the page is being viewed in; <c>*</c> searches every language the index covers.
+    /// </summary>
+    [HtmlAttributeName("language")]
+    public string? Language { get; set; }
+
+    /// <summary>
+    /// Gets or sets the website channel to search. Empty uses the enclosing <c>&lt;xps-search&gt;</c>
+    /// and then the channel the page belongs to; <c>*</c> searches every channel the index covers.
+    /// </summary>
+    [HtmlAttributeName("channel")]
+    public string? Channel { get; set; }
+
+    /// <summary>
+    /// Gets or sets what the page the widget sits on decides: its language and its website channel
+    /// (LC-1). Set by <c>AddXpSearchWidget</c> when the tag helper is resolved, so a widget placed any
+    /// of the three ways gets the same defaults; <see langword="null"/> means no page to ask, and the
+    /// search then covers everything the index does.
+    /// </summary>
+    [HtmlAttributeNotBound]
+    public IXpSearchPageContext? PageContext { get; set; }
+
+    /// <summary>
     /// Gets or sets the current view context. Bound by Razor for a tag element; the Page Builder base
     /// class and <c>Html.XpSearchAsync</c> set it before they call <see cref="BuildAsync"/>, because
     /// <see cref="BuildContentAsync"/> renders through it.
@@ -74,6 +97,20 @@ public abstract class XpSearchMountTagHelper<TOptions> : TagHelper
     /// named index, the enclosing scope's, or the project's only one. Empty when none could be found.
     /// </summary>
     public string CurrentIndex { get; private set; } = string.Empty;
+
+    /// <summary>
+    /// Gets the language the last <see cref="Validate"/> or <see cref="BuildAsync"/> call resolved:
+    /// the attribute, the options record, the enclosing scope, or the page's own.
+    /// <see langword="null"/> searches every language the index covers.
+    /// </summary>
+    public string? CurrentLanguage { get; private set; }
+
+    /// <summary>
+    /// Gets the website channel the last <see cref="Validate"/> or <see cref="BuildAsync"/> call
+    /// resolved: the attribute, the options record, the enclosing scope, or the page's own.
+    /// <see langword="null"/> searches every channel the index covers.
+    /// </summary>
+    public string? CurrentChannel { get; private set; }
 
     /// <summary>
     /// Gets what the enclosing <c>&lt;xps-search&gt;</c> published, or <see langword="null"/> outside
@@ -116,6 +153,11 @@ public abstract class XpSearchMountTagHelper<TOptions> : TagHelper
 
         CurrentIndex = ResolveIndex(options);
 
+        // The page decides unless something nearer said otherwise (LC-1); "*" is how a page inside a
+        // channel deliberately searches all of them.
+        CurrentLanguage = Scoped(FirstSet(Language, options.Language, scope?.Language), PageContext?.GetLanguage());
+        CurrentChannel = Scoped(FirstSet(Channel, options.Channel, scope?.Channel), PageContext?.GetChannel());
+
         return CurrentIndex.Length == 0 ? WidgetResources.Hint_SelectIndex : null;
     }
 
@@ -139,6 +181,13 @@ public abstract class XpSearchMountTagHelper<TOptions> : TagHelper
             throw new InvalidOperationException(message);
         }
 
+        if (PageContext is not null)
+        {
+            await PageContext
+                .WarnIfNotCoveredAsync(CurrentIndex, CurrentLanguage, CurrentChannel, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
         MountLabels = null;
         var content = await BuildContentAsync(options, cancellationToken).ConfigureAwait(false);
 
@@ -150,6 +199,17 @@ public abstract class XpSearchMountTagHelper<TOptions> : TagHelper
 
         BuildConfig(options, mount.Config);
         mount.InstanceConfig["index"] = CurrentIndex;
+
+        if (CurrentLanguage is not null)
+        {
+            mount.InstanceConfig["language"] = CurrentLanguage;
+        }
+
+        if (CurrentChannel is not null)
+        {
+            mount.InstanceConfig["channel"] = CurrentChannel;
+        }
+
         BuildInstanceConfig(options, mount.InstanceConfig);
         scope?.ApplyTo(mount.InstanceConfig);
 
@@ -256,11 +316,18 @@ public abstract class XpSearchMountTagHelper<TOptions> : TagHelper
         type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
             .Where(property => property.CanRead
                 && property.GetIndexParameters().Length == 0
-                && property.Name is not (nameof(XpSearchMountOptions.Index) or nameof(XpSearchMountOptions.InstanceId)))
+                && property.Name is not (nameof(XpSearchMountOptions.Index)
+                    or nameof(XpSearchMountOptions.InstanceId)
+                    or nameof(XpSearchMountOptions.Language)
+                    or nameof(XpSearchMountOptions.Channel)))
             .ToArray();
 
     private static string? FirstSet(params string?[] candidates) =>
         candidates.FirstOrDefault(candidate => !string.IsNullOrWhiteSpace(candidate))?.Trim();
+
+    /// <summary>The named scope, the page's own when nothing named one, or nothing for <c>*</c>.</summary>
+    private static string? Scoped(string? named, string? fromPage) =>
+        named == "*" ? null : named ?? FirstSet(fromPage);
 
     private string ResolveIndex(TOptions options)
     {

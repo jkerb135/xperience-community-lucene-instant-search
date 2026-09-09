@@ -29,6 +29,9 @@ public static class XpSearchWidgetsServiceCollectionExtensions
         services.TryAddSingleton<IXpSearchEditorContext, KenticoEditorContext>();
         services.TryAddSingleton<IXpSearchIndexCatalog, LuceneIndexCatalog>();
 
+        // Scoped: it reads the current request's language and channel (LC-1).
+        services.TryAddScoped<IXpSearchPageContext, KenticoPageContext>();
+
         return services
             .AddXpSearchWidget<SearchBoxTagHelper, SearchBoxOptions>()
             .AddXpSearchWidget<ResultsTagHelper, ResultsOptions>()
@@ -62,7 +65,16 @@ public static class XpSearchWidgetsServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         // Transient: a tag helper carries the state of one render (the resolved index, the first paint).
-        services.TryAddTransient<TTagHelper>();
+        // The page context is set here rather than taken as a constructor parameter, so that adding
+        // "the page decides" (LC-1) did not change the constructor of every widget, third-party ones
+        // included.
+        services.TryAddTransient(provider =>
+        {
+            var tagHelper = ActivatorUtilities.CreateInstance<TTagHelper>(provider);
+            tagHelper.PageContext = provider.GetService<IXpSearchPageContext>();
+
+            return tagHelper;
+        });
         services.TryAddTransient<XpSearchMountTagHelper<TOptions>>(provider => provider.GetRequiredService<TTagHelper>());
 
         return services;

@@ -363,3 +363,33 @@ describe('analytics', () => {
     });
   });
 });
+
+describe('channel (LC-1)', () => {
+  it('travels on the query, the suggest and the probe request, beside the language', async () => {
+    const { fetchFn, requests } = stubFetch();
+    const search = create({
+      index: 'site-content',
+      fetchFn,
+      language: 'es',
+      channel: 'DancingGoat',
+    });
+    search.start();
+    await vi.waitFor(() => expect(requests).toHaveLength(1));
+
+    await search.suggest({ query: 'esp' });
+    await search.probe();
+
+    expect(requests).toHaveLength(3);
+    for (const request of requests) {
+      expect(request).toMatchObject({ language: 'es', channel: 'DancingGoat' });
+    }
+  });
+
+  it('is absent from the request when the instance names no channel', async () => {
+    const { fetchFn, requests } = stubFetch();
+    create({ index: 'site-content', fetchFn }).start();
+    await vi.waitFor(() => expect(requests).toHaveLength(1));
+
+    expect(requests[0]).not.toHaveProperty('channel');
+  });
+});

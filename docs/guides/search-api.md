@@ -71,6 +71,7 @@ change is a new major of `XperienceCommunity.Search.Core` and of `@xperience-com
   },
   "fields": ["title", "url", "summary", "image"],
   "language": "en",
+  "channel": "DancingGoat",
   "queryId": "generated-guid",
   "explain": false
 }
@@ -92,7 +93,8 @@ change is a new major of `XperienceCommunity.Search.Core` and of `@xperience-com
 | `highlight.preTag` / `postTag` | `<mark>` / `</mark>` | Inserted after HTML-encoding, so snippets are safe to render. |
 | `highlight.snippetLength` | `200` | Characters. |
 | `fields` | — | Omit for the index's default projection. The result `id` is always returned. |
-| `language` | — | Omit to use the current request's language. |
+| `language` | — | Omit to search every language the index covers. |
+| `channel` | — | Website channel code name. Omit to search every channel the index covers. |
 | `queryId` | — | Omit and the server generates one. |
 | `explain` | `false` | See [the explain flag](#the-explain-flag). |
 
@@ -381,7 +383,7 @@ with one line (see
 ### `POST /api/xpsearch/suggest`
 
 ```json
-{ "index": "site-content", "query": "esp", "limit": 5, "language": "en" }
+{ "index": "site-content", "query": "esp", "limit": 5, "language": "en", "channel": "DancingGoat" }
 ```
 
 ```json
@@ -595,9 +597,22 @@ window* (10000 by default), because Lucene ranks every document up to that depth
 [Performance and sizing](performance-and-sizing.md), which also says how deep paging, facets, typo
 tolerance and corpus size actually behave.
 
-**`language`** filters on the language field the Lucene integration writes to every document. One index
-holds every language; whether a per-language index is the better model is not decided yet, so treat this
-as filtering, not as index selection.
+**`language`** filters on the language field the Lucene integration writes to every document, and
+**`channel`** on the website channel field the indexing strategy writes to every page. Both are term
+filters, not index selection: one index holds every language and every channel it is configured for
+(ADR-0002, ADR-0031). A value the index does not cover is not an error — it simply matches nothing.
+An empty `channel` (`""` or blank) is a `400` keyed `channel`.
+
+#### What the page decides
+
+Neither member is guessed by the server. A widget placed on a page — as a Page Builder widget, as a
+tag helper or through `Html.XpSearchAsync` — carries the page's own language
+(`IPreferredLanguageRetriever`) and website channel (`IWebsiteChannelContext`) into every request its
+mount makes, so a Spanish page of the *DancingGoat* channel searches Spanish DancingGoat content
+without anyone configuring it. Override it per widget or per `<xps-search>` scope with the `language`
+and `channel` attributes, and use `*` to search every language or every channel from a page that
+belongs to one. A caller building requests by hand (the JavaScript client, curl, a headless front end)
+sends whatever it wants, and omitting a member searches everything the index covers.
 
 **`fields`** accepts attributes the schema marks retrievable. Omit it and every retrievable attribute is
 returned. The result `id` is always returned and is never an attribute.

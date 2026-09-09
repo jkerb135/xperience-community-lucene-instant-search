@@ -87,6 +87,10 @@ export type EventType = "click" | "conversion";
  */
 export interface SearchRequest {
     /**
+     * Website channel name to search. Omit to search every channel the index covers.
+     */
+    channel?: string;
+    /**
      * When true, each result carries ranking explaining its score. Defaults to false. Used by
      * the admin query tester (spec 8.4).
      */
@@ -115,8 +119,8 @@ export interface SearchRequest {
      */
     index: string;
     /**
-     * Language code of the content to search, for example "en". Omit to use the current
-     * request's language.
+     * Language code of the content to search, for example "en". Omit to search every language
+     * the index covers.
      */
     language?: string;
     /**
@@ -457,12 +461,17 @@ export interface RankingStep {
  */
 export interface SuggestRequest {
     /**
+     * Website channel name to search. Omit to search every channel the index covers.
+     */
+    channel?: string;
+    /**
      * Required. Code name of the Lucene index to suggest from. Must be non-empty; validated
      * server-side, which answers 400 Problem Details when it is not.
      */
     index: string;
     /**
-     * Language code to suggest in, for example "en". Omit to use the current request's language.
+     * Language code to suggest in, for example "en". Omit to search every language the index
+     * covers.
      */
     language?: string;
     /**

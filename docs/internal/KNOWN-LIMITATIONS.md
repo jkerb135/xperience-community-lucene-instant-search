@@ -1516,3 +1516,19 @@ and how to lift it.
   on it plus a `~N` suffix on the re-quoted text; exclusion would be a `MUST_NOT` clause off the same
   segment list. Both are contract-visible behaviour, so they want their own unit and a line in the
   search API guide.
+
+## Channel and language scoping is a filter, not a rule condition or an analyzer (LC-1)
+
+- **Simplified:** `IndexSchemaProvider.ChannelAttribute` is one keyword field written by
+  `XpSearchIndexingStrategy.Map` for web page items, filtered by `BuildQueryStage.ChannelFilter` and
+  `DocumentSuggestService.BuildQuery`. The tuning rules (`XpSearch.Core/Tuning`) have no channel
+  condition, so a boost or a pin cannot be scoped to one channel; a rule applies to every channel the
+  index covers. There is no per-language analyzer either (ADR-0002). The consistency warning in
+  `KenticoPageContext.Warn` fires once per index and value **per process**, from a static set.
+- **Ceiling:** a multichannel index shares its whole tuning surface - synonyms, boosts, pins,
+  redirects - across its channels, and one analyzer across its languages. On a web farm the warning is
+  logged once per node, and it never fires again after a definition is corrected without a restart.
+- **Upgrade path:** a channel condition is one more `RuleCondition` shape plus a column on the rule
+  Info class and a field in the rule editor, evaluated where the contact-group condition already is;
+  per-language analysis is one index per language (ADR-0002's own upgrade path). The warning becomes
+  per-definition if the set is keyed on the definition's values rather than on the index name.

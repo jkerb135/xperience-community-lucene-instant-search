@@ -39,7 +39,7 @@ public abstract class XpSearchMountWidgetProperties : IWidgetProperties
     [DropDownComponent(
         Label = "Search index",
         Tooltip = "Which Lucene index this widget searches.",
-        ExplanationText = "All widgets of one search instance must select the same index. Leave it empty when the project has exactly one index. The index's own Search settings - page size, cache lifetime, facet and suggestion limits - apply to everything this widget asks for.",
+        ExplanationText = "All widgets of one search instance must select the same index. Leave it empty when the project has exactly one index. The index's own Search settings - page size, cache lifetime, facet and suggestion limits - apply to everything this widget asks for. The widget searches this page's own language and website channel; indexes that do not cover this channel are listed last.",
         DataProviderType = typeof(XpSearchIndexOptionsProvider),
         Order = OrderIndex)]
     public string Index { get; set; } = string.Empty;

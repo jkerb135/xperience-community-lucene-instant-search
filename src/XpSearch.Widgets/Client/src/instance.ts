@@ -110,6 +110,7 @@ export function createSearch(options: XpSearchOptions): SearchInstance {
       ...(options.highlight === undefined ? {} : { highlight: options.highlight }),
       ...(options.fields === undefined ? {} : { fields: options.fields }),
       ...(options.language === undefined ? {} : { language: options.language }),
+      ...(options.channel === undefined ? {} : { channel: options.channel }),
     };
     widgets.forEach((widget, at) => {
       if (!widget.prepareRequest) return;
@@ -330,6 +331,7 @@ export function createSearch(options: XpSearchOptions): SearchInstance {
     suggest(request: Omit<SuggestRequest, 'index'>): Promise<SuggestResponse> {
       return client.suggest({
         ...(options.language === undefined ? {} : { language: options.language }),
+        ...(options.channel === undefined ? {} : { channel: options.channel }),
         ...request,
         index: options.index,
       });
@@ -343,6 +345,7 @@ export function createSearch(options: XpSearchOptions): SearchInstance {
           index: options.index,
           ...st.stateToWireFragment(store.get()),
           ...(options.language === undefined ? {} : { language: options.language }),
+          ...(options.channel === undefined ? {} : { channel: options.channel }),
           ...overrides,
         })
         .then((response) => ({ total: response.total }));

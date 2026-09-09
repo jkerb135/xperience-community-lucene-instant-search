@@ -72,6 +72,7 @@ public static class SearchCacheKey
                 },
             request.Sort,
             request.Language,
+            request.Channel,
             request.Fields,
             request.Explain,
             Highlight = request.Highlight is null

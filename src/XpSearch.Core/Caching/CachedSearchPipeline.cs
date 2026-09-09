@@ -186,6 +186,7 @@ public sealed class CachedSearchPipeline : ISearchPipeline
             Stopwatch.GetElapsedTime(start),
             request.Language ?? string.Empty,
             experiment,
-            (int)Math.Clamp(response.Page * response.PageSize, 0, int.MaxValue));
+            (int)Math.Clamp(response.Page * response.PageSize, 0, int.MaxValue),
+            request.Channel ?? string.Empty);
     }
 }

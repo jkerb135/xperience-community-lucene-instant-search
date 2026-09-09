@@ -17,7 +17,8 @@ internal sealed record TestDocument(
     IReadOnlyList<string> Tags,
     IReadOnlyList<string> Topics,
     double? Price,
-    long? PublishedAt);
+    long? PublishedAt,
+    string Channel = "");
 
 /// <summary>
 /// The fixture corpus and the schema that describes it: two content types, two taxonomy dimensions,
@@ -32,6 +33,12 @@ internal static class TestCorpus
     internal const string TopicField = "Topic";
     internal const string PriceField = "Price";
     internal const string PublishedAtField = "PublishedAt";
+
+    /// <summary>The website channel most fixture documents belong to (LC-1).</summary>
+    internal const string MainChannel = "DancingGoat";
+
+    /// <summary>The second website channel of the fixture, so a channel filter has something to exclude (LC-1).</summary>
+    internal const string PartnerChannel = "PartnerSite";
 
     /// <summary>The result id of the document whose body contains a script tag.</summary>
     internal const string ScriptDocumentId = "doc-script:en";
@@ -92,12 +99,12 @@ internal static class TestCorpus
 
     internal static IReadOnlyList<TestDocument> Documents { get; } =
     [
-        new("doc-1:en", "Espresso Basics", "Brewing espresso requires pressure and patience.", "Article", "en", "/articles/espresso-basics", ["coffee"], ["brewing", "coffee"], ["espresso-drinks"], null, 1_700_000_000),
-        new("doc-2:en", "Latte Art", "Steamed milk poured into espresso.", "Article", "en", "/articles/latte-art", ["coffee"], ["milk"], ["latte"], null, 1_700_000_100),
-        new("doc-3:en", "Espresso Machine", "A pump driven espresso machine for the home.", "Product", "en", "/products/espresso-machine", ["equipment"], ["brewing"], [], 499.99, 1_690_000_000),
-        new("doc-4:en", "Coffee Grinder", "A burr grinder for consistent coffee grounds.", "Product", "en", "/products/coffee-grinder", ["equipment"], ["grinding"], ["grinders"], 149.5, 1_690_000_100),
-        new("doc-5:en", "Filter Papers", "Paper filters for pour over brewing.", "Product", "en", "/products/filter-papers", ["accessories"], ["brewing"], [], 5, 1_680_000_000),
-        new("doc-6:de", "Espresso Grundlagen", "Espresso braucht Druck.", "Article", "de", "/de/artikel/espresso", ["coffee"], ["brewing"], ["latte"], null, 1_700_000_200),
+        new("doc-1:en", "Espresso Basics", "Brewing espresso requires pressure and patience.", "Article", "en", "/articles/espresso-basics", ["coffee"], ["brewing", "coffee"], ["espresso-drinks"], null, 1_700_000_000, MainChannel),
+        new("doc-2:en", "Latte Art", "Steamed milk poured into espresso.", "Article", "en", "/articles/latte-art", ["coffee"], ["milk"], ["latte"], null, 1_700_000_100, MainChannel),
+        new("doc-3:en", "Espresso Machine", "A pump driven espresso machine for the home.", "Product", "en", "/products/espresso-machine", ["equipment"], ["brewing"], [], 499.99, 1_690_000_000, MainChannel),
+        new("doc-4:en", "Coffee Grinder", "A burr grinder for consistent coffee grounds.", "Product", "en", "/products/coffee-grinder", ["equipment"], ["grinding"], ["grinders"], 149.5, 1_690_000_100, PartnerChannel),
+        new("doc-5:en", "Filter Papers", "Paper filters for pour over brewing.", "Product", "en", "/products/filter-papers", ["accessories"], ["brewing"], [], 5, 1_680_000_000, PartnerChannel),
+        new("doc-6:de", "Espresso Grundlagen", "Espresso braucht Druck.", "Article", "de", "/de/artikel/espresso", ["coffee"], ["brewing"], ["latte"], null, 1_700_000_200, MainChannel),
         new(ScriptDocumentId, "Script Danger", "<script>alert('xss')</script> espresso injection attempt.", "Article", "en", "/articles/script-danger", ["coffee"], [], [], null, 1_700_000_300)
     ];
 
@@ -106,4 +113,7 @@ internal static class TestCorpus
 
     /// <summary>The language attribute; the documents carry it under the integration's own field name.</summary>
     internal static string LanguageField => IndexSchemaProvider.LanguageAttribute;
+
+    /// <summary>The channel attribute (LC-1); the strategy writes it under the same name it is asked for.</summary>
+    internal static string ChannelField => IndexSchemaProvider.ChannelAttribute;
 }

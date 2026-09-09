@@ -115,6 +115,13 @@ namespace XpSearch.Core.Contract
     public partial class SearchRequest
     {
         /// <summary>
+        /// Website channel name to search. Omit to search every channel the index covers.
+        /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonPropertyName("channel")]
+        public string? Channel { get; set; }
+
+        /// <summary>
         /// When true, each result carries ranking explaining its score. Defaults to false. Used by
         /// the admin query tester (spec 8.4).
         /// </summary>
@@ -160,8 +167,8 @@ namespace XpSearch.Core.Contract
         public string Index { get; set; }
 
         /// <summary>
-        /// Language code of the content to search, for example "en". Omit to use the current
-        /// request's language.
+        /// Language code of the content to search, for example "en". Omit to search every language
+        /// the index covers.
         /// </summary>
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("language")]
@@ -609,6 +616,13 @@ namespace XpSearch.Core.Contract
     public partial class SuggestRequest
     {
         /// <summary>
+        /// Website channel name to search. Omit to search every channel the index covers.
+        /// </summary>
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        [JsonPropertyName("channel")]
+        public string? Channel { get; set; }
+
+        /// <summary>
         /// Required. Code name of the Lucene index to suggest from. Must be non-empty; validated
         /// server-side, which answers 400 Problem Details when it is not.
         /// </summary>
@@ -616,7 +630,8 @@ namespace XpSearch.Core.Contract
         public string Index { get; set; }
 
         /// <summary>
-        /// Language code to suggest in, for example "en". Omit to use the current request's language.
+        /// Language code to suggest in, for example "en". Omit to search every language the index
+        /// covers.
         /// </summary>
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         [JsonPropertyName("language")]

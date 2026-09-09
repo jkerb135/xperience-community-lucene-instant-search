@@ -38,6 +38,10 @@ public interface ISearchRequestJournal
     /// <paramref name="queryId"/> so a later event cannot claim a position the search never showed
     /// (SC-1). <c>0</c> when it is not known.
     /// </param>
+    /// <param name="channel">
+    /// Website channel the request asked for (LC-1), or empty to log the channel of the current
+    /// request instead.
+    /// </param>
     void Record(
         string queryId,
         string queryText,
@@ -46,7 +50,8 @@ public interface ISearchRequestJournal
         TimeSpan elapsed,
         string language,
         ExperimentAssignment? experiment = null,
-        int maxPosition = 0);
+        int maxPosition = 0,
+        string channel = "");
 }
 
 /// <summary>
@@ -101,7 +106,8 @@ public sealed class SearchRequestJournal : ISearchRequestJournal
         TimeSpan elapsed,
         string language,
         ExperimentAssignment? experiment = null,
-        int maxPosition = 0)
+        int maxPosition = 0,
+        string channel = "")
     {
         try
         {
@@ -127,7 +133,7 @@ public sealed class SearchRequestJournal : ISearchRequestJournal
                 queryText,
                 total,
                 DateTime.UtcNow,
-                ChannelName(),
+                string.IsNullOrWhiteSpace(channel) ? ChannelName() : channel,
                 language ?? string.Empty,
                 (int)elapsed.TotalMilliseconds,
                 null,
@@ -141,7 +147,8 @@ public sealed class SearchRequestJournal : ISearchRequestJournal
     }
 
     /// <summary>
-    /// Reads the current website channel. <c>IWebsiteChannelContext</c> only resolves a channel inside
+    /// Reads the current website channel, which is what a request that named no channel is logged
+    /// under. <c>IWebsiteChannelContext</c> only resolves a channel inside
     /// website channel pages, so an API call from elsewhere - or from the administration - logs no
     /// channel rather than failing
     /// (https://docs.kentico.com/documentation/developers-and-admins/development/content-retrieval/retrieve-page-content).

@@ -24,4 +24,17 @@ public abstract record XpSearchMountOptions
     /// to <c>default</c>.
     /// </summary>
     public string? InstanceId { get; init; }
+
+    /// <summary>
+    /// Gets the language to search. <see langword="null"/> or empty falls back to the enclosing
+    /// <c>&lt;xps-search&gt;</c> and then to the language the page is being viewed in (LC-1).
+    /// </summary>
+    public string? Language { get; init; }
+
+    /// <summary>
+    /// Gets the website channel to search. <see langword="null"/> or empty falls back to the enclosing
+    /// <c>&lt;xps-search&gt;</c> and then to the channel the page belongs to (LC-1). A page that
+    /// deliberately searches every channel sets it to <c>*</c>.
+    /// </summary>
+    public string? Channel { get; init; }
 }

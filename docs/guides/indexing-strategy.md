@@ -56,10 +56,18 @@ Every document gets these fields whatever its content type:
 | `title` | `Title` | text | searchable, sortable, retrievable | the content item's name; boosted ×2 |
 | `contentType` | `ContentTypeName` | keyword | facetable, retrievable | the Lucene integration |
 | `language` | `LanguageName` | keyword | facetable, retrievable | the Lucene integration |
+| `channel` | `channel` | keyword | facetable, retrievable | the page's website channel; web pages only |
 | `url` | `Url` | keyword | retrievable | `IWebPageUrlRetriever`, converted from `~/x` to `/x` |
 | `_source` | `_source` | keyword | facetable, retrievable | `xperience`, or the pushed document's source |
 
-These four are the only fields whose **attribute name** (what a request and a result call them) differs
+A reusable content item belongs to no channel and carries no `channel` field, so a search scoped to a
+channel finds pages only. Because the channel is a field rather than a property of the index, **one
+index per website channel is no longer required**: an index configured for several channels answers a
+channel-scoped request with that channel's documents, and its facet counts respect the same filter.
+The widgets fill the request member from the page they sit on (see
+[Razor tag helpers](razor-tag-helpers.md)); a request that names no channel searches all of them.
+
+`title`, `contentType`, `language` and `url` are the fields whose **attribute name** (what a request and a result call them) differs
 from the Lucene field the documents carry: the wire names are this library's, so one default result
 template works for every project, while the documents keep the names the Lucene integration writes. A
 field detected from a content type is the same name on both sides — `ProductFieldName` is

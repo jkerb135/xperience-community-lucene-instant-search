@@ -84,6 +84,12 @@ Every widget starts with the same two properties.
 - **Instance ID** — the coupling mechanism, defaulting to `default`. Widgets that share an instance ID
   form one search.
 
+There is no language or channel property, because there is nothing to decide: a widget searches the
+language the page is being viewed in and the website channel the page belongs to. The index drop-down
+lists the indexes that cover this channel first, and the rest with an *(other channel)* suffix. A page
+that has to search *across* channels or languages is not an editor's decision — build it with the
+[Razor tag helpers](razor-tag-helpers.md) (`<xps-search channel="*">`) or with a custom widget.
+
 Then, per widget:
 
 | Widget | Properties |
