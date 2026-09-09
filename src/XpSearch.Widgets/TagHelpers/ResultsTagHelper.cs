@@ -198,7 +198,9 @@ public class ResultsTagHelper : XpSearchMountTagHelper<ResultsOptions>
                 options.TitleAttribute,
                 options.UrlAttribute,
                 options.SnippetAttributes,
-                XpSearchWidgetConstants.DefaultResultViewPath),
+                XpSearchWidgetConstants.DefaultResultViewPath,
+                CurrentLanguage,
+                CurrentChannel),
             cancellationToken).ConfigureAwait(false);
 
         // What the visitor's own refinements are called, so the client can name them before its first

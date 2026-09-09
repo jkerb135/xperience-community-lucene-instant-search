@@ -15,6 +15,12 @@ public sealed class XpSearchScope
     /// <summary>Gets the search instance the widgets inside the element join.</summary>
     public string? Instance { get; init; }
 
+    /// <summary>Gets the language the widgets inside search, or <see langword="null"/> for the page's own (LC-1).</summary>
+    public string? Language { get; init; }
+
+    /// <summary>Gets the website channel the widgets inside search, or <see langword="null"/> for the page's own (LC-1).</summary>
+    public string? Channel { get; init; }
+
     /// <summary>Gets whether the search keeps its state in the page URL (spec §5.5).</summary>
     public bool? Routing { get; init; }
 
@@ -77,6 +83,20 @@ public sealed class XpSearchTagHelper : TagHelper
     [HtmlAttributeName("instance")]
     public string? Instance { get; set; }
 
+    /// <summary>
+    /// Gets or sets the language the widgets inside search. Empty uses the language the page is being
+    /// viewed in; <c>*</c> searches every language the index covers. A widget's own value wins.
+    /// </summary>
+    [HtmlAttributeName("language")]
+    public string? Language { get; set; }
+
+    /// <summary>
+    /// Gets or sets the website channel the widgets inside search. Empty uses the channel the page
+    /// belongs to; <c>*</c> searches every channel the index covers. A widget's own value wins.
+    /// </summary>
+    [HtmlAttributeName("channel")]
+    public string? Channel { get; set; }
+
     /// <summary>Gets or sets whether the search keeps its query, filters and page in the address bar.</summary>
     [HtmlAttributeName("routing")]
     public bool? Routing { get; set; }
@@ -107,6 +127,8 @@ public sealed class XpSearchTagHelper : TagHelper
         {
             Index = Index,
             Instance = Instance,
+            Language = Language,
+            Channel = Channel,
             Routing = Routing,
             PageSize = PageSize,
             Fields = Fields?.ToList(),

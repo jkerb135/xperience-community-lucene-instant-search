@@ -49,6 +49,43 @@ internal sealed class FakeEditorContext : IXpSearchEditorContext
 }
 
 /// <summary>
+/// A page with a fixed language and website channel, standing in for the Xperience request context
+/// (LC-1). It covers every index unless <see cref="NotCovering"/> says otherwise.
+/// </summary>
+internal sealed class FakePageContext : IXpSearchPageContext
+{
+    internal FakePageContext(string? language = null, string? channel = null)
+    {
+        Language = language;
+        Channel = channel;
+    }
+
+    internal string? Language { get; set; }
+
+    internal string? Channel { get; set; }
+
+    /// <summary>Index code names this page's channel is not part of.</summary>
+    internal HashSet<string> NotCovering { get; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Every coverage check the tag helper asked for, as <c>index|language|channel</c>.</summary>
+    internal List<string> Checks { get; } = [];
+
+    public string? GetLanguage() => Language;
+
+    public string? GetChannel() => Channel;
+
+    public Task<bool> CoversCurrentChannelAsync(string indexName, CancellationToken cancellationToken) =>
+        Task.FromResult(!NotCovering.Contains(indexName));
+
+    public Task WarnIfNotCoveredAsync(string indexName, string? language, string? channel, CancellationToken cancellationToken)
+    {
+        Checks.Add($"{indexName}|{language}|{channel}");
+
+        return Task.CompletedTask;
+    }
+}
+
+/// <summary>
 /// Builds each Page Builder widget over its tag helper, which is what the DI container does on a
 /// host (RZ-1 §2). One place, so a widget's dependencies change in one place.
 /// </summary>

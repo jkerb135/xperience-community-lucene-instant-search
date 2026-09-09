@@ -52,6 +52,8 @@ internal sealed class ServerRenderedResultsTests
         services.AddControllersWithViews().AddApplicationPart(typeof(XpSearchMountRenderer).Assembly);
         // The widget services a host registers, with the project's indexes stubbed.
         services.AddSingleton<XpSearch.Widgets.Options.IXpSearchIndexCatalog>(new FakeIndexCatalog("site-content"));
+        // The container is not an Xperience application, so the page context is the test's own (LC-1).
+        services.AddSingleton<IXpSearchPageContext>(new FakePageContext());
         services.AddXpSearchWidgets();
 
         provider = services.BuildServiceProvider();
