@@ -25,6 +25,14 @@ namespace XpSearch.Core.Rendering;
 /// cannot be resolved, renders the built-in card instead. XpSearch.Widgets passes the partial in its
 /// Razor class library; a host without it needs nothing.
 /// </param>
+/// <param name="Language">
+/// Language to search, normally the page's own (LC-1). <see langword="null"/> or empty searches every
+/// language the index covers, which is what the first paint did before the page decided.
+/// </param>
+/// <param name="Channel">
+/// Website channel to search, normally the page's own (LC-1). <see langword="null"/> or empty searches
+/// every channel the index covers.
+/// </param>
 public sealed record ServerResultsOptions(
     string Index,
     int ResultsPerPage,
@@ -33,7 +41,9 @@ public sealed record ServerResultsOptions(
     string? TitleAttribute,
     string? UrlAttribute,
     IReadOnlyList<string> SnippetAttributes,
-    string? DefaultViewPath = null);
+    string? DefaultViewPath = null,
+    string? Language = null,
+    string? Channel = null);
 
 /// <summary>The server-rendered first paint and the search that produced it.</summary>
 /// <param name="Content">The markup that goes inside the mount element.</param>
@@ -292,7 +302,9 @@ public sealed class ServerRenderedResults
         SearchQueryState.Apply(
             request,
             viewContext.HttpContext.Request.Query,
-            await ResolveSchemaAsync(options.Index, cancellationToken).ConfigureAwait(false));
+            await ResolveSchemaAsync(options.Index, cancellationToken).ConfigureAwait(false),
+            options.Language,
+            options.Channel);
 
         // Counts for the attributes the visitor filtered by, only so the response names their
         // selected values: FC-1 makes every one of them come back, count 0 or not, and the client's

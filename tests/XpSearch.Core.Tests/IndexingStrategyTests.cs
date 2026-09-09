@@ -335,6 +335,38 @@ internal sealed class IndexingStrategyTests
         });
     }
 
+    [Test]
+    public async Task Map_WritesTheWebsiteChannelOfAWebPageItem()
+    {
+        var data = Container(ProductPage, values: []);
+        var strategy = Strategy(data, new XpSearchIndexingOptions(), Fields(ProductPage));
+
+        var document = await strategy.MapToLuceneDocumentOrNull(WebPage(ProductPage, "DancingGoat"));
+
+        Expect.Multiple(() =>
+        {
+            Assert.That(
+                Values(document!, IndexSchemaProvider.ChannelAttribute),
+                Is.EqualTo(new[] { "DancingGoat" }),
+                "the channel is stored, so it can be projected");
+            Assert.That(
+                FacetValues(document!, IndexSchemaProvider.ChannelAttribute),
+                Is.EqualTo(new[] { "DancingGoat" }),
+                "and is a facet dimension, so it can be counted and drilled into");
+        });
+    }
+
+    [Test]
+    public async Task Map_WritesNoChannelForAReusableItem()
+    {
+        var data = Container(ProductCoffee, values: []);
+        var strategy = Strategy(data, new XpSearchIndexingOptions(), Fields(ProductCoffee));
+
+        var document = await strategy.MapToLuceneDocumentOrNull(Item(ProductCoffee));
+
+        Assert.That(document!.GetField(IndexSchemaProvider.ChannelAttribute), Is.Null, "a reusable item belongs to no channel");
+    }
+
     /// <summary>A strategy whose hook contributes <see cref="Name"/> and <see cref="Tags"/>, detecting nothing.</summary>
     private static XpSearchIndexingStrategy Contributing(XpSearchIndexingOptions options, ILogger<XpSearchIndexingStrategy> logger) =>
         new ContributingStrategy(
@@ -443,6 +475,20 @@ internal sealed class IndexingStrategyTests
         isSecured: false,
         contentTypeID: 1,
         contentLanguageID: 1);
+
+    private static IIndexEventItemModel WebPage(string contentTypeName, string channelName) => new IndexEventWebPageItemModel(
+        itemID: 2,
+        itemGuid: Guid.Parse("44444444-4444-4444-4444-444444444444"),
+        languageName: "en",
+        contentTypeName: contentTypeName,
+        name: "Cortado page",
+        isSecured: false,
+        contentTypeID: 1,
+        contentLanguageID: 1,
+        websiteChannelName: channelName,
+        webPageItemTreePath: "/cortado",
+        order: 1,
+        parentID: 0);
 
     private static StubFieldSource Fields(string contentTypeName, params SchemaField[] fields) =>
         new(new() { [contentTypeName] = fields });

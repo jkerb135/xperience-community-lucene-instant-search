@@ -244,7 +244,10 @@ export interface XpSearchOptions {
   highlight?: HighlightOptions;
   /** Document fields to project into `result.attributes`. */
   fields?: string[];
+  /** Language code every request of this instance is narrowed to. Omit to search every language the index covers. */
   language?: string;
+  /** Website channel name every request of this instance is narrowed to. Omit to search every channel the index covers. */
+  channel?: string;
   /** Extra request headers, e.g. an API key. */
   headers?: Record<string, string>;
   /** Injectable `fetch`, for tests and SSR. */

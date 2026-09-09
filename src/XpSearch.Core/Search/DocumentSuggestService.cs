@@ -172,7 +172,7 @@ public sealed class DocumentSuggestService : ISuggestService
                 "index",
                 $"Index '{request.Index}' is configured to suggest from '{indexOptions.SuggestField}', which it has no such attribute for.");
 
-        var query = BuildQuery(prefix, suggestField, request.Language);
+        var query = BuildQuery(prefix, suggestField, request.Language, request.Channel);
 
         var suggestions = accessor.UseSearcher(request.Index, searcher =>
         {
@@ -254,19 +254,27 @@ public sealed class DocumentSuggestService : ISuggestService
         return (int)Math.Min(limit.Value, settings.MaxSuggestLimit);
     }
 
-    private static Query BuildQuery(string prefix, SchemaField suggestField, string? language)
+    private static Query BuildQuery(string prefix, SchemaField suggestField, string? language, string? channel)
     {
         Query prefixQuery = new PrefixQuery(new Term(LuceneFieldNames.SearchFieldName(suggestField), prefix));
 
-        if (string.IsNullOrWhiteSpace(language))
+        if (string.IsNullOrWhiteSpace(language) && string.IsNullOrWhiteSpace(channel))
         {
             return prefixQuery;
         }
 
-        return new BooleanQuery
+        var query = new BooleanQuery { { prefixQuery, Occur.MUST } };
+
+        if (!string.IsNullOrWhiteSpace(language))
         {
-            { prefixQuery, Occur.MUST },
-            { new TermQuery(new Term(BaseDocumentProperties.LANGUAGE_NAME, language)), Occur.MUST }
-        };
+            query.Add(new TermQuery(new Term(BaseDocumentProperties.LANGUAGE_NAME, language)), Occur.MUST);
+        }
+
+        if (!string.IsNullOrWhiteSpace(channel))
+        {
+            query.Add(new TermQuery(new Term(IndexSchemaProvider.ChannelAttribute, channel)), Occur.MUST);
+        }
+
+        return query;
     }
 }

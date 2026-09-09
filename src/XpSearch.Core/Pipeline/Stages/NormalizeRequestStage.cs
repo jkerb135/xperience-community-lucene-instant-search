@@ -41,6 +41,7 @@ public sealed class NormalizeRequestStage : ISearchStage
         var request = context.Request;
         var indexSettings = settings.Get(context.IndexName);
 
+        request.Channel = ValidateChannel(request.Channel);
         context.QueryText = Normalize(request.Query, indexSettings.MaxQueryLength);
         context.Page = ValidatePage(request.Page);
         context.PageSize = ValidatePageSize(request.PageSize, indexSettings, options.CurrentValue.DefaultPageSize);
@@ -75,6 +76,20 @@ public sealed class NormalizeRequestStage : ISearchStage
         string normalized = query.Trim().ToLowerInvariant();
 
         return normalized.Length > maxLength ? normalized[..maxLength] : normalized;
+    }
+
+    // No allow-list: a channel the index does not cover simply matches nothing, which is the same
+    // answer the index would give for a channel it covers but has no documents in.
+    private static string? ValidateChannel(string? channel)
+    {
+        if (channel is null)
+        {
+            return null;
+        }
+
+        return channel.Trim() is { Length: > 0 } trimmed
+            ? trimmed
+            : throw new SearchValidationException("channel", "channel must not be empty.");
     }
 
     private static int ValidatePage(long? page)

@@ -56,6 +56,9 @@ public sealed class IndexSchemaProvider : IIndexSchemaProvider
     /// <summary>Attribute name of the language code name.</summary>
     public const string LanguageAttribute = "language";
 
+    /// <summary>Attribute name of the website channel a page belongs to.</summary>
+    public const string ChannelAttribute = "channel";
+
     /// <summary>
     /// Gets the fields present on every document, whatever its content type: the identifier and the
     /// properties the Lucene integration adds itself, plus the title the strategy adds.
@@ -74,6 +77,9 @@ public sealed class IndexSchemaProvider : IIndexSchemaProvider
         new SchemaField(TitleAttribute, SearchFieldKind.Text, Searchable: true, Facetable: false, Sortable: true, Retrievable: true, Boost: 2f) { LuceneName = TitleField },
         new SchemaField(ContentTypeAttribute, SearchFieldKind.Keyword, Searchable: false, Facetable: true, Sortable: false, Retrievable: true) { LuceneName = BaseDocumentProperties.CONTENT_TYPE_NAME },
         new SchemaField(LanguageAttribute, SearchFieldKind.Keyword, Searchable: false, Facetable: true, Sortable: false, Retrievable: true) { LuceneName = BaseDocumentProperties.LANGUAGE_NAME },
+        // Written by the strategy for web page items only (LC-1): a reusable item belongs to no
+        // channel, and a pushed document may carry "channel" as an ordinary attribute of its own.
+        new SchemaField(ChannelAttribute, SearchFieldKind.Keyword, Searchable: false, Facetable: true, Sortable: false, Retrievable: true),
         new SchemaField(UrlAttribute, SearchFieldKind.Keyword, Searchable: false, Facetable: false, Sortable: false, Retrievable: true) { LuceneName = BaseDocumentProperties.URL },
 
         // Facetable: every document carries "_source" as a facet field as well as a term, so a query

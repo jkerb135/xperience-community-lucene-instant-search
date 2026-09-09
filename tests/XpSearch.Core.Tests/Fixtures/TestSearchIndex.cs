@@ -145,6 +145,18 @@ internal sealed class TestSearchIndex : ILuceneIndexAccessor, IDisposable
             document.Add(new FacetField(LuceneFieldNames.SourceField, LuceneFieldNames.XperienceSource));
         }
 
+        // A document with no channel is the fixture's reusable item: the strategy writes the field
+        // for web page items only (LC-1).
+        if (source.Channel.Length > 0)
+        {
+            document.Add(new StringField(IndexSchemaProvider.ChannelAttribute, source.Channel, Field.Store.YES));
+
+            if (withTaxonomy)
+            {
+                document.Add(new FacetField(IndexSchemaProvider.ChannelAttribute, source.Channel));
+            }
+        }
+
         AddTaxonomy(document, TestCorpus.CategoryField, source.Categories, withTaxonomy);
         AddTaxonomy(document, TestCorpus.TagsField, source.Tags, withTaxonomy);
         AddTaxonomy(document, TestCorpus.TopicField, source.Topics, withTaxonomy);

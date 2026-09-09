@@ -90,7 +90,11 @@
         },
         "language": {
           "type": "string",
-          "description": "Language code of the content to search, for example \"en\". Omit to use the current request's language."
+          "description": "Language code of the content to search, for example \"en\". Omit to search every language the index covers."
+        },
+        "channel": {
+          "type": "string",
+          "description": "Website channel name to search. Omit to search every channel the index covers."
         },
         "queryId": {
           "type": "string",
@@ -493,7 +497,11 @@
         },
         "language": {
           "type": "string",
-          "description": "Language code to suggest in, for example \"en\". Omit to use the current request's language."
+          "description": "Language code to suggest in, for example \"en\". Omit to search every language the index covers."
+        },
+        "channel": {
+          "type": "string",
+          "description": "Website channel name to search. Omit to search every channel the index covers."
         }
       }
     },

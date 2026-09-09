@@ -383,6 +383,12 @@ public class XpSearchIndexingStrategy : DefaultLuceneIndexingStrategy
                 .ConfigureAwait(false);
 
             document.Add(new StringField(BaseDocumentProperties.URL, WebUrl.ToRootRelative(url?.RelativePath), Field.Store.YES));
+
+            // The page's website channel (LC-1). Stored so it can be projected, and a facet field so
+            // it is countable and term-filterable exactly like the language. A reusable item belongs
+            // to no channel and writes nothing, which is why this lives in the web page branch.
+            document.Add(new StringField(IndexSchemaProvider.ChannelAttribute, webPage.WebsiteChannelName, Field.Store.YES));
+            document.Add(new FacetField(IndexSchemaProvider.ChannelAttribute, webPage.WebsiteChannelName));
         }
 
         var fields = fieldSource.GetFields(item.ContentTypeName);

@@ -20,8 +20,10 @@ public static class SearchQueryState
     private const string QueryParam = "q";
     private const string PageParam = "page";
     private const string SortParam = "sort";
+    private const string LanguageParam = "language";
+    private const string ChannelParam = "channel";
 
-    private static readonly string[] Reserved = [QueryParam, PageParam, SortParam];
+    private static readonly string[] Reserved = [QueryParam, PageParam, SortParam, LanguageParam, ChannelParam];
 
     private static readonly Dictionary<string, NumericOperator> Operators = new(StringComparer.Ordinal)
     {
@@ -45,7 +47,24 @@ public static class SearchQueryState
     /// the query endpoint would reject. When <see langword="null"/> every parameter is read as a
     /// filter, as before.
     /// </param>
-    public static void Apply(SearchRequest request, IQueryCollection query, IndexSchema? schema = null)
+    /// <param name="language">
+    /// Language the page decided on (LC-1), used unless the query string names one of its own.
+    /// <see langword="null"/> or empty searches every language the index covers.
+    /// </param>
+    /// <param name="channel">
+    /// Website channel the page decided on (LC-1), used unless the query string names one of its own.
+    /// <see langword="null"/> or empty searches every channel the index covers.
+    /// </param>
+    /// <remarks>
+    /// <c>language</c> and <c>channel</c> are read as request members rather than as facet filters,
+    /// so a shared URL narrows the search exactly the way the mount's instance options do.
+    /// </remarks>
+    public static void Apply(
+        SearchRequest request,
+        IQueryCollection query,
+        IndexSchema? schema = null,
+        string? language = null,
+        string? channel = null)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(query);
@@ -133,6 +152,9 @@ public static class SearchQueryState
             request.Sort = sortKey;
         }
 
+        request.Language = First(query, LanguageParam) ?? Trimmed(language) ?? request.Language;
+        request.Channel = First(query, ChannelParam) ?? Trimmed(channel) ?? request.Channel;
+
         if (query.TryGetValue(PageParam, out var page)
             && long.TryParse(page[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out long number)
             && number > 1)
@@ -149,6 +171,12 @@ public static class SearchQueryState
             };
         }
     }
+
+    private static string? First(IQueryCollection query, string key) =>
+        query.TryGetValue(key, out var values) ? Trimmed(values[0]) : null;
+
+    private static string? Trimmed(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private static bool IsNumber(string? value) =>
         value is { Length: > 0 }

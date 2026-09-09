@@ -64,6 +64,13 @@ public sealed class BuildQueryStage : ISearchStage
             context.ActiveFilters.Add(LanguageFilter(language), Occur.MUST);
         }
 
+        string? channel = context.Request.Channel;
+
+        if (!string.IsNullOrWhiteSpace(channel))
+        {
+            context.ActiveFilters.Add(ChannelFilter(channel), Occur.MUST);
+        }
+
         // The score checkpoints of QT-2: what a document would score without the admin's field
         // weights, and what it scores with them. When no weight moves a boost the two queries are
         // the same query, so only the first is pushed.
@@ -84,7 +91,7 @@ public sealed class BuildQueryStage : ISearchStage
     }
 
     /// <summary>
-    /// Wraps the text query in the request's language filter, when it asked for one.
+    /// Wraps the text query in the request's language and channel filters, when it asked for them.
     /// </summary>
     /// <remarks>
     /// One index holds every language and the integration writes the language into every document
@@ -94,18 +101,38 @@ public sealed class BuildQueryStage : ISearchStage
     private static Query Filtered(SearchContext context, Query textQuery)
     {
         string? language = context.Request.Language;
+        string? channel = context.Request.Channel;
 
-        return string.IsNullOrWhiteSpace(language)
-            ? textQuery
-            : new BooleanQuery
-            {
-                { textQuery, Occur.MUST },
-                { LanguageFilter(language), Occur.MUST }
-            };
+        if (string.IsNullOrWhiteSpace(language) && string.IsNullOrWhiteSpace(channel))
+        {
+            return textQuery;
+        }
+
+        var filtered = new BooleanQuery { { textQuery, Occur.MUST } };
+
+        if (!string.IsNullOrWhiteSpace(language))
+        {
+            filtered.Add(LanguageFilter(language), Occur.MUST);
+        }
+
+        if (!string.IsNullOrWhiteSpace(channel))
+        {
+            filtered.Add(ChannelFilter(channel), Occur.MUST);
+        }
+
+        return filtered;
     }
 
     private static TermQuery LanguageFilter(string language) =>
         new(new Term(BaseDocumentProperties.LANGUAGE_NAME, language));
+
+    /// <summary>The channel term filter, on the field the strategy writes for every web page (LC-1).</summary>
+    /// <remarks>
+    /// Kentico's base document properties carry no channel, and one index can cover several website
+    /// channels, so the channel is a field this library writes and filters on itself.
+    /// </remarks>
+    private static TermQuery ChannelFilter(string channel) =>
+        new(new Term(IndexSchemaProvider.ChannelAttribute, channel));
 
     private static Query BuildTextQuery(SearchContext context, bool fuzzy, IDictionary<string, float> boosts)
     {
