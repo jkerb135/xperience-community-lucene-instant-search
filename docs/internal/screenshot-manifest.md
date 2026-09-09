@@ -53,7 +53,10 @@ required (one or greater), so any Page Builder dialog shot added later must be t
 changes. RZ-2 added five properties to three dialogs — Pagination (**Pages either side of the current
 one**, **Show the "first page" control**, **Show the "last page" control**, the last three shown for
 numbered pages only), Active filters (**Attribute names**) and Search box (**Search as the page
-loads**) — so those three dialogs must be shot after RZ-2 as well.
+loads**) — so those three dialogs must be shot after RZ-2 as well. LC-1 then rewrote the **Search
+index** explanation line (it now says the widget searches the page's own language and channel) and
+made the drop-down list the indexes of the current channel first, suffixing the rest with *(other
+channel)*, so every widget dialog shot has to come after LC-1 too.
 No row covers the front-end widgets, so TH-6 (autocomplete panel + empty states + the Load more
 empty state) and TH-7 (theme hardening: themed checkboxes, sheet heading, empty-state button, the
 did-you-mean link) and TH-9 (the sidebar card, the autocomplete "no suggestions" state) have

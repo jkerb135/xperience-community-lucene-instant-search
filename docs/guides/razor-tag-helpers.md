@@ -98,6 +98,8 @@ of on every widget.
 |---|---|---|---|
 | `index` | string | – | Code name of the index the widgets inside search |
 | `instance` | string | `default` | The search the widgets inside join; two scopes with different ids are two independent searches on one page |
+| `language` | string | the page's own | Language the widgets inside search; `*` searches every language the index covers |
+| `channel` | string | the page's own | Website channel the widgets inside search; `*` searches every channel the index covers |
 | `routing` | bool | – | Whether the search keeps its query, filters and page in the address bar |
 | `page-size` | int | – | How many results one page holds |
 | `fields` | string list | – | The index fields retrieved for each result |
@@ -109,18 +111,28 @@ inside a scope with `page-size="24"` searches with 6 — and an `<xps-results>` 
 the scope's `page-size`, so one number on the scope sizes the page for `<xps-results>` and
 `<xps-load-more>` alike. Without either, the code default of 20 applies.
 
-**Precedence, for `index` and `instance`:** the tag's own attribute wins, then the options record
-handed to `options="@model"`, then the enclosing `<xps-search>`, and finally — for `index` only — the
-project's sole index if it has exactly one. An `index` that resolves to nothing is a render-time
-failure, not an empty div.
+**Precedence, for `index`, `instance`, `language` and `channel`:** the tag's own attribute wins, then
+the options record handed to `options="@model"`, then the enclosing `<xps-search>`, and finally the
+page itself — its sole index if the project has exactly one, its language
+(`IPreferredLanguageRetriever`) and its website channel (`IWebsiteChannelContext`). An `index` that
+resolves to nothing is a render-time failure, not an empty div.
 
-### Every widget tag takes these three
+### Every widget tag takes these five
 
 | Attribute | Type | Default | Meaning |
 |---|---|---|---|
 | `index` | string | – | The index to search; see the precedence rule above |
 | `instance` | string | `default` | The search this widget joins |
+| `language` | string | the page's own | The language to search; `*` searches every language the index covers |
+| `channel` | string | the page's own | The website channel to search; `*` searches every channel the index covers |
 | `options` | the widget's options record | – | The whole configuration as one object, `options="@model"` |
+
+`language` and `channel` reach the mount as instance options, so a Spanish page of the *DancingGoat*
+channel searches Spanish DancingGoat content — on the server-rendered first paint and after hydration
+— without any configuration. A page under a route that is not a website channel page (a plain Razor
+page, a test host) has neither, and the search then covers everything the index does. If the index a
+widget points at does not cover the page's language or channel, the widget renders as usual and the
+application log carries one warning per index and value saying so.
 
 `options` is the C# vocabulary of the same widget: `SearchBoxOptions`, `ResultsOptions`,
 `FacetListOptions` and so on, one sealed record per widget in `XpSearch.Widgets.Options`, free of

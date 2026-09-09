@@ -69,7 +69,9 @@ value spans two lines above; keys the index does not publish are dropped. And th
 search instance, so `page-size` on the scope only has an effect on a page whose result list is
 `<xps-load-more>`.
 
-The attribute of every tag, its type and its default are in
+The page's own language and website channel travel with every mount, so this page searches Spanish
+DancingGoat content when it is viewed at `/es/search` — add `language="*"` or `channel="*"` to
+`<xps-search>` to widen it. The attribute of every tag, its type and its default are in
 [Razor tag helpers](razor-tag-helpers.md). A tag that cannot render — no index, a facet without an
 attribute, a range without bounds — throws at render time with the message the Page Builder would show
 an editor.
